@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "aistros-foundry": {
+      "command": "python",
+      "args": ["mcp-servers/aistros-foundry/src/server.py"],
+      "cwd": "c:/Users/user/Documents/repos/public_repositories/FastApiFoundry",
+      "env": {
+        "FOUNDRY_BASE_URL": "http://localhost:51601/v1/",
+        "FOUNDRY_DEFAULT_MODEL": "deepseek-r1-distill-qwen-7b-generic-cpu:3",
+        "FOUNDRY_TEMPERATURE": "0.6",
+        "FOUNDRY_MAX_TOKENS": "2048",
+        "FOUNDRY_TIMEOUT": "30"
+      }
+    }
+  }
+}

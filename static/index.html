@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI Foundry - AI Models Interface</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .model-card { transition: transform 0.2s; }
+        .model-card:hover { transform: translateY(-2px); }
+        .status-online { color: #28a745; }
+        .status-offline { color: #dc3545; }
+        .status-unknown { color: #6c757d; }
+        .chat-container { height: 400px; overflow-y: auto; }
+        .message { margin-bottom: 1rem; }
+        .message.user { text-align: right; }
+        .message.assistant { text-align: left; }
+        .message .content { 
+            display: inline-block; 
+            padding: 0.5rem 1rem; 
+            border-radius: 1rem; 
+            max-width: 70%; 
+        }
+        .message.user .content { background-color: #007bff; color: white; }
+        .message.assistant .content { background-color: #f8f9fa; border: 1px solid #dee2e6; }
+        
+        /* Log styles */
+        .log-entry { 
+            padding: 0.25rem 0.5rem; 
+            border-bottom: 1px solid #f0f0f0; 
+            font-size: 0.8rem;
+        }
+        .log-entry:hover { background-color: #f8f9fa; }
+        .log-debug { color: #6c757d; }
+        .log-info { color: #0d6efd; }
+        .log-warning { color: #fd7e14; }
+        .log-error { color: #dc3545; font-weight: 500; }
+        .log-timestamp { color: #6c757d; font-size: 0.75rem; }
+        .log-logger { color: #198754; font-weight: 500; }
+        .health-status-healthy { color: #28a745; }
+        .health-status-warning { color: #fd7e14; }
+        .health-status-critical { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-robot"></i> FastAPI Foundry
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text" id="status-indicator">
+                    <i class="bi bi-circle-fill text-warning"></i> Connecting...
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button">
+                    <i class="bi bi-chat-dots"></i> Chat
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="models-tab" data-bs-toggle="tab" data-bs-target="#models" type="button">
+                    <i class="bi bi-cpu"></i> Models
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="foundry-tab" data-bs-toggle="tab" data-bs-target="#foundry" type="button">
+                    <i class="bi bi-download"></i> Foundry
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button">
+                    <i class="bi bi-gear"></i> Settings
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="examples-tab" data-bs-toggle="tab" data-bs-target="#examples" type="button">
+                    <i class="bi bi-play-circle"></i> Examples
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button">
+                    <i class="bi bi-file-text"></i> Logs
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button">
+                    <i class="bi bi-book"></i> Documentation
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="mainTabsContent">
+            <!-- Chat Tab -->
+            <div class="tab-pane fade show active" id="chat" role="tabpanel">
+                <div class="row mt-3">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">AI Chat</h5>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="clearChat()">
+                                    <i class="bi bi-trash"></i> Clear
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="chat-messages" class="chat-container border rounded p-3 mb-3">
+                                    <div class="text-muted text-center">
+                                        <i class="bi bi-chat-square-dots"></i><br>
+                                        Start a conversation with AI
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" id="chat-input" class="form-control" placeholder="Type your message..." onkeypress="handleChatKeyPress(event)">
+                                    <button class="btn btn-primary" onclick="sendMessage()">
+                                        <i class="bi bi-send"></i> Send
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Chat Settings</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Model</label>
+                                    <select id="chat-model" class="form-select">
+                                        <option value="">Default</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Temperature: <span id="temp-value">0.7</span></label>
+                                    <input type="range" id="temperature" class="form-range" min="0" max="2" step="0.1" value="0.7" oninput="updateTempValue(this.value)">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Max Tokens</label>
+                                    <input type="number" id="max-tokens" class="form-control" value="2048" min="1" max="8192">
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="use-rag" checked>
+                                    <label class="form-check-label" for="use-rag">
+                                        Use RAG Context
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Models Tab -->
+            <div class="tab-pane fade" id="models" role="tabpanel">
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4>Connected Models</h4>
+                            <div>
+                                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addModelModal">
+                                    <i class="bi bi-plus-circle"></i> Add Model
+                                </button>
+                                <button class="btn btn-outline-primary" onclick="refreshModels()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div id="models-container" class="row">
+                            <!-- Models will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Foundry Tab -->
+            <div class="tab-pane fade" id="foundry" role="tabpanel">
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Foundry Service</h5>
+                                <span id="foundry-service-status" class="badge bg-secondary">Unknown</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-success" onclick="startFoundryService()">
+                                        <i class="bi bi-play-circle"></i> Start Service
+                                    </button>
+                                    <button class="btn btn-danger" onclick="stopFoundryService()">
+                                        <i class="bi bi-stop-circle"></i> Stop Service
+                                    </button>
+                                    <button class="btn btn-outline-primary" onclick="checkFoundryStatus()">
+                                        <i class="bi bi-arrow-clockwise"></i> Check Status
+                                    </button>
+                                </div>
+                                <hr>
+                                <div id="foundry-service-info" class="text-muted">
+                                    <small>Service status will appear here</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Available Models</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <button class="btn btn-primary" onclick="listFoundryModels()">
+                                        <i class="bi bi-list"></i> List Models
+                                    </button>
+                                </div>
+                                <div id="foundry-models-list" style="max-height: 300px; overflow-y: auto;">
+                                    <div class="text-muted text-center">
+                                        <i class="bi bi-cpu"></i><br>
+                                        Click "List Models" to see available models
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Download & Run Model</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="input-group">
+                                            <select id="model-select" class="form-select">
+                                                <option value="">Select a model...</option>
+                                                <option value="deepseek-r1-distill-qwen-7b">DeepSeek R1 Distill Qwen 7B (Recommended)</option>
+                                                <option value="phi-3-mini-4k">Phi-3 Mini 4K (Lightweight)</option>
+                                                <option value="llama-3.2-1b">Llama 3.2 1B (Fast)</option>
+                                                <option value="qwen2.5-7b">Qwen 2.5 7B</option>
+                                                <option value="mistral-7b">Mistral 7B</option>
+                                            </select>
+                                            <button class="btn btn-success" onclick="downloadAndRunModel()">
+                                                <i class="bi bi-download"></i> Download & Run
+                                            </button>
+                                        </div>
+                                        <div class="form-text">
+                                            Select a model to download and run. DeepSeek R1 Distill is recommended for RAG.
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-info w-100" onclick="showModelInfo()">
+                                            <i class="bi bi-info-circle"></i> Model Info
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="download-progress" class="mt-3" style="display: none;">
+                                    <div class="progress">
+                                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <div id="progress-text" class="text-center mt-2">Downloading...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-pane fade" id="settings" role="tabpanel">
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">System Status</h5>
+                            </div>
+                            <div class="card-body" id="system-status">
+                                <!-- Status will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Configuration</h5>
+                            </div>
+                            <div class="card-body" id="system-config">
+                                <!-- Config will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Examples Tab -->
+            <div class="tab-pane fade" id="examples" role="tabpanel">
+                <div class="row mt-3">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Example Scripts</h5>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="clearExampleOutput()">
+                                    <i class="bi bi-trash"></i> Clear Output
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <button class="btn btn-primary w-100 mb-2" onclick="runExample('client')">
+                                            <i class="bi bi-play-fill"></i> API Client Demo
+                                        </button>
+                                        <small class="text-muted">Демонстрация всех API endpoints</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <button class="btn btn-success w-100 mb-2" onclick="runExample('rag')">
+                                            <i class="bi bi-search"></i> RAG Search Demo
+                                        </button>
+                                        <small class="text-muted">Поиск в документации</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <button class="btn btn-info w-100 mb-2" onclick="runExample('mcp')">
+                                            <i class="bi bi-link-45deg"></i> MCP Client Demo
+                                        </button>
+                                        <small class="text-muted">Model Context Protocol</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <button class="btn btn-warning w-100 mb-2" onclick="runExample('model')">
+                                            <i class="bi bi-cpu"></i> Model Client Demo
+                                        </button>
+                                        <small class="text-muted">Работа с моделями</small>
+                                    </div>
+                                </div>
+                                <div id="example-output" class="border rounded p-3" style="height: 400px; overflow-y: auto; background-color: #f8f9fa; font-family: monospace; font-size: 0.9rem;">
+                                    <div class="text-muted text-center mt-5">
+                                        <i class="bi bi-play-circle" style="font-size: 2rem;"></i><br>
+                                        Выберите пример для запуска
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">Example Status</h6>
+                            </div>
+                            <div class="card-body" id="example-status">
+                                <div class="text-muted text-center">
+                                    <i class="bi bi-clock"></i><br>
+                                    Ready to run examples
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Available Examples</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>API Client</span>
+                                        <span class="badge bg-primary rounded-pill">examples/example_client.py</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>RAG Search</span>
+                                        <span class="badge bg-success rounded-pill">examples/example_rag_client.py</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>MCP Client</span>
+                                        <span class="badge bg-info rounded-pill">examples/example_mcp_client.py</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Model Client</span>
+                                        <span class="badge bg-warning rounded-pill">examples/example_model_client.py</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Tab -->
+            <div class="tab-pane fade" id="logs" role="tabpanel">
+                <div class="row mt-3">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">System Logs</h5>
+                                <div>
+                                    <select id="log-level-filter" class="form-select form-select-sm d-inline-block" style="width: auto;" onchange="filterLogs()">
+                                        <option value="">All Levels</option>
+                                        <option value="debug">Debug</option>
+                                        <option value="info">Info</option>
+                                        <option value="warning">Warning</option>
+                                        <option value="error">Error</option>
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="refreshLogs()">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="clearLogsView()">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="logs-container" style="height: 500px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;">
+                                    <div class="text-muted text-center p-4">
+                                        <i class="bi bi-file-text"></i><br>
+                                        Loading logs...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">System Health</h6>
+                            </div>
+                            <div class="card-body" id="logs-health-status">
+                                <div class="text-center">
+                                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                                    <small class="d-block mt-2">Loading...</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">Error Summary (24h)</h6>
+                            </div>
+                            <div class="card-body" id="error-summary">
+                                <div class="text-center">
+                                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                                    <small class="d-block mt-2">Loading...</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Performance (24h)</h6>
+                            </div>
+                            <div class="card-body" id="performance-metrics">
+                                <div class="text-center">
+                                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                                    <small class="d-block mt-2">Loading...</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documentation Tab -->
+            <div class="tab-pane fade" id="docs" role="tabpanel">
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Documentation & Help</h5>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="loadDocumentation()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="list-group" id="docs-menu">
+                                            <!-- Documentation menu items will be loaded here -->
+                                        </div>
+                                    </div>
+                                    <div class="col-md-9">
+                                        <div id="docs-content" style="max-height: 600px; overflow-y: auto;">
+                                            <div class="text-muted text-center py-5">
+                                                <i class="bi bi-book" style="font-size: 2rem;"></i><br>
+                                                <small>Select a topic from the menu</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Model Modal -->
+    <div class="modal fade" id="addModelModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Model</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-model-form">
+                        <div class="mb-3">
+                            <label class="form-label">Provider</label>
+                            <select id="model-provider" class="form-select" onchange="updateProviderFields()">
+                                <option value="foundry">Foundry</option>
+                                <option value="ollama">Ollama</option>
+                                <option value="openai">OpenAI</option>
+                                <option value="anthropic">Anthropic</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Model ID</label>
+                            <input type="text" id="model-id" class="form-control" placeholder="e.g., llama2:7b" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Model Name</label>
+                            <input type="text" id="model-name" class="form-control" placeholder="Human readable name">
+                        </div>
+                        <div class="mb-3" id="endpoint-field">
+                            <label class="form-label">Endpoint URL</label>
+                            <input type="url" id="endpoint-url" class="form-control" placeholder="http://localhost:5272/v1/">
+                        </div>
+                        <div class="mb-3" id="api-key-field" style="display: none;">
+                            <label class="form-label">API Key</label>
+                            <input type="password" id="api-key" class="form-control" placeholder="Your API key">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addModel()">Add Model</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{
+  "mcpVersion": "2024-11-05",
+  "name": "aistros-foundry",
+  "version": "1.0.0",
+  "description": "AiStros Foundry MCP Server - Interface for Microsoft Foundry local AI models",
+  "author": "hypo69",
+  "license": "CC BY-NC-SA 4.0",
+  "homepage": "https://aistros.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hypo69/aistros"
+  },
+  "server": {
+    "command": "python",
+    "args": ["src/server.py"],
+    "env": {
+      "FOUNDRY_BASE_URL": "http://localhost:51601/v1/",
+      "FOUNDRY_DEFAULT_MODEL": "deepseek-r1-distill-qwen-7b-generic-cpu:3",
+      "FOUNDRY_TEMPERATURE": "0.6",
+      "FOUNDRY_MAX_TOKENS": "2048",
+      "FOUNDRY_TIMEOUT": "30"
+    }
+  },
+  "capabilities": {
+    "tools": [
+      {
+        "name": "generate_text",
+        "description": "Generate text using Foundry local AI models"
+      },
+      {
+        "name": "generate_horoscope_foundry", 
+        "description": "Generate horoscope using Foundry models"
+      },
+      {
+        "name": "list_foundry_models",
+        "description": "List available Foundry models"
+      },
+      {
+        "name": "get_foundry_status",
+        "description": "Get Foundry service status"
+      }
+    ],
+    "resources": [
+      {
+        "uri": "foundry://models/list",
+        "description": "List of available Foundry models"
+      },
+      {
+        "uri": "foundry://config/current", 
+        "description": "Current Foundry configuration"
+      }
+    ]
+  }
+}

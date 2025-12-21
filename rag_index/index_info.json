@@ -1,0 +1,7 @@
+{
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "chunks_count": 532,
+  "dimension": 384,
+  "created_at": "c:\\Users\\user\\Documents\\repos\\public_repositories\\FastApiFoundry",
+  "version": "1.0.0"
+}

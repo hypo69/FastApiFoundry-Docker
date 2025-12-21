@@ -1,0 +1,2662 @@
+[
+  {
+    "source": "configuration.md",
+    "section": "⚙️ Настройка",
+    "text": "> **Предыдущие шаги**: [📦 Установка](installation.md) → [🚀 Запуск](running.md) → [📖 Использование](usage.md)"
+  },
+  {
+    "source": "configuration.md",
+    "section": "Создание конфигурации",
+    "text": "```bash\ncp .env.example .env\n```"
+  },
+  {
+    "source": "configuration.md",
+    "section": "Режим работы",
+    "text": "```env"
+  },
+  {
+    "source": "configuration.md",
+    "section": "Режим по умолчанию (dev/prod)",
+    "text": "DEFAULT_MODE=dev\n```"
+  },
+  {
+    "source": "configuration.md",
+    "section": "Foundry настройки",
+    "text": "```env\nFOUNDRY_BASE_URL=http://localhost:51601/v1/\nFOUNDRY_DEFAULT_MODEL=deepseek-r1-distill-qwen-7b-generic-cpu:3\nFOUNDRY_TEMPERATURE=0.6\nFOUNDRY_MAX_TOKENS=2048\n```"
+  },
+  {
+    "source": "configuration.md",
+    "section": "API настройки",
+    "text": "```env\nAPI_HOST=0.0.0.0\nAPI_PORT=8000\nAPI_WORKERS=1\nAPI_KEY=your-secret-key\n```"
+  },
+  {
+    "source": "configuration.md",
+    "section": "RAG система",
+    "text": "```env\nRAG_ENABLED=true\nRAG_INDEX_DIR=./rag_index\nRAG_MODEL=sentence-transformers/all-MiniLM-L6-v2\n```"
+  },
+  {
+    "source": "configuration.md",
+    "section": "CORS и безопасность",
+    "text": "```env\nCORS_ORIGINS=[\"*\"]\nLOG_LEVEL=INFO\nLOG_FILE=logs/fastapi-foundry.log\n```"
+  },
+  {
+    "source": "configuration.md",
+    "section": "Настройка для продакшн",
+    "text": "```env\nDEFAULT_MODE=prod\nAPI_KEY=strong-random-key-here\nCORS_ORIGINS=[\"https://yourdomain.com\"]\nLOG_LEVEL=WARNING\n```"
+  },
+  {
+    "source": "configuration.md",
+    "section": "Самоподписанные сертификаты (для разработки)",
+    "text": "Сертификаты автоматически создаются в `~/.ssh/`:\n- `~/.ssh/server.key` - приватный ключ\n- `~/.ssh/server.crt` - публичный сертификат"
+  },
+  {
+    "source": "configuration.md",
+    "section": "Запуск с HTTPS",
+    "text": "```bash"
+  },
+  {
+    "source": "configuration.md",
+    "section": "Использовать сертификаты по умолчанию",
+    "text": "python run.py --ssl"
+  },
+  {
+    "source": "configuration.md",
+    "section": "Указать свои сертификаты",
+    "text": "python run.py --ssl-keyfile server.key --ssl-certfile server.crt\n```"
+  },
+  {
+    "source": "configuration.md",
+    "section": "Production сертификаты",
+    "text": "Для production используйте сертификаты от авторитетного центра:\n- Let's Encrypt (бесплатно)\n- DigiCert\n- GlobalSign\n```bash\npython run.py --prod --ssl-keyfile production.key --ssl-certfile production.crt\n```\n---"
+  },
+  {
+    "source": "configuration.md",
+    "section": "✅ Конфигурация настроена! Следующие шаги:",
+    "text": "1. **[📊 Примеры](examples.md)** - Готовые примеры кода\n2. **[📝 Практические рецепты](howto.md)** - Настройка RAG, подключение моделей\n3. **[🌐 Туннели](tunnel_guide.md)** - Публичный доступ\n4. **[🚀 Развертывание](deployment.md)** - Production развертывание"
+  },
+  {
+    "source": "configuration.md",
+    "section": "🔗 Полезные ссылки:",
+    "text": "- **[🎯 Лончеры](launchers.md)** - Полное руководство по лончерам\n- **[🔧 Разработка](development.md)** - Для разработчиков\n- **[📊 Проект](project_info.md)** - Детальная информация"
+  },
+  {
+    "source": "configuration.md",
+    "section": "🔍 Проверка настроек:",
+    "text": "```bash"
+  },
+  {
+    "source": "configuration.md",
+    "section": "Проверка .env файла",
+    "text": "cat .env | grep -E \"^[A-Z]\""
+  },
+  {
+    "source": "configuration.md",
+    "section": "Тест конфигурации",
+    "text": "python -c \"from src.core.config import settings; print(f'API Port: {settings.api_port}')\""
+  },
+  {
+    "source": "configuration.md",
+    "section": "Проверка Foundry подключения",
+    "text": "curl http://localhost:51601/v1/models\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "🚀 FastAPI Foundry - Руководство по развертыванию",
+    "text": "**Полное руководство по установке и настройке FastAPI Foundry на сервере**"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Минимальные требования",
+    "text": "- **OS**: Linux (Ubuntu 20.04+), Windows 10+, macOS 10.15+\n- **Python**: 3.8+\n- **RAM**: 4GB (8GB+ рекомендуется для RAG)\n- **Диск**: 2GB свободного места\n- **CPU**: 2+ ядра"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Рекомендуемые требования",
+    "text": "- **OS**: Ubuntu 22.04 LTS\n- **Python**: 3.11+\n- **RAM**: 16GB+\n- **Диск**: 10GB+ SSD\n- **CPU**: 4+ ядра"
+  },
+  {
+    "source": "deployment.md",
+    "section": "1. Автоматическая установка",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Клонировать проект",
+    "text": "git clone <repository-url>\ncd FastApiFoundry"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Запустить автоматический установщик",
+    "text": "python install.py"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Запустить сервер",
+    "text": "python run.py --dev\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "2. Ручная установка",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "1. Создать виртуальное окружение",
+    "text": "python -m venv venv\nsource venv/bin/activate  # Linux/Mac"
+  },
+  {
+    "source": "deployment.md",
+    "section": "или",
+    "text": "venv\\Scripts\\activate     # Windows"
+  },
+  {
+    "source": "deployment.md",
+    "section": "2. Установить зависимости",
+    "text": "pip install -r requirements.txt"
+  },
+  {
+    "source": "deployment.md",
+    "section": "3. Настроить конфигурацию",
+    "text": "cp .env.example .env"
+  },
+  {
+    "source": "deployment.md",
+    "section": "4. Создать директории",
+    "text": "mkdir -p logs rag_index"
+  },
+  {
+    "source": "deployment.md",
+    "section": "5. Запустить сервер",
+    "text": "python run.py\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "1. Настройка .env файла",
+    "text": "```env"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Foundry настройки",
+    "text": "FOUNDRY_BASE_URL=http://localhost:5272/v1/\nFOUNDRY_DEFAULT_MODEL=deepseek-r1-distill-qwen-7b-generic-cpu:3\nFOUNDRY_TEMPERATURE=0.6\nFOUNDRY_MAX_TOKENS=2048\nFOUNDRY_TIMEOUT=300"
+  },
+  {
+    "source": "deployment.md",
+    "section": "API настройки",
+    "text": "API_HOST=0.0.0.0\nAPI_PORT=8000\nAPI_RELOAD=false\nAPI_WORKERS=4"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Безопасность",
+    "text": "API_KEY=your-super-secret-api-key-here\nCORS_ORIGINS=[\"https://yourdomain.com\", \"https://api.yourdomain.com\"]"
+  },
+  {
+    "source": "deployment.md",
+    "section": "RAG настройки",
+    "text": "RAG_ENABLED=true\nRAG_INDEX_DIR=/opt/fastapi-foundry/rag_index\nRAG_MODEL=sentence-transformers/all-MiniLM-L6-v2"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Логирование",
+    "text": "LOG_LEVEL=INFO\nLOG_FILE=/var/log/fastapi-foundry/app.log\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "2. Системный сервис (Linux)",
+    "text": "Создать файл `/etc/systemd/system/fastapi-foundry.service`:\n```ini\n[Unit]\nDescription=FastAPI Foundry Server\nAfter=network.target\n[Service]\nType=exec\nUser=www-data\nGroup=www-data\nWorkingDirectory=/opt/fastapi-foundry\nEnvironment=PATH=/opt/fastapi-foundry/venv/bin\nExecStart=/opt/fastapi-foundry/venv/bin/python run.py --prod\nRestart=always\nRestartSec=10"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Логирование",
+    "text": "StandardOutput=journal\nStandardError=journal\nSyslogIdentifier=fastapi-foundry"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Безопасность",
+    "text": "NoNewPrivileges=true\nPrivateTmp=true\nProtectSystem=strict\nReadWritePaths=/opt/fastapi-foundry/logs /opt/fastapi-foundry/rag_index\n[Install]\nWantedBy=multi-user.target\n```\nАктивировать сервис:\n```bash\nsudo systemctl daemon-reload\nsudo systemctl enable fastapi-foundry\nsudo systemctl start fastapi-foundry\nsudo systemctl status fastapi-foundry\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "1. Docker Compose (рекомендуется)",
+    "text": "```yaml"
+  },
+  {
+    "source": "deployment.md",
+    "section": "docker-compose.prod.yml",
+    "text": "version: '3.8'\nservices:\nfastapi-foundry:\nbuild: .\ncontainer_name: fastapi-foundry-prod\nrestart: unless-stopped\nports:\n- \"8000:8000\"\nenvironment:\n- API_HOST=0.0.0.0\n- API_PORT=8000\n- API_WORKERS=4\n- LOG_LEVEL=INFO\n- FOUNDRY_BASE_URL=http://foundry:5272/v1/\nvolumes:\n- ./logs:/app/logs\n- ./rag_index:/app/rag_index\n- ./prod.env:/app/.env\ndepends_on:\n- foundry\nnetworks:\n- foundry-network\nhealthcheck:\ntest: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8000/api/v1/health\"]\ninterval: 30s\ntimeout: 10s\nretrie"
+  },
+  {
+    "source": "deployment.md",
+    "section": "docker-compose.prod.yml",
+    "text": "/api/v1/health\"]\ninterval: 30s\ntimeout: 10s\nretries: 3\nfoundry:\nimage: foundryai/foundry:latest\ncontainer_name: foundry-prod\nrestart: unless-stopped\nports:\n- \"5272:5272\"\nvolumes:\n- foundry-models:/app/models\nnetworks:\n- foundry-network\nnginx:\nimage: nginx:alpine\ncontainer_name: nginx-proxy\nrestart: unless-stopped\nports:\n- \"80:80\"\n- \"443:443\"\nvolumes:\n- ./nginx/nginx.conf:/etc/nginx/nginx.conf\n- ./nginx/ssl:/etc/nginx/ssl\n- ."
+  },
+  {
+    "source": "deployment.md",
+    "section": "docker-compose.prod.yml",
+    "text": "/nginx/nginx.conf\n- ./nginx/ssl:/etc/nginx/ssl\n- ./nginx/logs:/var/log/nginx\ndepends_on:\n- fastapi-foundry\nnetworks:\n- foundry-network\nvolumes:\nfoundry-models:\nnetworks:\nfoundry-network:\ndriver: bridge\n```\nЗапуск:\n```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Продакшн развертывание",
+    "text": "docker-compose -f docker-compose.prod.yml up -d"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Мониторинг логов",
+    "text": "docker-compose -f docker-compose.prod.yml logs -f"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Обновление",
+    "text": "docker-compose -f docker-compose.prod.yml pull\ndocker-compose -f docker-compose.prod.yml up -d\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "2. Nginx конфигурация",
+    "text": "Создать файл `nginx/nginx.conf`:\n```nginx\nevents {\nworker_connections 1024;\n}\nhttp {\nupstream fastapi_foundry {\nserver fastapi-foundry:8000;\n}"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Rate limiting",
+    "text": "limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;\nserver {\nlisten 80;\nserver_name api.yourdomain.com;"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Redirect HTTP to HTTPS",
+    "text": "return 301 https://$server_name$request_uri;\n}\nserver {\nlisten 443 ssl http2;\nserver_name api.yourdomain.com;"
+  },
+  {
+    "source": "deployment.md",
+    "section": "SSL configuration",
+    "text": "ssl_certificate /etc/nginx/ssl/cert.pem;\nssl_certificate_key /etc/nginx/ssl/key.pem;\nssl_protocols TLSv1.2 TLSv1.3;\nssl_ciphers HIGH:!aNULL:!MD5;"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Security headers",
+    "text": "add_header X-Frame-Options DENY;\nadd_header X-Content-Type-Options nosniff;\nadd_header X-XSS-Protection \"1; mode=block\";"
+  },
+  {
+    "source": "deployment.md",
+    "section": "API proxy",
+    "text": "location /api/ {\nlimit_req zone=api burst=20 nodelay;\nproxy_pass http://fastapi_foundry;\nproxy_set_header Host $host;\nproxy_set_header X-Real-IP $remote_addr;\nproxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\nproxy_set_header X-Forwarded-Proto $scheme;"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Timeouts",
+    "text": "proxy_connect_timeout 60s;\nproxy_send_timeout 60s;\nproxy_read_timeout 300s;\n}"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Health check",
+    "text": "location /health {\nproxy_pass http://fastapi_foundry/api/v1/health;\n}"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Documentation",
+    "text": "location /docs {\nproxy_pass http://fastapi_foundry/docs;\n}\n}\n}\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "1. API ключи",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Генерация безопасного API ключа",
+    "text": "python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+  },
+  {
+    "source": "deployment.md",
+    "section": "Добавить в .env",
+    "text": "API_KEY=generated-secure-key-here\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "2. Firewall настройки",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Ubuntu/Debian",
+    "text": "sudo ufw allow 22/tcp    # SSH\nsudo ufw allow 80/tcp    # HTTP\nsudo ufw allow 443/tcp   # HTTPS\nsudo ufw deny 8000/tcp   # Блокировать прямой доступ к FastAPI\nsudo ufw deny 5272/tcp   # Блокировать прямой доступ к Foundry\nsudo ufw enable\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "3. SSL сертификаты",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Let's Encrypt с Certbot",
+    "text": "sudo apt install certbot\nsudo certbot certonly --standalone -d api.yourdomain.com"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Копировать сертификаты для Nginx",
+    "text": "sudo cp /etc/letsencrypt/live/api.yourdomain.com/fullchain.pem nginx/ssl/cert.pem\nsudo cp /etc/letsencrypt/live/api.yourdomain.com/privkey.pem nginx/ssl/key.pem\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "1. Логи",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Системные логи",
+    "text": "sudo journalctl -u fastapi-foundry -f"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Docker логи",
+    "text": "docker-compose logs -f fastapi-foundry"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Файловые логи",
+    "text": "tail -f /var/log/fastapi-foundry/app.log\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "2. Мониторинг здоровья",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "health_check.sh",
+    "text": "HEALTH_URL=\"http://localhost:8000/api/v1/health\"\nRESPONSE=$(curl -s -o /dev/null -w \"%{http_code}\" $HEALTH_URL)\nif [ $RESPONSE -eq 200 ]; then\necho \"✅ FastAPI Foundry is healthy\"\nexit 0\nelse\necho \"❌ FastAPI Foundry is unhealthy (HTTP $RESPONSE)\"\nexit 1\nfi\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "3. Автоматический перезапуск",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Добавить в crontab: crontab -e",
+    "text": "*/5 * * * * /opt/fastapi-foundry/health_check.sh || systemctl restart fastapi-foundry\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "1. Обновление кода",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Остановить сервис",
+    "text": "sudo systemctl stop fastapi-foundry"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Обновить код",
+    "text": "cd /opt/fastapi-foundry\ngit pull origin main"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Обновить зависимости",
+    "text": "source venv/bin/activate\npip install -r requirements.txt"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Запустить сервис",
+    "text": "sudo systemctl start fastapi-foundry\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "2. Обновление RAG индекса",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Переиндексировать документы",
+    "text": "python rag_indexer.py --docs-dir /path/to/docs --output-dir rag_index"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Перезагрузить RAG через API",
+    "text": "curl -X POST http://localhost:8000/api/v1/rag/reload \\\n-H \"Authorization: Bearer your-api-key\"\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "3. Резервное копирование",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "backup.sh",
+    "text": "BACKUP_DIR=\"/backup/fastapi-foundry\"\nDATE=$(date +%Y%m%d_%H%M%S)"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Создать директорию",
+    "text": "mkdir -p $BACKUP_DIR"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Бэкап конфигурации",
+    "text": "tar -czf $BACKUP_DIR/config_$DATE.tar.gz .env nginx/"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Бэкап RAG индекса",
+    "text": "tar -czf $BACKUP_DIR/rag_index_$DATE.tar.gz rag_index/"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Бэкап логов (последние 7 дней)",
+    "text": "find logs/ -name \"*.log\" -mtime -7 | tar -czf $BACKUP_DIR/logs_$DATE.tar.gz -T -\necho \"Backup completed: $BACKUP_DIR\"\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "1. Сервис не запускается",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Проверить статус",
+    "text": "sudo systemctl status fastapi-foundry"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Проверить логи",
+    "text": "sudo journalctl -u fastapi-foundry --no-pager"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Проверить конфигурацию",
+    "text": "python -c \"from config import settings; print(settings)\"\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "2. Foundry недоступен",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Проверить Foundry",
+    "text": "curl http://localhost:5272/v1/models"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Проверить Docker контейнер",
+    "text": "docker ps | grep foundry\ndocker logs foundry-container-name\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "3. RAG не работает",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Проверить индекс",
+    "text": "ls -la rag_index/"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Проверить зависимости",
+    "text": "pip list | grep -E \"(sentence-transformers|faiss)\""
+  },
+  {
+    "source": "deployment.md",
+    "section": "Переиндексировать",
+    "text": "python rag_indexer.py --docs-dir docs/ --output-dir rag_index/\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "4. Высокая нагрузка",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Мониторинг ресурсов",
+    "text": "htop\ndocker stats"
+  },
+  {
+    "source": "deployment.md",
+    "section": "limit_req zone=api burst=50 nodelay;",
+    "text": "```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "1. Горизонтальное масштабирование",
+    "text": "```yaml"
+  },
+  {
+    "source": "deployment.md",
+    "section": "docker-compose.scale.yml",
+    "text": "version: '3.8'\nservices:\nfastapi-foundry:\nbuild: .\ndeploy:\nreplicas: 4\nenvironment:\n- API_WORKERS=2"
+  },
+  {
+    "source": "deployment.md",
+    "section": "... остальная конфигурация",
+    "text": "nginx:"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Load balancer конфигурация",
+    "text": "volumes:\n- ./nginx/nginx-lb.conf:/etc/nginx/nginx.conf\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "2. Кэширование",
+    "text": "```python"
+  },
+  {
+    "source": "deployment.md",
+    "section": "requirements.txt",
+    "text": "redis>=4.5.0"
+  },
+  {
+    "source": "deployment.md",
+    "section": "В main.py",
+    "text": "import redis\nredis_client = redis.Redis(host='redis', port=6379, db=0)\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "3. Мониторинг производительности",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Добавить метрики в FastAPI",
+    "text": "pip install prometheus-fastapi-instrumentator\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Полезные команды",
+    "text": "```bash"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Проверка всех сервисов",
+    "text": "curl http://localhost:8000/api/v1/health\ncurl http://localhost:5272/v1/models"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Тестирование API",
+    "text": "curl -X POST http://localhost:8000/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\"prompt\": \"Test prompt\"}'"
+  },
+  {
+    "source": "deployment.md",
+    "section": "Просмотр метрик",
+    "text": "docker stats\nsystemctl status fastapi-foundry\n```"
+  },
+  {
+    "source": "deployment.md",
+    "section": "📚 Документация и ресурсы",
+    "text": "- **[📂 Индекс документации](DOCS_INDEX.md)** - Полный каталог всех документов\n- **[🚀 Быстрый старт](README.md)** - Основная документация\n- **[🏗️ Архитектура](howto.md)** - Подробное руководство по компонентам\n- **[🌐 Туннели](TUNNEL_GUIDE.md)** - Публичный доступ к API\n- **API Docs**: http://localhost:8000/docs - Автоматическая документация\n- **Health Check**: http://localhost:8000/api/v1/health - Мониторинг\n- **Конфигурация**: http://localhost:8000/api/v1/config - Текущие настройки"
+  },
+  {
+    "source": "deployment.md",
+    "section": "🐛 Поддержка и обратная связь",
+    "text": "- **GitHub Issues**: https://github.com/hypo69/aistros/issues\n- **Email**: support@aistros.com\n- **Website**: https://aistros.com\n---\n**FastAPI Foundry Deployment Guide v1.0.0**\n📚 [Полная документация](DOCS_INDEX.md) | 🚀 [Быстрый старт](README.md) | 🏗️ [Архитектура](howto.md)\n© 2025 AiStros Team | Часть экосистемы AiStros"
+  },
+  {
+    "source": "development.md",
+    "section": "📁 Архитектура проекта",
+    "text": "```\nFastApiFoundry/\n├── src/                    # Исходный код\n│   ├── api/               # FastAPI приложение\n│   │   ├── endpoints/     # API endpoints\n│   │   ├── middleware/    # Middleware\n│   │   ├── app.py        # Фабрика приложения\n│   │   ├── main.py       # Точка входа\n│   │   └── models.py     # Pydantic модели\n│   ├── core/             # Основная логика\n│   │   └── config.py     # Конфигурация\n│   ├── models/           # AI модели\n│   │   ├── foundry_client."
+  },
+  {
+    "source": "development.md",
+    "section": "📁 Архитектура проекта",
+    "text": "# AI модели\n│   │   ├── foundry_client.py\n│   │   └── model_manager.py\n│   ├── rag/              # RAG система\n│   │   └── rag_system.py\n│   └── utils/            # Утилиты\n├── docs/                 # Документация\n├── static/              # Веб-интерфейс\n├── run.py              # Скрипт запуска\n└── requirements.txt    # Зависимости\n```"
+  },
+  {
+    "source": "development.md",
+    "section": "1. Создайте новый роутер",
+    "text": "```python"
+  },
+  {
+    "source": "development.md",
+    "section": "src/api/endpoints/my_feature.py",
+    "text": "from fastapi import APIRouter\nrouter = APIRouter()\n@router.get(\"/my-endpoint\")\nasync def my_endpoint():\nreturn {\"message\": \"Hello\"}\n```"
+  },
+  {
+    "source": "development.md",
+    "section": "2. Подключите в app.py",
+    "text": "```python\nfrom .endpoints import my_feature\napp.include_router(my_feature.router, prefix=\"/api/v1\")\n```"
+  },
+  {
+    "source": "development.md",
+    "section": "Запуск тестов",
+    "text": "```bash\npytest tests/\n```"
+  },
+  {
+    "source": "development.md",
+    "section": "Создание тестов",
+    "text": "```python\ndef test_health_endpoint():\nresponse = client.get(\"/api/v1/health\")\nassert response.status_code == 200\n```"
+  },
+  {
+    "source": "development.md",
+    "section": "📦 Добавление зависимостей",
+    "text": "1. Добавьте в `requirements.txt`\n2. Обновите Docker образ\n3. Документируйте изменения"
+  },
+  {
+    "source": "examples.md",
+    "section": "📚 Примеры использования",
+    "text": "Практические примеры работы с FastAPI Foundry для различных сценариев использования."
+  },
+  {
+    "source": "examples.md",
+    "section": "Запуск сервера",
+    "text": "```bash"
+  },
+  {
+    "source": "examples.md",
+    "section": "Простой запуск",
+    "text": "python run.py"
+  },
+  {
+    "source": "examples.md",
+    "section": "С автопоиском портов и HTTPS",
+    "text": "python run.py --dev --ssl --auto-port"
+  },
+  {
+    "source": "examples.md",
+    "section": "Production режим",
+    "text": "python run.py --prod --ssl\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Первая проверка",
+    "text": "```bash"
+  },
+  {
+    "source": "examples.md",
+    "section": "Проверка здоровья системы",
+    "text": "curl http://localhost:8000/api/v1/health"
+  },
+  {
+    "source": "examples.md",
+    "section": "Список доступных моделей",
+    "text": "curl http://localhost:8000/api/v1/models\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Простая генерация",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompt\": \"Объясни что такое FastAPI\",\n\"temperature\": 0.7,\n\"max_tokens\": 500\n}'\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Генерация с RAG контекстом",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompt\": \"Как настроить FastAPI Foundry?\",\n\"use_rag\": true,\n\"temperature\": 0.6,\n\"max_tokens\": 1000\n}'\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Генерация с конкретной моделью",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompt\": \"Напиши код на Python для работы с API\",\n\"model\": \"deepseek-r1-distill-qwen-7b-generic-cpu:3\",\n\"temperature\": 0.3,\n\"max_tokens\": 800\n}'\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Обработка нескольких промптов",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/batch-generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompts\": [\n\"Что такое Python?\",\n\"Что такое Docker?\",\n\"Что такое Kubernetes?\"\n],\n\"temperature\": 0.6,\n\"max_tokens\": 200,\n\"use_rag\": true\n}'\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Генерация документации",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/batch-generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompts\": [\n\"Создай README для Python проекта\",\n\"Напиши docstring для функции обработки данных\",\n\"Создай пример использования API\"\n],\n\"temperature\": 0.4,\n\"max_tokens\": 500\n}'\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Поиск в документации",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/rag/search \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"query\": \"настройка конфигурации\",\n\"top_k\": 5\n}'\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Поиск технической информации",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/rag/search \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"query\": \"API endpoints FastAPI\",\n\"top_k\": 10\n}'\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Перезагрузка RAG индекса",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/rag/reload \\\n-H \"Authorization: Bearer your-api-key\"\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Подключение OpenAI модели",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/models/connect \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\n\"model_id\": \"gpt-3.5-turbo\",\n\"provider\": \"openai\",\n\"model_name\": \"GPT-3.5 Turbo\",\n\"endpoint_url\": \"https://api.openai.com/v1/\",\n\"api_key\": \"your-openai-key\"\n}'\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Подключение Ollama модели",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/models/connect \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\n\"model_id\": \"llama2:7b\",\n\"provider\": \"ollama\",\n\"model_name\": \"Llama 2 7B\",\n\"endpoint_url\": \"http://localhost:11434/api/\"\n}'\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Тестирование модели",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/models/gpt-3.5-turbo/test \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\n\"test_prompt\": \"Привет, как дела?\"\n}'\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Список подключенных моделей",
+    "text": "```bash\ncurl http://localhost:8000/api/v1/models/connected \\\n-H \"Authorization: Bearer your-api-key\"\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Запуск Foundry сервиса",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/foundry/service/start \\\n-H \"Authorization: Bearer your-api-key\"\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Проверка статуса Foundry",
+    "text": "```bash\ncurl http://localhost:8000/api/v1/foundry/status\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Список Foundry моделей",
+    "text": "```bash\ncurl http://localhost:8000/api/v1/foundry/models/list \\\n-H \"Authorization: Bearer your-api-key\"\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Скачивание модели",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/foundry/models/download \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\n\"model_name\": \"deepseek-r1-distill-qwen-7b-generic-cpu:3\"\n}'\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Базовый клиент",
+    "text": "```python\nimport requests\nimport json\nclass FastAPIFoundryClient:\ndef __init__(self, base_url=\"http://localhost:8000\", api_key=None):\nself.base_url = base_url\nself.headers = {\"Content-Type\": \"application/json\"}\nif api_key:\nself.headers[\"Authorization\"] = f\"Bearer {api_key}\"\ndef generate(self, prompt, **kwargs):\ndata = {\"prompt\": prompt, **kwargs}\nresponse = requests.post(\nf\"{self.base_url}/api/v1/generate\",\nheaders=self.headers,\njson=data\n)\nreturn response."
+  },
+  {
+    "source": "examples.md",
+    "section": "Базовый клиент",
+    "text": "headers=self.headers,\njson=data\n)\nreturn response.json()\ndef batch_generate(self, prompts, **kwargs):\ndata = {\"prompts\": prompts, **kwargs}\nresponse = requests.post(\nf\"{self.base_url}/api/v1/batch-generate\",\nheaders=self.headers,\njson=data\n)\nreturn response.json()\ndef rag_search(self, query, top_k=5):\ndata = {\"query\": query, \"top_k\": top_k}\nresponse = requests.post(\nf\"{self.base_url}/api/v1/rag/search\",\nheaders=self.headers,\njson=data\n)\nreturn response.json()"
+  },
+  {
+    "source": "examples.md",
+    "section": "Базовый клиент",
+    "text": "sponse.json()"
+  },
+  {
+    "source": "examples.md",
+    "section": "Использование",
+    "text": "client = FastAPIFoundryClient()"
+  },
+  {
+    "source": "examples.md",
+    "section": "Простая генерация",
+    "text": "result = client.generate(\"Объясни машинное обучение\")\nprint(result[\"content\"])"
+  },
+  {
+    "source": "examples.md",
+    "section": "Генерация с RAG",
+    "text": "result = client.generate(\n\"Как настроить FastAPI?\",\nuse_rag=True,\ntemperature=0.7\n)\nprint(result[\"content\"])"
+  },
+  {
+    "source": "examples.md",
+    "section": "Пакетная обработка",
+    "text": "results = client.batch_generate([\n\"Что такое REST API?\",\n\"Что такое GraphQL?\",\n\"Что такое WebSocket?\"\n])\nfor i, result in enumerate(results[\"results\"]):\nprint(f\"Ответ {i+1}: {result['content']}\")\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Асинхронный клиент",
+    "text": "```python\nimport aiohttp\nimport asyncio\nclass AsyncFoundryClient:\ndef __init__(self, base_url=\"http://localhost:8000\", api_key=None):\nself.base_url = base_url\nself.headers = {\"Content-Type\": \"application/json\"}\nif api_key:\nself.headers[\"Authorization\"] = f\"Bearer {api_key}\"\nasync def generate(self, prompt, **kwargs):\ndata = {\"prompt\": prompt, **kwargs}\nasync with aiohttp.ClientSession() as session:\nasync with session.post(\nf\"{self.base_url}/api/v1/generate\",\nheaders=self."
+  },
+  {
+    "source": "examples.md",
+    "section": "Асинхронный клиент",
+    "text": "f\"{self.base_url}/api/v1/generate\",\nheaders=self.headers,\njson=data\n) as response:\nreturn await response.json()\nasync def batch_generate_concurrent(self, prompts, **kwargs):\n\"\"\"Параллельная обработка промптов\"\"\"\ntasks = []\nfor prompt in prompts:\ntask = self.generate(prompt, **kwargs)\ntasks.append(task)\nresults = await asyncio.gather(*tasks)\nreturn results"
+  },
+  {
+    "source": "examples.md",
+    "section": "Использование",
+    "text": "async def main():\nclient = AsyncFoundryClient()"
+  },
+  {
+    "source": "examples.md",
+    "section": "Параллельная генерация",
+    "text": "prompts = [\n\"Объясни Python\",\n\"Объясни JavaScript\",\n\"Объясни Go\"\n]\nresults = await client.batch_generate_concurrent(prompts)\nfor i, result in enumerate(results):\nprint(f\"Язык {i+1}: {result['content'][:100]}...\")"
+  },
+  {
+    "source": "examples.md",
+    "section": "Запуск",
+    "text": "asyncio.run(main())\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Веб-приложение",
+    "text": "```html\n<!DOCTYPE html>\n<html>\n<head>\n<title>FastAPI Foundry Client</title>\n</head>\n<body>\n<div id=\"app\">\n<textarea id=\"prompt\" placeholder=\"Введите ваш промпт...\"></textarea>\n<button onclick=\"generate()\">Генерировать</button>\n<div id=\"result\"></div>\n</div>\n<script>\nconst API_BASE = 'http://localhost:8000/api/v1';\nasync function generate() {\nconst prompt = document.getElementById('prompt').value;\nconst resultDiv = document.getElementById('result');\nif (!"
+  },
+  {
+    "source": "examples.md",
+    "section": "Веб-приложение",
+    "text": "sultDiv = document.getElementById('result');\nif (!prompt) {\nalert('Введите промпт');\nreturn;\n}\nresultDiv.innerHTML = 'Генерация...';\ntry {\nconst response = await fetch(`${API_BASE}/generate`, {\nmethod: 'POST',\nheaders: {\n'Content-Type': 'application/json'\n},\nbody: JSON.stringify({\nprompt: prompt,\ntemperature: 0.7,\nmax_tokens: 500,\nuse_rag: true\n})\n});\nconst data = await response.json();\nif (data.success) {\nresultDiv.innerHTML = `\n<h3>Результат:</h3>\n<p>${data.content}</p>\n<small>Модель: ${data."
+  },
+  {
+    "source": "examples.md",
+    "section": "Веб-приложение",
+    "text": "/h3>\n<p>${data.content}</p>\n<small>Модель: ${data.model} | Токены: ${data.tokens_used}</small>\n`;\n} else {\nresultDiv.innerHTML = `<p style=\"color: red;\">Ошибка: ${data.error}</p>`;\n}\n} catch (error) {\nresultDiv.innerHTML = `<p style=\"color: red;\">Ошибка сети: ${error.message}</p>`;\n}\n}\n// RAG поиск\nasync function ragSearch(query) {\nconst response = await fetch(`${API_BASE}/rag/search`, {\nmethod: 'POST',\nheaders: {\n'Content-Type': 'application/json'\n},\nbody: JSON."
+  },
+  {
+    "source": "examples.md",
+    "section": "Веб-приложение",
+    "text": "'Content-Type': 'application/json'\n},\nbody: JSON.stringify({\nquery: query,\ntop_k: 5\n})\n});\nconst data = await response.json();\nreturn data.results;\n}\n</script>\n</body>\n</html>\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Node.js клиент",
+    "text": "```javascript\nconst axios = require('axios');\nclass FoundryClient {\nconstructor(baseURL = 'http://localhost:8000', apiKey = null) {\nthis.client = axios.create({\nbaseURL: baseURL + '/api/v1',\nheaders: {\n'Content-Type': 'application/json',\n...(apiKey && { 'Authorization': `Bearer ${apiKey}` })\n}\n});\n}\nasync generate(prompt, options = {}) {\ntry {\nconst response = await this.client.post('/generate', {\nprompt,\n...options\n});\nreturn response."
+  },
+  {
+    "source": "examples.md",
+    "section": "Node.js клиент",
+    "text": "nerate', {\nprompt,\n...options\n});\nreturn response.data;\n} catch (error) {\nthrow new Error(`Generation failed: ${error.response?.data?.error || error.message}`);\n}\n}\nasync batchGenerate(prompts, options = {}) {\ntry {\nconst response = await this.client.post('/batch-generate', {\nprompts,\n...options\n});\nreturn response.data;\n} catch (error) {\nthrow new Error(`Batch generation failed: ${error.response?.data?.error || error."
+  },
+  {
+    "source": "examples.md",
+    "section": "Node.js клиент",
+    "text": "on failed: ${error.response?.data?.error || error.message}`);\n}\n}\nasync ragSearch(query, topK = 5) {\ntry {\nconst response = await this.client.post('/rag/search', {\nquery,\ntop_k: topK\n});\nreturn response.data;\n} catch (error) {\nthrow new Error(`RAG search failed: ${error.response?.data?.error || error.message}`);\n}\n}\n}\n// Использование\nasync function example() {\nconst client = new FoundryClient();\ntry {\n// Простая генерация\nconst result = await client.generate('Объясни Node.js', {\ntemperature: 0."
+  },
+  {
+    "source": "examples.md",
+    "section": "Node.js клиент",
+    "text": "ient.generate('Объясни Node.js', {\ntemperature: 0.7,\nmax_tokens: 300\n});\nconsole.log('Ответ:', result.content);\n// RAG поиск\nconst searchResults = await client.ragSearch('FastAPI configuration');\nconsole.log('Найдено документов:', searchResults.results.length);\n} catch (error) {\nconsole.error('Ошибка:', error.message);\n}\n}\nexample();\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Настройка API ключа",
+    "text": "```bash"
+  },
+  {
+    "source": "examples.md",
+    "section": "В .env файле",
+    "text": "API_KEY=your-secret-api-key-here"
+  },
+  {
+    "source": "examples.md",
+    "section": "Использование в запросах",
+    "text": "curl -H \"Authorization: Bearer your-secret-api-key-here\" \\\nhttp://localhost:8000/api/v1/models/connected\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Python с аутентификацией",
+    "text": "```python\nimport requests"
+  },
+  {
+    "source": "examples.md",
+    "section": "Настройка клиента с API ключом",
+    "text": "headers = {\n\"Content-Type\": \"application/json\",\n\"Authorization\": \"Bearer your-secret-api-key-here\"\n}"
+  },
+  {
+    "source": "examples.md",
+    "section": "Защищенный запрос",
+    "text": "response = requests.post(\n\"http://localhost:8000/api/v1/generate\",\nheaders=headers,\njson={\n\"prompt\": \"Создай безопасный API endpoint\",\n\"temperature\": 0.5\n}\n)\nresult = response.json()\nprint(result[\"content\"])\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Создание чат-бота",
+    "text": "```python\nclass ChatBot:\ndef __init__(self, foundry_client):\nself.client = foundry_client\nself.conversation_history = []\ndef chat(self, user_message):"
+  },
+  {
+    "source": "examples.md",
+    "section": "Добавляем сообщение пользователя в историю",
+    "text": "self.conversation_history.append(f\"Пользователь: {user_message}\")"
+  },
+  {
+    "source": "examples.md",
+    "section": "Формируем контекст из истории",
+    "text": "context = \"\\n\".join(self.conversation_history[-10:])  # Последние 10 сообщений\nprompt = f\"\"\"Контекст разговора:\n{context}\nОтветь на последнее сообщение пользователя как дружелюбный помощник.\"\"\"\nresult = self.client.generate(\nprompt,\ntemperature=0.7,\nmax_tokens=300,\nuse_rag=True\n)\nif result[\"success\"]:\nbot_response = result[\"content\"]\nself.conversation_history.append(f\"Бот: {bot_response}\")\nreturn bot_response\nelse:\nreturn \"Извините, произошла ошибка.\""
+  },
+  {
+    "source": "examples.md",
+    "section": "Использование",
+    "text": "client = FastAPIFoundryClient()\nbot = ChatBot(client)\nprint(\"Чат-бот запущен! Введите 'выход' для завершения.\")\nwhile True:\nuser_input = input(\"Вы: \")\nif user_input.lower() == 'выход':\nbreak\nresponse = bot.chat(user_input)\nprint(f\"Бот: {response}\")\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Анализ документов",
+    "text": "```python\ndef analyze_document(client, document_text, analysis_type=\"summary\"):\n\"\"\"Анализ документа с помощью AI\"\"\"\nanalysis_prompts = {\n\"summary\": \"Создай краткое резюме следующего документа:\",\n\"keywords\": \"Извлеки ключевые слова и фразы из документа:\",\n\"sentiment\": \"Определи тональность и эмоциональную окраску документа:\",\n\"questions\": \"Создай список вопросов, на которые отвечает этот документ:\"\n}\nprompt = f\"{analysis_prompts."
+  },
+  {
+    "source": "examples.md",
+    "section": "Анализ документов",
+    "text": "ет этот документ:\"\n}\nprompt = f\"{analysis_prompts.get(analysis_type, analysis_prompts['summary'])}\\n\\n{document_text}\"\nresult = client.generate(\nprompt,\ntemperature=0.3,\nmax_tokens=500\n)\nreturn result[\"content\"] if result[\"success\"] else None"
+  },
+  {
+    "source": "examples.md",
+    "section": "Использование",
+    "text": "document = \"\"\"\nFastAPI Foundry - это REST API сервер для работы с локальными AI моделями.\nОн поддерживает генерацию текста, RAG систему и управление моделями.\nСервер написан на Python с использованием FastAPI фреймворка.\n\"\"\"\nclient = FastAPIFoundryClient()"
+  },
+  {
+    "source": "examples.md",
+    "section": "Различные виды анализа",
+    "text": "summary = analyze_document(client, document, \"summary\")\nkeywords = analyze_document(client, document, \"keywords\")\nsentiment = analyze_document(client, document, \"sentiment\")\nprint(\"Резюме:\", summary)\nprint(\"Ключевые слова:\", keywords)\nprint(\"Тональность:\", sentiment)\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Генерация кода",
+    "text": "```python\ndef generate_code(client, description, language=\"python\"):\n\"\"\"Генерация кода по описанию\"\"\"\nprompt = f\"\"\"Создай {language} код для следующей задачи:\n{description}\nТребования:\n- Код должен быть чистым и читаемым\n- Добавь комментарии\n- Включи обработку ошибок\n- Добавь пример использования\nКод:\"\"\"\nresult = client.generate(\nprompt,\ntemperature=0.2,  # Низкая температура для более точного кода\nmax_tokens=1000\n)\nreturn result[\"content\"] if result[\"success\"] else None"
+  },
+  {
+    "source": "examples.md",
+    "section": "Использование",
+    "text": "client = FastAPIFoundryClient()"
+  },
+  {
+    "source": "examples.md",
+    "section": "Генерация различного кода",
+    "text": "api_code = generate_code(\nclient,\n\"REST API endpoint для загрузки файлов с валидацией\",\n\"python\"\n)\njs_code = generate_code(\nclient,\n\"Функция для асинхронной загрузки данных с сервера\",\n\"javascript\"\n)\nprint(\"Python код:\")\nprint(api_code)\nprint(\"\\nJavaScript код:\")\nprint(js_code)\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Запуск с ngrok",
+    "text": "```bash"
+  },
+  {
+    "source": "examples.md",
+    "section": "Простой запуск",
+    "text": "python start_with_tunnel.py"
+  },
+  {
+    "source": "examples.md",
+    "section": "С кастомным поддоменом",
+    "text": "python start_with_tunnel.py --tunnel ngrok --subdomain myapi"
+  },
+  {
+    "source": "examples.md",
+    "section": "На кастомном порту",
+    "text": "python start_with_tunnel.py --port 8080\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Запуск с Cloudflare",
+    "text": "```bash"
+  },
+  {
+    "source": "examples.md",
+    "section": "Cloudflare Tunnel",
+    "text": "python start_with_tunnel.py --tunnel cloudflared --port 8000\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Запуск с LocalTunnel",
+    "text": "```bash"
+  },
+  {
+    "source": "examples.md",
+    "section": "LocalTunnel",
+    "text": "python start_with_tunnel.py --tunnel localtunnel --port 8000"
+  },
+  {
+    "source": "examples.md",
+    "section": "С поддоменом",
+    "text": "python start_with_tunnel.py --tunnel localtunnel --subdomain myapp\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Только туннель (если FastAPI уже запущен)",
+    "text": "```bash"
+  },
+  {
+    "source": "examples.md",
+    "section": "Запустить FastAPI отдельно",
+    "text": "python run.py --dev &"
+  },
+  {
+    "source": "examples.md",
+    "section": "Затем запустить только туннель",
+    "text": "python start_with_tunnel.py --tunnel-only --port 8000\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Установка туннельных сервисов",
+    "text": "```bash"
+  },
+  {
+    "source": "examples.md",
+    "section": "ngrok",
+    "text": "choco install ngrok"
+  },
+  {
+    "source": "examples.md",
+    "section": "Cloudflare",
+    "text": "winget install Cloudflare.cloudflared"
+  },
+  {
+    "source": "examples.md",
+    "section": "LocalTunnel",
+    "text": "npm install -g localtunnel"
+  },
+  {
+    "source": "examples.md",
+    "section": "Ничего устанавливать не нужно",
+    "text": "```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Проверка состояния системы",
+    "text": "```bash"
+  },
+  {
+    "source": "examples.md",
+    "section": "Полная диагностика",
+    "text": "curl -s http://localhost:8000/api/v1/health | jq ."
+  },
+  {
+    "source": "examples.md",
+    "section": "Конфигурация системы",
+    "text": "curl -s http://localhost:8000/api/v1/config | jq ."
+  },
+  {
+    "source": "examples.md",
+    "section": "Статус Foundry",
+    "text": "curl -s http://localhost:8000/api/v1/foundry/status | jq .\n```"
+  },
+  {
+    "source": "examples.md",
+    "section": "Логирование запросов",
+    "text": "```python\nimport logging\nimport time\nclass LoggingFoundryClient(FastAPIFoundryClient):\ndef __init__(self, *args, **kwargs):\nsuper().__init__(*args, **kwargs)\nself.logger = logging.getLogger(__name__)\ndef generate(self, prompt, **kwargs):\nstart_time = time.time()\nself.logger.info(f\"Generating response for prompt: {prompt[:50]}...\")\ntry:\nresult = super().generate(prompt, **kwargs)\nduration = time.time() - start_time\nif result.get(\"success\"):\nself.logger.info(f\"Generation successful in {duration:."
+  },
+  {
+    "source": "examples.md",
+    "section": "Логирование запросов",
+    "text": "logger.info(f\"Generation successful in {duration:.2f}s, tokens: {result.get('tokens_used', 0)}\")\nelse:\nself.logger.error(f\"Generation failed: {result.get('error')}\")\nreturn result\nexcept Exception as e:\nself.logger.error(f\"Generation error: {e}\")\nraise"
+  },
+  {
+    "source": "examples.md",
+    "section": "Настройка логирования",
+    "text": "logging.basicConfig(\nlevel=logging.INFO,\nformat='%(asctime)s - %(name)s - %(levelname)s - %(message)s'\n)"
+  },
+  {
+    "source": "examples.md",
+    "section": "Использование с логированием",
+    "text": "client = LoggingFoundryClient()\nresult = client.generate(\"Объясни логирование в Python\")\n```\nЭти примеры покрывают основные сценарии использования FastAPI Foundry от простых запросов до сложных интеграций."
+  },
+  {
+    "source": "howto.md",
+    "section": "Создание индекса из документации",
+    "text": "```bash"
+  },
+  {
+    "source": "howto.md",
+    "section": "Создать RAG индекс из папки с документами",
+    "text": "python -c \"\nfrom src.rag.rag_system import rag_system\nimport asyncio\nasyncio.run(rag_system.create_index_from_directory('../docs'))\n\"\n```"
+  },
+  {
+    "source": "howto.md",
+    "section": "Добавление новых документов",
+    "text": "```python\nfrom src.rag.rag_system import rag_system"
+  },
+  {
+    "source": "howto.md",
+    "section": "Добавить документ в индекс",
+    "text": "await rag_system.add_document(\ntext=\"Содержимое документа\",\nsource=\"manual.md\",\nsection=\"Раздел 1\"\n)\n```"
+  },
+  {
+    "source": "howto.md",
+    "section": "Foundry модель",
+    "text": "```python\nmodel_data = {\n\"model_id\": \"deepseek-r1-distill-qwen-7b-generic-cpu:3\",\n\"provider\": \"foundry\",\n\"model_name\": \"DeepSeek R1 Distill\",\n\"endpoint_url\": \"http://localhost:51601/v1/\"\n}\n```"
+  },
+  {
+    "source": "howto.md",
+    "section": "OpenAI модель",
+    "text": "```python\nmodel_data = {\n\"model_id\": \"gpt-3.5-turbo\",\n\"provider\": \"openai\",\n\"model_name\": \"GPT-3.5 Turbo\",\n\"endpoint_url\": \"https://api.openai.com/v1/\",\n\"api_key\": \"your-openai-key\"\n}\n```"
+  },
+  {
+    "source": "howto.md",
+    "section": "Ollama модель",
+    "text": "```python\nmodel_data = {\n\"model_id\": \"llama2:7b\",\n\"provider\": \"ollama\",\n\"model_name\": \"Llama 2 7B\",\n\"endpoint_url\": \"http://localhost:11434/api/\"\n}\n```"
+  },
+  {
+    "source": "howto.md",
+    "section": "Автозапуск с системой (Windows)",
+    "text": "```batch"
+  },
+  {
+    "source": "howto.md",
+    "section": "Создать bat файл для автозапуска",
+    "text": "@echo off\ncd /d \"C:\\path\\to\\FastApiFoundry\"\ncall venv\\Scripts\\activate\npython run.py --prod\n```"
+  },
+  {
+    "source": "howto.md",
+    "section": "Systemd сервис (Linux)",
+    "text": "```ini\n[Unit]\nDescription=FastAPI Foundry\nAfter=network.target\n[Service]\nType=simple\nUser=www-data\nWorkingDirectory=/opt/fastapi-foundry\nExecStart=/opt/fastapi-foundry/venv/bin/python run.py --prod\nRestart=always\n[Install]\nWantedBy=multi-user.target\n```"
+  },
+  {
+    "source": "howto.md",
+    "section": "Проверка здоровья",
+    "text": "```bash"
+  },
+  {
+    "source": "howto.md",
+    "section": "Простая проверка",
+    "text": "curl http://localhost:8000/api/v1/health"
+  },
+  {
+    "source": "howto.md",
+    "section": "Детальная проверка с jq",
+    "text": "curl -s http://localhost:8000/api/v1/health | jq .\n```"
+  },
+  {
+    "source": "howto.md",
+    "section": "Логирование",
+    "text": "```python"
+  },
+  {
+    "source": "howto.md",
+    "section": "Настройка уровня логирования",
+    "text": "import logging\nlogging.getLogger(\"fastapi-foundry\").setLevel(logging.DEBUG)\n```"
+  },
+  {
+    "source": "howto.md",
+    "section": "Оптимизация для продакшн",
+    "text": "```env"
+  },
+  {
+    "source": "howto.md",
+    "section": "Увеличить количество workers",
+    "text": "API_WORKERS=4"
+  },
+  {
+    "source": "howto.md",
+    "section": "Отключить debug режим",
+    "text": "DEFAULT_MODE=prod\nLOG_LEVEL=WARNING"
+  },
+  {
+    "source": "howto.md",
+    "section": "Настроить таймауты",
+    "text": "FOUNDRY_TIMEOUT=60\n```"
+  },
+  {
+    "source": "howto.md",
+    "section": "Кэширование RAG результатов",
+    "text": "```python"
+  },
+  {
+    "source": "howto.md",
+    "section": "Включить кэширование в RAG системе",
+    "text": "RAG_CACHE_ENABLED=true\nRAG_CACHE_SIZE=1000\n```"
+  },
+  {
+    "source": "installation.md",
+    "section": "Системные требования",
+    "text": "- **Python**: 3.8+\n- **RAM**: 4GB (минимум), 8GB (рекомендуется)\n- **Диск**: 10GB свободного места\n- **ОС**: Windows 10+, Linux, macOS\n- **Foundry CLI**: Обязательно для работы с AI моделями"
+  },
+  {
+    "source": "installation.md",
+    "section": "Способ 1: Через установочные скрипты",
+    "text": "```bash"
+  },
+  {
+    "source": "installation.md",
+    "section": "Клонировать репозиторий",
+    "text": "git clone <repository-url>\ncd FastApiFoundry"
+  },
+  {
+    "source": "installation.md",
+    "section": "Windows - запустить установщик",
+    "text": "install.bat"
+  },
+  {
+    "source": "installation.md",
+    "section": "или",
+    "text": ".\\install.ps1"
+  },
+  {
+    "source": "installation.md",
+    "section": "Linux/macOS - Python установщик",
+    "text": "python install.py\n```\n**Что происходит автоматически:**\n1. ✅ Проверяется Python 3.8+\n2. ✅ Создаётся виртуальное окружение (venv)\n3. ✅ Обновляется pip\n4. ✅ Устанавливаются все зависимости из requirements.txt\n5. ✅ Проверяется Foundry CLI (опционально)\n6. ✅ Создаются необходимые директории (logs, rag_index)\n7. ✅ Создаётся .env файл из .env.example\n8. ✅ Тестируется установка (FastAPI, Uvicorn)\n9. ✅ Показываются следующие шаги"
+  },
+  {
+    "source": "installation.md",
+    "section": "Способ 2: Через лончеры (автоустановка при первом запуске)",
+    "text": "```bash"
+  },
+  {
+    "source": "installation.md",
+    "section": "Windows - лончеры автоматически запускают install.ps1 если venv не существует",
+    "text": ".\\start-dev.ps1"
+  },
+  {
+    "source": "installation.md",
+    "section": "или",
+    "text": "start.bat"
+  },
+  {
+    "source": "installation.md",
+    "section": "Linux/macOS - основной скрипт не делает автоустановку",
+    "text": "python install.py  # сначала установка\npython run.py --dev --ssl --auto-port  # потом запуск\n```"
+  },
+  {
+    "source": "installation.md",
+    "section": "1. Клонирование репозитория",
+    "text": "```bash\ngit clone <repository-url>\ncd FastApiFoundry\n```"
+  },
+  {
+    "source": "installation.md",
+    "section": "2. Установка Foundry CLI",
+    "text": "```bash"
+  },
+  {
+    "source": "installation.md",
+    "section": "Windows (через winget)",
+    "text": "winget install Microsoft.Foundry"
+  },
+  {
+    "source": "installation.md",
+    "section": "Проверка установки",
+    "text": "foundry --version\n```"
+  },
+  {
+    "source": "installation.md",
+    "section": "3. Создание виртуального окружения",
+    "text": "```bash"
+  },
+  {
+    "source": "installation.md",
+    "section": "Windows",
+    "text": "python -m venv venv\nvenv\\Scripts\\activate"
+  },
+  {
+    "source": "installation.md",
+    "section": "Linux/macOS",
+    "text": "python -m venv venv\nsource venv/bin/activate\n```"
+  },
+  {
+    "source": "installation.md",
+    "section": "4. Установка зависимостей",
+    "text": "```bash\npip install -r requirements.txt\n```"
+  },
+  {
+    "source": "installation.md",
+    "section": "5. Настройка конфигурации",
+    "text": "```bash"
+  },
+  {
+    "source": "installation.md",
+    "section": "Копировать пример конфигурации",
+    "text": "cp .env.example .env"
+  },
+  {
+    "source": "installation.md",
+    "section": "nano .env     # Linux/macOS",
+    "text": "```"
+  },
+  {
+    "source": "installation.md",
+    "section": "6. Проверка установки",
+    "text": "```bash"
+  },
+  {
+    "source": "installation.md",
+    "section": "Проверка Python зависимостей",
+    "text": "python -c \"import fastapi; print('FastAPI installed')\"\npython -c \"import uvicorn; print('Uvicorn installed')\""
+  },
+  {
+    "source": "installation.md",
+    "section": "Проверка Foundry",
+    "text": "foundry --version\nfoundry service status"
+  },
+  {
+    "source": "installation.md",
+    "section": "Тестовый запуск",
+    "text": "python run.py --help\n```"
+  },
+  {
+    "source": "installation.md",
+    "section": "Для новичков:",
+    "text": "```bash"
+  },
+  {
+    "source": "installation.md",
+    "section": "Используйте автоматическую установку",
+    "text": "install.bat  # Windows (самый простой)\npython install.py  # Linux/macOS\n```"
+  },
+  {
+    "source": "installation.md",
+    "section": "Для опытных пользователей:",
+    "text": "```bash"
+  },
+  {
+    "source": "installation.md",
+    "section": "Ручная установка для полного контроля",
+    "text": "python -m venv venv\nvenv\\Scripts\\activate  # Windows\nsource venv/bin/activate  # Linux/macOS\npip install -r requirements.txt\n```"
+  },
+  {
+    "source": "installation.md",
+    "section": "Для разработчиков:",
+    "text": "```bash"
+  },
+  {
+    "source": "installation.md",
+    "section": "Установка с параметрами",
+    "text": ".\\install.ps1 -SkipFoundry  # пропустить Foundry\n.\\install.ps1 -Force  # переустановка\n```"
+  },
+  {
+    "source": "installation.md",
+    "section": "После установки:",
+    "text": "```bash"
+  },
+  {
+    "source": "installation.md",
+    "section": "Первый запуск",
+    "text": ".\\start-dev.ps1  # Windows\npython run.py --dev --ssl --auto-port  # Linux/macOS"
+  },
+  {
+    "source": "installation.md",
+    "section": "Проверка работы",
+    "text": "curl https://localhost:8443/api/v1/health\n```\n---"
+  },
+  {
+    "source": "installation.md",
+    "section": "✅ Установка завершена! Следующие шаги:",
+    "text": "1. **[🚀 Запуск](running.md)** - Основные способы запуска FastAPI Foundry\n2. **[🎯 Лончеры](launchers.md)** - Детальное руководство по всем лончерам\n3. **[⚙️ Настройка](configuration.md)** - Конфигурация через .env файл\n4. **[📖 Использование](usage.md)** - Веб-интерфейс и REST API"
+  },
+  {
+    "source": "installation.md",
+    "section": "🔗 Полезные ссылки:",
+    "text": "- **[Примеры](examples.md)** - Готовые примеры кода\n- **[Туннели](tunnel_guide.md)** - Публичный доступ через ngrok/Cloudflare\n- **[Разработка](development.md)** - Для разработчиков\n- **[Развертывание](deployment.md)** - Production развертывание"
+  },
+  {
+    "source": "launchers.md",
+    "section": "🚀 Лончеры FastAPI Foundry",
+    "text": "> **Предыдущие шаги**: [📦 Установка](installation.md) → [🚀 Запуск](running.md)\nПолное руководство по всем способам запуска FastAPI Foundry."
+  },
+  {
+    "source": "launchers.md",
+    "section": "📋 Сравнение лончеров",
+    "text": "| Лончер | Платформа | venv | SSL | MCP | Auto-port | Простота |\n|--------|-----------|------|-----|-----|-----------|----------|\n| `run.py` | Все | ❌ | ✅ | ✅ | ✅ | ⭐⭐⭐ |\n| `start-dev.ps1` | Windows | ✅ | ✅ | ✅ | ✅ | ⭐⭐⭐⭐⭐ |\n| `start-prod.ps1` | Windows | ✅ | ✅ | ✅ | ✅ | ⭐⭐⭐⭐⭐ |\n| `start-simple.ps1` | Windows | ✅ | ⚙️ | ⚙️ | ⚙️ | ⭐⭐⭐⭐ |\n| `start.bat` | Windows | ✅ | ⚙️ | ⚙️ | ⚙️ | ⭐⭐⭐ |\n| `start_with_tunnel."
+  },
+  {
+    "source": "launchers.md",
+    "section": "📋 Сравнение лончеров",
+    "text": "s | ✅ | ⚙️ | ⚙️ | ⚙️ | ⭐⭐⭐ |\n| `start_with_tunnel.py` | Все | ❌ | ✅ | ✅ | ✅ | ⭐⭐ |\n**Легенда**: ✅ - Включено по умолчанию, ⚙️ - Настраивается, ❌ - Не поддерживается"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Для разработки (Windows):",
+    "text": "```powershell\n.\\start-dev.ps1  # Самый простой способ\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Для production (Windows):",
+    "text": "```powershell\n.\\start-prod.ps1  # Оптимизированные настройки\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Для кроссплатформенности:",
+    "text": "```bash\npython run.py --dev --ssl --mcp --auto-port --browser\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Для публичного доступа:",
+    "text": "```bash\npython start_with_tunnel.py --ssl --mcp --auto-port\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Для минимального запуска:",
+    "text": "```bash\npython run.py  # Только FastAPI, без дополнительных сервисов\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "1. run.py - Основной лончер",
+    "text": "**Возможности:**\n- Автоматический запуск Foundry service\n- Поддержка HTTPS с SSL сертификатами\n- Автопоиск свободных портов\n- Режимы dev/prod\n- Интеграция с MCP Console\n- Автооткрытие браузера\n- Полное логирование\n**Примеры:**\n```bash"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Простой запуск",
+    "text": "python run.py"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Development с полным набором функций",
+    "text": "python run.py --dev --ssl --mcp --auto-port --browser"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Production режим",
+    "text": "python run.py --prod --ssl --mcp --auto-port"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Кастомные настройки",
+    "text": "python run.py --host 0.0.0.0 --port 9000 --workers 8\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "start-dev.ps1",
+    "text": "- Автоактивация venv\n- Режим разработки с полным набором функций\n- HTTPS + MCP + автопорты + браузер"
+  },
+  {
+    "source": "launchers.md",
+    "section": "start-prod.ps1",
+    "text": "- Автоактивация venv\n- Production режим\n- HTTPS + MCP + автопорты"
+  },
+  {
+    "source": "launchers.md",
+    "section": "start-https.ps1",
+    "text": "- Гибкие параметры SSL\n- Поддержка кастомных сертификатов\n- Дополнительные опции"
+  },
+  {
+    "source": "launchers.md",
+    "section": "start-simple.ps1",
+    "text": "- Минимальная обертка над run.py\n- Автоактивация venv\n- Передача всех параметров"
+  },
+  {
+    "source": "launchers.md",
+    "section": "start.bat",
+    "text": "- Универсальный лончер\n- Автопроверка и установка venv\n- Использует PowerShell внутри"
+  },
+  {
+    "source": "launchers.md",
+    "section": "start-prod.bat",
+    "text": "- Production режим\n- Автоактивация venv\n- Фиксированные настройки"
+  },
+  {
+    "source": "launchers.md",
+    "section": "start-simple.bat",
+    "text": "- Упрощенная версия\n- Минимальные проверки"
+  },
+  {
+    "source": "launchers.md",
+    "section": "4. start_with_tunnel.py - Туннельный лончер",
+    "text": "**Возможности:**\n- Поддержка ngrok, Cloudflare, LocalTunnel, Serveo\n- Автоматический запуск FastAPI + туннель\n- Кастомные поддомены\n- Интеграция с режимами dev/prod\n- Поддержка SSL и MCP\n**Примеры:**\n```bash"
+  },
+  {
+    "source": "launchers.md",
+    "section": "С ngrok",
+    "text": "python start_with_tunnel.py --ssl --mcp --auto-port"
+  },
+  {
+    "source": "launchers.md",
+    "section": "С Cloudflare",
+    "text": "python start_with_tunnel.py --tunnel cloudflared --mode prod"
+  },
+  {
+    "source": "launchers.md",
+    "section": "С кастомным поддоменом",
+    "text": "python start_with_tunnel.py --tunnel ngrok --subdomain myapp"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Только туннель (FastAPI уже запущен)",
+    "text": "python start_with_tunnel.py --tunnel-only --port 8443\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Основные параметры",
+    "text": "| Параметр | Описание | По умолчанию |\n|----------|----------|--------------|\n| `--dev` | Режим разработки | Да |\n| `--prod` | Production режим | Нет |\n| `--ssl` | Включить HTTPS | Нет |\n| `--mcp` | Запустить MCP Console | Нет |\n| `--auto-port` | Автопоиск портов | Нет |\n| `--browser` | Открыть браузер | Нет |\n| `--host` | Хост для привязки | 0.0.0.0 |\n| `--port` | Порт FastAPI | 8443 |\n| `--mcp-port` | Порт MCP Console | 8765 |"
+  },
+  {
+    "source": "launchers.md",
+    "section": "SSL параметры",
+    "text": "| Параметр | Описание |\n|----------|----------|\n| `--ssl` | Использовать сертификаты из ~/.ssh/ |\n| `--ssl-keyfile` | Путь к приватному ключу |\n| `--ssl-certfile` | Путь к сертификату |"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Режимы работы",
+    "text": "| Режим | Reload | Workers | Log Level | Описание |\n|-------|--------|---------|-----------|----------|\n| `dev` | ✅ | 1 | debug | Разработка |\n| `prod` | ❌ | 4 | info | Production |"
+  },
+  {
+    "source": "launchers.md",
+    "section": "🌐 Адреса по умолчанию",
+    "text": "После запуска доступны следующие адреса:\n- **FastAPI**: https://localhost:8443\n- **MCP Console**: https://localhost:8765\n- **API Docs**: https://localhost:8443/docs\n- **Web UI**: https://localhost:8443/\nПри использовании `--auto-port` порты определяются автоматически."
+  },
+  {
+    "source": "launchers.md",
+    "section": "Проблемы с venv",
+    "text": "```bash"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Если venv не активируется автоматически",
+    "text": ".\\venv\\Scripts\\Activate.ps1\npython run.py\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Проблемы с SSL",
+    "text": "```bash"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Генерация самоподписанных сертификатов",
+    "text": "openssl req -x509 -newkey rsa:2048 -keyout ~/.ssh/server.key -out ~/.ssh/server.crt -days 365 -nodes\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Проблемы с портами",
+    "text": "```bash"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Использовать автопоиск портов",
+    "text": "python run.py --auto-port"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Или указать конкретные порты",
+    "text": "python run.py --port 9000 --mcp-port 9001\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Проблемы с Foundry",
+    "text": "```bash"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Проверить статус Foundry",
+    "text": "foundry service status"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Перезапустить Foundry",
+    "text": "foundry service restart\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Быстрый старт для разработки",
+    "text": "```powershell"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Windows",
+    "text": ".\\start-dev.ps1"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Кроссплатформенно",
+    "text": "python run.py --dev --ssl --mcp --auto-port --browser\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Production запуск",
+    "text": "```powershell"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Windows",
+    "text": ".\\start-prod.ps1"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Кроссплатформенно",
+    "text": "python run.py --prod --ssl --mcp --auto-port\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Публичный доступ через туннель",
+    "text": "```bash"
+  },
+  {
+    "source": "launchers.md",
+    "section": "С ngrok",
+    "text": "python start_with_tunnel.py --ssl --mcp --auto-port"
+  },
+  {
+    "source": "launchers.md",
+    "section": "С Cloudflare",
+    "text": "python start_with_tunnel.py --tunnel cloudflared --ssl --mcp\n```"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Минимальный запуск",
+    "text": "```bash"
+  },
+  {
+    "source": "launchers.md",
+    "section": "Только FastAPI без дополнительных сервисов",
+    "text": "python run.py --port 8000"
+  },
+  {
+    "source": "launchers.md",
+    "section": "С HTTPS но без MCP",
+    "text": "python run.py --ssl --port 8443\n```\n---\n---"
+  },
+  {
+    "source": "launchers.md",
+    "section": "✅ Лончеры настроены! Следующие шаги:",
+    "text": "1. **[📖 Использование](usage.md)** - Веб-интерфейс и REST API\n2. **[⚙️ Настройка](configuration.md)** - Конфигурация через .env файл\n3. **[📊 Примеры](examples.md)** - Готовые примеры кода\n4. **[🌐 Туннели](tunnel_guide.md)** - Публичный доступ"
+  },
+  {
+    "source": "launchers.md",
+    "section": "🔗 Для разработчиков:",
+    "text": "- **[🔧 Разработка](development.md)** - Архитектура и добавление функций\n- **[🚀 Развертывание](deployment.md)** - Docker, Nginx, systemd\n- **[📊 Проект](project_info.md)** - Детальная информация\n---\n**FastAPI Foundry Launchers** - часть экосистемы AiStros\n© 2025 AiStros Team"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "🔌 MCP Интеграция",
+    "text": "FastAPI Foundry включает встроенный MCP (Model Context Protocol) сервер для интеграции с Claude Desktop и другими MCP клиентами."
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "🚀 Что такое MCP?",
+    "text": "MCP (Model Context Protocol) - это протокол для подключения AI ассистентов к внешним инструментам и данным. Позволяет Claude Desktop и другим AI клиентам использовать ваши локальные модели Foundry."
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "📦 Встроенный MCP сервер",
+    "text": "FastAPI Foundry включает готовый MCP сервер: `mcp-servers/aistros-foundry/`"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "🛠️ Возможности:",
+    "text": "- **generate_text** - генерация текста через Foundry модели\n- **generate_horoscope_foundry** - создание гороскопов\n- **list_foundry_models** - список доступных моделей\n- **get_foundry_status** - статус Foundry сервиса"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "1. Найти конфигурационный файл:",
+    "text": "```bash"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "Windows",
+    "text": "%APPDATA%\\Claude\\claude_desktop_config.json"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "macOS",
+    "text": "~/Library/Application Support/Claude/claude_desktop_config.json"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "Linux",
+    "text": "~/.config/Claude/claude_desktop_config.json\n```"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "2. Добавить MCP сервер:",
+    "text": "```json\n{\n\"mcpServers\": {\n\"aistros-foundry\": {\n\"command\": \"python\",\n\"args\": [\"mcp-servers/aistros-foundry/src/server.py\"],\n\"cwd\": \"C:/path/to/FastApiFoundry\",\n\"env\": {\n\"FOUNDRY_BASE_URL\": \"http://localhost:51601/v1/\",\n\"FOUNDRY_DEFAULT_MODEL\": \"deepseek-r1-distill-qwen-7b-generic-cpu:3\"\n}\n}\n}\n}\n```"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "🚀 Использование в Claude",
+    "text": "После настройки в Claude Desktop будут доступны инструменты:\n```\nПривет! Можешь сгенерировать текст через мою локальную Foundry модель?\nClaude будет использовать:\n- generate_text() для генерации\n- get_foundry_status() для проверки статуса\n- list_foundry_models() для выбора модели\n```"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "🔧 Запуск MCP сервера отдельно",
+    "text": "```bash"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "Установить зависимости",
+    "text": "cd mcp-servers/aistros-foundry\npip install -r requirements.txt"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "Настроить конфигурацию",
+    "text": "cp .env.example .env"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "Запустить MCP сервер",
+    "text": "python src/server.py\n```"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "🌐 Интеграция с FastAPI Foundry",
+    "text": "MCP сервер автоматически запускается вместе с FastAPI Foundry:\n```bash"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "Запуск с MCP",
+    "text": "python run.py --dev --ssl --mcp --auto-port"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "MCP Server: доступен через stdio для Claude Desktop",
+    "text": "```"
+  },
+  {
+    "source": "mcp_integration.md",
+    "section": "📋 Преимущества MCP интеграции",
+    "text": "- **Локальные модели** в Claude Desktop\n- **Приватность** - данные не покидают ваш компьютер\n- **Бесплатно** - нет затрат на API\n- **Кастомизация** - настройка под ваши задачи\n- **Интеграция** с другими MCP серверами (WordPress, MariaDB, SSH)\n---\n**MCP Integration** - часть экосистемы AiStros\n© 2025 AiStros Team"
+  },
+  {
+    "source": "project_info.md",
+    "section": "🚀 FastAPI Foundry - Информация о проекте",
+    "text": "**Полноценный REST API сервер для локальных AI моделей с поддержкой RAG**"
+  },
+  {
+    "source": "project_info.md",
+    "section": "📊 Обзор проекта",
+    "text": "| Параметр | Значение |\n|----------|----------|\n| **Название** | FastAPI Foundry |\n| **Версия** | 1.0.0 |\n| **Тип** | REST API Server |\n| **Язык** | Python 3.8+ |\n| **Фреймворк** | FastAPI + Uvicorn |\n| **Лицензия** | CC BY-NC-SA 4.0 |\n| **Автор** | hypo69 / AiStros Team |\n| **Дата создания** | 14 декабря 2025 |\n| **Статус** | ✅ Стабильная версия |\n| **Документация** | 📚 [Полный индекс](DOCS_INDEX.md) |"
+  },
+  {
+    "source": "project_info.md",
+    "section": "🎯 Назначение",
+    "text": "FastAPI Foundry - это современный REST API сервер, который предоставляет HTTP интерфейс для работы с локальными AI моделями через Foundry. Основные возможности:\n- **🤖 AI Генерация**: Текстовая генерация через локальные модели\n- **🔍 RAG Система**: Поиск и извлечение контекста из документации\n- **📦 Пакетная обработка**: Обработка множественных запросов\n- **🔐 Безопасность**: API ключи и CORS защита\n- **📊 Мониторинг**: Health checks и логирование\n- **🐳 Контейнеризация**: Docker и Docker Compose подд"
+  },
+  {
+    "source": "project_info.md",
+    "section": "🎯 Назначение",
+    "text": "*🐳 Контейнеризация**: Docker и Docker Compose поддержка"
+  },
+  {
+    "source": "project_info.md",
+    "section": "📁 Структура проекта",
+    "text": "```\nFastApiFoundry/\n├── 📁 src/                   # Исходный код\n│   ├── 🌐 api/               # FastAPI приложение\n│   │   ├── endpoints/      # API endpoints\n│   │   ├── middleware/     # Middleware\n│   │   ├── app.py         # Фабрика приложения\n│   │   ├── main.py        # Точка входа\n│   │   └── models.py      # Pydantic модели\n│   ├── ⚙️ core/              # Основная логика\n│   │   └── config.py      # Конфигурация\n│   ├── 🤖 models/            # AI модели\n│   │   ├── foundry_client."
+  },
+  {
+    "source": "project_info.md",
+    "section": "📁 Структура проекта",
+    "text": "# AI модели\n│   │   ├── foundry_client.py\n│   │   └── model_manager.py\n│   ├── 🔍 rag/               # RAG система\n│   │   └── rag_system.py\n│   └── 🛠️ utils/             # Утилиты\n├── 📚 docs/                 # Документация\n│   ├── deployment.md\n│   ├── usage.md\n│   ├── development.md\n│   └── howto.md\n├── 📱 static/              # Веб-интерфейс\n├── 🚀 run.py                # Скрипт запуска\n├── 💻 client_example.py     # Пример клиента\n├── 📦 requirements."
+  },
+  {
+    "source": "project_info.md",
+    "section": "📁 Структура проекта",
+    "text": "xample.py     # Пример клиента\n├── 📦 requirements.txt      # Зависимости\n├── 🐳 Dockerfile           # Docker образ\n├── ⚙️ .env                 # Конфигурация\n└── 📁 logs/                # Логи\n```"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Backend",
+    "text": "- **FastAPI** 0.104+ - Современный веб-фреймворк\n- **Uvicorn** - ASGI сервер для продакшн\n- **Pydantic** 2.5+ - Валидация данных и настроек\n- **aiohttp** - Асинхронный HTTP клиент"
+  },
+  {
+    "source": "project_info.md",
+    "section": "AI/ML",
+    "text": "- **Foundry** - Локальные AI модели (DeepSeek, Qwen, Mistral, Llama)\n- **sentence-transformers** - Эмбеддинги для RAG\n- **FAISS** - Векторный поиск\n- **numpy** - Численные вычисления"
+  },
+  {
+    "source": "project_info.md",
+    "section": "DevOps",
+    "text": "- **Docker** - Контейнеризация\n- **Docker Compose** - Оркестрация сервисов\n- **Nginx** - Reverse proxy и load balancer\n- **systemd** - Системный сервис (Linux)"
+  },
+  {
+    "source": "project_info.md",
+    "section": "1. Асинхронная архитектура",
+    "text": "- Все операции выполняются асинхронно\n- Поддержка concurrent запросов\n- Эффективное использование ресурсов"
+  },
+  {
+    "source": "project_info.md",
+    "section": "2. Гибкая конфигурация",
+    "text": "- Настройка через переменные окружения\n- Pydantic Settings для валидации\n- Поддержка различных режимов (dev/prod)"
+  },
+  {
+    "source": "project_info.md",
+    "section": "3. RAG интеграция",
+    "text": "- Автоматический поиск контекста\n- Векторный поиск с FAISS\n- Настраиваемые эмбеддинги"
+  },
+  {
+    "source": "project_info.md",
+    "section": "4. Безопасность",
+    "text": "- API ключи для аутентификации\n- CORS защита\n- Rate limiting через Nginx\n- SSL/TLS поддержка"
+  },
+  {
+    "source": "project_info.md",
+    "section": "5. Мониторинг",
+    "text": "- Health check endpoints\n- Структурированное логирование\n- Метрики производительности\n- Docker healthchecks"
+  },
+  {
+    "source": "project_info.md",
+    "section": "📡 API Endpoints",
+    "text": "| Метод | Путь | Описание | Аутентификация |\n|-------|------|----------|----------------|\n| `GET` | `/` | Информация о сервисе | ❌ |\n| `GET` | `/api/v1/health` | Проверка здоровья | ❌ |\n| `GET` | `/api/v1/models` | Список моделей | ✅ |\n| `POST` | `/api/v1/generate` | Генерация текста | ✅ |\n| `POST` | `/api/v1/batch-generate` | Пакетная генерация | ✅ |\n| `POST` | `/api/v1/rag/search` | Поиск в RAG | ✅ |\n| `POST` | `/api/v1/rag/reload` | Перезагрузка RAG | ✅ |\n| `GET` | `/api/v1/config` | Конфигур"
+  },
+  {
+    "source": "project_info.md",
+    "section": "📡 API Endpoints",
+    "text": "ка RAG | ✅ |\n| `GET` | `/api/v1/config` | Конфигурация | ✅ |\n| `GET` | `/docs` | Swagger UI | ❌ |"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Development Mode",
+    "text": "```bash\npython run.py --dev"
+  },
+  {
+    "source": "project_info.md",
+    "section": "- Подробные ошибки",
+    "text": "```"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Production Mode",
+    "text": "```bash\npython run.py --prod"
+  },
+  {
+    "source": "project_info.md",
+    "section": "- Оптимизированная производительность",
+    "text": "```"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Custom Mode",
+    "text": "```bash\npython run.py --host 0.0.0.0 --port 8080 --workers 2 --log-level info\n```"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Поддерживаемые форматы",
+    "text": "- **Markdown** (.md)\n- **HTML** (.html)\n- **Text** (.txt)\n- **JSON** (.json)"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Процесс индексации",
+    "text": "1. Парсинг документов\n2. Разбиение на чанки (chunks)\n3. Генерация эмбеддингов\n4. Создание FAISS индекса\n5. Сохранение метаданных"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Поиск",
+    "text": "- Векторный поиск по косинусному сходству\n- Настраиваемое количество результатов (top_k)\n- Фильтрация по релевантности\n- Автоматическое форматирование контекста"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Сервисы в Docker Compose",
+    "text": "- **fastapi-foundry** - Основное приложение\n- **foundry** - AI модели сервер\n- **nginx** - Reverse proxy\n- **redis** (опционально) - Кэширование"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Volumes",
+    "text": "- `./logs:/app/logs` - Логи\n- `./rag_index:/app/rag_index` - RAG индекс\n- `foundry-models:/app/models` - AI модели"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Networks",
+    "text": "- `foundry-network` - Внутренняя сеть сервисов"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Benchmarks (примерные)",
+    "text": "- **Простая генерация**: ~2-5 сек\n- **RAG генерация**: ~3-7 сек\n- **Пакетная обработка**: ~1-3 сек на промпт\n- **RAG поиск**: ~100-500 мс"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Масштабирование",
+    "text": "- **Вертикальное**: Увеличение workers (API_WORKERS)\n- **Горизонтальное**: Docker replicas + load balancer\n- **Кэширование**: Redis для частых запросов"
+  },
+  {
+    "source": "project_info.md",
+    "section": "🔧 Интеграция с AiStros",
+    "text": "FastAPI Foundry разработан как часть экосистемы AiStros и интегрируется с:\n- **MCP Servers** - Совместимость с MCP протоколом\n- **WordPress** - API для плагинов AiStros\n- **MariaDB** - Логирование и аналитика\n- **Gemini** - Fallback для облачных моделей"
+  },
+  {
+    "source": "project_info.md",
+    "section": "v1.1.0 (Q1 2025)",
+    "text": "- [ ] **WebSocket поддержка** - Streaming генерация в реальном времени\n- [ ] **Prometheus метрики** - Детальная аналитика производительности\n- [ ] **GraphQL API** - Альтернативный интерфейс для сложных запросов\n- [ ] **Redis кэширование** - Кэширование частых запросов и RAG результатов\n- [ ] **Rate limiting** - Встроенное ограничение частоты запросов"
+  },
+  {
+    "source": "project_info.md",
+    "section": "v1.2.0 (Q2 2025)",
+    "text": "- [ ] **Мультимодальность** - Поддержка изображений и аудио\n- [ ] **Fine-tuning интерфейс** - API для дообучения моделей\n- [ ] **A/B тестирование** - Сравнение разных моделей и параметров\n- [ ] **Автоматическое масштабирование** - Динамическое изменение количества workers\n- [ ] **Advanced RAG** - Graph RAG, hybrid поиск, re-ranking"
+  },
+  {
+    "source": "project_info.md",
+    "section": "v2.0.0 (Q3-Q4 2025)",
+    "text": "- [ ] **Kubernetes поддержка** - Helm charts и операторы\n- [ ] **Микросервисная архитектура** - Разделение на независимые сервисы\n- [ ] **ML Pipeline интеграция** - MLflow, Kubeflow, DVC\n- [ ] **Multi-tenant архитектура** - Поддержка множественных клиентов\n- [ ] **Edge deployment** - Развертывание на edge устройствах"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Как внести вклад",
+    "text": "1. Fork репозитория\n2. Создать feature branch\n3. Внести изменения\n4. Добавить тесты\n5. Создать Pull Request"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Стандарты кода",
+    "text": "- Следовать PEP 8\n- Использовать type hints\n- Документировать функции\n- Покрытие тестами >80%"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Документация",
+    "text": "- **API Docs**: http://localhost:8000/docs\n- **README**: Основная документация\n- **DEPLOYMENT**: Руководство по развертыванию"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Мониторинг",
+    "text": "- **Health**: http://localhost:8000/api/v1/health\n- **Config**: http://localhost:8000/api/v1/config\n- **Logs**: `logs/fastapi-foundry.log`"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Полезные ссылки",
+    "text": "- **📚 Документация**: [Индекс всех документов](DOCS_INDEX.md)\n- **🚀 Быстрый старт**: [README.md](README.md)\n- **🏗️ Архитектура**: [howto.md](howto.md)\n- **🐳 Развертывание**: [DEPLOYMENT.md](DEPLOYMENT.md)\n- **🌐 Туннели**: [TUNNEL_GUIDE.md](TUNNEL_GUIDE.md)"
+  },
+  {
+    "source": "project_info.md",
+    "section": "Контакты",
+    "text": "- **GitHub**: https://github.com/hypo69/aistros\n- **Email**: support@aistros.com\n- **Website**: https://aistros.com\n- **Issues**: https://github.com/hypo69/aistros/issues\n---\n**FastAPI Foundry** - Современное решение для локальных AI моделей\n📚 [Полная документация](DOCS_INDEX.md) | 🚀 [Быстрый старт](README.md) | 🏗️ [Архитектура](howto.md)\n© 2025 AiStros Team | CC BY-NC-SA 4.0"
+  },
+  {
+    "source": "README.md",
+    "section": "📚 Документация FastAPI Foundry",
+    "text": "Добро пожаловать в документацию FastAPI Foundry - REST API для локальных AI моделей с поддержкой RAG."
+  },
+  {
+    "source": "README.md",
+    "section": "1. Установка",
+    "text": "**[📦 Установка](installation.md)** - Автоматическая и ручная установка"
+  },
+  {
+    "source": "README.md",
+    "section": "2. Запуск",
+    "text": "**[🚀 Запуск](running.md)** - Основные способы запуска FastAPI Foundry"
+  },
+  {
+    "source": "README.md",
+    "section": "3. Лончеры",
+    "text": "**[🎯 Лончеры](launchers.md)** - Детальное руководство по всем лончерам"
+  },
+  {
+    "source": "README.md",
+    "section": "4. Использование",
+    "text": "**[📖 Использование](usage.md)** - Веб-интерфейс и REST API"
+  },
+  {
+    "source": "README.md",
+    "section": "⚙️ Настройка и конфигурация",
+    "text": "- **[⚙️ Настройка](configuration.md)** - Конфигурация через .env файл\n- **[📝 Практические рецепты](howto.md)** - Настройка RAG, подключение моделей, автоматизация"
+  },
+  {
+    "source": "README.md",
+    "section": "🌐 Расширенные возможности",
+    "text": "- **[🔌 MCP Интеграция](mcp_integration.md)** - Подключение к Claude Desktop через MCP\n- **[🌍 Туннели](tunnel_guide.md)** - Публичный доступ через ngrok/Cloudflare\n- **[📊 Примеры](examples.md)** - Готовые примеры кода и сценарии использования"
+  },
+  {
+    "source": "README.md",
+    "section": "🔧 Для разработчиков",
+    "text": "- **[🛠️ Разработка](development.md)** - Архитектура и добавление функций\n- **[🚀 Развертывание](deployment.md)** - Docker, Nginx, systemd\n- **[📋 Информация о проекте](project_info.md)** - Детальная информация"
+  },
+  {
+    "source": "README.md",
+    "section": "📋 Навигация по документации",
+    "text": "```\n📦 Установка → 🚀 Запуск → 🎯 Лончеры → 📖 Использование → ⚙️ Настройка\n↓\n📊 Примеры ← 📝 Практические рецепты ← 🌍 Туннели ← 🛠️ Разработка\n```"
+  },
+  {
+    "source": "README.md",
+    "section": "Для новичков:",
+    "text": "1. [📦 Установка](installation.md) - Автоматическая установка\n2. [🚀 Запуск](running.md) - Быстрый старт\n3. [📖 Использование](usage.md) - Веб-интерфейс\n4. [📊 Примеры](examples.md) - Готовые примеры"
+  },
+  {
+    "source": "README.md",
+    "section": "Для опытных пользователей:",
+    "text": "1. [📦 Установка](installation.md) - Ручная установка\n2. [🎯 Лончеры](launchers.md) - Все способы запуска\n3. [⚙️ Настройка](configuration.md) - Конфигурация\n4. [📝 Практические рецепты](howto.md) - Продвинутые настройки"
+  },
+  {
+    "source": "README.md",
+    "section": "Для разработчиков:",
+    "text": "1. [🛠️ Разработка](development.md) - Архитектура\n2. [🚀 Развертывание](deployment.md) - Production\n3. [📋 Информация о проекте](project_info.md) - Детали проекта"
+  },
+  {
+    "source": "README.md",
+    "section": "🔗 Полезные ссылки",
+    "text": "- **GitHub**: https://github.com/hypo69/aistros\n- **Website**: https://aistros.com\n- **API Docs**: https://localhost:8443/docs (после запуска)\n- **Health Check**: https://localhost:8443/api/v1/health"
+  },
+  {
+    "source": "README.md",
+    "section": "📞 Поддержка",
+    "text": "Если у вас возникли вопросы:\n1. Проверьте [🛠️ Устранение неполадок](launchers.md#устранение-неполадок)\n2. Изучите [📊 Примеры](examples.md) для вашего случая\n3. Посмотрите [📝 Практические рецепты](howto.md)\n---\n**FastAPI Foundry Documentation** - часть экосистемы AiStros\n© 2025 AiStros Team"
+  },
+  {
+    "source": "running.md",
+    "section": "🚀 Запуск",
+    "text": "> **Предыдущий шаг**: [📦 Установка](installation.md) - Установка FastAPI Foundry"
+  },
+  {
+    "source": "running.md",
+    "section": "Быстрый старт",
+    "text": "```bash"
+  },
+  {
+    "source": "running.md",
+    "section": "Активировать виртуальное окружение",
+    "text": "venv\\Scripts\\activate  # Windows\nsource venv/bin/activate  # Linux/macOS"
+  },
+  {
+    "source": "running.md",
+    "section": "Запустить в режиме разработки (по умолчанию)",
+    "text": "python run.py\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "Development режим",
+    "text": "```bash\npython run.py --dev"
+  },
+  {
+    "source": "running.md",
+    "section": "или просто",
+    "text": "python run.py\n```\n- Auto-reload включен\n- Debug логирование\n- 1 worker процесс\n- Подробные ошибки"
+  },
+  {
+    "source": "running.md",
+    "section": "Production режим",
+    "text": "```bash\npython run.py --prod\n```\n- Auto-reload отключен\n- Info логирование\n- 4 worker процесса\n- Оптимизированная производительность"
+  },
+  {
+    "source": "running.md",
+    "section": "Кастомные параметры",
+    "text": "```bash\npython run.py --host 0.0.0.0 --port 8080 --workers 2 --log-level info\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "SSL/HTTPS",
+    "text": "```bash"
+  },
+  {
+    "source": "running.md",
+    "section": "Использовать сертификаты по умолчанию",
+    "text": "python run.py --ssl"
+  },
+  {
+    "source": "running.md",
+    "section": "Указать свои сертификаты",
+    "text": "python run.py --ssl-keyfile server.key --ssl-certfile server.crt\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "Автопоиск портов",
+    "text": "```bash"
+  },
+  {
+    "source": "running.md",
+    "section": "Автоматически найти свободные порты",
+    "text": "python run.py --auto-port\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "Запуск с MCP Console",
+    "text": "```bash"
+  },
+  {
+    "source": "running.md",
+    "section": "Запустить FastAPI + MCP Console",
+    "text": "python run.py --mcp --browser\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "Основные endpoints",
+    "text": "```bash"
+  },
+  {
+    "source": "running.md",
+    "section": "Главная страница",
+    "text": "curl http://localhost:8000/"
+  },
+  {
+    "source": "running.md",
+    "section": "Проверка здоровья",
+    "text": "curl http://localhost:8000/api/v1/health"
+  },
+  {
+    "source": "running.md",
+    "section": "API документация",
+    "text": "open http://localhost:8000/docs\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "Логи",
+    "text": "```bash"
+  },
+  {
+    "source": "running.md",
+    "section": "Просмотр логов в реальном времени",
+    "text": "tail -f logs/fastapi-foundry.log\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "⚡ Быстрый старт (всё в одной команде)",
+    "text": "```bash\npython run.py --dev --ssl --auto-port\n```\n**Что происходит:**\n1. ✅ Запускается FastAPI Foundry на HTTPS\n2. ✅ Автоматически запускается Foundry service\n3. ✅ Автоматически находятся свободные порты\n4. ✅ Обновляется конфигурация с правильным портом Foundry"
+  },
+  {
+    "source": "running.md",
+    "section": "Варианты быстрого запуска",
+    "text": "```bash"
+  },
+  {
+    "source": "running.md",
+    "section": "Production (высокая производительность)",
+    "text": "python run.py --prod --ssl --auto-port"
+  },
+  {
+    "source": "running.md",
+    "section": "Development с отладкой",
+    "text": "python run.py --dev --ssl --auto-port --log-level debug"
+  },
+  {
+    "source": "running.md",
+    "section": "Без HTTPS (если проблемы с сертификатами)",
+    "text": "python run.py --dev --auto-port\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "1. run.py - Основной лончер (рекомендуется)",
+    "text": "**Назначение**: Полнофункциональный запуск FastAPI Foundry сервера\n**Возможности**:\n- Автоматический запуск Foundry service\n- Поддержка HTTPS с SSL сертификатами\n- Автопоиск свободных портов\n- Режимы dev/prod\n- Интеграция с MCP Console (если доступна)\n- Автооткрытие браузера\n- Полное логирование\n```bash"
+  },
+  {
+    "source": "running.md",
+    "section": "Простой запуск (dev режим по умолчанию)",
+    "text": "python run.py"
+  },
+  {
+    "source": "running.md",
+    "section": "Development с HTTPS и автопортами",
+    "text": "python run.py --dev --ssl --auto-port"
+  },
+  {
+    "source": "running.md",
+    "section": "Production режим",
+    "text": "python run.py --prod --ssl"
+  },
+  {
+    "source": "running.md",
+    "section": "Полный набор опций",
+    "text": "python run.py --dev --ssl --mcp --auto-port --browser\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "start-dev.ps1 - Режим разработки",
+    "text": "```powershell\n.\\start-dev.ps1"
+  },
+  {
+    "source": "running.md",
+    "section": "Эквивалент: python run.py --dev --ssl --mcp --auto-port --browser",
+    "text": "```"
+  },
+  {
+    "source": "running.md",
+    "section": "start-prod.ps1 - Production режим",
+    "text": "```powershell\n.\\start-prod.ps1"
+  },
+  {
+    "source": "running.md",
+    "section": "Эквивалент: python run.py --prod --ssl --mcp --auto-port",
+    "text": "```"
+  },
+  {
+    "source": "running.md",
+    "section": "start-https.ps1 - HTTPS с параметрами",
+    "text": "```powershell"
+  },
+  {
+    "source": "running.md",
+    "section": "Базовый HTTPS запуск",
+    "text": ".\\start-https.ps1"
+  },
+  {
+    "source": "running.md",
+    "section": "С дополнительными опциями",
+    "text": ".\\start-https.ps1 -Mode prod -Mcp -AutoPort -Browser\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "start-simple.ps1 - Упрощенный лончер",
+    "text": "```powershell"
+  },
+  {
+    "source": "running.md",
+    "section": "Минимальная обертка над run.py",
+    "text": ".\\start-simple.ps1 --dev --ssl --mcp\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "start.bat - Универсальный",
+    "text": "```batch\nstart.bat --dev --ssl --mcp --auto-port\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "start-prod.bat - Production",
+    "text": "```batch\nstart-prod.bat"
+  },
+  {
+    "source": "running.md",
+    "section": "Эквивалент: python run.py --prod --ssl --mcp --auto-port",
+    "text": "```"
+  },
+  {
+    "source": "running.md",
+    "section": "start-simple.bat - Упрощенный",
+    "text": "```batch\nstart-simple.bat --dev --ssl\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "4. start_with_tunnel.py - Туннельный лончер",
+    "text": "**Назначение**: Запуск с публичным доступом через туннели\n**Возможности**:\n- Поддержка ngrok, Cloudflare, LocalTunnel, Serveo\n- Автоматический запуск FastAPI + туннель\n- Кастомные поддомены\n- Интеграция с режимами dev/prod\n- Поддержка SSL и MCP\n```bash"
+  },
+  {
+    "source": "running.md",
+    "section": "С ngrok (по умолчанию)",
+    "text": "python start_with_tunnel.py --ssl --mcp"
+  },
+  {
+    "source": "running.md",
+    "section": "С Cloudflare туннелем",
+    "text": "python start_with_tunnel.py --tunnel cloudflared --mode prod"
+  },
+  {
+    "source": "running.md",
+    "section": "С кастомным поддоменом",
+    "text": "python start_with_tunnel.py --tunnel ngrok --subdomain myapp --ssl"
+  },
+  {
+    "source": "running.md",
+    "section": "Только туннель (FastAPI уже запущен)",
+    "text": "python start_with_tunnel.py --tunnel-only --port 8443\n```"
+  },
+  {
+    "source": "running.md",
+    "section": "Когда использовать какой лончер",
+    "text": "**Используйте run.py когда:**\n- Разрабатываете локально\n- Нужны все возможности (HTTPS, автопорты, MCP)\n- Хотите полный контроль над настройками\n**Используйте start_with_tunnel.py когда:**\n- Нужен публичный доступ к API\n- Тестируете с внешними сервисами\n- Демонстрируете проект удаленно"
+  },
+  {
+    "source": "running.md",
+    "section": "Остановка",
+    "text": "```bash"
+  },
+  {
+    "source": "running.md",
+    "section": "или",
+    "text": "pkill -f \"python run.py\"\n```\n---"
+  },
+  {
+    "source": "running.md",
+    "section": "✅ Сервер запущен! Следующие шаги:",
+    "text": "1. **[🎯 Лончеры](launchers.md)** - Полное руководство по всем способам запуска\n2. **[📖 Использование](usage.md)** - Веб-интерфейс и REST API\n3. **[⚙️ Настройка](configuration.md)** - Конфигурация через .env файл\n4. **[📊 Примеры](examples.md)** - Готовые примеры кода"
+  },
+  {
+    "source": "running.md",
+    "section": "🔗 Полезные ссылки:",
+    "text": "- **[🌐 Туннели](tunnel_guide.md)** - Публичный доступ через ngrok/Cloudflare\n- **[🔧 Разработка](development.md)** - Для разработчиков\n- **[🚀 Развертывание](deployment.md)** - Production развертывание"
+  },
+  {
+    "source": "running.md",
+    "section": "🔍 Проверка работы:",
+    "text": "```bash"
+  },
+  {
+    "source": "running.md",
+    "section": "Проверка здоровья API",
+    "text": "curl https://localhost:8443/api/v1/health"
+  },
+  {
+    "source": "running.md",
+    "section": "Открыть веб-интерфейс",
+    "text": "open https://localhost:8443/"
+  },
+  {
+    "source": "running.md",
+    "section": "API документация",
+    "text": "open https://localhost:8443/docs\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "🌐 Руководство по туннелям для FastAPI Foundry",
+    "text": "**Как сделать ваш локальный FastAPI Foundry доступным из интернета**"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "🎯 Зачем нужны туннели?",
+    "text": "Туннели позволяют:\n- 🌍 Получить доступ к локальному серверу из интернета\n- 🔗 Поделиться API с коллегами\n- 📱 Тестировать на мобильных устройствах\n- 🤖 Интегрировать с внешними сервисами (webhooks)"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "1. 🥇 ngrok (Лучший выбор)",
+    "text": "**Плюсы**: Стабильный, быстрый, много функций\n**Минусы**: Ограничения в бесплатной версии"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Установка:",
+    "text": "```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Windows (Chocolatey)",
+    "text": "choco install ngrok"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Или скачать с https://ngrok.com/download",
+    "text": "```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Использование:",
+    "text": "```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Базовый туннель",
+    "text": "ngrok http 8000"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "С аутентификацией (после регистрации)",
+    "text": "ngrok config add-authtoken YOUR_TOKEN\nngrok http 8000"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "С кастомным поддоменом (платная версия)",
+    "text": "ngrok http 8000 --subdomain my-api\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Результат:",
+    "text": "```\nSession Status                online\nAccount                       your@email.com (Plan: Free)\nVersion                       3.1.0\nRegion                        United States (us)\nLatency                       45ms\nWeb Interface                 http://127.0.0.1:4040\nForwarding                    https://abc123.ngrok.io -> http://localhost:8000\nConnections                   ttl     opn     rt1     rt5     p50     p90\n0       0       0.00    0.00    0.00    0.00\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "2. ☁️ Cloudflare Tunnel (Профессиональный)",
+    "text": "**Плюсы**: Бесплатный, от Cloudflare, очень быстрый\n**Минусы**: Требует больше настройки"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Установка:",
+    "text": "```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Windows",
+    "text": "winget install Cloudflare.cloudflared"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Или скачать с GitHub",
+    "text": "```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Быстрый старт:",
+    "text": "```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Временный туннель",
+    "text": "cloudflared tunnel --url http://localhost:8000\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Постоянный туннель:",
+    "text": "```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "1. Авторизация",
+    "text": "cloudflared tunnel login"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "2. Создание туннеля",
+    "text": "cloudflared tunnel create my-fastapi-tunnel"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "3. Настройка DNS (если есть домен)",
+    "text": "cloudflared tunnel route dns my-fastapi-tunnel api.yourdomain.com"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "4. Запуск",
+    "text": "cloudflared tunnel run my-fastapi-tunnel\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "3. ⚡ LocalTunnel (Простой)",
+    "text": "**Плюсы**: Очень простой, кастомные поддомены\n**Минусы**: Менее стабильный"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Установка:",
+    "text": "```bash\nnpm install -g localtunnel\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Использование:",
+    "text": "```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Базовый туннель",
+    "text": "lt --port 8000"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "С кастомным поддоменом",
+    "text": "lt --port 8000 --subdomain my-fastapi-api\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "4. 🔧 Serveo (Без установки)",
+    "text": "**Плюсы**: Не требует установки, работает через SSH\n**Минусы**: Ограниченный функционал\n```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Туннель через SSH",
+    "text": "ssh -R 80:localhost:8000 serveo.net"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "С кастомным поддоменом",
+    "text": "ssh -R my-api:80:localhost:8000 serveo.net\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Использование скрипта:",
+    "text": "```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "С ngrok (по умолчанию)",
+    "text": "python start_with_tunnel.py"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "С Cloudflare",
+    "text": "python start_with_tunnel.py --tunnel cloudflared"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "С LocalTunnel и кастомным поддоменом",
+    "text": "python start_with_tunnel.py --tunnel localtunnel --subdomain my-api"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Только туннель (FastAPI уже запущен)",
+    "text": "python start_with_tunnel.py --tunnel-only\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Batch файл для Windows:",
+    "text": "Создайте `start_tunnel.bat`:\n```batch\n@echo off\necho Starting FastAPI Foundry with ngrok tunnel...\nREM Запуск FastAPI в фоне\nstart /B python run.py --dev\nREM Ждем запуска FastAPI\ntimeout /t 5 /nobreak > nul\nREM Запуск ngrok\nngrok http 8000\npause\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "1. Обязательно используйте API ключи",
+    "text": "В `.env`:\n```env\nAPI_KEY=your-super-secret-key-here\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "2. Ограничьте CORS",
+    "text": "```env\nCORS_ORIGINS=[\"https://your-allowed-domain.com\"]\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "3. Мониторинг доступа",
+    "text": "Следите за логами:\n```bash\ntail -f logs/fastapi-foundry.log\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "4. Временные туннели",
+    "text": "Для тестирования используйте временные туннели, не постоянные."
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "📊 Сравнение сервисов",
+    "text": "| Сервис | Бесплатно | Кастомный домен | Стабильность | Скорость | Простота |\n|--------|-----------|-----------------|--------------|----------|----------|\n| **ngrok** | ✅ (лимиты) | 💰 Платно | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |\n| **Cloudflare** | ✅ | ✅ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |\n| **LocalTunnel** | ✅ | ✅ | ⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |\n| **Serveo** | ✅ | ✅ | ⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Для разработки и тестирования:",
+    "text": "**ngrok** - самый надежный и функциональный"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Для демонстрации клиентам:",
+    "text": "**Cloudflare Tunnel** - профессиональный вид"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Для быстрых тестов:",
+    "text": "**LocalTunnel** или **Serveo** - быстро и просто"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Для продакшн (временно):",
+    "text": "**Cloudflare Tunnel** с собственным доменом"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "1. Тестирование мобильного приложения",
+    "text": "```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Запустить туннель",
+    "text": "ngrok http 8000"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "https://abc123.ngrok.io/api/v1/generate",
+    "text": "```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "2. Webhook для внешнего сервиса",
+    "text": "```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Запустить туннель",
+    "text": "cloudflared tunnel --url http://localhost:8000"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "https://random.trycloudflare.com/api/v1/webhook",
+    "text": "```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "3. Демонстрация API коллегам",
+    "text": "```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Запустить с кастомным поддоменом",
+    "text": "lt --port 8000 --subdomain my-demo-api"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "https://my-demo-api.loca.lt/docs",
+    "text": "```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "ngrok не запускается",
+    "text": "```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Проверить установку",
+    "text": "ngrok version"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Переустановить",
+    "text": "choco uninstall ngrok\nchoco install ngrok\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Cloudflared ошибки",
+    "text": "```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Обновить до последней версии",
+    "text": "cloudflared update"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Проверить статус",
+    "text": "cloudflared tunnel list\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "LocalTunnel не работает",
+    "text": "```bash"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Переустановить",
+    "text": "npm uninstall -g localtunnel\nnpm install -g localtunnel"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Попробовать другой порт",
+    "text": "lt --port 8001\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Общие проблемы",
+    "text": "1. **Порт занят**: Проверьте что FastAPI запущен на правильном порту\n2. **Firewall**: Отключите firewall или добавьте исключения\n3. **Антивирус**: Добавьте туннель в исключения"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "📱 Мобильное тестирование",
+    "text": "После создания туннеля можно тестировать API на мобильных устройствах:\n```javascript\n// В мобильном приложении\nconst API_BASE = 'https://abc123.ngrok.io';\nfetch(`${API_BASE}/api/v1/generate`, {\nmethod: 'POST',\nheaders: {\n'Content-Type': 'application/json',\n'Authorization': 'Bearer your-api-key'\n},\nbody: JSON.stringify({\nprompt: 'Hello from mobile!'\n})\n});\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Быстрый старт с ngrok:",
+    "text": "```bash\ncd FastApiFoundry\npython start_with_tunnel.py\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Быстрый старт с Cloudflare:",
+    "text": "```bash\ncd FastApiFoundry\npython start_with_tunnel.py --tunnel cloudflared\n```"
+  },
+  {
+    "source": "tunnel_guide.md",
+    "section": "Только туннель (FastAPI уже запущен):",
+    "text": "```bash\npython start_with_tunnel.py --tunnel-only --port 8000\n```\n---\n**Теперь ваш FastAPI Foundry доступен из любой точки мира! 🌍**"
+  },
+  {
+    "source": "usage.md",
+    "section": "🚀 Использование",
+    "text": "> **Предыдущие шаги**: [📦 Установка](installation.md) → [🚀 Запуск](running.md) → [🎯 Лончеры](launchers.md)"
+  },
+  {
+    "source": "usage.md",
+    "section": "Веб-интерфейс",
+    "text": "Откройте http://localhost:8000 в браузере для доступа к веб-интерфейсу."
+  },
+  {
+    "source": "usage.md",
+    "section": "Основные функции",
+    "text": "- **Чат с AI** - генерация текста через локальные модели\n- **Управление моделями** - подключение и настройка AI моделей\n- **Foundry панель** - управление Foundry сервисом\n- **Настройки** - конфигурация системы"
+  },
+  {
+    "source": "usage.md",
+    "section": "Генерация текста",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompt\": \"Привет, как дела?\",\n\"temperature\": 0.7,\n\"max_tokens\": 500,\n\"use_rag\": true\n}'\n```"
+  },
+  {
+    "source": "usage.md",
+    "section": "Пакетная генерация",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/batch-generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompts\": [\"Что такое Python?\", \"Что такое Docker?\"],\n\"temperature\": 0.6\n}'\n```"
+  },
+  {
+    "source": "usage.md",
+    "section": "RAG поиск",
+    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/rag/search \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"query\": \"FastAPI endpoints\",\n\"top_k\": 5\n}'\n```"
+  },
+  {
+    "source": "usage.md",
+    "section": "Управление моделями",
+    "text": "```bash"
+  },
+  {
+    "source": "usage.md",
+    "section": "Список подключенных моделей",
+    "text": "curl http://localhost:8000/api/v1/models/connected"
+  },
+  {
+    "source": "usage.md",
+    "section": "Подключение новой модели",
+    "text": "curl -X POST http://localhost:8000/api/v1/models/connect \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"model_id\": \"gpt-3.5-turbo\",\n\"provider\": \"openai\",\n\"api_key\": \"your-key\"\n}'\n```"
+  },
+  {
+    "source": "usage.md",
+    "section": "Swagger документация",
+    "text": "Интерактивная документация API доступна по адресу:\nhttp://localhost:8000/docs\n---"
+  },
+  {
+    "source": "usage.md",
+    "section": "✅ API работает! Следующие шаги:",
+    "text": "1. **[⚙️ Настройка](configuration.md)** - Конфигурация через .env файл\n2. **[📊 Примеры](examples.md)** - Готовые примеры кода\n3. **[🌐 Туннели](tunnel_guide.md)** - Публичный доступ\n4. **[🔧 Разработка](development.md)** - Для разработчиков"
+  },
+  {
+    "source": "usage.md",
+    "section": "🔗 Полезные ссылки:",
+    "text": "- **[🚀 Развертывание](deployment.md)** - Production развертывание\n- **[📊 Проект](project_info.md)** - Детальная информация\n- **[📝 Практические рецепты](howto.md)** - Настройка RAG, подключение моделей"
+  }
+]

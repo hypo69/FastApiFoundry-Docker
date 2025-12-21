@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FastAPI Foundry Test</title>
+</head>
+<body>
+    <h1>FastAPI Foundry Test</h1>
+    
+    <div>
+        <input type="text" id="message" placeholder="Enter message">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    
+    <div id="response" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+
+    <script>
+        async function sendMessage() {
+            const message = document.getElementById('message').value;
+            const responseDiv = document.getElementById('response');
+            
+            if (!message) return;
+            
+            responseDiv.innerHTML = 'Sending...';
+            
+            try {
+                const response = await fetch('http://localhost:8002/api/v1/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        prompt: message,
+                        model: 'deepseek-r1-distill-qwen-7b-generic-cpu:3',
+                        use_rag: false
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Full response data:', data);
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                if (data.success && data.content) {
+                    responseDiv.innerHTML = '<strong>Response:</strong><br>' + data.content.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+                } else {
+                    responseDiv.innerHTML = '<strong>Error:</strong> ' + (data.error || JSON.stringify(data) || 'Unknown error');
+                }
+            } catch (error) {
+                responseDiv.innerHTML = '<strong>Network Error:</strong> ' + error.message;
+                console.error('Full error:', error);
+                console.error('Error stack:', error.stack);
+            }
+        }
+    </script>
+</body>
+</html>
