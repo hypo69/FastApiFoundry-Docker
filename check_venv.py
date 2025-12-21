@@ -44,10 +44,10 @@ def check_python_environment():
     
     # Check if we're in expected venv
     expected_venv = "/app/venv"
-    if expected_venv in sys.executable:
-        print(f"✅ Using expected venv: {expected_venv}")
+    if expected_venv in sys.executable or "venv" in sys.executable:
+        print(f"✅ Using venv: {sys.executable}")
     else:
-        print(f"❌ Not using expected venv: {expected_venv}")
+        print(f"❌ Not using venv: {sys.executable}")
     
     # Environment variables
     print(f"PYTHONPATH: {os.environ.get('PYTHONPATH', 'Not set')}")

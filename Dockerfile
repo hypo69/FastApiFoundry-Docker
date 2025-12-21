@@ -32,17 +32,17 @@ RUN apt-get update && apt-get install -y \
 # Создание рабочей директории
 WORKDIR /app
 
-# Создание виртуального окружения
-RUN python -m venv /app/venv
+# Создание виртуального окружения (копирование существующего)
+COPY venv/ ./venv/
 
-# Активация venv и обновление pip
-RUN /app/venv/bin/pip install --upgrade pip
+# Обновление pip в существующем venv
+RUN ./venv/Scripts/pip install --upgrade pip
 
 # Копирование файлов зависимостей
 COPY requirements.txt .
 
-# Установка Python зависимостей в venv
-RUN /app/venv/bin/pip install --no-cache-dir -r requirements.txt
+# Установка Python зависимостей в существующий venv
+RUN ./venv/Scripts/pip install --no-cache-dir -r requirements.txt
 
 # Копирование исходного кода
 COPY src/ ./src/
@@ -66,13 +66,13 @@ EXPOSE 8000
 
 # Переменные окружения
 ENV PYTHONPATH=/app
-ENV PATH="/app/venv/bin:$PATH"
+ENV PATH="/app/venv/Scripts:$PATH"
 ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV FASTAPI_FOUNDRY_MODE=production
 
 # Проверка venv перед запуском
-RUN /app/venv/bin/python check_venv.py
+RUN ./venv/Scripts/python check_venv.py
 
 # Команда запуска через venv
-CMD ["/app/venv/bin/python", "run.py"]
+CMD ["./venv/Scripts/python", "run.py"]
