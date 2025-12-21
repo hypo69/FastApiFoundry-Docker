@@ -1,5 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# =============================================================================
+# Название процесса: Запуск FastApiFoundry (Docker) сервера
+# =============================================================================
+# Описание:
+#   Основной скрипт запуска FastAPI сервера с поддержкой Docker
+#   Автоматическое освобождение портов, запуск браузера, логирование
+#
+# Примеры:
+#   python run.py
+#   python run.py --host 0.0.0.0 --port 8000
+#
+# File: run.py
+# Project: FastApiFoundry (Docker)
+# Version: 0.2.1
+# Author: hypo69
+# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# Copyright: © 2025 AiStros
+# Date: 9 декабря 2025
+# =============================================================================
 import uvicorn
 import webbrowser
 import threading
@@ -79,9 +98,12 @@ def open_browser():
     """Открыть браузер через 3 секунды после запуска сервера"""
     try:
         time.sleep(3)
-        url = "http://localhost:8002"
+        port = int(os.getenv('PORT', 8000))
+        url = f"http://localhost:{port}"
         logger.info(f"Opening browser: {url}")
-        webbrowser.open(url)
+        # Не открывать браузер в Docker контейнере
+        if os.getenv('FASTAPI_FOUNDRY_MODE') != 'production':
+            webbrowser.open(url)
     except Exception as e:
         logger.error(f"Failed to open browser: {e}")
 
@@ -99,8 +121,22 @@ if __name__ == "__main__":
         logs_dir.mkdir(exist_ok=True)
         logger.info(f"Logs directory: {logs_dir.absolute()}")
         
+        # Получить порт из переменных окружения или аргументов
+        port = int(os.getenv('PORT', 8000))
+        host = os.getenv('HOST', '0.0.0.0')
+        
+        # Проверить аргументы командной строки
+        if '--port' in sys.argv:
+            port_idx = sys.argv.index('--port') + 1
+            if port_idx < len(sys.argv):
+                port = int(sys.argv[port_idx])
+        
+        if '--host' in sys.argv:
+            host_idx = sys.argv.index('--host') + 1
+            if host_idx < len(sys.argv):
+                host = sys.argv[host_idx]
+        
         # Проверить и освободить порт
-        port = 8002
         logger.info(f"Проверяем доступность порта {port}...")
         kill_process_on_port(port)
         
@@ -115,16 +151,15 @@ if __name__ == "__main__":
             logger.error(f"❌ Failed to import FastAPI app: {e}")
             raise
         
-        # Запустить браузер в отдельном потоке
-        logger.debug("Starting browser thread...")
-        browser_thread = threading.Thread(target=open_browser)
-        browser_thread.daemon = True
-        browser_thread.start()
-        logger.info("Browser thread started")
+        # Запустить браузер в отдельном потоке (только в dev режиме)
+        if os.getenv('FASTAPI_FOUNDRY_MODE') != 'production':
+            logger.debug("Starting browser thread...")
+            browser_thread = threading.Thread(target=open_browser)
+            browser_thread.daemon = True
+            browser_thread.start()
+            logger.info("Browser thread started")
         
         # Запустить FastAPI сервер
-        host = "0.0.0.0"
-        port = 8002
         logger.info(f"Starting FastAPI server on http://{host}:{port}")
         logger.info(f"Web interface: http://localhost:{port}")
         logger.info(f"API docs: http://localhost:{port}/docs")
@@ -148,7 +183,7 @@ if __name__ == "__main__":
         sys.exit(1)
     except OSError as e:
         if "Address already in use" in str(e):
-            logger.error(f"❌ Port 8002 is already in use")
+            logger.error(f"❌ Port {port} is already in use")
             logger.error("Run 'python stop.py' to stop existing servers")
         else:
             logger.error(f"❌ OS error: {e}")

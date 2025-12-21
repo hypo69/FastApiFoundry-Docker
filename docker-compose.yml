@@ -1,34 +1,50 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Docker Compose конфигурация для FastAPI Foundry
+# Название процесса: Docker Compose конфигурация для FastApiFoundry (Docker)
 # =============================================================================
 # Описание:
-#   Docker Compose файл для запуска FastAPI Foundry с необходимыми сервисами
-#   Включает volume mapping для персистентности данных
+#   Docker Compose файл для запуска FastApiFoundry в контейнере
+#   Поддержка переменных окружения, volume mapping, сетевых настроек
+#
+# Примеры:
+#   docker-compose up -d
+#   docker-compose logs -f
+#   docker-compose down
 #
 # File: docker-compose.yml
-# Project: FastAPI Foundry
+# Project: FastApiFoundry (Docker)
+# Version: 0.2.1
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
+# Date: 9 декабря 2025
 # =============================================================================
 
 version: '3.8'
 
 services:
   fastapi-foundry:
-    build: .
-    container_name: fastapi-foundry
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fastapi-foundry:0.2.1
+    container_name: fastapi-foundry-docker
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - FASTAPI_FOUNDRY_MODE=production
+      - FOUNDRY_HOST=${FOUNDRY_HOST:-localhost}
+      - FOUNDRY_PORT=${FOUNDRY_PORT:-8008}
+      - API_KEY=${API_KEY:-your-api-key-here}
+      - RAG_ENABLED=${RAG_ENABLED:-true}
+      - RAG_INDEX_PATH=/app/rag_index
+      - RAG_CHUNK_SIZE=${RAG_CHUNK_SIZE:-1000}
     volumes:
       - ./logs:/app/logs
       - ./rag_index:/app/rag_index
-      - ./.env:/app/.env
-    environment:
-      - PYTHONPATH=/app
-      - HOST=0.0.0.0
-      - PORT=8000
+      - ./.env:/app/.env:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
@@ -36,7 +52,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - fastapi-foundry-network
 
 networks:
-  default:
-    name: fastapi-foundry-network
+  fastapi-foundry-network:
+    driver: bridge
