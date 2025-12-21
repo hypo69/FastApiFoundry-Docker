@@ -51,6 +51,7 @@ COPY docs/ ./docs/
 COPY mcp-servers/ ./mcp-servers/
 COPY run.py .
 COPY rag_indexer.py .
+COPY check_venv.py .
 COPY .env.example .env
 
 # Создание директорий для данных
@@ -69,6 +70,9 @@ ENV PATH="/app/venv/bin:$PATH"
 ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV FASTAPI_FOUNDRY_MODE=production
+
+# Проверка venv перед запуском
+RUN /app/venv/bin/python check_venv.py
 
 # Команда запуска через venv
 CMD ["/app/venv/bin/python", "run.py"]
