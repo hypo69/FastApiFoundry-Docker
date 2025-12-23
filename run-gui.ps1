@@ -21,7 +21,7 @@
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$configFile = Join-Path $scriptDir "conf.json"
+$configFile = Join-Path $scriptDir "src\config.json"
 
 # Загрузка конфигурации
 if (Test-Path $configFile) {
@@ -34,7 +34,7 @@ if (Test-Path $configFile) {
 # Создание формы
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "FastAPI Foundry — Launch Configuration"
-$form.Size = New-Object System.Drawing.Size(520,680)
+$form.Size = New-Object System.Drawing.Size(520,750)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedDialog"
 $form.MaximizeBox = $false
@@ -42,7 +42,7 @@ $form.MaximizeBox = $false
 # Создание TabControl
 $tabControl = New-Object System.Windows.Forms.TabControl
 $tabControl.Location = New-Object System.Drawing.Point(10,10)
-$tabControl.Size = New-Object System.Drawing.Size(480,580)
+$tabControl.Size = New-Object System.Drawing.Size(480,620)
 $form.Controls.Add($tabControl)
 
 # === TAB 1: FastAPI Server ===
@@ -334,10 +334,72 @@ $cbRAGModel.Items.AddRange(@(
 ))
 $cbRAGModel.Text = $config.rag_system.model
 $tabRAG.Controls.Add($cbRAGModel)
+$y += 50
+
+# === TAB 4: Docker Settings ===
+$tabDocker = New-Object System.Windows.Forms.TabPage
+$tabDocker.Text = "Docker"
+$tabControl.TabPages.Add($tabDocker)
+
+$y = 20
+
+# Docker Mode
+$chkDocker = New-Object System.Windows.Forms.CheckBox
+$chkDocker.Text = "Запуск из Docker контейнера"
+$chkDocker.Location = New-Object System.Drawing.Point(15,$y)
+$chkDocker.Size = New-Object System.Drawing.Size(300,20)
+$chkDocker.Font = New-Object System.Drawing.Font("Segoe UI",9,[System.Drawing.FontStyle]::Bold)
+$chkDocker.ForeColor = [System.Drawing.Color]::DarkBlue
+$tabDocker.Controls.Add($chkDocker)
+$y += 35
+
+# Docker Info
+$lblDockerInfo = New-Object System.Windows.Forms.Label
+$lblDockerInfo.Text = "При включении Docker режима run.py будет запущен внутри контейнера`nчерез docker-compose. Убедитесь что Docker Desktop запущен."
+$lblDockerInfo.Location = New-Object System.Drawing.Point(15,$y)
+$lblDockerInfo.Size = New-Object System.Drawing.Size(430,40)
+$lblDockerInfo.ForeColor = [System.Drawing.Color]::Gray
+$tabDocker.Controls.Add($lblDockerInfo)
+$y += 50
+
+# Container Name
+$lblContainerName = New-Object System.Windows.Forms.Label
+$lblContainerName.Text = "Container Name:"
+$lblContainerName.Location = New-Object System.Drawing.Point(15,$y)
+$lblContainerName.Size = New-Object System.Drawing.Size(180,20)
+$tabDocker.Controls.Add($lblContainerName)
+
+$txtContainerName = New-Object System.Windows.Forms.TextBox
+$txtContainerName.Location = New-Object System.Drawing.Point(200,$y)
+$txtContainerName.Size = New-Object System.Drawing.Size(250,20)
+$txtContainerName.Text = "fastapi-foundry-docker"
+$tabDocker.Controls.Add($txtContainerName)
+$y += 35
+
+# Docker Port Mapping
+$lblDockerPort = New-Object System.Windows.Forms.Label
+$lblDockerPort.Text = "Host Port (внешний):"
+$lblDockerPort.Location = New-Object System.Drawing.Point(15,$y)
+$lblDockerPort.Size = New-Object System.Drawing.Size(180,20)
+$tabDocker.Controls.Add($lblDockerPort)
+
+$txtDockerPort = New-Object System.Windows.Forms.TextBox
+$txtDockerPort.Location = New-Object System.Drawing.Point(200,$y)
+$txtDockerPort.Size = New-Object System.Drawing.Size(100,20)
+$txtDockerPort.Text = "8000"
+$tabDocker.Controls.Add($txtDockerPort)
+$y += 35
+
+# Docker Build Option
+$chkDockerBuild = New-Object System.Windows.Forms.CheckBox
+$chkDockerBuild.Text = "Пересобрать образ перед запуском (--build)"
+$chkDockerBuild.Location = New-Object System.Drawing.Point(15,$y)
+$chkDockerBuild.Size = New-Object System.Drawing.Size(350,20)
+$tabDocker.Controls.Add($chkDockerBuild)
 
 # === Buttons ===
 $btnRun = New-Object System.Windows.Forms.Button
-$btnRun.Location = New-Object System.Drawing.Point(250,600)
+$btnRun.Location = New-Object System.Drawing.Point(250,670)
 $btnRun.Size = New-Object System.Drawing.Size(100,35)
 $btnRun.Text = "🚀 RUN"
 $btnRun.Font = New-Object System.Drawing.Font("Segoe UI",10,[System.Drawing.FontStyle]::Bold)
@@ -345,7 +407,7 @@ $btnRun.BackColor = [System.Drawing.Color]::LightGreen
 $form.Controls.Add($btnRun)
 
 $btnClose = New-Object System.Windows.Forms.Button
-$btnClose.Location = New-Object System.Drawing.Point(370,600)
+$btnClose.Location = New-Object System.Drawing.Point(370,670)
 $btnClose.Size = New-Object System.Drawing.Size(100,35)
 $btnClose.Text = "❌ CLOSE"
 $btnClose.Font = New-Object System.Drawing.Font("Segoe UI",10)
@@ -365,46 +427,83 @@ $btnRun.Add_Click({
             return
         }
 
-        # Сборка environment переменных
-        $envVars = @()
-        $envVars += "`$env:FASTAPI_FOUNDRY_MODE='$($cbMode.Text)'"
-        $envVars += "`$env:HOST='$($txtHost.Text.Trim())'"
-        $envVars += "`$env:PORT='$($txtPort.Text.Trim())'"
-        
-        if (-not [string]::IsNullOrWhiteSpace($txtApiKey.Text)) {
-            $envVars += "`$env:API_KEY='$($txtApiKey.Text)'"
-        }
-        
-        $envVars += "`$env:API_WORKERS='$($numWorkers.Value)'"
-        $envVars += "`$env:API_RELOAD='$($chkReload.Checked.ToString().ToLower())'"
-        $envVars += "`$env:LOG_LEVEL='$($cbLogLevel.Text)'"
-        
-        $envVars += "`$env:FOUNDRY_BASE_URL='$($txtFoundryUrl.Text.Trim())'"
-        $envVars += "`$env:FOUNDRY_DEFAULT_MODEL='$($txtModel.Text.Trim())'"
-        $envVars += "`$env:FOUNDRY_TEMPERATURE='$($numTemp.Value)'"
-        $envVars += "`$env:FOUNDRY_TOP_P='$($numTopP.Value)'"
-        $envVars += "`$env:FOUNDRY_TOP_K='$($numTopK.Value)'"
-        $envVars += "`$env:FOUNDRY_MAX_TOKENS='$($numMaxTokens.Value)'"
-        $envVars += "`$env:FOUNDRY_TIMEOUT='$($numTimeout.Value)'"
-        
-        $envVars += "`$env:RAG_ENABLED='$($chkRAG.Checked.ToString().ToLower())'"
-        $envVars += "`$env:RAG_INDEX_DIR='$($txtRAGDir.Text.Trim())'"
-        $envVars += "`$env:RAG_MODEL='$($cbRAGModel.Text)'"
+        if ($chkDocker.Checked) {
+            # Docker режим - запуск через docker-compose
+            Write-Host "Starting FastAPI Foundry in Docker container..." -ForegroundColor Green
+            Write-Host "Container: $($txtContainerName.Text)" -ForegroundColor Cyan
+            Write-Host "Host Port: $($txtDockerPort.Text) -> Container Port: 8000" -ForegroundColor Cyan
+            
+            # Подготовка переменных окружения для Docker
+            $envVars = @()
+            $envVars += "`$env:PORT='$($txtDockerPort.Text.Trim())'"
+            
+            if (-not [string]::IsNullOrWhiteSpace($txtApiKey.Text)) {
+                $envVars += "`$env:API_KEY='$($txtApiKey.Text)'"
+            }
+            
+            $envVars += "`$env:FOUNDRY_HOST='localhost'"
+            $envVars += "`$env:FOUNDRY_PORT='50477'"
+            $envVars += "`$env:RAG_ENABLED='$($chkRAG.Checked.ToString().ToLower())'"
+            
+            # Docker команда
+            $dockerArgs = @()
+            if ($chkDockerBuild.Checked) {
+                $dockerArgs += "--build"
+            }
+            $dockerArgs += "-d"
+            
+            $envString = $envVars -join "; "
+            $command = "$envString; Set-Location -LiteralPath '$scriptDir'; docker-compose up $($dockerArgs -join ' ')"
+            
+            $args = "-NoProfile -NoExit -Command & { $command }"
+            
+            Start-Process -FilePath "powershell.exe" -ArgumentList $args -WorkingDirectory $scriptDir
+            
+            [System.Windows.Forms.MessageBox]::Show("FastAPI Foundry Docker container started!`n`nURL: http://localhost:$($txtDockerPort.Text)`nContainer: $($txtContainerName.Text)","Docker Success","OK","Information") | Out-Null
+            
+        } else {
+            # Обычный режим - прямой запуск run.py
+            # Сборка environment переменных
+            $envVars = @()
+            $envVars += "`$env:FASTAPI_FOUNDRY_MODE='$($cbMode.Text)'"
+            $envVars += "`$env:HOST='$($txtHost.Text.Trim())'"
+            $envVars += "`$env:PORT='$($txtPort.Text.Trim())'"
+            
+            if (-not [string]::IsNullOrWhiteSpace($txtApiKey.Text)) {
+                $envVars += "`$env:API_KEY='$($txtApiKey.Text)'"
+            }
+            
+            $envVars += "`$env:API_WORKERS='$($numWorkers.Value)'"
+            $envVars += "`$env:API_RELOAD='$($chkReload.Checked.ToString().ToLower())'"
+            $envVars += "`$env:LOG_LEVEL='$($cbLogLevel.Text)'"
+            
+            $envVars += "`$env:FOUNDRY_BASE_URL='$($txtFoundryUrl.Text.Trim())'"
+            $envVars += "`$env:FOUNDRY_DEFAULT_MODEL='$($txtModel.Text.Trim())'"
+            $envVars += "`$env:FOUNDRY_TEMPERATURE='$($numTemp.Value)'"
+            $envVars += "`$env:FOUNDRY_TOP_P='$($numTopP.Value)'"
+            $envVars += "`$env:FOUNDRY_TOP_K='$($numTopK.Value)'"
+            $envVars += "`$env:FOUNDRY_MAX_TOKENS='$($numMaxTokens.Value)'"
+            $envVars += "`$env:FOUNDRY_TIMEOUT='$($numTimeout.Value)'"
+            
+            $envVars += "`$env:RAG_ENABLED='$($chkRAG.Checked.ToString().ToLower())'"
+            $envVars += "`$env:RAG_INDEX_DIR='$($txtRAGDir.Text.Trim())'"
+            $envVars += "`$env:RAG_MODEL='$($cbRAGModel.Text)'"
 
-        # Команда запуска
-        $envString = $envVars -join "; "
-        $command = "$envString; Set-Location -LiteralPath '$scriptDir'; python run.py"
-        
-        $args = "-NoProfile -NoExit -Command & { $command }"
-        
-        Write-Host "Starting FastAPI Foundry with configuration:" -ForegroundColor Green
-        Write-Host "FastAPI Server - Host: $($txtHost.Text) Port: $($txtPort.Text)" -ForegroundColor Cyan
-        Write-Host "Foundry AI Model - URL: $($txtFoundryUrl.Text)" -ForegroundColor Yellow
-        Write-Host "Mode: $($cbMode.Text)" -ForegroundColor Cyan
-        
-        Start-Process -FilePath "powershell.exe" -ArgumentList $args -WorkingDirectory $scriptDir
-        
-        [System.Windows.Forms.MessageBox]::Show("FastAPI Foundry started successfully!","Success","OK","Information") | Out-Null
+            # Команда запуска
+            $envString = $envVars -join "; "
+            $command = "$envString; Set-Location -LiteralPath '$scriptDir'; python run.py"
+            
+            $args = "-NoProfile -NoExit -Command & { $command }"
+            
+            Write-Host "Starting FastAPI Foundry with configuration:" -ForegroundColor Green
+            Write-Host "FastAPI Server - Host: $($txtHost.Text) Port: $($txtPort.Text)" -ForegroundColor Cyan
+            Write-Host "Foundry AI Model - URL: $($txtFoundryUrl.Text)" -ForegroundColor Yellow
+            Write-Host "Mode: $($cbMode.Text)" -ForegroundColor Cyan
+            
+            Start-Process -FilePath "powershell.exe" -ArgumentList $args -WorkingDirectory $scriptDir
+            
+            [System.Windows.Forms.MessageBox]::Show("FastAPI Foundry started successfully!","Success","OK","Information") | Out-Null
+        }
         
     } catch {
         [System.Windows.Forms.MessageBox]::Show("Failed to start: $_","Error","OK","Error") | Out-Null

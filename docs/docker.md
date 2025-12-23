@@ -1,322 +1,156 @@
-# 🐳 Docker развертывание FastAPI Foundry
+# 🐳 Docker запуск
 
-**Версия:** 1.0.0  
-**Дата:** 20 декабря 2025  
+**Быстрый старт с Docker для FastAPI Foundry**
 
----
+## 🚀 Первый запуск
 
-## 🎯 Зачем нужен Docker?
-
-Docker позволяет:
-- **Упаковать** все приложение с зависимостями в один контейнер
-- **Переносить** между машинами без проблем совместимости
-- **Изолировать** приложение от системы
-- **Масштабировать** и управлять развертыванием
-
----
-
-## 🚀 Быстрый старт
-
-### 1. Сборка контейнера
 ```bash
-# Linux/Mac
-./docker-manager.sh build
+# 1. Клонировать репозиторий
+git clone https://github.com/hypo69/FastApiFoundry-Docker.git
+cd FastApiFoundry-Docker
 
-# Windows PowerShell
-.\docker-manager.ps1 build
+# 2. Настроить конфигурацию
+cp .env.example .env
 
-# Или напрямую
-docker build -t fastapi-foundry .
+# 3. Первый запуск (с сборкой)
+docker-compose up --build -d
 ```
 
-### 2. Запуск контейнера
+## ⚡ Ежедневное использование
+
+**Сборка нужна только при первом запуске или изменении кода!**
+
+### Запуск
 ```bash
-# Через docker-compose (рекомендуется)
-docker-compose up -d
-
-# Или через скрипт
-./docker-manager.sh run      # Linux/Mac
-.\docker-manager.ps1 run   # Windows PowerShell
-```
-
-### 3. Проверка работы
-```bash
-# Проверка статуса
-curl http://localhost:8000/api/v1/health
-
-# Веб-интерфейс
-open http://localhost:8000
-```
-
----
-
-## 📦 Экспорт и перенос контейнера
-
-### Экспорт образа
-```bash
-# Через скрипт
-./docker-manager.sh export
-
-# Или напрямую
-docker save -o fastapi-foundry-latest.tar fastapi-foundry:latest
-```
-
-### Перенос на другую машину
-```bash
-# 1. Скопировать файл на целевую машину
-scp fastapi-foundry-latest.tar user@target-machine:/path/
-
-# 2. На целевой машине импортировать образ
-docker load -i fastapi-foundry-latest.tar
-
-# 3. Скопировать docker-compose.yml и .env
-scp docker-compose.yml .env user@target-machine:/path/
-
-# 4. Запустить на целевой машине
 docker-compose up -d
 ```
 
----
-
-## 🛠️ Управление контейнером
-
-### Основные команды
+### Остановка
 ```bash
-# Статус контейнера
-docker-compose ps
-
-# Логи
-docker-compose logs -f
-
-# Остановка
 docker-compose down
+```
 
-# Перезапуск
+### Перезапуск
+```bash
 docker-compose restart
-
-# Вход в контейнер
-docker exec -it fastapi-foundry /bin/bash
 ```
 
-### Через скрипты управления
+## 🔄 При изменении кода
+
 ```bash
-# Linux/Mac
-./docker-manager.sh status    # Статус
-./docker-manager.sh logs      # Логи
-./docker-manager.sh stop      # Остановка
-./docker-manager.sh restart   # Перезапуск
-./docker-manager.sh shell     # Вход в контейнер
+# Пересборка и запуск
+docker-compose up --build -d
 
-# Windows PowerShell
-.\docker-manager.ps1 status
-.\docker-manager.ps1 logs
-.\docker-manager.ps1 stop
-.\docker-manager.ps1 restart
-.\docker-manager.ps1 shell
+# Или отдельно
+docker-compose build
+docker-compose up -d
 ```
 
----
+## 📊 Управление контейнерами
 
-## 📁 Структура контейнера
-
-```
-/app/                    # Рабочая директория
-├── src/                # Исходный код
-├── static/             # Веб-интерфейс
-├── docs/               # Документация
-├── logs/               # Логи (volume)
-├── rag_index/          # RAG индекс (volume)
-├── run.py              # Точка входа
-└── .env                # Конфигурация
-```
-
-### Volumes (постоянные данные)
-- `./logs:/app/logs` - Логи приложения
-- `./rag_index:/app/rag_index` - RAG индекс
-- `./.env:/app/.env` - Конфигурация
-
----
-
-## ⚙️ Конфигурация
-
-### Переменные окружения
+### Статус
 ```bash
-# В .env файле
-HOST=0.0.0.0
-PORT=8000
-FOUNDRY_HOST=host.docker.internal  # Для доступа к Foundry на хосте
-FOUNDRY_PORT=50477
-RAG_ENABLED=true
-```
-
-### Порты
-- **8000** - FastAPI Foundry API и веб-интерфейс
-- **50477** - Foundry сервер (должен быть доступен с хоста)
-
----
-
-## 🔧 Отладка проблем
-
-### Проверка контейнера
-```bash
-# Статус контейнера
-docker ps | grep fastapi-foundry
-
-# Логи контейнера
-docker logs fastapi-foundry
-
-# Вход в контейнер для отладки
-docker exec -it fastapi-foundry /bin/bash
-```
-
-### Проверка сети
-```bash
-# Проверка портов
-netstat -tulpn | grep :8000
-
-# Проверка доступности Foundry из контейнера
-docker exec fastapi-foundry curl http://host.docker.internal:50477/v1/models
-```
-
-### Проблемы с Foundry
-```bash
-# Если Foundry на том же хосте, используйте:
-FOUNDRY_HOST=host.docker.internal
-
-# Для Linux может потребоваться:
-FOUNDRY_HOST=172.17.0.1
-```
-
----
-
-## 🚀 Продакшн развертывание
-
-### С Nginx reverse proxy
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    
-    location / {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
-
-### С SSL сертификатом
-```bash
-# Добавить в docker-compose.yml
-services:
-  fastapi-foundry:
-    # ... существующая конфигурация
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.fastapi.rule=Host(`your-domain.com`)"
-      - "traefik.http.routers.fastapi.tls.certresolver=letsencrypt"
-```
-
----
-
-## 📊 Мониторинг
-
-### Health check
-```bash
-# Встроенная проверка здоровья
-curl http://localhost:8000/api/v1/health
-
-# Docker health check
-docker inspect fastapi-foundry | grep Health -A 10
+docker-compose ps
 ```
 
 ### Логи
 ```bash
-# Логи контейнера
+# Все логи
 docker-compose logs -f
 
-# Логи приложения
-tail -f logs/app.log
+# Только последние
+docker-compose logs --tail=50 -f
 ```
 
----
-
-## 🧹 Очистка
-
-### Удаление контейнера и образа
+### Вход в контейнер
 ```bash
-# Через скрипт
-./docker-manager.sh clean
-
-# Или напрямую
-docker-compose down
-docker rmi fastapi-foundry:latest
+docker-compose exec fastapi-foundry bash
 ```
 
-### Очистка Docker системы
+### Проверка здоровья
 ```bash
-# Удаление неиспользуемых образов
-docker image prune
+curl http://localhost:8000/api/v1/health
+```
 
-# Полная очистка
+## 🔧 Полезные команды
+
+### Очистка
+```bash
+# Удалить контейнеры и образы
+docker-compose down --rmi all
+
+# Очистить volumes
+docker-compose down -v
+
+# Полная очистка Docker
 docker system prune -a
 ```
 
----
-
-## 📝 Примеры использования
-
-### Разработка
+### Обновление
 ```bash
-# Сборка и запуск для разработки
-docker build -t fastapi-foundry-dev .
-docker run -p 8000:8000 -v $(pwd):/app fastapi-foundry-dev
+# Обновить код
+git pull
+
+# Пересобрать и запустить
+docker-compose up --build -d
 ```
 
-### Продакшн
-```bash
-# Запуск в продакшн режиме
-docker-compose -f docker-compose.prod.yml up -d
+## 📁 Структура volumes
+
+```
+./logs:/app/logs              # Логи приложения
+./rag_index:/app/rag_index    # RAG индекс
+./.env:/app/.env:ro           # Конфигурация (только чтение)
+./src/config.json:/app/src/config.json:ro  # Настройки приложения
 ```
 
-### Масштабирование
+## 🌐 Доступ к приложению
+
+- **API**: http://localhost:8000
+- **Документация**: http://localhost:8000/docs
+- **Веб-интерфейс**: http://localhost:8000
+- **Health Check**: http://localhost:8000/api/v1/health
+
+## ⚠️ Важные моменты
+
+1. **Первый запуск**: всегда используйте `--build`
+2. **Ежедневно**: просто `docker-compose up -d`
+3. **После изменений**: `docker-compose up --build -d`
+4. **Логи**: `docker-compose logs -f` для отладки
+5. **Остановка**: `docker-compose down` сохраняет данные
+
+## 🔍 Troubleshooting
+
+### Контейнер не запускается
 ```bash
-# Запуск нескольких экземпляров
-docker-compose up -d --scale fastapi-foundry=3
+# Проверить логи
+docker-compose logs
+
+# Проверить статус
+docker-compose ps
+
+# Пересобрать с нуля
+docker-compose down
+docker-compose up --build -d
 ```
 
-### Тестирование API
+### Порт занят
 ```bash
-# Запуск контейнера для тестов
+# Изменить порт в .env
+echo "PORT=8001" >> .env
+
+# Или в docker-compose.yml
+# ports:
+#   - "8001:8000"
+```
+
+### Проблемы с volumes
+```bash
+# Пересоздать volumes
+docker-compose down -v
 docker-compose up -d
-
-# Тестирование через Python клиент
-python example_client.py
-python example_model_client.py
-
-# Тестирование через cURL
-curl http://localhost:8000/api/v1/health
-curl http://localhost:8000/api/v1/models
 ```
 
 ---
 
-**💡 Совет:** Используйте `docker-manager.sh` (Linux/Mac) или `docker-manager.ps1` (Windows PowerShell) для упрощения управления контейнером.
-
-**⚠️ Важно:** Убедитесь, что Foundry сервер доступен из контейнера через `host.docker.internal` или соответствующий IP адрес.
-
----
-
-## 📁 Файлы проекта
-
-### Основные файлы Docker
-- **Dockerfile** - Описание образа контейнера
-- **docker-compose.yml** - Оркестрация сервисов
-- **.dockerignore** - Исключения при сборке
-- **docker-manager.ps1** - Скрипт управления (Windows)
-- **docker-manager.sh** - Скрипт управления (Linux/Mac)
-
-### Примеры и тесты
-- **example_client.py** - Пример клиента API
-- **example_model_client.py** - Пример управления моделями
-- **test_system.py** - Системные тесты
+**Готово!** Теперь FastAPI Foundry работает в Docker контейнере.

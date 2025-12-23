@@ -45,7 +45,7 @@ services:
       - ./logs:/app/logs
       - ./rag_index:/app/rag_index
       - ./.env:/app/.env:ro
-      - ./conf.json:/app/conf.json:ro
+      - ./src/config.json:/app/src/config.json:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
