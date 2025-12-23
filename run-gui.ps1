@@ -428,10 +428,39 @@ $btnRun.Add_Click({
         }
 
         if ($chkDocker.Checked) {
-            # Docker режим - запуск через docker-compose
+            # Docker режим - запуск через docker-compose с проверками
             Write-Host "Starting FastAPI Foundry in Docker container..." -ForegroundColor Green
             Write-Host "Container: $($txtContainerName.Text)" -ForegroundColor Cyan
             Write-Host "Host Port: $($txtDockerPort.Text) -> Container Port: 8000" -ForegroundColor Cyan
+            
+            # Проверка Docker Desktop
+            try {
+                $dockerCheck = docker --version 2>$null
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Docker не найден"
+                }
+            } catch {
+                [System.Windows.Forms.MessageBox]::Show("Docker Desktop не запущен или не установлен.`nЗапустите Docker Desktop и повторите попытку.","Docker Error","OK","Error") | Out-Null
+                return
+            }
+            
+            # Проверка образа и автоматическая сборка
+            Write-Host "Checking Docker image..." -ForegroundColor Yellow
+            $imageExists = docker images -q fastapi-foundry:0.2.1 2>$null
+            if ([string]::IsNullOrEmpty($imageExists) -or $chkDockerBuild.Checked) {
+                Write-Host "Building Docker image..." -ForegroundColor Yellow
+                
+                # Остановить существующий контейнер
+                docker-compose down 2>$null
+                
+                # Собрать образ
+                $buildResult = docker-compose build 2>&1
+                if ($LASTEXITCODE -ne 0) {
+                    [System.Windows.Forms.MessageBox]::Show("Ошибка сборки Docker образа:`n$buildResult","Build Error","OK","Error") | Out-Null
+                    return
+                }
+                Write-Host "✅ Docker image built successfully" -ForegroundColor Green
+            }
             
             # Подготовка переменных окружения для Docker
             $envVars = @()
@@ -445,21 +474,29 @@ $btnRun.Add_Click({
             $envVars += "`$env:FOUNDRY_PORT='50477'"
             $envVars += "`$env:RAG_ENABLED='$($chkRAG.Checked.ToString().ToLower())'"
             
-            # Docker команда
-            $dockerArgs = @()
-            if ($chkDockerBuild.Checked) {
-                $dockerArgs += "--build"
-            }
-            $dockerArgs += "-d"
+            # Остановить существующий контейнер
+            Write-Host "Stopping existing containers..." -ForegroundColor Yellow
+            docker-compose down 2>$null
             
+            # Запуск контейнера
+            Write-Host "Starting Docker container..." -ForegroundColor Green
             $envString = $envVars -join "; "
-            $command = "$envString; Set-Location -LiteralPath '$scriptDir'; docker-compose up $($dockerArgs -join ' ')"
+            $command = "$envString; Set-Location -LiteralPath '$scriptDir'; docker-compose up -d"
             
             $args = "-NoProfile -NoExit -Command & { $command }"
             
             Start-Process -FilePath "powershell.exe" -ArgumentList $args -WorkingDirectory $scriptDir
             
-            [System.Windows.Forms.MessageBox]::Show("FastAPI Foundry Docker container started!`n`nURL: http://localhost:$($txtDockerPort.Text)`nContainer: $($txtContainerName.Text)","Docker Success","OK","Information") | Out-Null
+            # Ждем немного для запуска контейнера
+            Start-Sleep -Seconds 3
+            
+            # Проверяем статус контейнера
+            $containerStatus = docker-compose ps -q 2>$null
+            if (-not [string]::IsNullOrEmpty($containerStatus)) {
+                [System.Windows.Forms.MessageBox]::Show("FastAPI Foundry Docker container started!`n`n🌐 URL: http://localhost:$($txtDockerPort.Text)`n📚 API Docs: http://localhost:$($txtDockerPort.Text)/docs`n❤️ Health: http://localhost:$($txtDockerPort.Text)/api/v1/health`n`nContainer: $($txtContainerName.Text)`n`nДля просмотра логов: docker-compose logs -f`nДля остановки: docker-compose down","Docker Success","OK","Information") | Out-Null
+            } else {
+                [System.Windows.Forms.MessageBox]::Show("Контейнер запущен, но статус неизвестен.`nПроверьте: docker-compose logs","Docker Warning","OK","Warning") | Out-Null
+            }
             
         } else {
             # Обычный режим - прямой запуск run.py
