@@ -23,6 +23,42 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $configFile = Join-Path $scriptDir "src\config.json"
 
+# Функция для освобождения порта
+function Kill-ProcessOnPort {
+    param([int]$Port)
+    
+    Write-Host "Проверяем порт $Port..." -ForegroundColor Yellow
+    
+    try {
+        # Найти процесс на порту
+        $result = netstat -ano | Select-String ":$Port\s" | Select-String "LISTENING"
+        
+        if ($result) {
+            foreach ($line in $result) {
+                $parts = $line.ToString().Split() | Where-Object { $_ -ne "" }
+                if ($parts.Length -ge 5) {
+                    $pid = $parts[-1]
+                    Write-Host "⚠️ Найден процесс PID $pid на порту $Port, завершаем..." -ForegroundColor Yellow
+                    
+                    try {
+                        taskkill /PID $pid /F 2>$null
+                        if ($LASTEXITCODE -eq 0) {
+                            Write-Host "✅ Процесс PID $pid успешно завершен" -ForegroundColor Green
+                        }
+                    } catch {
+                        Write-Host "⚠️ Не удалось завершить PID $pid" -ForegroundColor Yellow
+                    }
+                }
+            }
+            Start-Sleep -Seconds 1
+        } else {
+            Write-Host "✅ Порт $Port свободен" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "⚠️ Ошибка при проверке порта $Port: $_" -ForegroundColor Yellow
+    }
+}
+
 # Загрузка конфигурации
 if (Test-Path $configFile) {
     $config = Get-Content $configFile -Raw | ConvertFrom-Json
@@ -444,6 +480,11 @@ $btnRun.Add_Click({
                 return
             }
             
+            # Проверка и освобождение портов
+            Write-Host "Checking and freeing ports..." -ForegroundColor Yellow
+            Kill-ProcessOnPort -Port ([int]$txtDockerPort.Text.Trim())
+            Kill-ProcessOnPort -Port 50477  # Foundry port
+            
             # Проверка образа и автоматическая сборка
             Write-Host "Checking Docker image..." -ForegroundColor Yellow
             $imageExists = docker images -q fastapi-foundry:0.2.1 2>$null
@@ -500,6 +541,12 @@ $btnRun.Add_Click({
             
         } else {
             # Обычный режим - прямой запуск run.py
+            
+            # Проверка и освобождение портов
+            Write-Host "Checking and freeing ports..." -ForegroundColor Yellow
+            Kill-ProcessOnPort -Port ([int]$txtPort.Text.Trim())
+            Kill-ProcessOnPort -Port 50477  # Foundry port
+            
             # Сборка environment переменных
             $envVars = @()
             $envVars += "`$env:FASTAPI_FOUNDRY_MODE='$($cbMode.Text)'"
