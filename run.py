@@ -159,10 +159,20 @@ if __name__ == "__main__":
             browser_thread.start()
             logger.info("Browser thread started")
         
-        # Запустить FastAPI сервер
         logger.info(f"Starting FastAPI server on http://{host}:{port}")
         logger.info(f"Web interface: http://localhost:{port}")
         logger.info(f"API docs: http://localhost:{port}/docs")
+        
+        # Проверка SSL сертификатов
+        ssl_dir = Path.home() / ".ssl"
+        cert_file = ssl_dir / "cert.pem"
+        key_file = ssl_dir / "key.pem"
+        
+        if not (cert_file.exists() and key_file.exists()):
+            logger.warning("⚠️  SSL сертификаты не найдены")
+            logger.info("🔒 Для HTTPS поддержки запустите: .\\ssl-generator.ps1")
+        else:
+            logger.info(f"✅ SSL сертификаты: {ssl_dir}")
         
         uvicorn.run(
             "src.api.main:app",

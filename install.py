@@ -65,6 +65,62 @@ def check_docker():
                 print("  CentOS: sudo yum install docker")
                 return False
         return True
+    """Проверить SSL сертификаты"""
+    ssl_dir = Path.home() / ".ssl"
+    cert_file = ssl_dir / "cert.pem"
+    key_file = ssl_dir / "key.pem"
+    
+    if cert_file.exists() and key_file.exists():
+        print(f"✅ SSL сертификаты найдены: {ssl_dir}")
+        return True
+    else:
+        print(f"⚠️  SSL сертификаты не найдены в {ssl_dir}")
+        print("\nSSL сертификаты нужны для HTTPS поддержки")
+        
+        create = input("Создать SSL сертификаты? (y/n): ").lower()
+        if create == 'y':
+            if sys.platform == "win32":
+                print("Запускаю генератор SSL сертификатов...")
+                try:
+                    result = subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", "ssl-generator.ps1"], 
+                                          capture_output=True, text=True, check=True)
+                    print("✅ SSL сертификаты созданы")
+                    return True
+                except subprocess.CalledProcessError as e:
+                    print(f"❌ Ошибка создания SSL сертификатов: {e}")
+                    print("Запустите вручную: .\\ssl-generator.ps1")
+                    return False
+            else:
+                print("Для создания SSL сертификатов на Linux/Mac запустите:")
+                print("  openssl req -x509 -newkey rsa:2048 -keyout ~/.ssl/key.pem -out ~/.ssl/cert.pem -days 365 -nodes")
+                return False
+        return True
+    """Проверить и установить Docker"""
+    try:
+        result = subprocess.run(["docker", "--version"], capture_output=True, text=True, check=True)
+        print(f"✅ Docker уже установлен: {result.stdout.strip()}")
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("⚠️  Docker не установлен")
+        print("\nDocker нужен для контейнеризации (опционально)")
+        
+        install = input("Установить Docker? (y/n): ").lower()
+        if install == 'y':
+            if sys.platform == "win32":
+                print("Открываю страницу загрузки Docker Desktop...")
+                import webbrowser
+                webbrowser.open("https://www.docker.com/products/docker-desktop/")
+                print("Установите Docker Desktop и перезагрузите компьютер")
+                return False
+            elif sys.platform == "darwin":
+                print("Установите Docker Desktop с https://www.docker.com/products/docker-desktop/")
+                return False
+            else:
+                print("Установите Docker через пакетный менеджер:")
+                print("  Ubuntu: sudo apt install docker.io")
+                print("  CentOS: sudo yum install docker")
+                return False
+        return True
 
 def run_command(cmd, description, show_output=False):
     """Выполнить команду с описанием"""
@@ -100,6 +156,9 @@ def main():
     # Проверка Docker
     if not check_docker():
         print("⚠️  Docker не установлен, но продолжаем...")
+    
+    # Проверка SSL сертификатов
+    check_ssl_certificates()
     
     # Создание виртуального окружения
     if not Path("venv").exists():
