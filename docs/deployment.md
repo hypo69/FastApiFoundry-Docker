@@ -1,5 +1,9 @@
 # 🚀 FastAPI Foundry - Руководство по развертыванию
 
+---
+**📚 Навигация:** [🏠 Главная](README.md) | [📦 Установка](installation.md) | [🚀 Запуск](running.md) | [🎯 Лончеры](launchers.md) | [📖 Использование](usage.md) | [⚙️ Настройка](configuration.md) | [📊 Примеры](examples.md) | [🛠️ Рецепты](howto.md) | [🔌 MCP](mcp_integration.md) | [🌍 Туннели](tunnel_guide.md) | [🐳 Docker](docker.md) | [🛠️ Разработка](development.md) | [🚀 Развертывание](deployment.md) | [🔧 cURL](curl_commands.md) | [📋 Проект](project_info.md)
+---
+
 **Полное руководство по установке и настройке FastAPI Foundry на сервере**
 
 ## 📋 Системные требования
@@ -65,9 +69,6 @@ python run.py
 # Foundry настройки
 FOUNDRY_BASE_URL=http://localhost:5272/v1/
 FOUNDRY_DEFAULT_MODEL=deepseek-r1-distill-qwen-7b-generic-cpu:3
-FOUNDRY_TEMPERATURE=0.6
-FOUNDRY_MAX_TOKENS=2048
-FOUNDRY_TIMEOUT=300
 
 # API настройки
 API_HOST=0.0.0.0
@@ -81,8 +82,6 @@ CORS_ORIGINS=["https://yourdomain.com", "https://api.yourdomain.com"]
 
 # RAG настройки
 RAG_ENABLED=true
-RAG_INDEX_DIR=/opt/fastapi-foundry/rag_index
-RAG_MODEL=sentence-transformers/all-MiniLM-L6-v2
 
 # Логирование
 LOG_LEVEL=INFO
@@ -108,17 +107,6 @@ ExecStart=/opt/fastapi-foundry/venv/bin/python run.py --prod
 Restart=always
 RestartSec=10
 
-# Логирование
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=fastapi-foundry
-
-# Безопасность
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ReadWritePaths=/opt/fastapi-foundry/logs /opt/fastapi-foundry/rag_index
-
 [Install]
 WantedBy=multi-user.target
 ```
@@ -134,156 +122,7 @@ sudo systemctl status fastapi-foundry
 
 ## 🐳 Docker развертывание
 
-### 1. Docker Compose (рекомендуется)
-
-```yaml
-# docker-compose.prod.yml
-version: '3.8'
-
-services:
-  fastapi-foundry:
-    build: .
-    container_name: fastapi-foundry-prod
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
-    environment:
-      - API_HOST=0.0.0.0
-      - API_PORT=8000
-      - API_WORKERS=4
-      - LOG_LEVEL=INFO
-      - FOUNDRY_BASE_URL=http://foundry:5272/v1/
-    volumes:
-      - ./logs:/app/logs
-      - ./rag_index:/app/rag_index
-      - ./prod.env:/app/.env
-    depends_on:
-      - foundry
-    networks:
-      - foundry-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  foundry:
-    image: foundryai/foundry:latest
-    container_name: foundry-prod
-    restart: unless-stopped
-    ports:
-      - "5272:5272"
-    volumes:
-      - foundry-models:/app/models
-    networks:
-      - foundry-network
-
-  nginx:
-    image: nginx:alpine
-    container_name: nginx-proxy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
-      - ./nginx/logs:/var/log/nginx
-    depends_on:
-      - fastapi-foundry
-    networks:
-      - foundry-network
-
-volumes:
-  foundry-models:
-
-networks:
-  foundry-network:
-    driver: bridge
-```
-
-Запуск:
-
-```bash
-# Продакшн развертывание
-docker-compose -f docker-compose.prod.yml up -d
-
-# Мониторинг логов
-docker-compose -f docker-compose.prod.yml logs -f
-
-# Обновление
-docker-compose -f docker-compose.prod.yml pull
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-### 2. Nginx конфигурация
-
-Создать файл `nginx/nginx.conf`:
-
-```nginx
-events {
-    worker_connections 1024;
-}
-
-http {
-    upstream fastapi_foundry {
-        server fastapi-foundry:8000;
-    }
-
-    # Rate limiting
-    limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
-
-    server {
-        listen 80;
-        server_name api.yourdomain.com;
-
-        # Redirect HTTP to HTTPS
-        return 301 https://$server_name$request_uri;
-    }
-
-    server {
-        listen 443 ssl http2;
-        server_name api.yourdomain.com;
-
-        # SSL configuration
-        ssl_certificate /etc/nginx/ssl/cert.pem;
-        ssl_certificate_key /etc/nginx/ssl/key.pem;
-        ssl_protocols TLSv1.2 TLSv1.3;
-        ssl_ciphers HIGH:!aNULL:!MD5;
-
-        # Security headers
-        add_header X-Frame-Options DENY;
-        add_header X-Content-Type-Options nosniff;
-        add_header X-XSS-Protection "1; mode=block";
-
-        # API proxy
-        location /api/ {
-            limit_req zone=api burst=20 nodelay;
-            
-            proxy_pass http://fastapi_foundry;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            
-            # Timeouts
-            proxy_connect_timeout 60s;
-            proxy_send_timeout 60s;
-            proxy_read_timeout 300s;
-        }
-
-        # Health check
-        location /health {
-            proxy_pass http://fastapi_foundry/api/v1/health;
-        }
-
-        # Documentation
-        location /docs {
-            proxy_pass http://fastapi_foundry/docs;
-        }
-    }
-}
-```
+Для развертывания с использованием Docker, см. подробное руководство **[🐳 Docker](docker.md)**.
 
 ## 🔐 Безопасность
 
@@ -305,21 +144,12 @@ sudo ufw allow 22/tcp    # SSH
 sudo ufw allow 80/tcp    # HTTP
 sudo ufw allow 443/tcp   # HTTPS
 sudo ufw deny 8000/tcp   # Блокировать прямой доступ к FastAPI
-sudo ufw deny 5272/tcp   # Блокировать прямой доступ к Foundry
 sudo ufw enable
 ```
 
 ### 3. SSL сертификаты
 
-```bash
-# Let's Encrypt с Certbot
-sudo apt install certbot
-sudo certbot certonly --standalone -d api.yourdomain.com
-
-# Копировать сертификаты для Nginx
-sudo cp /etc/letsencrypt/live/api.yourdomain.com/fullchain.pem nginx/ssl/cert.pem
-sudo cp /etc/letsencrypt/live/api.yourdomain.com/privkey.pem nginx/ssl/key.pem
-```
+Для production рекомендуется использовать `nginx` в качестве reverse proxy с SSL сертификатами от Let's Encrypt.
 
 ## 📊 Мониторинг и логирование
 
@@ -355,203 +185,26 @@ else
 fi
 ```
 
-### 3. Автоматический перезапуск
+---
+## 🚀 Навигация по разделу "Развертывание"
 
-```bash
-# Cron job для проверки и перезапуска
-# Добавить в crontab: crontab -e
-*/5 * * * * /opt/fastapi-foundry/health_check.sh || systemctl restart fastapi-foundry
-```
+| Документ | Описание |
+|----------|----------|
+| [🐳 Docker](docker.md) | Контейнеризация и развертывание |
+| [🚀 Развертывание](deployment.md) | Production развертывание |
 
-## 🔄 Обновление и обслуживание
+## 🔗 Другие разделы
 
-### 1. Обновление кода
-
-```bash
-# Остановить сервис
-sudo systemctl stop fastapi-foundry
-
-# Обновить код
-cd /opt/fastapi-foundry
-git pull origin main
-
-# Обновить зависимости
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Запустить сервис
-sudo systemctl start fastapi-foundry
-```
-
-### 2. Обновление RAG индекса
-
-```bash
-# Переиндексировать документы
-python rag_indexer.py --docs-dir /path/to/docs --output-dir rag_index
-
-# Перезагрузить RAG через API
-curl -X POST http://localhost:8000/api/v1/rag/reload \
-  -H "Authorization: Bearer your-api-key"
-```
-
-### 3. Резервное копирование
-
-```bash
-#!/bin/bash
-# backup.sh
-
-BACKUP_DIR="/backup/fastapi-foundry"
-DATE=$(date +%Y%m%d_%H%M%S)
-
-# Создать директорию
-mkdir -p $BACKUP_DIR
-
-# Бэкап конфигурации
-tar -czf $BACKUP_DIR/config_$DATE.tar.gz .env nginx/
-
-# Бэкап RAG индекса
-tar -czf $BACKUP_DIR/rag_index_$DATE.tar.gz rag_index/
-
-# Бэкап логов (последние 7 дней)
-find logs/ -name "*.log" -mtime -7 | tar -czf $BACKUP_DIR/logs_$DATE.tar.gz -T -
-
-echo "Backup completed: $BACKUP_DIR"
-```
-
-## 🚨 Устранение проблем
-
-### 1. Сервис не запускается
-
-```bash
-# Проверить статус
-sudo systemctl status fastapi-foundry
-
-# Проверить логи
-sudo journalctl -u fastapi-foundry --no-pager
-
-# Проверить конфигурацию
-python -c "from config import settings; print(settings)"
-```
-
-### 2. Foundry недоступен
-
-```bash
-# Проверить Foundry
-curl http://localhost:5272/v1/models
-
-# Проверить Docker контейнер
-docker ps | grep foundry
-docker logs foundry-container-name
-```
-
-### 3. RAG не работает
-
-```bash
-# Проверить индекс
-ls -la rag_index/
-
-# Проверить зависимости
-pip list | grep -E "(sentence-transformers|faiss)"
-
-# Переиндексировать
-python rag_indexer.py --docs-dir docs/ --output-dir rag_index/
-```
-
-### 4. Высокая нагрузка
-
-```bash
-# Мониторинг ресурсов
-htop
-docker stats
-
-# Увеличить количество workers
-# В .env: API_WORKERS=8
-
-# Настроить rate limiting в Nginx
-# limit_req zone=api burst=50 nodelay;
-```
-
-## 📈 Масштабирование
-
-### 1. Горизонтальное масштабирование
-
-```yaml
-# docker-compose.scale.yml
-version: '3.8'
-
-services:
-  fastapi-foundry:
-    build: .
-    deploy:
-      replicas: 4
-    environment:
-      - API_WORKERS=2
-    # ... остальная конфигурация
-
-  nginx:
-    # Load balancer конфигурация
-    volumes:
-      - ./nginx/nginx-lb.conf:/etc/nginx/nginx.conf
-```
-
-### 2. Кэширование
-
-```python
-# Добавить Redis для кэширования
-# requirements.txt
-redis>=4.5.0
-
-# В main.py
-import redis
-redis_client = redis.Redis(host='redis', port=6379, db=0)
-```
-
-### 3. Мониторинг производительности
-
-```bash
-# Установить Prometheus + Grafana
-# Добавить метрики в FastAPI
-pip install prometheus-fastapi-instrumentator
-```
-
-## 📞 Поддержка
-
-### Полезные команды
-
-```bash
-# Проверка всех сервисов
-curl http://localhost:8000/api/v1/health
-curl http://localhost:5272/v1/models
-
-# Тестирование API
-curl -X POST http://localhost:8000/api/v1/generate \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key" \
-  -d '{"prompt": "Test prompt"}'
-
-# Просмотр метрик
-docker stats
-systemctl status fastapi-foundry
-```
-
-### 📚 Документация и ресурсы
-
-- **[📂 Индекс документации](DOCS_INDEX.md)** - Полный каталог всех документов
-- **[🚀 Быстрый старт](README.md)** - Основная документация
-- **[🏗️ Архитектура](howto.md)** - Подробное руководство по компонентам
-- **[🌐 Туннели](TUNNEL_GUIDE.md)** - Публичный доступ к API
-- **API Docs**: http://localhost:8000/docs - Автоматическая документация
-- **Health Check**: http://localhost:8000/api/v1/health - Мониторинг
-- **Конфигурация**: http://localhost:8000/api/v1/config - Текущие настройки
-
-### 🐛 Поддержка и обратная связь
-
-- **GitHub Issues**: https://github.com/hypo69/aistros/issues
-- **Email**: support@aistros.com
-- **Website**: https://aistros.com
+| Раздел | Документы |
+|--------|-----------|
+| **📖 Начало работы** | [📦 Установка](installation.md) • [🚀 Запуск](running.md) • [🎯 Лончеры](launchers.md) • [📖 Использование](usage.md) • [⚙️ Настройка](configuration.md) |
+| **🛠️ Практика** | [📊 Примеры](examples.md) • [🛠️ Рецепты](howto.md) |
+| **🌐 Интеграция** | [🔌 MCP](mcp_integration.md) • [🌍 Туннели](tunnel_guide.md) |
+| **👨‍💻 Разработка** | [🛠️ Development](development.md) • [🔧 cURL](curl_commands.md) • [📋 Проект](project_info.md) |
 
 ---
 
-**FastAPI Foundry Deployment Guide v1.0.0**  
-📚 [Полная документация](DOCS_INDEX.md) | 🚀 [Быстрый старт](README.md) | 🏗️ [Архитектура](howto.md)  
-© 2025 AiStros Team | Часть экосистемы AiStros
+**📚 Быстрые ссылки:** [⬅️ Назад к оглавлению](README.md) | [📖 Все документы](README.md#-документация)
+
+**FastAPI Foundry** - часть экосистемы AiStros  
+© 2025 AiStros Team

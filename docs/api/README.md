@@ -1,41 +1,28 @@
-# 📡 API Documentation
+# 📡 Документация по API
 
 Полная документация по REST API FastAPI Foundry.
 
+---
+**📚 Навигация:** [🏠 Главная](../README.md) | [📦 Установка](../installation.md) | [🚀 Запуск](../running.md) | [📖 Использование](../usage.md)
+---
+
 ## 📋 Разделы API
 
-### 🔍 [Health & Status](../api.md#health--status)
-- `GET /api/v1/health` - Проверка здоровья системы
+| Раздел | Описание |
+| :--- | :--- |
+| **Основные** | |
+| 🤖 [Генерация текста](generation.md) | `POST /generate`, `POST /batch-generate` |
+| 🧠 [Управление моделями](models.md) | `GET /models`, `POST /models/connect` и др. |
+| 🔍 [Система RAG](rag.md) | `POST /rag/search`, `POST /rag/reload` и др. |
+| **Система и Мониторинг** | |
+| 📊 [Мониторинг и Логи](monitoring.md) | `GET /logs/health`, `GET /logs/errors` и др. |
+| ⚙️ [Конфигурация](configuration.md) | `GET /config` |
+| 🩺 [Статус здоровья](../api.md#health--status) | `GET /health` |
+| **Интеграции и Утилиты** | |
+| 🎮 [Примеры](examples.md) | `GET /examples/list`, `POST /examples/run` |
+| 🌐 [Управление туннелями](tunnel.md) | `GET /tunnel/status`, `POST /tunnel/start` |
+| 🔧 [Интеграция с Foundry](foundry.md) | `GET /foundry/status`, `POST /foundry/service/start` |
 
-### 🤖 [Text Generation](generation.md)
-- `POST /api/v1/generate` - Генерация текста
-- `POST /api/v1/batch-generate` - Пакетная генерация
-
-### 🧠 [Models Management](models.md)
-- `GET /api/v1/models` - Список моделей
-- `GET /api/v1/models/connected` - Подключенные модели
-- `POST /api/v1/models/connect` - Подключить модель
-- `GET /api/v1/models/providers` - Провайдеры
-
-### 🔍 [RAG System](rag.md)
-- `POST /api/v1/rag/search` - Поиск в RAG
-- `POST /api/v1/rag/reload` - Перезагрузка индекса
-- `GET /api/v1/rag/status` - Статус RAG
-
-### 📊 [Monitoring & Logs](monitoring.md)
-- `GET /api/v1/logs/health` - Здоровье системы
-- `GET /api/v1/logs/errors` - Сводка ошибок
-- `GET /api/v1/logs/performance` - Метрики производительности
-- `GET /api/v1/logs/recent` - Последние логи
-
-### 🎮 Examples
-- `POST /api/v1/examples/run` - Запуск примера
-- `GET /api/v1/examples/list` - Список примеров
-
-### 🌐 Tunnel Management
-- `POST /api/v1/tunnel/start` - Запуск туннеля
-- `POST /api/v1/tunnel/stop` - Остановка туннеля
-- `GET /api/v1/tunnel/status` - Статус туннеля
 
 ## 🚀 Быстрый старт
 
@@ -60,11 +47,15 @@ curl -X POST http://localhost:8000/api/v1/rag/search \
 
 ## 📚 Интерактивная документация
 
-- **Swagger UI:** http://localhost:8000/docs
-- **ReDoc:** http://localhost:8000/redoc
-- **OpenAPI JSON:** http://localhost:8000/openapi.json
+Для изучения API в интерактивном режиме используйте один из следующих эндпоинтов, доступных после запуска сервера:
 
-## 🔧 Python Client
+- **Swagger UI:** `http://localhost:8000/docs`
+- **ReDoc:** `http://localhost:8000/redoc`
+- **OpenAPI JSON:** `http://localhost:8000/openapi.json`
+
+## 🔧 Python Клиент
+
+Пример использования API через Python находится в `examples/example_client.py`.
 
 ```python
 from examples.example_client import FastAPIFoundryClient
@@ -79,28 +70,34 @@ async with FastAPIFoundryClient() as client:
     # Список моделей
     models = await client.list_models()
 ```
+Подробнее см. в **[документации по примерам](../examples.md)**.
 
 ## 📊 Статус коды
 
-| Code | Description |
-|------|-------------|
-| 200 | Success |
-| 400 | Bad Request |
-| 404 | Not Found |
-| 500 | Internal Server Error |
-| 503 | Service Unavailable |
+| Код | Описание |
+| :-- | :--- |
+| 200 | `OK` - Запрос успешно выполнен. |
+| 400 | `Bad Request` - Некорректный запрос (например, отсутствуют обязательные поля). |
+| 401 | `Unauthorized` - Ошибка аутентификации (неверный API ключ). |
+| 404 | `Not Found` - Запрашиваемый ресурс не найден. |
+| 500 | `Internal Server Error` - Внутренняя ошибка сервера. |
+| 503 | `Service Unavailable` - Сервис временно недоступен. |
 
 ## 🔐 Аутентификация
 
-По умолчанию отключена. Для включения:
+Если в файле `.env` включен API ключ, его необходимо передавать в заголовке `Authorization`.
 
-```bash
+```env
 # .env
 API_KEY_ENABLED=true
 API_KEY=your-secret-key
 ```
 
+Пример запроса с ключом:
 ```bash
 curl -H "Authorization: Bearer your-secret-key" \
   http://localhost:8000/api/v1/health
 ```
+
+---
+**[⬆️ Назад к главной документации](../README.md)**
