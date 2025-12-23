@@ -1,0 +1,25 @@
+{
+  "fastapi_server": {
+    "mode": "dev",
+    "host": "0.0.0.0",
+    "port": 8002,
+    "api_key": "",
+    "workers": 1,
+    "reload": true,
+    "log_level": "INFO"
+  },
+  "foundry_ai": {
+    "base_url": "http://localhost:50477/v1/",
+    "default_model": "deepseek-r1-distill-qwen-7b-generic-cpu:3",
+    "temperature": 0.6,
+    "top_p": 0.9,
+    "top_k": 40,
+    "max_tokens": 2048,
+    "timeout": 300
+  },
+  "rag_system": {
+    "enabled": true,
+    "index_dir": "./rag_index",
+    "model": "sentence-transformers/all-MiniLM-L6-v2"
+  }
+}

@@ -4,7 +4,7 @@
 # =============================================================================
 # Описание:
 #   Графический интерфейс для запуска run.py с полным набором параметров
-#   Поддерживает все environment переменные и аргументы командной строки
+#   Настройки загружаются из gui-config.json
 #
 # Примеры:
 #   .\run-gui.ps1
@@ -21,6 +21,15 @@
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$configFile = Join-Path $scriptDir "config.json"
+
+# Загрузка конфигурации
+if (Test-Path $configFile) {
+    $config = Get-Content $configFile -Raw | ConvertFrom-Json
+} else {
+    Write-Host "Config file not found: $configFile" -ForegroundColor Red
+    exit 1
+}
 
 # Создание формы
 $form = New-Object System.Windows.Forms.Form
@@ -45,7 +54,7 @@ $y = 20
 
 # Заголовок секции
 $lblServerHeader = New-Object System.Windows.Forms.Label
-$lblServerHeader.Text = "FastAPI Server Configuration (Port 8000)"
+$lblServerHeader.Text = "FastAPI Server Configuration (Port $($config.fastapi_server.port))"
 $lblServerHeader.Location = New-Object System.Drawing.Point(15,$y)
 $lblServerHeader.Size = New-Object System.Drawing.Size(400,20)
 $lblServerHeader.Font = New-Object System.Drawing.Font("Segoe UI",9,[System.Drawing.FontStyle]::Bold)
@@ -64,7 +73,7 @@ $cbMode = New-Object System.Windows.Forms.ComboBox
 $cbMode.Location = New-Object System.Drawing.Point(200,$y)
 $cbMode.Size = New-Object System.Drawing.Size(250,20)
 $cbMode.Items.AddRange(@("dev","production"))
-$cbMode.SelectedIndex = 0
+$cbMode.Text = $config.fastapi_server.mode
 $tabServer.Controls.Add($cbMode)
 $y += 35
 
@@ -78,7 +87,7 @@ $tabServer.Controls.Add($lblHost)
 $txtHost = New-Object System.Windows.Forms.TextBox
 $txtHost.Location = New-Object System.Drawing.Point(200,$y)
 $txtHost.Size = New-Object System.Drawing.Size(250,20)
-$txtHost.Text = "0.0.0.0"
+$txtHost.Text = $config.fastapi_server.host
 $tabServer.Controls.Add($txtHost)
 $y += 35
 
@@ -92,7 +101,7 @@ $tabServer.Controls.Add($lblPort)
 $txtPort = New-Object System.Windows.Forms.TextBox
 $txtPort.Location = New-Object System.Drawing.Point(200,$y)
 $txtPort.Size = New-Object System.Drawing.Size(250,20)
-$txtPort.Text = "8000"
+$txtPort.Text = $config.fastapi_server.port.ToString()
 $tabServer.Controls.Add($txtPort)
 $y += 35
 
@@ -107,6 +116,7 @@ $txtApiKey = New-Object System.Windows.Forms.TextBox
 $txtApiKey.Location = New-Object System.Drawing.Point(200,$y)
 $txtApiKey.Size = New-Object System.Drawing.Size(250,20)
 $txtApiKey.PasswordChar = '*'
+$txtApiKey.Text = $config.fastapi_server.api_key
 $tabServer.Controls.Add($txtApiKey)
 $y += 35
 
@@ -122,7 +132,7 @@ $numWorkers.Location = New-Object System.Drawing.Point(200,$y)
 $numWorkers.Size = New-Object System.Drawing.Size(100,20)
 $numWorkers.Minimum = 1
 $numWorkers.Maximum = 16
-$numWorkers.Value = 1
+$numWorkers.Value = $config.fastapi_server.workers
 $tabServer.Controls.Add($numWorkers)
 $y += 35
 
@@ -131,6 +141,7 @@ $chkReload = New-Object System.Windows.Forms.CheckBox
 $chkReload.Text = "API_RELOAD (dev mode)"
 $chkReload.Location = New-Object System.Drawing.Point(15,$y)
 $chkReload.Size = New-Object System.Drawing.Size(200,20)
+$chkReload.Checked = $config.fastapi_server.reload
 $tabServer.Controls.Add($chkReload)
 $y += 35
 
@@ -145,7 +156,7 @@ $cbLogLevel = New-Object System.Windows.Forms.ComboBox
 $cbLogLevel.Location = New-Object System.Drawing.Point(200,$y)
 $cbLogLevel.Size = New-Object System.Drawing.Size(150,20)
 $cbLogLevel.Items.AddRange(@("DEBUG","INFO","WARNING","ERROR"))
-$cbLogLevel.SelectedIndex = 1
+$cbLogLevel.Text = $config.fastapi_server.log_level
 $tabServer.Controls.Add($cbLogLevel)
 
 # === TAB 2: Foundry AI Model ===
@@ -157,7 +168,7 @@ $y = 20
 
 # Заголовок секции
 $lblFoundryHeader = New-Object System.Windows.Forms.Label
-$lblFoundryHeader.Text = "Foundry AI Model Configuration (Port 50477)"
+$lblFoundryHeader.Text = "Foundry AI Model Configuration"
 $lblFoundryHeader.Location = New-Object System.Drawing.Point(15,$y)
 $lblFoundryHeader.Size = New-Object System.Drawing.Size(400,20)
 $lblFoundryHeader.Font = New-Object System.Drawing.Font("Segoe UI",9,[System.Drawing.FontStyle]::Bold)
@@ -175,7 +186,7 @@ $tabFoundry.Controls.Add($lblFoundryUrl)
 $txtFoundryUrl = New-Object System.Windows.Forms.TextBox
 $txtFoundryUrl.Location = New-Object System.Drawing.Point(200,$y)
 $txtFoundryUrl.Size = New-Object System.Drawing.Size(250,20)
-$txtFoundryUrl.Text = "http://localhost:50477/v1/"
+$txtFoundryUrl.Text = $config.foundry_ai.base_url
 $tabFoundry.Controls.Add($txtFoundryUrl)
 $y += 35
 
@@ -189,7 +200,7 @@ $tabFoundry.Controls.Add($lblModel)
 $txtModel = New-Object System.Windows.Forms.TextBox
 $txtModel.Location = New-Object System.Drawing.Point(200,$y)
 $txtModel.Size = New-Object System.Drawing.Size(250,20)
-$txtModel.Text = "deepseek-r1-distill-qwen-7b-generic-cpu:3"
+$txtModel.Text = $config.foundry_ai.default_model
 $tabFoundry.Controls.Add($txtModel)
 $y += 35
 
@@ -207,7 +218,7 @@ $numTemp.DecimalPlaces = 1
 $numTemp.Increment = 0.1
 $numTemp.Minimum = 0.0
 $numTemp.Maximum = 2.0
-$numTemp.Value = 0.6
+$numTemp.Value = $config.foundry_ai.temperature
 $tabFoundry.Controls.Add($numTemp)
 $y += 35
 
@@ -225,7 +236,7 @@ $numTopP.DecimalPlaces = 2
 $numTopP.Increment = 0.01
 $numTopP.Minimum = 0.0
 $numTopP.Maximum = 1.0
-$numTopP.Value = 0.9
+$numTopP.Value = $config.foundry_ai.top_p
 $tabFoundry.Controls.Add($numTopP)
 $y += 35
 
@@ -241,7 +252,7 @@ $numTopK.Location = New-Object System.Drawing.Point(200,$y)
 $numTopK.Size = New-Object System.Drawing.Size(100,20)
 $numTopK.Minimum = 1
 $numTopK.Maximum = 200
-$numTopK.Value = 40
+$numTopK.Value = $config.foundry_ai.top_k
 $tabFoundry.Controls.Add($numTopK)
 $y += 35
 
@@ -257,7 +268,7 @@ $numMaxTokens.Location = New-Object System.Drawing.Point(200,$y)
 $numMaxTokens.Size = New-Object System.Drawing.Size(100,20)
 $numMaxTokens.Minimum = 1
 $numMaxTokens.Maximum = 32768
-$numMaxTokens.Value = 2048
+$numMaxTokens.Value = $config.foundry_ai.max_tokens
 $tabFoundry.Controls.Add($numMaxTokens)
 $y += 35
 
@@ -273,7 +284,7 @@ $numTimeout.Location = New-Object System.Drawing.Point(200,$y)
 $numTimeout.Size = New-Object System.Drawing.Size(100,20)
 $numTimeout.Minimum = 10
 $numTimeout.Maximum = 3600
-$numTimeout.Value = 300
+$numTimeout.Value = $config.foundry_ai.timeout
 $tabFoundry.Controls.Add($numTimeout)
 
 # === TAB 3: RAG Settings ===
@@ -288,7 +299,7 @@ $chkRAG = New-Object System.Windows.Forms.CheckBox
 $chkRAG.Text = "RAG_ENABLED"
 $chkRAG.Location = New-Object System.Drawing.Point(15,$y)
 $chkRAG.Size = New-Object System.Drawing.Size(200,20)
-$chkRAG.Checked = $true
+$chkRAG.Checked = $config.rag_system.enabled
 $tabRAG.Controls.Add($chkRAG)
 $y += 35
 
@@ -302,7 +313,7 @@ $tabRAG.Controls.Add($lblRAGDir)
 $txtRAGDir = New-Object System.Windows.Forms.TextBox
 $txtRAGDir.Location = New-Object System.Drawing.Point(200,$y)
 $txtRAGDir.Size = New-Object System.Drawing.Size(250,20)
-$txtRAGDir.Text = "./rag_index"
+$txtRAGDir.Text = $config.rag_system.index_dir
 $tabRAG.Controls.Add($txtRAGDir)
 $y += 35
 
@@ -321,7 +332,7 @@ $cbRAGModel.Items.AddRange(@(
     "sentence-transformers/all-mpnet-base-v2",
     "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 ))
-$cbRAGModel.SelectedIndex = 0
+$cbRAGModel.Text = $config.rag_system.model
 $tabRAG.Controls.Add($cbRAGModel)
 
 # === Buttons ===
