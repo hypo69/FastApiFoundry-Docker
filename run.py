@@ -5,11 +5,11 @@
 # =============================================================================
 # Описание:
 #   Основной скрипт запуска FastAPI сервера с поддержкой Docker
-#   Автоматическое освобождение портов, запуск браузера, логирование
+#   Использует встроенный Python 3.14 из директории python-314/
 #
 # Примеры:
-#   python run.py
-#   python run.py --host 0.0.0.0 --port 8000
+#   python-314/python.exe run.py
+#   python-314/python.exe run.py --host 0.0.0.0 --port 8000
 #
 # File: run.py
 # Project: FastApiFoundry (Docker)

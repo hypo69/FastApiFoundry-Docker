@@ -33,7 +33,37 @@ for /f "tokens=*" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
 echo ✅ %PYTHON_VERSION% найден
 echo.
 
-REM Detect PowerShell version
+echo 🐳 Проверка Docker...
+docker --version >nul 2>&1
+if errorlevel 1 (
+    echo ❌ Docker не найден!
+    echo.
+    echo Docker нужен для контейнеризации и docker-compose команд
+    echo Скачайте Docker Desktop с https://www.docker.com/products/docker-desktop/
+    echo.
+    set /p install_docker="Открыть страницу загрузки Docker? (y/n): "
+    if /i "!install_docker!"=="y" (
+        start https://www.docker.com/products/docker-desktop/
+        echo После установки Docker Desktop:
+        echo 1. Перезагрузите компьютер
+        echo 2. Запустите Docker Desktop
+        echo 3. Дождитесь полной инициализации
+        echo 4. Проверьте: docker --version ^&^& docker compose version
+    )
+) else (
+    for /f "tokens=*" %%i in ('docker --version 2^>^&1') do set DOCKER_VERSION=%%i
+    echo ✅ !DOCKER_VERSION! найден
+    
+    docker compose version >nul 2>&1
+    if errorlevel 1 (
+        echo ⚠️  Docker Compose не найден
+        echo Используйте современную версию Docker Desktop
+    ) else (
+        for /f "tokens=*" %%i in ('docker compose version 2^>^&1') do set COMPOSE_VERSION=%%i
+        echo ✅ Docker Compose найден
+    )
+)
+echo.
 echo 📋 Поиск PowerShell...
 where pwsh >nul 2>&1
 if %errorlevel% equ 0 (
@@ -76,6 +106,15 @@ if %errorlevel% equ 0 (
     echo.
     echo 6. Справка:
     echo    python run.py --help
+    echo.
+    echo 🐳 Docker команды (если установлен):
+    echo    docker compose up -d    # Запуск в контейнере
+    echo    docker compose down     # Остановка контейнера
+    echo    docker compose logs -f  # Просмотр логов
+    echo.
+    echo 🔧 Альтернативные запуски:
+    echo    .\start-local.ps1       # Без Docker
+    echo    .\run-gui.ps1          # GUI конфигуратор
     echo.
 ) else (
     echo.

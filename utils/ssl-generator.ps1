@@ -19,6 +19,9 @@
 # Date: 9 декабря 2025
 # =============================================================================
 
+# Установка политики выполнения для текущего пользователя
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+
 param(
     [switch]$Force = $false
 )

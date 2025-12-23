@@ -42,11 +42,13 @@ def check_docker():
     """Проверить и установить Docker"""
     try:
         result = subprocess.run(["docker", "--version"], capture_output=True, text=True, check=True)
+        compose_result = subprocess.run(["docker", "compose", "version"], capture_output=True, text=True, check=True)
         print(f"✅ Docker уже установлен: {result.stdout.strip()}")
+        print(f"✅ Docker Compose: {compose_result.stdout.strip()}")
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("⚠️  Docker не установлен")
-        print("\nDocker нужен для контейнеризации (опционально)")
+        print("\nDocker нужен для контейнеризации и docker-compose команд")
         
         install = input("Установить Docker? (y/n): ").lower()
         if install == 'y':
@@ -54,17 +56,22 @@ def check_docker():
                 print("Открываю страницу загрузки Docker Desktop...")
                 import webbrowser
                 webbrowser.open("https://www.docker.com/products/docker-desktop/")
-                print("Установите Docker Desktop и перезагрузите компьютер")
+                print("После установки Docker Desktop:")
+                print("1. Перезагрузите компьютер")
+                print("2. Запустите Docker Desktop")
+                print("3. Дождитесь полной инициализации")
+                print("4. Проверьте: docker --version && docker compose version")
                 return False
             elif sys.platform == "darwin":
                 print("Установите Docker Desktop с https://www.docker.com/products/docker-desktop/")
                 return False
             else:
                 print("Установите Docker через пакетный менеджер:")
-                print("  Ubuntu: sudo apt install docker.io")
-                print("  CentOS: sudo yum install docker")
+                print("  Ubuntu: sudo apt install docker.io docker-compose-plugin")
+                print("  CentOS: sudo yum install docker docker-compose")
                 return False
         return True
+def check_ssl_certificates():
     """Проверить SSL сертификаты"""
     ssl_dir = Path.home() / ".ssl"
     cert_file = ssl_dir / "cert.pem"
@@ -82,43 +89,18 @@ def check_docker():
             if sys.platform == "win32":
                 print("Запускаю генератор SSL сертификатов...")
                 try:
-                    result = subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", "ssl-generator.ps1"], 
+                    result = subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", "utils/ssl-generator.ps1"], 
                                           capture_output=True, text=True, check=True)
                     print("✅ SSL сертификаты созданы")
                     return True
                 except subprocess.CalledProcessError as e:
                     print(f"❌ Ошибка создания SSL сертификатов: {e}")
-                    print("Запустите вручную: .\\ssl-generator.ps1")
+                    print("Запустите вручную: .\\utils\\ssl-generator.ps1")
                     return False
             else:
                 print("Для создания SSL сертификатов на Linux/Mac запустите:")
+                print("  mkdir -p ~/.ssl")
                 print("  openssl req -x509 -newkey rsa:2048 -keyout ~/.ssl/key.pem -out ~/.ssl/cert.pem -days 365 -nodes")
-                return False
-        return True
-    """Проверить и установить Docker"""
-    try:
-        result = subprocess.run(["docker", "--version"], capture_output=True, text=True, check=True)
-        print(f"✅ Docker уже установлен: {result.stdout.strip()}")
-        return True
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        print("⚠️  Docker не установлен")
-        print("\nDocker нужен для контейнеризации (опционально)")
-        
-        install = input("Установить Docker? (y/n): ").lower()
-        if install == 'y':
-            if sys.platform == "win32":
-                print("Открываю страницу загрузки Docker Desktop...")
-                import webbrowser
-                webbrowser.open("https://www.docker.com/products/docker-desktop/")
-                print("Установите Docker Desktop и перезагрузите компьютер")
-                return False
-            elif sys.platform == "darwin":
-                print("Установите Docker Desktop с https://www.docker.com/products/docker-desktop/")
-                return False
-            else:
-                print("Установите Docker через пакетный менеджер:")
-                print("  Ubuntu: sudo apt install docker.io")
-                print("  CentOS: sudo yum install docker")
                 return False
         return True
 
@@ -307,7 +289,14 @@ LOG_FILE=logs/fastapi-foundry.log
     print("   - Веб-интерфейс: http://localhost:8000")
     print("   - API документация: http://localhost:8000/docs")
     print("   - Health Check: http://localhost:8000/api/v1/health")
-    print("\n💡 Порт можно изменить через --port или --fixed-port")
+    print("\n🐳 Docker команды (если установлен):")
+    print("   docker compose up -d    # Запуск в контейнере")
+    print("   docker compose down     # Остановка контейнера")
+    print("   docker compose logs -f  # Просмотр логов")
+    print("\n🔧 Альтернативные запуски:")
+    print("   ./start-local.ps1       # Без Docker (Windows)")
+    print("   ./run-gui.ps1          # GUI конфигуратор (Windows)")
+    print("\n📖 Документация: README.md, docs/")
 
 if __name__ == "__main__":
     main()

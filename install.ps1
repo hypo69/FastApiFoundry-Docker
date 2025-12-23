@@ -5,6 +5,7 @@
 param(
     [switch]$SkipPython = $false,
     [switch]$SkipFoundry = $false,
+    [switch]$SkipDocker = $false,
     [switch]$Force = $false
 )
 
@@ -42,31 +43,22 @@ function Test-Admin {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-function Install-Python {
-    Write-Log "🐍 Проверка Python..." "Info"
+function Check-Python314 {
+    Write-Log "🐍 Проверка Python 3.14..." "Info"
 
-    try {
-        $pythonVersion = python --version 2>&1
-        Write-Log "✅ Python уже установлен: $pythonVersion" "Success"
-        return $true
-    } catch {
-        Write-Log "⚠️  Python не установлен" "Warning"
-        Write-Log ""
-        Write-Log "Загрузить Python можно с: https://www.python.org" "Info"
-        Write-Log ""
-        Write-Log "При установке НЕ ЗАБЫТЬ отметить:" "Warning"
-        Write-Log "  ☑️ Add Python to PATH" "Warning"
-        Write-Log "  ☑️ Install pip" "Warning"
-        Write-Log ""
-
-        $install = Read-Host "Установить Python сейчас? (y/n)"
-        if ($install -eq 'y' -or $install -eq 'Y') {
-            Write-Log "Скачивание Python..." "Info"
-            $pythonUrl = "https://www.python.org/downloads/"
-            Start-Process $pythonUrl
-            Write-Log "Установите Python и запустите этот скрипт снова" "Warning"
-            exit 0
+    # Проверка встроенного Python 3.14
+    if (Test-Path "python-314\python.exe") {
+        try {
+            $pythonVersion = & .\python-314\python.exe --version 2>&1
+            Write-Log "✅ Python 3.14 найден: $pythonVersion" "Success"
+            return $true
+        } catch {
+            Write-Log "❌ Python 3.14 поврежден в python-314/" "Error"
+            return $false
         }
+    } else {
+        Write-Log "❌ Python 3.14 не найден в директории python-314/" "Error"
+        Write-Log "Поместите интерпретатор Python 3.14 в директорию python-314/" "Warning"
         return $false
     }
 }
@@ -114,33 +106,57 @@ function Install-Docker {
 
     try {
         $dockerVersion = docker --version 2>&1
+        $composeVersion = docker compose version 2>&1
         Write-Log "✅ Docker уже установлен: $dockerVersion" "Success"
+        if ($composeVersion) {
+            Write-Log "✅ Docker Compose: $composeVersion" "Success"
+        }
         return $true
     } catch {
         Write-Log "⚠️  Docker не установлен" "Warning"
         Write-Log ""
-        Write-Log "Docker нужен для контейнеризации (опционально)" "Info"
+        Write-Log "Docker нужен для контейнеризации и docker-compose команд" "Info"
         Write-Log ""
 
         $install = Read-Host "Установить Docker Desktop? (y/n)"
         if ($install -eq 'y' -or $install -eq 'Y') {
             try {
-                Write-Log "Установка Docker Desktop..." "Info"
+                Write-Log "Проверка WSL2..." "Info"
+                $wslVersion = wsl --version 2>$null
+                if (-not $wslVersion) {
+                    Write-Log "Установка WSL2..." "Info"
+                    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux -NoRestart
+                    Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -NoRestart
+                    wsl --install --no-distribution
+                }
+                
+                Write-Log "Установка Docker Desktop через winget..." "Info"
                 winget install Docker.DockerDesktop --accept-package-agreements --accept-source-agreements
                 if ($LASTEXITCODE -eq 0) {
                     Write-Log "✅ Docker Desktop установлен успешно" "Success"
-                    Write-Log "Перезагрузите компьютер и запустите Docker Desktop" "Warning"
+                    Write-Log "⚠️  Требуется перезагрузка для активации WSL2" "Warning"
+                    
+                    $restart = Read-Host "Перезагрузить сейчас? (y/n)"
+                    if ($restart -eq 'y' -or $restart -eq 'Y') {
+                        Write-Log "Перезагрузка системы..." "Info"
+                        Restart-Computer -Force
+                    }
                     return $true
                 } else {
                     Write-Log "⚠️  Ошибка установки через winget" "Warning"
                 }
             } catch {
-                Write-Log "⚠️  winget не доступен" "Warning"
+                Write-Log "⚠️  winget не доступен или ошибка установки" "Warning"
             }
             
-            Write-Log "Открываю страницу загрузки Docker..." "Info"
+            Write-Log "Альтернативный способ: ручная установка" "Info"
+            Write-Log "Открываю страницу загрузки Docker Desktop..." "Info"
             Start-Process "https://www.docker.com/products/docker-desktop/"
-            Write-Log "Установите Docker Desktop и перезагрузите компьютер" "Warning"
+            Write-Log "После установки Docker Desktop:" "Warning"
+            Write-Log "1. Перезагрузите компьютер" "Warning"
+            Write-Log "2. Запустите Docker Desktop" "Warning"
+            Write-Log "3. Дождитесь полной инициализации" "Warning"
+            Write-Log "4. Проверьте: docker --version && docker compose version" "Warning"
             return $false
         }
         return $true
@@ -149,7 +165,7 @@ function Install-Docker {
 
 function Create-VirtualEnv {
     Write-Log ""
-    Write-Log "🐍 Создание виртуальной окружения..." "Info"
+    Write-Log "🐍 Создание виртуального окружения с Python 3.14..." "Info"
 
     if (Test-Path "venv") {
         Write-Log "✅ venv уже существует" "Success"
@@ -157,11 +173,11 @@ function Create-VirtualEnv {
     }
 
     try {
-        Write-Log "Создание venv..." "Info"
-        python -m venv venv 2>&1 | Out-Null
+        Write-Log "Создание venv с python-314/python.exe..." "Info"
+        & .\python-314\python.exe -m venv venv 2>&1 | Out-Null
 
         if ($LASTEXITCODE -eq 0) {
-            Write-Log "✅ venv создана успешно" "Success"
+            Write-Log "✅ venv создана успешно с Python 3.14" "Success"
             return $true
         } else {
             Write-Log "❌ Ошибка при создании venv" "Error"
@@ -376,18 +392,17 @@ function Show-NextSteps {
     Write-Log "   - Health Check: http://localhost:8000/api/v1/health" "Info"
     Write-Log ""
     Write-Log "💡 Порт можно изменить через --port или --fixed-port" "Info"
-    Write-Log "   .\StartFastApiFoundry.ps1 --dev --ssl --mcp --auto-port --browser" "Info"
     Write-Log ""
-    Write-Log "2. Или запустить через новый launcher:" "Info"
-    Write-Log "   .\start.ps1 --dev --ssl --mcp --auto-port --browser" "Info"
+    Write-Log "🐳 Docker команды (если установлен):" "Info"
+    Write-Log "   docker compose up -d    # Запуск в контейнере" "Info"
+    Write-Log "   docker compose down     # Остановка контейнера" "Info"
+    Write-Log "   docker compose logs -f  # Просмотр логов" "Info"
     Write-Log ""
-    Write-Log "3. Production режим:" "Info"
-    Write-Log "   .\StartFastApiFoundry.ps1 --prod --ssl --mcp --auto-port" "Info"
+    Write-Log "🔧 Альтернативные запуски:" "Info"
+    Write-Log "   .\start-local.ps1       # Без Docker" "Info"
+    Write-Log "   .\run-gui.ps1          # GUI конфигуратор" "Info"
     Write-Log ""
-    Write-Log "4. Справка:" "Info"
-    Write-Log "   .\StartFastApiFoundry.ps1 --help" "Info"
-    Write-Log ""
-    Write-Log "📖 Документация: START_HERE.md, QUICK_START.md" "Info"
+    Write-Log "📖 Документация: README.md, docs/" "Info"
 }
 
 # ============================================================================
@@ -401,9 +416,9 @@ Write-Log ""
 # Check and setup execution policy
 Setup-ExecutionPolicy
 
-# Install Python
+# Install Python 3.14
 if (-not $SkipPython) {
-    if (-not (Install-Python)) {
+    if (-not (Check-Python314)) {
         exit 1
     }
 }
@@ -414,8 +429,12 @@ if (-not (Install-Git)) {
 }
 
 # Install Docker (optional)
-if (-not (Install-Docker)) {
-    Write-Log "⚠️  Docker не установлен, но продолжаем..." "Warning"
+if (-not $SkipDocker) {
+    if (-not (Install-Docker)) {
+        Write-Log "⚠️  Docker не установлен, но продолжаем..." "Warning"
+    }
+} else {
+    Write-Log "⏭️  Пропуск установки Docker (--SkipDocker)" "Info"
 }
 
 # Create virtual environment
