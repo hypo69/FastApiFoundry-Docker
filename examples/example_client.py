@@ -18,6 +18,7 @@
 import asyncio
 import aiohttp
 import json
+import os
 from typing import Dict, Any, List
 
 class FastAPIFoundryClient:
@@ -189,8 +190,8 @@ async def main():
     
     # Инициализация клиента
     async with FastAPIFoundryClient(
-        base_url="http://localhost:8000",
-        api_key=None  # API ключ отключен в .env
+        base_url=os.getenv("FASTAPI_BASE_URL", "http://localhost:8002"),
+        api_key=os.getenv("API_KEY")  # API ключ из .env
     ) as client:
         
         print("🚀 FastAPI Foundry Client Demo")

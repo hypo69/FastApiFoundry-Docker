@@ -1,5 +1,5 @@
 // FastAPI Foundry Web Interface with Logging
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = process.env.API_BASE || 'http://localhost:8002/api/v1';
 
 console.log('FastAPI Foundry Web Interface loaded');
 console.log('API_BASE:', API_BASE);

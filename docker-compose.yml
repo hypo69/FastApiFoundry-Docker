@@ -36,8 +36,8 @@ services:
       - PORT=8000
       - FASTAPI_FOUNDRY_MODE=production
       - FOUNDRY_HOST=${FOUNDRY_HOST:-localhost}
-      - FOUNDRY_PORT=${FOUNDRY_PORT:-8008}
-      - API_KEY=${API_KEY:-your-api-key-here}
+      - FOUNDRY_PORT=${FOUNDRY_PORT:-50477}
+      - API_KEY=${API_KEY}
       - RAG_ENABLED=${RAG_ENABLED:-true}
       - RAG_INDEX_PATH=/app/rag_index
       - RAG_CHUNK_SIZE=${RAG_CHUNK_SIZE:-1000}
@@ -45,6 +45,7 @@ services:
       - ./logs:/app/logs
       - ./rag_index:/app/rag_index
       - ./.env:/app/.env:ro
+      - ./conf.json:/app/conf.json:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]

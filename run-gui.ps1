@@ -21,7 +21,7 @@
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$configFile = Join-Path $scriptDir "config.json"
+$configFile = Join-Path $scriptDir "conf.json"
 
 # Загрузка конфигурации
 if (Test-Path $configFile) {
