@@ -36,12 +36,22 @@ $tabControl.Location = New-Object System.Drawing.Point(10,10)
 $tabControl.Size = New-Object System.Drawing.Size(480,580)
 $form.Controls.Add($tabControl)
 
-# === TAB 1: Server Settings ===
+# === TAB 1: FastAPI Server ===
 $tabServer = New-Object System.Windows.Forms.TabPage
-$tabServer.Text = "Server"
+$tabServer.Text = "FastAPI Server"
 $tabControl.TabPages.Add($tabServer)
 
 $y = 20
+
+# Заголовок секции
+$lblServerHeader = New-Object System.Windows.Forms.Label
+$lblServerHeader.Text = "FastAPI Server Configuration (Port 8000)"
+$lblServerHeader.Location = New-Object System.Drawing.Point(15,$y)
+$lblServerHeader.Size = New-Object System.Drawing.Size(400,20)
+$lblServerHeader.Font = New-Object System.Drawing.Font("Segoe UI",9,[System.Drawing.FontStyle]::Bold)
+$lblServerHeader.ForeColor = [System.Drawing.Color]::DarkBlue
+$tabServer.Controls.Add($lblServerHeader)
+$y += 30
 
 # Mode
 $lblMode = New-Object System.Windows.Forms.Label
@@ -72,9 +82,9 @@ $txtHost.Text = "0.0.0.0"
 $tabServer.Controls.Add($txtHost)
 $y += 35
 
-# Port
+# Port (FastAPI Server)
 $lblPort = New-Object System.Windows.Forms.Label
-$lblPort.Text = "PORT:"
+$lblPort.Text = "PORT (FastAPI Server):"
 $lblPort.Location = New-Object System.Drawing.Point(15,$y)
 $lblPort.Size = New-Object System.Drawing.Size(180,20)
 $tabServer.Controls.Add($lblPort)
@@ -138,16 +148,26 @@ $cbLogLevel.Items.AddRange(@("DEBUG","INFO","WARNING","ERROR"))
 $cbLogLevel.SelectedIndex = 1
 $tabServer.Controls.Add($cbLogLevel)
 
-# === TAB 2: Foundry Settings ===
+# === TAB 2: Foundry AI Model ===
 $tabFoundry = New-Object System.Windows.Forms.TabPage
-$tabFoundry.Text = "Foundry AI"
+$tabFoundry.Text = "Foundry AI Model"
 $tabControl.TabPages.Add($tabFoundry)
 
 $y = 20
 
-# Foundry Base URL
+# Заголовок секции
+$lblFoundryHeader = New-Object System.Windows.Forms.Label
+$lblFoundryHeader.Text = "Foundry AI Model Configuration (Port 50477)"
+$lblFoundryHeader.Location = New-Object System.Drawing.Point(15,$y)
+$lblFoundryHeader.Size = New-Object System.Drawing.Size(400,20)
+$lblFoundryHeader.Font = New-Object System.Drawing.Font("Segoe UI",9,[System.Drawing.FontStyle]::Bold)
+$lblFoundryHeader.ForeColor = [System.Drawing.Color]::DarkGreen
+$tabFoundry.Controls.Add($lblFoundryHeader)
+$y += 30
+
+# Foundry Base URL (AI Model Server)
 $lblFoundryUrl = New-Object System.Windows.Forms.Label
-$lblFoundryUrl.Text = "FOUNDRY_BASE_URL:"
+$lblFoundryUrl.Text = "FOUNDRY_BASE_URL (AI Model):"
 $lblFoundryUrl.Location = New-Object System.Drawing.Point(15,$y)
 $lblFoundryUrl.Size = New-Object System.Drawing.Size(180,20)
 $tabFoundry.Controls.Add($lblFoundryUrl)
@@ -155,7 +175,7 @@ $tabFoundry.Controls.Add($lblFoundryUrl)
 $txtFoundryUrl = New-Object System.Windows.Forms.TextBox
 $txtFoundryUrl.Location = New-Object System.Drawing.Point(200,$y)
 $txtFoundryUrl.Size = New-Object System.Drawing.Size(250,20)
-$txtFoundryUrl.Text = "http://localhost:5272/v1/"
+$txtFoundryUrl.Text = "http://localhost:50477/v1/"
 $tabFoundry.Controls.Add($txtFoundryUrl)
 $y += 35
 
@@ -367,9 +387,9 @@ $btnRun.Add_Click({
         $args = "-NoProfile -NoExit -Command & { $command }"
         
         Write-Host "Starting FastAPI Foundry with configuration:" -ForegroundColor Green
+        Write-Host "FastAPI Server - Host: $($txtHost.Text) Port: $($txtPort.Text)" -ForegroundColor Cyan
+        Write-Host "Foundry AI Model - URL: $($txtFoundryUrl.Text)" -ForegroundColor Yellow
         Write-Host "Mode: $($cbMode.Text)" -ForegroundColor Cyan
-        Write-Host "Host: $($txtHost.Text)" -ForegroundColor Cyan
-        Write-Host "Port: $($txtPort.Text)" -ForegroundColor Cyan
         
         Start-Process -FilePath "powershell.exe" -ArgumentList $args -WorkingDirectory $scriptDir
         
