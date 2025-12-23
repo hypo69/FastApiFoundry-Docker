@@ -491,12 +491,31 @@ $btnRun.Add_Click({
             
             # Проверка Docker Desktop
             try {
-                $dockerCheck = docker --version 2>$null
-                if ($LASTEXITCODE -ne 0) {
-                    throw "Docker не найден"
+                Write-Host "Проверяем Docker Desktop..." -ForegroundColor Yellow
+                
+                # Проверка службы Docker
+                $dockerService = Get-Service -Name "com.docker.service" -ErrorAction SilentlyContinue
+                if (-not $dockerService -or $dockerService.Status -ne "Running") {
+                    throw "Docker Desktop service не запущен"
                 }
+                
+                # Проверка доступности Docker Engine
+                $dockerCheck = docker version --format "{{.Server.Version}}" 2>$null
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Docker Engine недоступен"
+                }
+                
+                Write-Host "✅ Docker Desktop запущен (версия: $dockerCheck)" -ForegroundColor Green
+                
             } catch {
-                [System.Windows.Forms.MessageBox]::Show("Docker Desktop не запущен или не установлен.`nЗапустите Docker Desktop и повторите попытку.","Docker Error","OK","Error") | Out-Null
+                $errorMsg = "❌ Docker Desktop не запущен или недоступен.`n`n" +
+                           "Пожалуйста:`n" +
+                           "1. Запустите Docker Desktop`n" +
+                           "2. Дождитесь полной загрузки (зеленый статус)`n" +
+                           "3. Повторите попытку`n`n" +
+                           "Ошибка: $_"
+                           
+                [System.Windows.Forms.MessageBox]::Show($errorMsg, "Docker Error", "OK", "Error") | Out-Null
                 return
             }
             
