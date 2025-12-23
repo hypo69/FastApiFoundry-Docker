@@ -23,40 +23,60 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $configFile = Join-Path $scriptDir "src\config.json"
 
-# Функция для освобождения порта
-function Kill-ProcessOnPort {
-    param([int]$Port)
+# Функция для освобождения порта или поиска свободного
+function Resolve-PortConflict {
+    param(
+        [int]$Port,
+        [string]$Resolution = "kill_process"
+    )
     
     Write-Host "Проверяем порт $Port..." -ForegroundColor Yellow
     
-    try {
-        # Найти процесс на порту
-        $result = netstat -ano | Select-String ":$Port\s" | Select-String "LISTENING"
-        
-        if ($result) {
-            foreach ($line in $result) {
-                $parts = $line.ToString().Split() | Where-Object { $_ -ne "" }
-                if ($parts.Length -ge 5) {
-                    $pid = $parts[-1]
-                    Write-Host "⚠️ Найден процесс PID $pid на порту $Port, завершаем..." -ForegroundColor Yellow
-                    
-                    try {
-                        taskkill /PID $pid /F 2>$null
-                        if ($LASTEXITCODE -eq 0) {
-                            Write-Host "✅ Процесс PID $pid успешно завершен" -ForegroundColor Green
-                        }
-                    } catch {
-                        Write-Host "⚠️ Не удалось завершить PID $pid" -ForegroundColor Yellow
+    # Проверка занятости порта
+    $result = netstat -ano | Select-String ":$Port\s" | Select-String "LISTENING"
+    
+    if (-not $result) {
+        Write-Host "✅ Порт $Port свободен" -ForegroundColor Green
+        return $Port
+    }
+    
+    if ($Resolution -eq "kill_process") {
+        # Убить процесс на порту
+        foreach ($line in $result) {
+            $parts = $line.ToString().Split() | Where-Object { $_ -ne "" }
+            if ($parts.Length -ge 5) {
+                $pid = $parts[-1]
+                Write-Host "⚠️ Найден процесс PID $pid на порту $Port, завершаем..." -ForegroundColor Yellow
+                
+                try {
+                    taskkill /PID $pid /F 2>$null
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "✅ Процесс PID $pid успешно завершен" -ForegroundColor Green
+                        Start-Sleep -Seconds 1
+                        return $Port
                     }
+                } catch {
+                    Write-Host "⚠️ Не удалось завершить PID $pid" -ForegroundColor Yellow
                 }
             }
-            Start-Sleep -Seconds 1
-        } else {
-            Write-Host "✅ Порт $Port свободен" -ForegroundColor Green
         }
-    } catch {
-        Write-Host "⚠️ Ошибка при проверке порта $Port: $_" -ForegroundColor Yellow
+    } elseif ($Resolution -eq "find_free_port") {
+        # Найти свободный порт
+        Write-Host "🔍 Ищем свободный порт начиная с $($Port + 1)..." -ForegroundColor Yellow
+        
+        for ($testPort = $Port + 1; $testPort -le ($Port + 100); $testPort++) {
+            $testResult = netstat -ano | Select-String ":$testPort\s" | Select-String "LISTENING"
+            if (-not $testResult) {
+                Write-Host "✅ Найден свободный порт: $testPort" -ForegroundColor Green
+                return $testPort
+            }
+        }
+        
+        Write-Host "❌ Не удалось найти свободный порт" -ForegroundColor Red
+        return $null
     }
+    
+    return $Port
 }
 
 # Загрузка конфигурации
@@ -480,10 +500,17 @@ $btnRun.Add_Click({
                 return
             }
             
-            # Проверка и освобождение портов
-            Write-Host "Checking and freeing ports..." -ForegroundColor Yellow
-            Kill-ProcessOnPort -Port ([int]$txtDockerPort.Text.Trim())
-            Kill-ProcessOnPort -Port 50477  # Foundry port
+            # Проверка и разрешение конфликтов портов
+            Write-Host "Resolving port conflicts..." -ForegroundColor Yellow
+            $portResolution = if ($config.port_management.conflict_resolution) { $config.port_management.conflict_resolution } else { "kill_process" }
+            
+            $resolvedPort = Resolve-PortConflict -Port ([int]$txtDockerPort.Text.Trim()) -Resolution $portResolution
+            $resolvedFoundryPort = Resolve-PortConflict -Port 50477 -Resolution $portResolution
+            
+            if ($resolvedPort -ne ([int]$txtDockerPort.Text.Trim())) {
+                $txtDockerPort.Text = $resolvedPort.ToString()
+                Write-Host "🔄 Порт FastAPI изменен на: $resolvedPort" -ForegroundColor Cyan
+            }
             
             # Проверка образа и автоматическая сборка
             Write-Host "Checking Docker image..." -ForegroundColor Yellow
@@ -542,10 +569,17 @@ $btnRun.Add_Click({
         } else {
             # Обычный режим - прямой запуск run.py
             
-            # Проверка и освобождение портов
-            Write-Host "Checking and freeing ports..." -ForegroundColor Yellow
-            Kill-ProcessOnPort -Port ([int]$txtPort.Text.Trim())
-            Kill-ProcessOnPort -Port 50477  # Foundry port
+            # Проверка и разрешение конфликтов портов
+            Write-Host "Resolving port conflicts..." -ForegroundColor Yellow
+            $portResolution = if ($config.port_management.conflict_resolution) { $config.port_management.conflict_resolution } else { "kill_process" }
+            
+            $resolvedPort = Resolve-PortConflict -Port ([int]$txtPort.Text.Trim()) -Resolution $portResolution
+            $resolvedFoundryPort = Resolve-PortConflict -Port 50477 -Resolution $portResolution
+            
+            if ($resolvedPort -ne ([int]$txtPort.Text.Trim())) {
+                $txtPort.Text = $resolvedPort.ToString()
+                Write-Host "🔄 Порт FastAPI изменен на: $resolvedPort" -ForegroundColor Cyan
+            }
             
             # Сборка environment переменных
             $envVars = @()
