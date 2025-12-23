@@ -7,7 +7,7 @@
 **FastAPI Foundry использует разделение конфигураций:**
 
 - **`.env`** - чувствительные данные (API ключи, пароли, URL)
-- **`conf.json`** - настройки приложения (порты, параметры, опции)
+- **`src/config.json`** - настройки приложения (порты, параметры, опции)
 
 ### Создание конфигурации
 
@@ -46,7 +46,7 @@ SSL_CERT_PATH=/path/to/cert.pem
 SSL_KEY_PATH=/path/to/key.pem
 ```
 
-## ⚙️ Настройки приложения (conf.json)
+## ⚙️ Настройки приложения (src/config.json)
 
 ### FastAPI Server
 ```json
@@ -172,8 +172,8 @@ python run.py --prod --ssl-keyfile production.key --ssl-certfile production.crt
 # Проверка .env файла
 cat .env | grep -E "^[A-Z]"
 
-# Проверка conf.json
-python -c "import json; print(json.load(open('conf.json'))['fastapi_server']['port'])"
+# Проверка config.json
+python -c "import json; print(json.load(open('src/config.json'))['fastapi_server']['port'])"
 
 # Тест конфигурации
 python -c "from src.core.config import settings; print(f'API Port: {settings.api_port}')"

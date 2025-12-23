@@ -1,16 +1,31 @@
 # FastAPI Foundry - Core Dependencies
+# =============================================================================
+
+# FastAPI Framework
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 pydantic>=2.5.0
 pydantic-settings>=2.0.0
+
+# HTTP Client
 aiohttp>=3.9.0
+
+# Configuration
 python-dotenv>=1.0.0
 
 # RAG System (optional)
 sentence-transformers>=2.2.0
 faiss-cpu>=1.7.0
 numpy>=1.24.0
+torch>=2.0.0
 
-# Development
+# Logging & Utils
+PyYAML>=6.0
+
+# Development & Testing
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
+
+# Additional dependencies found in code
+websockets>=11.0.0
+watchfiles>=0.20.0

@@ -161,19 +161,20 @@ def main():
     check_ssl_certificates()
     
     # Создание виртуального окружения
-    if not Path("venv").exists():
-        if not run_command(f"{sys.executable} -m venv venv", "Создание виртуального окружения"):
-            sys.exit(1)
+    if not Path("python-314").exists():
+        print("❌ Python 3.14 не найден в директории python-314/")
+        print("Поместите интерпретатор Python 3.14 в директорию python-314/")
+        sys.exit(1)
     else:
-        print("✅ Виртуальное окружение уже существует")
+        print("✅ Python 3.14 найден в python-314/")
     
     # Определение команды активации
     if os.name == 'nt':  # Windows
-        pip_cmd = "venv\\Scripts\\pip"
-        python_cmd = "venv\\Scripts\\python"
+        pip_cmd = "python-314\\python -m pip"
+        python_cmd = "python-314\\python"
     else:  # Linux/Mac
-        pip_cmd = "venv/bin/pip"
-        python_cmd = "venv/bin/python"
+        pip_cmd = "python-314/python -m pip"
+        python_cmd = "python-314/python"
     
     # Обновление pip
     run_command(f"{python_cmd} -m pip install --upgrade pip", "Обновление pip")
@@ -226,14 +227,14 @@ LOG_FILE=logs/fastapi-foundry.log
     test_passed = 0
     test_failed = 0
 
-    # Test Python
-    try:
-        result = subprocess.run(f"{python_cmd} --version", shell=True, capture_output=True, text=True, check=True)
-        print(f"  ✅ Python: {result.stdout.strip()}")
-        test_passed += 1
-    except subprocess.CalledProcessError:
-        print("  ❌ Python: не найден в venv")
-        test_failed += 1
+        # Test Python
+        try:
+            result = subprocess.run("python-314/python --version", shell=True, capture_output=True, text=True, check=True)
+            print(f"  ✅ Python 3.14: {result.stdout.strip()}")
+            test_passed += 1
+        except subprocess.CalledProcessError:
+            print("  ❌ Python 3.14: не найден в python-314/")
+            test_failed += 1
 
     # Test FastAPI
     try:
