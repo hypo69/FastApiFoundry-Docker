@@ -2,58 +2,125 @@
 
 > **Предыдущие шаги**: [📦 Установка](installation.md) → [🚀 Запуск](running.md) → [📖 Использование](usage.md)
 
-## Создание конфигурации
+## 📁 Структура конфигурации
+
+**FastAPI Foundry использует разделение конфигураций:**
+
+- **`.env`** - чувствительные данные (API ключи, пароли, URL)
+- **`conf.json`** - настройки приложения (порты, параметры, опции)
+
+### Создание конфигурации
 
 ```bash
+# Основная конфигурация
 cp .env.example .env
+
+# Чувствительные данные (опционально)
+cp .env.sensitive .env.production
 ```
 
-## Основные параметры
+## 🔐 Чувствительные данные (.env)
 
-### Режим работы
+### API безопасность
 ```env
-# Режим по умолчанию (dev/prod)
-DEFAULT_MODE=dev
+API_KEY=your-secret-api-key
 ```
 
-### Foundry настройки
+### Foundry подключение
 ```env
-FOUNDRY_BASE_URL=http://localhost:51601/v1/
+FOUNDRY_BASE_URL=http://localhost:50477/v1/
 FOUNDRY_DEFAULT_MODEL=deepseek-r1-distill-qwen-7b-generic-cpu:3
-FOUNDRY_TEMPERATURE=0.6
-FOUNDRY_MAX_TOKENS=2048
+FOUNDRY_TIMEOUT=300
 ```
 
-### API настройки
+### MCP Server
 ```env
-API_HOST=0.0.0.0
-API_PORT=8000
-API_WORKERS=1
-API_KEY=your-secret-key
+MCP_FOUNDRY_BASE_URL=http://localhost:51601/v1/
+MCP_FOUNDRY_DEFAULT_MODEL=deepseek-r1-distill-qwen-7b-generic-cpu:3
+MCP_FOUNDRY_TIMEOUT=30
+```
+
+### SSL/TLS
+```env
+SSL_CERT_PATH=/path/to/cert.pem
+SSL_KEY_PATH=/path/to/key.pem
+```
+
+## ⚙️ Настройки приложения (conf.json)
+
+### FastAPI Server
+```json
+{
+  "fastapi_server": {
+    "host": "0.0.0.0",
+    "port": 8002,
+    "mode": "dev",
+    "workers": 1,
+    "reload": true
+  }
+}
+```
+
+### Foundry AI параметры
+```json
+{
+  "foundry_ai": {
+    "temperature": 0.6,
+    "top_p": 0.9,
+    "top_k": 40,
+    "max_tokens": 2048
+  }
+}
 ```
 
 ### RAG система
-```env
-RAG_ENABLED=true
-RAG_INDEX_DIR=./rag_index
-RAG_MODEL=sentence-transformers/all-MiniLM-L6-v2
+```json
+{
+  "rag_system": {
+    "enabled": true,
+    "index_dir": "./rag_index",
+    "model": "sentence-transformers/all-MiniLM-L6-v2",
+    "chunk_size": 1000
+  }
+}
 ```
 
-### CORS и безопасность
-```env
-CORS_ORIGINS=["*"]
-LOG_LEVEL=INFO
-LOG_FILE=logs/fastapi-foundry.log
-```
+## 🔒 Настройка для продакшн
 
-## Настройка для продакшн
-
+### Чувствительные данные (.env)
 ```env
-DEFAULT_MODE=prod
 API_KEY=strong-random-key-here
-CORS_ORIGINS=["https://yourdomain.com"]
-LOG_LEVEL=WARNING
+FOUNDRY_BASE_URL=https://your-foundry-server.com/v1/
+SSL_CERT_PATH=/etc/ssl/certs/server.crt
+SSL_KEY_PATH=/etc/ssl/private/server.key
 ```
+
+### Настройки приложения (conf.json)
+```json
+{
+  "fastapi_server": {
+    "mode": "production",
+    "port": 8002,
+    "workers": 4,
+    "reload": false,
+    "cors_origins": ["https://yourdomain.com"]
+  }
+}
+```
+
+## ⚠️ Безопасность
+
+**Никогда не коммитьте чувствительные данные:**
+
+```bash
+# Добавьте в .gitignore
+echo ".env.production" >> .gitignore
+echo ".env.sensitive" >> .gitignore
+```
+
+**Безопасно коммитить:**
+- `conf.json` - настройки приложения
+- `.env.example` - пример конфигурации
 
 ## 🔒 HTTPS настройка
 
@@ -105,9 +172,12 @@ python run.py --prod --ssl-keyfile production.key --ssl-certfile production.crt
 # Проверка .env файла
 cat .env | grep -E "^[A-Z]"
 
+# Проверка conf.json
+python -c "import json; print(json.load(open('conf.json'))['fastapi_server']['port'])"
+
 # Тест конфигурации
 python -c "from src.core.config import settings; print(f'API Port: {settings.api_port}')"
 
 # Проверка Foundry подключения
-curl http://localhost:51601/v1/models
+curl http://localhost:50477/v1/models
 ```
