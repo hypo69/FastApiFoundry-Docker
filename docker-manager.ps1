@@ -101,13 +101,13 @@ function Enter-Shell {
 function Remove-All {
     Test-Requirements
     & $ComposeCmd down --remove-orphans
-    docker rmi "$ImageName:$Version" 2>$null | Out-Null
+    docker rmi "${ImageName}:${Version}" 2>$null | Out-Null
 }
 
 function Export-Image {
     Test-Requirements
     $file = "$ImageName-$Version.tar"
-    docker save -o $file "$ImageName:$Version"
+    docker save -o $file "${ImageName}:${Version}"
     Write-Host "Образ экспортирован: $file" -ForegroundColor Green
 }
 

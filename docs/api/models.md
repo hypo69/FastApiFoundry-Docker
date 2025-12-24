@@ -1,5 +1,9 @@
 # 🧠 Models API
 
+---
+**📚 Навигация:** [🏠 Главная](../README.md) | [📡 API](README.md) | [🤖 Генерация](generation.md) | [🧠 Модели](models.md) | [🔍 RAG](rag.md) | [📊 Мониторинг](monitoring.md)
+---
+
 ## GET `/api/v1/models`
 
 **Response:**
@@ -68,3 +72,6 @@
   ]
 }
 ```
+
+---
+**[⬆️ Назад к документации по API](README.md)**

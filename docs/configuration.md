@@ -10,44 +10,71 @@
 
 **FastAPI Foundry использует разделение конфигураций:**
 
-- **`.env`** - чувствительные данные (API ключи, пароли, URL)
-- **`src/config.json`** - настройки приложения (порты, параметры, опции)
+- **`.env`** - чувствительные данные (API ключи, пароли, URL) - **приоритет над config.json**
+- **`src/config.json`** - параметры приложения (порты, настройки, опции) - **базовые значения**
 
 ### Создание конфигурации
 
 ```bash
-# Основная конфигурация
-cp .env.example .env
+# Основные параметры приложения
+cp src/config.json.example src/config.json
 
-# Чувствительные данные (опционально)
-cp .env.sensitive .env.production
+# Чувствительные данные (опционально, переопределяют config.json)
+cp .env.example .env
 ```
 
-## 🔐 Чувствительные данные (.env)
+### GUI редактор конфигурации
+
+Для удобного редактирования `src/config.json` используйте GUI лончер:
+
+```powershell
+.\run-gui.ps1
+```
+
+GUI позволяет:
+- Редактировать все параметры FastAPI сервера
+- Настраивать Foundry AI модель
+- Управлять RAG системой
+- Запускать в Docker режиме
+
+## 🔐 Чувствительные данные (.env) - Переопределяют config.json
 
 ### API безопасность
 ```env
 API_KEY=your-secret-api-key
 ```
 
-### Foundry подключение
+### Переопределение параметров сервера
+```env
+API_HOST=0.0.0.0
+API_PORT=8000
+API_WORKERS=1
+API_RELOAD=false
+CORS_ORIGINS=["*"]
+```
+
+### Переопределение Foundry подключения
 ```env
 FOUNDRY_BASE_URL=http://localhost:50477/v1/
 FOUNDRY_DEFAULT_MODEL=deepseek-r1-distill-qwen-7b-generic-cpu:3
+FOUNDRY_TEMPERATURE=0.6
+FOUNDRY_TOP_P=0.9
+FOUNDRY_TOP_K=40
+FOUNDRY_MAX_TOKENS=2048
 FOUNDRY_TIMEOUT=300
 ```
 
-### MCP Server
+### Переопределение RAG
 ```env
-MCP_FOUNDRY_BASE_URL=http://localhost:51601/v1/
-MCP_FOUNDRY_DEFAULT_MODEL=deepseek-r1-distill-qwen-7b-generic-cpu:3
-MCP_FOUNDRY_TIMEOUT=30
+RAG_ENABLED=true
+RAG_INDEX_DIR=./rag_index
+RAG_MODEL=sentence-transformers/all-MiniLM-L6-v2
 ```
 
-### SSL/TLS
+### Переопределение логирования
 ```env
-SSL_CERT_PATH=/path/to/cert.pem
-SSL_KEY_PATH=/path/to/key.pem
+LOG_LEVEL=INFO
+LOG_FILE=logs/fastapi-foundry.log
 ```
 
 ## ⚙️ Настройки приложения (src/config.json)
@@ -57,10 +84,11 @@ SSL_KEY_PATH=/path/to/key.pem
 {
   "fastapi_server": {
     "host": "0.0.0.0",
-    "port": 8002,
+    "port": 8000,
     "mode": "dev",
     "workers": 1,
-    "reload": true
+    "reload": true,
+    "cors_origins": ["*"]
   }
 }
 ```
@@ -69,10 +97,13 @@ SSL_KEY_PATH=/path/to/key.pem
 ```json
 {
   "foundry_ai": {
+    "base_url": "http://localhost:50477/v1/",
+    "default_model": "deepseek-r1-distill-qwen-7b-generic-cpu:3",
     "temperature": 0.6,
     "top_p": 0.9,
     "top_k": 40,
-    "max_tokens": 2048
+    "max_tokens": 2048,
+    "timeout": 300
   }
 }
 ```
@@ -89,59 +120,124 @@ SSL_KEY_PATH=/path/to/key.pem
 }
 ```
 
+### Безопасность и HTTPS
+```json
+{
+  "security": {
+    "api_key": "",
+    "https_enabled": false,
+    "ssl_cert_file": "~/.ssl/cert.pem",
+    "ssl_key_file": "~/.ssl/key.pem"
+  }
+}
+```
+
+### Логирование
+```json
+{
+  "logging": {
+    "level": "INFO",
+    "file": "logs/fastapi-foundry.log"
+  }
+}
+```
+
 ## 🔒 Настройка для продакшн
+
+### Параметры приложения (src/config.json)
+```json
+{
+  "fastapi_server": {
+    "mode": "production",
+    "port": 8443,
+    "workers": 4,
+    "reload": false,
+    "cors_origins": ["https://yourdomain.com"]
+  },
+  "security": {
+    "https_enabled": true,
+    "ssl_cert_file": "/etc/ssl/certs/server.crt",
+    "ssl_key_file": "/etc/ssl/private/server.key"
+  }
+}
+```
 
 ### Чувствительные данные (.env)
 ```env
 API_KEY=strong-random-key-here
 FOUNDRY_BASE_URL=https://your-foundry-server.com/v1/
-SSL_CERT_PATH=/etc/ssl/certs/server.crt
-SSL_KEY_PATH=/etc/ssl/private/server.key
 ```
 
-### Настройки приложения (conf.json)
+## 🔄 Приоритет конфигураций
+
+**Порядок применения настроек (от низкого к высокому приоритету):**
+
+1. **src/config.json** - базовые значения параметров
+2. **Переменные окружения** - переопределяют config.json
+3. **.env файл** - переопределяют config.json и переменные окружения
+
+### Примеры
+
 ```json
+// src/config.json
 {
   "fastapi_server": {
-    "mode": "production",
-    "port": 8002,
-    "workers": 4,
-    "reload": false,
-    "cors_origins": ["https://yourdomain.com"]
+    "port": 8000
   }
 }
 ```
 
-## ⚠️ Безопасность
+```env
+# .env (переопределяет config.json)
+API_PORT=8443
+```
+
+```bash
+# Переменная окружения (переопределяет .env)
+export API_PORT=9000
+```
+
+**Результат:** Сервер запустится на порту 9000
+
+## 🔒 Безопасность
 
 **Никогда не коммитьте чувствительные данные:**
 
 ```bash
 # Добавьте в .gitignore
+echo ".env" >> .gitignore
 echo ".env.production" >> .gitignore
 echo ".env.sensitive" >> .gitignore
 ```
 
 **Безопасно коммитить:**
-- `conf.json` - настройки приложения
-- `.env.example` - пример конфигурации
+- `src/config.json` - настройки приложения (базовые значения)
+- `src/config.json.example` - пример конфигурации
+- `.env.example` - пример переменных окружения (без реальных значений)
 
 ## 🔒 HTTPS настройка
 
+### Включение HTTPS в config.json
+
+```json
+{
+  "security": {
+    "https_enabled": true,
+    "ssl_cert_file": "~/.ssl/cert.pem",
+    "ssl_key_file": "~/.ssl/key.pem"
+  }
+}
+```
+
 ### Самоподписанные сертификаты (для разработки)
 
-Сертификаты автоматически создаются в `~/.ssh/`:
-- `~/.ssh/server.key` - приватный ключ
-- `~/.ssh/server.crt` - публичный сертификат
-
-### Запуск с HTTPS
+Сертификаты автоматически создаются в `~/.ssl/`:
+- `~/.ssl/cert.pem` - публичный сертификат
+- `~/.ssl/key.pem` - приватный ключ
 
 ```bash
-# Использовать сертификаты по умолчанию
-python run.py --ssl
-
-# Указать свои сертификаты
-python run.py --ssl-keyfile server.key --ssl-certfile server.crt
+# Сгенерировать сертификаты
+.\ssl-generator.ps1
 ```
 
 ### Production сертификаты
@@ -151,8 +247,14 @@ python run.py --ssl-keyfile server.key --ssl-certfile server.crt
 - DigiCert
 - GlobalSign
 
-```bash
-python run.py --prod --ssl-keyfile production.key --ssl-certfile production.crt
+```json
+{
+  "security": {
+    "https_enabled": true,
+    "ssl_cert_file": "/etc/ssl/certs/server.crt",
+    "ssl_key_file": "/etc/ssl/private/server.key"
+  }
+}
 ```
 
 ---

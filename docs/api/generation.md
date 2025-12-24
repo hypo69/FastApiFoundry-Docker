@@ -1,5 +1,9 @@
 # 🤖 Text Generation API
 
+---
+**📚 Навигация:** [🏠 Главная](../README.md) | [📡 API](README.md) | [🤖 Генерация](generation.md) | [🧠 Модели](models.md) | [🔍 RAG](rag.md) | [📊 Мониторинг](monitoring.md)
+---
+
 ## POST `/api/v1/generate`
 
 **Request:**
@@ -54,3 +58,6 @@
   "processing_time": 4.12
 }
 ```
+
+---
+**[⬆️ Назад к документации по API](README.md)**
