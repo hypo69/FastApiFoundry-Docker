@@ -27,8 +27,12 @@ cp .env.example .env
 
 Для удобного редактирования `src/config.json` используйте GUI лончер:
 
-```powershell
-.\run-gui.ps1
+```bash
+# Windows
+python run-gui.py
+
+# Linux/macOS
+python3 run-gui.py
 ```
 
 GUI позволяет:
