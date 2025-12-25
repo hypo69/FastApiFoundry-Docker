@@ -38,7 +38,7 @@ class FastApiFoundryGUILauncher(LauncherBase):
     def create_gui(self):
         """Создание GUI интерфейса"""
         self.root = tk.Tk()
-        self.root.title("FastAPI Foundry — Launch Configuration")
+        self.root.title("FastAPI Foundry — Конфигурация запуска")
         self.root.geometry("550x750")
         self.root.resizable(False, False)
         
@@ -75,10 +75,10 @@ class FastApiFoundryGUILauncher(LauncherBase):
     def _create_fastapi_tab(self, notebook):
         """Создание вкладки FastAPI Server"""
         tab = ttk.Frame(notebook)
-        notebook.add(tab, text="FastAPI Server")
+        notebook.add(tab, text="Сервер FastAPI")
         
         # Заголовок
-        header = tk.Label(tab, text=f"FastAPI Server Configuration (Port {self.config['fastapi_server']['port']})",
+        header = tk.Label(tab, text=f"Конфигурация сервера FastAPI (Порт {self.config['fastapi_server']['port']})",
                          font=("Segoe UI", 10, "bold"), fg="darkblue")
         header.pack(pady=(20, 10))
         
@@ -86,111 +86,111 @@ class FastApiFoundryGUILauncher(LauncherBase):
         frame = tk.Frame(tab)
         frame.pack(fill='both', expand=True, padx=20)
         
-        # Mode
-        tk.Label(frame, text="FASTAPI_FOUNDRY_MODE:").grid(row=0, column=0, sticky='w', pady=5)
+        # Режим
+        tk.Label(frame, text="РЕЖИМ:").grid(row=0, column=0, sticky='w', pady=5)
         self.widgets['mode'] = tk.StringVar(value=self.config['fastapi_server']['mode'])
         mode_combo = ttk.Combobox(frame, textvariable=self.widgets['mode'], 
-                                 values=["dev", "production"], state="readonly", width=25)
+                                 values=["разработка", "продакшн"], state="readonly", width=25)
         mode_combo.grid(row=0, column=1, pady=5)
         
-        # Host
-        tk.Label(frame, text="HOST:").grid(row=1, column=0, sticky='w', pady=5)
+        # Хост
+        tk.Label(frame, text="ХОСТ:").grid(row=1, column=0, sticky='w', pady=5)
         self.widgets['host'] = tk.StringVar(value=self.config['fastapi_server']['host'])
         tk.Entry(frame, textvariable=self.widgets['host'], width=28).grid(row=1, column=1, pady=5)
         
-        # Port
-        tk.Label(frame, text="PORT (FastAPI Server):").grid(row=2, column=0, sticky='w', pady=5)
+        # Порт
+        tk.Label(frame, text="ПОРТ:").grid(row=2, column=0, sticky='w', pady=5)
         self.widgets['port'] = tk.StringVar(value=str(self.config['fastapi_server']['port']))
         tk.Entry(frame, textvariable=self.widgets['port'], width=28).grid(row=2, column=1, pady=5)
         
-        # API Key
-        tk.Label(frame, text="API_KEY (optional):").grid(row=3, column=0, sticky='w', pady=5)
+        # API ключ
+        tk.Label(frame, text="API КЛЮЧ (опционально):").grid(row=3, column=0, sticky='w', pady=5)
         self.widgets['api_key'] = tk.StringVar(value=self.config['security']['api_key'])
         tk.Entry(frame, textvariable=self.widgets['api_key'], show="*", width=28).grid(row=3, column=1, pady=5)
         
-        # Workers
-        tk.Label(frame, text="API_WORKERS:").grid(row=4, column=0, sticky='w', pady=5)
+        # Воркеры
+        tk.Label(frame, text="ВОРКЕРЫ:").grid(row=4, column=0, sticky='w', pady=5)
         self.widgets['workers'] = tk.IntVar(value=self.config['fastapi_server']['workers'])
         tk.Spinbox(frame, from_=1, to=16, textvariable=self.widgets['workers'], width=26).grid(row=4, column=1, pady=5)
         
-        # Reload
+        # Автоперезагрузка
         self.widgets['reload'] = tk.BooleanVar(value=self.config['fastapi_server']['reload'])
-        tk.Checkbutton(frame, text="API_RELOAD (dev mode)", variable=self.widgets['reload']).grid(row=5, column=0, columnspan=2, sticky='w', pady=5)
+        tk.Checkbutton(frame, text="Автоперезагрузка (режим разработки)", variable=self.widgets['reload']).grid(row=5, column=0, columnspan=2, sticky='w', pady=5)
         
-        # Log Level
-        tk.Label(frame, text="LOG_LEVEL:").grid(row=6, column=0, sticky='w', pady=5)
+        # Уровень логов
+        tk.Label(frame, text="УРОВЕНЬ ЛОГОВ:").grid(row=6, column=0, sticky='w', pady=5)
         self.widgets['log_level'] = tk.StringVar(value=self.config['logging']['level'])
         log_combo = ttk.Combobox(frame, textvariable=self.widgets['log_level'], 
-                               values=["DEBUG", "INFO", "WARNING", "ERROR"], state="readonly", width=25)
+                               values=["ОТЛАДКА", "ИНФО", "ПРЕДУПРЕЖДЕНИЕ", "ОШИБКА"], state="readonly", width=25)
         log_combo.grid(row=6, column=1, pady=5)
     
     def _create_foundry_tab(self, notebook):
         """Создание вкладки Foundry AI Model"""
         tab = ttk.Frame(notebook)
-        notebook.add(tab, text="Foundry AI Model")
+        notebook.add(tab, text="Модель Foundry AI")
         
         # Заголовок
-        header = tk.Label(tab, text="Foundry AI Model Configuration", 
+        header = tk.Label(tab, text="Конфигурация модели Foundry AI", 
                          font=("Segoe UI", 10, "bold"), fg="darkgreen")
         header.pack(pady=(20, 10))
         
         frame = tk.Frame(tab)
         frame.pack(fill='both', expand=True, padx=20)
         
-        # Base URL
-        tk.Label(frame, text="FOUNDRY_BASE_URL:").grid(row=0, column=0, sticky='w', pady=5)
+        # Базовый URL
+        tk.Label(frame, text="БАЗОВЫЙ URL:").grid(row=0, column=0, sticky='w', pady=5)
         self.widgets['foundry_url'] = tk.StringVar(value=self.config['foundry_ai']['base_url'])
         tk.Entry(frame, textvariable=self.widgets['foundry_url'], width=28).grid(row=0, column=1, pady=5)
         
-        # Default Model
-        tk.Label(frame, text="FOUNDRY_DEFAULT_MODEL:").grid(row=1, column=0, sticky='w', pady=5)
+        # Модель по умолчанию
+        tk.Label(frame, text="МОДЕЛЬ ПО УМОЛЧАНИЮ:").grid(row=1, column=0, sticky='w', pady=5)
         self.widgets['model'] = tk.StringVar(value=self.config['foundry_ai']['default_model'])
         tk.Entry(frame, textvariable=self.widgets['model'], width=28).grid(row=1, column=1, pady=5)
         
-        # Temperature
-        tk.Label(frame, text="FOUNDRY_TEMPERATURE:").grid(row=2, column=0, sticky='w', pady=5)
+        # Температура
+        tk.Label(frame, text="ТЕМПЕРАТУРА:").grid(row=2, column=0, sticky='w', pady=5)
         self.widgets['temperature'] = tk.DoubleVar(value=self.config['foundry_ai']['temperature'])
         tk.Spinbox(frame, from_=0.0, to=2.0, increment=0.1, textvariable=self.widgets['temperature'], width=26).grid(row=2, column=1, pady=5)
         
         # Top P
-        tk.Label(frame, text="FOUNDRY_TOP_P:").grid(row=3, column=0, sticky='w', pady=5)
+        tk.Label(frame, text="TOP P:").grid(row=3, column=0, sticky='w', pady=5)
         self.widgets['top_p'] = tk.DoubleVar(value=self.config['foundry_ai']['top_p'])
         tk.Spinbox(frame, from_=0.0, to=1.0, increment=0.01, textvariable=self.widgets['top_p'], width=26).grid(row=3, column=1, pady=5)
         
         # Top K
-        tk.Label(frame, text="FOUNDRY_TOP_K:").grid(row=4, column=0, sticky='w', pady=5)
+        tk.Label(frame, text="TOP K:").grid(row=4, column=0, sticky='w', pady=5)
         self.widgets['top_k'] = tk.IntVar(value=self.config['foundry_ai']['top_k'])
         tk.Spinbox(frame, from_=1, to=200, textvariable=self.widgets['top_k'], width=26).grid(row=4, column=1, pady=5)
         
-        # Max Tokens
-        tk.Label(frame, text="FOUNDRY_MAX_TOKENS:").grid(row=5, column=0, sticky='w', pady=5)
+        # Максимум токенов
+        tk.Label(frame, text="МАКС ТОКЕНОВ:").grid(row=5, column=0, sticky='w', pady=5)
         self.widgets['max_tokens'] = tk.IntVar(value=self.config['foundry_ai']['max_tokens'])
         tk.Spinbox(frame, from_=1, to=32768, textvariable=self.widgets['max_tokens'], width=26).grid(row=5, column=1, pady=5)
         
-        # Timeout
-        tk.Label(frame, text="FOUNDRY_TIMEOUT (sec):").grid(row=6, column=0, sticky='w', pady=5)
+        # Таймаут
+        tk.Label(frame, text="ТАЙМАУТ (сек):").grid(row=6, column=0, sticky='w', pady=5)
         self.widgets['timeout'] = tk.IntVar(value=self.config['foundry_ai']['timeout'])
         tk.Spinbox(frame, from_=10, to=3600, textvariable=self.widgets['timeout'], width=26).grid(row=6, column=1, pady=5)
     
     def _create_rag_tab(self, notebook):
         """Создание вкладки RAG System"""
         tab = ttk.Frame(notebook)
-        notebook.add(tab, text="RAG System")
+        notebook.add(tab, text="Система RAG")
         
         frame = tk.Frame(tab)
         frame.pack(fill='both', expand=True, padx=20, pady=20)
         
-        # RAG Enabled
+        # Включить RAG
         self.widgets['rag_enabled'] = tk.BooleanVar(value=self.config['rag_system']['enabled'])
-        tk.Checkbutton(frame, text="RAG_ENABLED", variable=self.widgets['rag_enabled']).grid(row=0, column=0, columnspan=2, sticky='w', pady=10)
+        tk.Checkbutton(frame, text="ВКЛЮЧИТЬ RAG", variable=self.widgets['rag_enabled']).grid(row=0, column=0, columnspan=2, sticky='w', pady=10)
         
-        # Index Dir
-        tk.Label(frame, text="RAG_INDEX_DIR:").grid(row=1, column=0, sticky='w', pady=5)
+        # Папка индекса
+        tk.Label(frame, text="ПАПКА ИНДЕКСА:").grid(row=1, column=0, sticky='w', pady=5)
         self.widgets['rag_dir'] = tk.StringVar(value=self.config['rag_system']['index_dir'])
         tk.Entry(frame, textvariable=self.widgets['rag_dir'], width=28).grid(row=1, column=1, pady=5)
         
-        # RAG Model
-        tk.Label(frame, text="RAG_MODEL:").grid(row=2, column=0, sticky='w', pady=5)
+        # Модель RAG
+        tk.Label(frame, text="МОДЕЛЬ RAG:").grid(row=2, column=0, sticky='w', pady=5)
         self.widgets['rag_model'] = tk.StringVar(value=self.config['rag_system']['model'])
         tk.Entry(frame, textvariable=self.widgets['rag_model'], width=28).grid(row=2, column=1, pady=5)
     
@@ -202,22 +202,22 @@ class FastApiFoundryGUILauncher(LauncherBase):
         frame = tk.Frame(tab)
         frame.pack(fill='both', expand=True, padx=20, pady=20)
         
-        # Docker info
+        # Информация о Docker
         docker_available, docker_info = self.check_docker()
         status_color = "green" if docker_available else "red"
-        status_text = f"Docker: {'Available' if docker_available else 'Not Available'}"
+        status_text = f"Docker: {'Доступен' if docker_available else 'Недоступен'}"
         
         tk.Label(frame, text=status_text, fg=status_color, font=("Segoe UI", 10, "bold")).pack(pady=10)
         
         if docker_available:
-            tk.Label(frame, text=f"Version: {docker_info}", fg="gray").pack()
+            tk.Label(frame, text=f"Версия: {docker_info}", fg="gray").pack()
         
-        # Docker options
+        # Опции Docker
         self.widgets['docker_build'] = tk.BooleanVar(value=False)
-        tk.Checkbutton(frame, text="Rebuild Docker image", variable=self.widgets['docker_build']).pack(pady=5)
+        tk.Checkbutton(frame, text="Пересобрать образ Docker", variable=self.widgets['docker_build']).pack(pady=5)
         
         self.widgets['docker_detached'] = tk.BooleanVar(value=True)
-        tk.Checkbutton(frame, text="Run in background (-d)", variable=self.widgets['docker_detached']).pack(pady=5)
+        tk.Checkbutton(frame, text="Запуск в фоне (-d)", variable=self.widgets['docker_detached']).pack(pady=5)
     
     def _create_buttons(self):
         """Создание кнопок управления"""
@@ -227,7 +227,7 @@ class FastApiFoundryGUILauncher(LauncherBase):
         # Кнопка запуска
         start_btn = tk.Button(
             button_frame, 
-            text="🚀 Start FastAPI Foundry", 
+            text="🚀 Запустить FastAPI Foundry", 
             command=self._start_server,
             bg="#4CAF50", 
             fg="white", 
@@ -239,7 +239,7 @@ class FastApiFoundryGUILauncher(LauncherBase):
         # Кнопка Docker запуска
         docker_btn = tk.Button(
             button_frame, 
-            text="🐳 Start with Docker", 
+            text="🐳 Запустить с Docker", 
             command=self._start_docker,
             bg="#2196F3", 
             fg="white", 
@@ -251,7 +251,7 @@ class FastApiFoundryGUILauncher(LauncherBase):
         # Кнопка выхода
         exit_btn = tk.Button(
             button_frame, 
-            text="❌ Exit", 
+            text="❌ Выход", 
             command=self.root.quit,
             bg="#f44336", 
             fg="white", 
@@ -262,13 +262,17 @@ class FastApiFoundryGUILauncher(LauncherBase):
     
     def _get_gui_config(self) -> dict:
         """Получение конфигурации из GUI"""
+        # Преобразование русских значений в английские
+        mode_map = {"разработка": "dev", "продакшн": "production"}
+        log_level_map = {"ОТЛАДКА": "DEBUG", "ИНФО": "INFO", "ПРЕДУПРЕЖДЕНИЕ": "WARNING", "ОШИБКА": "ERROR"}
+        
         return {
             'host': self.widgets['host'].get(),
             'port': int(self.widgets['port'].get()),
-            'mode': self.widgets['mode'].get(),
+            'mode': mode_map.get(self.widgets['mode'].get(), "dev"),
             'workers': self.widgets['workers'].get(),
             'reload': self.widgets['reload'].get(),
-            'log_level': self.widgets['log_level'].get(),
+            'log_level': log_level_map.get(self.widgets['log_level'].get(), "INFO"),
             'foundry_url': self.widgets['foundry_url'].get(),
             'model': self.widgets['model'].get(),
             'temperature': self.widgets['temperature'].get(),
@@ -288,26 +292,26 @@ class FastApiFoundryGUILauncher(LauncherBase):
             config = self._get_gui_config()
             
             if not self.validate_config(**config):
-                messagebox.showerror("Configuration Error", "Invalid configuration. Check the logs.")
+                messagebox.showerror("Ошибка конфигурации", "Неверная конфигурация. Проверьте логи.")
                 return
             
-            self.log_info("Starting FastAPI Foundry with configuration:")
-            self.log_info(f"FastAPI Server - Host: {config['host']} Port: {config['port']}")
-            self.log_info(f"Foundry AI Model - URL: {config['foundry_url']}")
-            self.log_info(f"Mode: {config['mode']}")
+            self.log_info("Запуск FastAPI Foundry с конфигурацией:")
+            self.log_info(f"Сервер FastAPI - Хост: {config['host']} Порт: {config['port']}")
+            self.log_info(f"Модель Foundry AI - URL: {config['foundry_url']}")
+            self.log_info(f"Режим: {config['mode']}")
             
             success = self.run_normal_mode(**config)
             
             if success:
-                self.log_success("FastAPI Foundry started successfully!")
-                messagebox.showinfo("Success", "FastAPI Foundry started successfully!")
+                self.log_success("FastAPI Foundry успешно запущен!")
+                messagebox.showinfo("Успех", "FastAPI Foundry успешно запущен!")
             else:
-                self.log_error("Failed to start FastAPI Foundry")
-                messagebox.showerror("Error", "Failed to start FastAPI Foundry. Check the logs.")
+                self.log_error("Не удалось запустить FastAPI Foundry")
+                messagebox.showerror("Ошибка", "Не удалось запустить FastAPI Foundry. Проверьте логи.")
                 
         except Exception as e:
-            self.log_error(f"Failed to start in normal mode: {e}")
-            messagebox.showerror("Error", f"Failed to start: {e}")
+            self.log_error(f"Ошибка запуска в обычном режиме: {e}")
+            messagebox.showerror("Ошибка", f"Ошибка запуска: {e}")
     
     def _start_docker(self):
         """Запуск сервера в Docker режиме"""
@@ -316,23 +320,23 @@ class FastApiFoundryGUILauncher(LauncherBase):
             config['docker_build'] = self.widgets['docker_build'].get()
             config['docker_detached'] = self.widgets['docker_detached'].get()
             
-            self.log_info("Starting FastAPI Foundry with Docker:")
-            self.log_info(f"Port: {config['port']}")
-            self.log_info(f"Build: {config['docker_build']}")
-            self.log_info(f"Detached: {config['docker_detached']}")
+            self.log_info("Запуск FastAPI Foundry с Docker:")
+            self.log_info(f"Порт: {config['port']}")
+            self.log_info(f"Сборка: {config['docker_build']}")
+            self.log_info(f"В фоне: {config['docker_detached']}")
             
             success = self.run_docker_mode(**config)
             
             if success:
-                self.log_success("FastAPI Foundry Docker started successfully!")
-                messagebox.showinfo("Success", "FastAPI Foundry Docker started successfully!")
+                self.log_success("FastAPI Foundry Docker успешно запущен!")
+                messagebox.showinfo("Успех", "FastAPI Foundry Docker успешно запущен!")
             else:
-                self.log_error("Failed to start FastAPI Foundry Docker")
-                messagebox.showerror("Error", "Failed to start Docker. Check the logs.")
+                self.log_error("Не удалось запустить FastAPI Foundry Docker")
+                messagebox.showerror("Ошибка", "Не удалось запустить Docker. Проверьте логи.")
                 
         except Exception as e:
-            self.log_error(f"Failed to start in Docker mode: {e}")
-            messagebox.showerror("Error", f"Failed to start Docker: {e}")
+            self.log_error(f"Ошибка запуска в Docker режиме: {e}")
+            messagebox.showerror("Ошибка", f"Ошибка запуска Docker: {e}")
     
     def run_normal_mode(self, **kwargs) -> bool:
         """Запуск в обычном режиме"""
@@ -342,18 +346,18 @@ class FastApiFoundryGUILauncher(LauncherBase):
             launcher = FastAPILauncher()
             return launcher.run_normal_mode(**kwargs)
         except Exception as e:
-            self.log_error(f"Failed to start normal mode: {e}")
+            self.log_error(f"Ошибка запуска обычного режима: {e}")
             return False
     
     def run_docker_mode(self, **kwargs) -> bool:
         """Запуск в Docker режиме"""
         try:
-            # Импорт и запуск run-docker.py
+            # Импорт и запуск Docker лончера
             from launcher import DockerLauncher
             launcher = DockerLauncher()
             return launcher.run_docker_mode(**kwargs)
         except Exception as e:
-            self.log_error(f"Failed to start Docker mode: {e}")
+            self.log_error(f"Ошибка запуска Docker режима: {e}")
             return False
     
     def run(self):
@@ -362,257 +366,5 @@ class FastApiFoundryGUILauncher(LauncherBase):
         self.root.mainloop()
 
 if __name__ == "__main__":
-    launcher = FastApiFoundryGUILauncher()
-    launcher.run()Model
-        tk.Label(frame, text="RAG_MODEL:").grid(row=2, column=0, sticky='w', pady=5)
-        self.widgets['rag_model'] = tk.StringVar(value=self.config['rag_system']['model'])
-        rag_models = [
-            "sentence-transformers/all-MiniLM-L6-v2",
-            "sentence-transformers/all-mpnet-base-v2",
-            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-        ]
-        rag_combo = ttk.Combobox(frame, textvariable=self.widgets['rag_model'], 
-                               values=rag_models, state="readonly", width=25)
-        rag_combo.grid(row=2, column=1, pady=5)
-    
-    def _create_docker_tab(self, notebook):
-        """Создание вкладки Docker"""
-        tab = ttk.Frame(notebook)
-        notebook.add(tab, text="Docker")
-        
-        frame = tk.Frame(tab)
-        frame.pack(fill='both', expand=True, padx=20, pady=20)
-        
-        # Docker Mode
-        self.widgets['docker_mode'] = tk.BooleanVar(value=False)
-        tk.Checkbutton(frame, text="Запуск из Docker контейнера", variable=self.widgets['docker_mode'],
-                      font=("Segoe UI", 10, "bold"), fg="darkblue").grid(row=0, column=0, columnspan=2, sticky='w', pady=10)
-        
-        # Info
-        info_text = "При включении Docker режима run.py будет запущен внутри контейнера\nчерез docker-compose. Убедитесь что Docker Desktop запущен."
-        tk.Label(frame, text=info_text, fg="gray", justify="left").grid(row=1, column=0, columnspan=2, sticky='w', pady=10)
-        
-        # Container Name
-        tk.Label(frame, text="Container Name:").grid(row=2, column=0, sticky='w', pady=5)
-        self.widgets['container_name'] = tk.StringVar(value="fastapi-foundry-docker")
-        tk.Entry(frame, textvariable=self.widgets['container_name'], width=28).grid(row=2, column=1, pady=5)
-        
-        # Docker Port
-        tk.Label(frame, text="Host Port (внешний):").grid(row=3, column=0, sticky='w', pady=5)
-        self.widgets['docker_port'] = tk.StringVar(value="8000")
-        tk.Entry(frame, textvariable=self.widgets['docker_port'], width=28).grid(row=3, column=1, pady=5)
-        
-        # Build Option
-        self.widgets['docker_build'] = tk.BooleanVar(value=False)
-        tk.Checkbutton(frame, text="Пересобрать образ перед запуском (--build)", 
-                      variable=self.widgets['docker_build']).grid(row=4, column=0, columnspan=2, sticky='w', pady=10)
-    
-    def _create_buttons(self):
-        """Создание кнопок управления"""
-        button_frame = tk.Frame(self.root)
-        button_frame.pack(fill='x', padx=20, pady=(0, 20))
-        
-        # Кнопка запуска
-        run_button = tk.Button(button_frame, text="🚀 RUN", command=self._run_application,
-                              font=("Segoe UI", 12, "bold"), bg="lightgreen", width=12, height=2)
-        run_button.pack(side='right', padx=(10, 0))
-        
-        # Кнопка закрытия
-        close_button = tk.Button(button_frame, text="❌ CLOSE", command=self.root.quit,
-                                font=("Segoe UI", 12), width=12, height=2)
-        close_button.pack(side='right')
-    
-    def _get_gui_values(self):
-        """Получение значений из GUI"""
-        return {
-            'mode': self.widgets['mode'].get(),
-            'host': self.widgets['host'].get(),
-            'port': int(self.widgets['port'].get()),
-            'api_key': self.widgets['api_key'].get(),
-            'workers': self.widgets['workers'].get(),
-            'reload': self.widgets['reload'].get(),
-            'log_level': self.widgets['log_level'].get(),
-            'foundry_url': self.widgets['foundry_url'].get(),
-            'model': self.widgets['model'].get(),
-            'temperature': self.widgets['temperature'].get(),
-            'top_p': self.widgets['top_p'].get(),
-            'top_k': self.widgets['top_k'].get(),
-            'max_tokens': self.widgets['max_tokens'].get(),
-            'timeout': self.widgets['timeout'].get(),
-            'rag_enabled': self.widgets['rag_enabled'].get(),
-            'rag_dir': self.widgets['rag_dir'].get(),
-            'rag_model': self.widgets['rag_model'].get(),
-            'docker_mode': self.widgets['docker_mode'].get(),
-            'container_name': self.widgets['container_name'].get(),
-            'docker_port': int(self.widgets['docker_port'].get()),
-            'docker_build': self.widgets['docker_build'].get()
-        }
-    
-    def _run_application(self):
-        """Запуск приложения"""
-        try:
-            values = self._get_gui_values()
-            
-            if not self.validate_config(**values):
-                return
-            
-            if values['docker_mode']:
-                success = self.run_docker_mode(**values)
-            else:
-                success = self.run_normal_mode(**values)
-            
-            if success:
-                messagebox.showinfo("Success", "FastAPI Foundry started successfully!")
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to start: {e}")
-    
-    def run_normal_mode(self, **kwargs) -> bool:
-        """Запуск в обычном режиме"""
-        try:
-            # Разрешение конфликтов портов
-            port = kwargs.get('port', self.config['fastapi_server']['port'])
-            resolved_port = self.resolve_port_conflict(port)
-            if resolved_port != port:
-                kwargs['port'] = resolved_port
-                self.widgets['port'].set(str(resolved_port))
-                self.log_info(f"🔄 Порт FastAPI изменен на: {resolved_port}")
-            
-            # Построение переменных окружения
-            env_vars = self.build_env_vars(**kwargs)
-            
-            # Команда запуска
-            cmd = ["python", "run.py"]
-            
-            # Добавление аргументов
-            if kwargs.get('host'):
-                cmd.extend(['--host', kwargs['host']])
-            if kwargs.get('port'):
-                cmd.extend(['--port', str(kwargs['port'])])
-            if kwargs.get('mode'):
-                cmd.extend(['--mode', kwargs['mode']])
-            if kwargs.get('workers'):
-                cmd.extend(['--workers', str(kwargs['workers'])])
-            if kwargs.get('reload'):
-                cmd.append('--reload')
-            if kwargs.get('log_level'):
-                cmd.extend(['--log-level', kwargs['log_level']])
-            
-            self.log_info("Starting FastAPI Foundry with configuration:")
-            self.log_info(f"FastAPI Server - Host: {kwargs.get('host')} Port: {kwargs.get('port')}")
-            self.log_info(f"Foundry AI Model - URL: {kwargs.get('foundry_url')}")
-            self.log_info(f"Mode: {kwargs.get('mode')}")
-            
-            # Запуск в отдельном процессе
-            process = subprocess.Popen(
-                cmd,
-                cwd=self.project_root,
-                env={**os.environ, **env_vars}
-            )
-            
-            return True
-            
-        except Exception as e:
-            self.log_error(f"Failed to start in normal mode: {e}")
-            return False
-    
-    def run_docker_mode(self, **kwargs) -> bool:
-        """Запуск в Docker режиме"""
-        try:
-            self.log_info("Starting FastAPI Foundry in Docker container...")
-            
-            # Проверка Docker
-            docker_ok, docker_version = self.check_docker()
-            if not docker_ok:
-                messagebox.showerror("Docker Error", f"Docker недоступен: {docker_version}")
-                return False
-            
-            self.log_success(f"Docker запущен (версия: {docker_version})")
-            
-            # Разрешение конфликтов портов
-            docker_port = kwargs.get('docker_port', 8000)
-            resolved_port = self.resolve_port_conflict(docker_port)
-            if resolved_port != docker_port:
-                kwargs['docker_port'] = resolved_port
-                self.widgets['docker_port'].set(str(resolved_port))
-                self.log_info(f"🔄 Порт Docker изменен на: {resolved_port}")
-            
-            # Проверка образа
-            if kwargs.get('docker_build', False):
-                self.log_info("Building Docker image...")
-                try:
-                    subprocess.run(["docker-compose", "down"], cwd=self.project_root, timeout=30)
-                    result = subprocess.run(["docker-compose", "build"], cwd=self.project_root, timeout=300)
-                    if result.returncode != 0:
-                        messagebox.showerror("Build Error", "Ошибка сборки Docker образа")
-                        return False
-                    self.log_success("Docker image built successfully")
-                except subprocess.TimeoutExpired:
-                    messagebox.showerror("Build Error", "Таймаут сборки Docker образа")
-                    return False
-            
-            # Подготовка переменных окружения
-            env_vars = {
-                "PORT": str(resolved_port),
-                "FOUNDRY_HOST": "localhost",
-                "FOUNDRY_PORT": "50477",
-                "RAG_ENABLED": str(kwargs.get('rag_enabled', True)).lower()
-            }
-            
-            if kwargs.get('api_key'):
-                env_vars["API_KEY"] = kwargs['api_key']
-            
-            # Остановка существующего контейнера
-            self.log_info("Stopping existing containers...")
-            subprocess.run(["docker-compose", "down"], cwd=self.project_root, timeout=30)
-            
-            # Запуск контейнера
-            self.log_info("Starting Docker container...")
-            
-            # Обновление переменных окружения
-            import os
-            for key, value in env_vars.items():
-                os.environ[key] = value
-            
-            result = subprocess.run(["docker-compose", "up", "-d"], cwd=self.project_root, timeout=60)
-            if result.returncode == 0:
-                # Проверка статуса
-                time.sleep(3)
-                status_result = subprocess.run(["docker-compose", "ps", "-q"], cwd=self.project_root,
-                                             capture_output=True, text=True, timeout=10)
-                if status_result.stdout.strip():
-                    messagebox.showinfo("Docker Success",
-                                      f"FastAPI Foundry Docker container started!\n\n"
-                                      f"🌐 URL: http://localhost:{resolved_port}\n"
-                                      f"📚 API Docs: http://localhost:{resolved_port}/docs\n"
-                                      f"❤️ Health: http://localhost:{resolved_port}/api/v1/health\n\n"
-                                      f"Container: {kwargs.get('container_name')}\n\n"
-                                      f"Для просмотра логов: docker-compose logs -f\n"
-                                      f"Для остановки: docker-compose down")
-                    return True
-                else:
-                    messagebox.showwarning("Docker Warning", "Контейнер запущен, но статус неизвестен.\nПроверьте: docker-compose logs")
-                    return False
-            else:
-                messagebox.showerror("Docker Error", "Ошибка запуска контейнера")
-                return False
-                
-        except subprocess.TimeoutExpired:
-            messagebox.showerror("Docker Error", "Таймаут запуска контейнера")
-            return False
-        except Exception as e:
-            self.log_error(f"Failed to start in Docker mode: {e}")
-            return False
-    
-    def run(self):
-        """Запуск GUI"""
-        self.create_gui()
-        self.root.mainloop()
-
-def main():
-    """Главная функция"""
     launcher = FastApiFoundryGUILauncher()
     launcher.run()
-
-if __name__ == "__main__":
-    main()
