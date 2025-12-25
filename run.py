@@ -160,7 +160,8 @@ class FastAPILauncher(LauncherBase):
                 port=port, 
                 reload=kwargs.get('reload', False),
                 log_level=kwargs.get('log_level', 'info').lower(),
-                access_log=True
+                access_log=True,
+                ssl_context=ssl_context
             )
             
             return True
