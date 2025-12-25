@@ -21,21 +21,39 @@
 import subprocess
 import sys
 import time
-import psutil
+import os
 
 def kill_port_process(port: int) -> bool:
     """Убивает процесс, занимающий указанный порт"""
     try:
-        for proc in psutil.process_iter(['pid', 'name', 'connections']):
-            try:
-                for conn in proc.info['connections'] or []:
-                    if conn.laddr.port == port:
-                        print(f"Убиваем процесс {proc.info['name']} (PID: {proc.info['pid']}) на порту {port}")
-                        proc.kill()
+        if sys.platform == "win32":
+            # Windows
+            result = subprocess.run(
+                f'netstat -ano | findstr :{port}',
+                shell=True, capture_output=True, text=True
+            )
+            if result.stdout:
+                lines = result.stdout.strip().split('\n')
+                for line in lines:
+                    parts = line.split()
+                    if len(parts) >= 5 and f':{port}' in parts[1]:
+                        pid = parts[-1]
+                        print(f"Убиваем процесс PID {pid} на порту {port}")
+                        subprocess.run(f'taskkill /f /pid {pid}', shell=True)
                         time.sleep(1)
                         return True
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                continue
+        else:
+            # Linux/macOS
+            result = subprocess.run(
+                f'lsof -ti:{port}',
+                shell=True, capture_output=True, text=True
+            )
+            if result.stdout:
+                pid = result.stdout.strip()
+                print(f"Убиваем процесс PID {pid} на порту {port}")
+                subprocess.run(f'kill -9 {pid}', shell=True)
+                time.sleep(1)
+                return True
         return False
     except Exception as e:
         print(f"Ошибка при освобождении порта {port}: {e}")
@@ -44,10 +62,18 @@ def kill_port_process(port: int) -> bool:
 def is_port_free(port: int) -> bool:
     """Проверяет, свободен ли порт"""
     try:
-        for conn in psutil.net_connections():
-            if conn.laddr.port == port:
-                return False
-        return True
+        if sys.platform == "win32":
+            result = subprocess.run(
+                f'netstat -ano | findstr :{port}',
+                shell=True, capture_output=True, text=True
+            )
+            return not result.stdout.strip()
+        else:
+            result = subprocess.run(
+                f'lsof -ti:{port}',
+                shell=True, capture_output=True, text=True
+            )
+            return not result.stdout.strip()
     except Exception:
         return True
 
