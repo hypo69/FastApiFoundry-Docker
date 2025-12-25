@@ -26,7 +26,7 @@ import subprocess
 import time
 from pathlib import Path
 from launcher_base import LauncherBase
-from src.utils.port_manager import ensure_port_free
+from utils.port_manager import ensure_port_free
 
 class FastApiFoundryGUILauncher(LauncherBase):
     """GUI лончер для FastAPI Foundry"""

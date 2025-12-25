@@ -30,7 +30,7 @@ import ssl
 import argparse
 from pathlib import Path
 from launcher_base import LauncherBase
-from src.utils.port_manager import ensure_port_free
+from utils.port_manager import ensure_port_free
 
 # Установить режим логирования
 os.environ["FASTAPI_FOUNDRY_MODE"] = os.getenv("FASTAPI_FOUNDRY_MODE", "dev")

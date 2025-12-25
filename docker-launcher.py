@@ -21,7 +21,7 @@ import sys
 import os
 import time
 from pathlib import Path
-from src.utils.port_manager import ensure_port_free
+from utils.port_manager import ensure_port_free
 
 class DockerPythonLauncher:
     """Лончер для запуска Python команд через Docker"""
