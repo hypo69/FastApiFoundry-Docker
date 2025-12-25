@@ -46,6 +46,7 @@ class Settings:
         # Foundry
         self.foundry_base_url = get_config('foundry_base_url', 'http://localhost:50477/v1/')
         self.foundry_default_model = get_config('foundry_default_model', 'deepseek-r1-distill-qwen-7b-generic-cpu:3')
+        self.foundry_timeout = int(get_config('foundry_timeout', 30))
         
         # RAG
         self.rag_enabled = get_config('rag_enabled', 'true').lower() == 'true'
