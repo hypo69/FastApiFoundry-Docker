@@ -56,7 +56,11 @@ async function checkSystemStatus() {
         
         const indicator = document.getElementById('status-indicator');
         if (data.status === 'healthy') {
-            indicator.innerHTML = '<i class="bi bi-circle-fill text-success"></i> Online';
+            if (data.foundry_status === 'healthy') {
+                indicator.innerHTML = '<i class="bi bi-circle-fill text-success"></i> Online';
+            } else {
+                indicator.innerHTML = '<i class="bi bi-circle-fill text-warning"></i> Foundry недоступен';
+            }
             WebLogger.info('System status: healthy');
         } else {
             indicator.innerHTML = '<i class="bi bi-circle-fill text-danger"></i> Offline';
@@ -80,7 +84,7 @@ function updateSystemStatus(data) {
             </div>
             <div class="col-6">
                 <strong>Foundry:</strong><br>
-                <span class="badge ${data.foundry_status === 'healthy' ? 'bg-success' : 'bg-danger'}">${data.foundry_status || 'unknown'}</span>
+                <span class="badge ${data.foundry_status === 'healthy' ? 'bg-success' : 'bg-warning'}">${data.foundry_status === 'healthy' ? 'Connected' : 'Disconnected'}</span>
             </div>
             <div class="col-6 mt-2">
                 <strong>RAG System:</strong><br>
@@ -140,7 +144,11 @@ async function sendMessage() {
             });
         } else {
             const errorMsg = data.error || 'Failed to generate response';
-            addMessageToChat('assistant', `❌ Error: ${errorMsg}`);
+            if (errorMsg.includes('Foundry') || errorMsg.includes('connection')) {
+                addMessageToChat('assistant', `❌ Foundry AI недоступен. Проверьте подключение к серверу Foundry на порту 50477.`);
+            } else {
+                addMessageToChat('assistant', `❌ Error: ${errorMsg}`);
+            }
             WebLogger.error('Message generation failed', data);
         }
     } catch (error) {
