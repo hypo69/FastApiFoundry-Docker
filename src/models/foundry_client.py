@@ -90,131 +90,6 @@ class FoundryClient:
                 "timestamp": datetime.now()
             }
     
-    async def get_service_status(self) -> Dict[str, Any]:
-        """Получить статус сервиса Foundry через API проверку"""
-        logger.debug("Проверка статуса Foundry сервиса")
-        
-        try:
-            # Проверяем доступность через API вместо команды service
-            health = await self.health_check()
-            
-            if health["status"] == "healthy":
-                logger.info("Foundry сервис работает нормально", 
-                           models_count=health.get("models_count", 0))
-                return {
-                    "success": True,
-                    "running": True,
-                    "message": "Service is running",
-                    "models_count": health.get("models_count", 0),
-                    "url": health["url"]
-                }
-            else:
-                logger.warning("Foundry сервис не отвечает", 
-                              error=health.get("error", "Unknown error"))
-                return {
-                    "success": False,
-                    "running": False,
-                    "message": "Service is not responding",
-                    "error": health.get("error", "Unknown error")
-                }
-                
-        except Exception as e:
-            logger.warning("Не удалось проверить статус Foundry сервиса", error=str(e))
-            return {
-                "success": False,
-                "running": False,
-                "error": "Foundry server not available",
-                "message": "Cannot connect to Foundry service"
-            }
-
-    async def start_service(self) -> Dict[str, Any]:
-        """Запустить сервис Foundry (заглушка)"""
-        # Foundry уже работает, проверяем статус
-        health = await self.health_check()
-        if health["status"] == "healthy":
-            return {
-                "success": True,
-                "message": "Foundry service is already running",
-                "status": "running"
-            }
-        else:
-            return {
-                "success": False,
-                "message": "Foundry service is not responding",
-                "error": health.get("error", "Service not available")
-            }
-    
-    async def stop_service(self) -> Dict[str, Any]:
-        """Остановить сервис Foundry (заглушка)"""
-        return {
-            "success": False,
-            "message": "Cannot stop external Foundry service",
-            "error": "Service is managed externally"
-        }
-    
-    async def list_available_models(self) -> Dict[str, Any]:
-        """Получить список доступных моделей"""
-        logger.debug("Запрос списка доступных моделей")
-        
-        try:
-            session = await self._get_session()
-            url = f"{self.base_url.rstrip('/')}/models"
-            
-            with logger.timer("list_models", url=url):
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        models = data.get('data', [])
-                        logger.info("Получен список моделей", 
-                                   models_count=len(models),
-                                   models=[m.get('id', 'unknown') for m in models[:5]])  # Первые 5
-                        return {
-                            "success": True,
-                            "models": models,
-                            "count": len(models)
-                        }
-                    else:
-                        logger.error("Ошибка получения списка моделей", 
-                                    status_code=response.status)
-                        return {
-                            "success": False,
-                            "error": f"HTTP {response.status}",
-                            "models": []
-                        }
-        except Exception as e:
-            logger.warning("Не удалось получить список моделей Foundry", error=str(e))
-            return {
-                "success": False,
-                "error": "Foundry server not available",
-                "models": []
-            }
-    
-    async def run_model(self, model_name: str) -> Dict[str, Any]:
-        """Запустить модель (заглушка)"""
-        # Модели уже запущены в Foundry
-        models = await self.list_available_models()
-        if models["success"]:
-            model_ids = [m["id"] for m in models["models"]]
-            if model_name in model_ids:
-                return {
-                    "success": True,
-                    "message": f"Model {model_name} is available",
-                    "model": model_name
-                }
-            else:
-                return {
-                    "success": False,
-                    "error": f"Model {model_name} not found",
-                    "available_models": model_ids
-                }
-        else:
-            return {
-                "success": False,
-                "error": "Cannot list models"
-            }
-
-# Глобальный экземпляр клиента
-foundry_client = FoundryClient()
     async def generate_text(self, prompt: str, **kwargs) -> Dict[str, Any]:
         """Генерация текста через Foundry"""
         try:
@@ -271,3 +146,43 @@ foundry_client = FoundryClient()
                 "success": False,
                 "error": "Cannot connect to Foundry server. Please start Foundry on port 50477."
             }
+
+    async def list_available_models(self) -> Dict[str, Any]:
+        """Получить список доступных моделей"""
+        logger.debug("Запрос списка доступных моделей")
+        
+        try:
+            session = await self._get_session()
+            url = f"{self.base_url.rstrip('/')}/models"
+            
+            with logger.timer("list_models", url=url):
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        models = data.get('data', [])
+                        logger.info("Получен список моделей", 
+                                   models_count=len(models),
+                                   models=[m.get('id', 'unknown') for m in models[:5]])
+                        return {
+                            "success": True,
+                            "models": models,
+                            "count": len(models)
+                        }
+                    else:
+                        logger.error("Ошибка получения списка моделей", 
+                                    status_code=response.status)
+                        return {
+                            "success": False,
+                            "error": f"HTTP {response.status}",
+                            "models": []
+                        }
+        except Exception as e:
+            logger.warning("Не удалось получить список моделей Foundry", error=str(e))
+            return {
+                "success": False,
+                "error": "Foundry server not available",
+                "models": []
+            }
+
+# Глобальный экземпляр клиента
+foundry_client = FoundryClient()
