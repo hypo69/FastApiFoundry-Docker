@@ -1,34 +1,122 @@
-# FastAPI Foundry - Core Dependencies
+# -*- coding: utf-8 -*-
 # =============================================================================
+# Название процесса: Зависимости FastAPI Foundry
+# =============================================================================
+# Описание:
+#   Полный список зависимостей для FastAPI Foundry проекта
+#   Включает основные, опциональные и dev зависимости
+#
+# File: requirements.txt
+# Project: FastApiFoundry (Docker)
+# Version: 0.2.1
+# Author: hypo69
+# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# Copyright: © 2025 AiStros
+# Date: 9 декабря 2025
+# =============================================================================
+
+# ===== ОСНОВНЫЕ ЗАВИСИМОСТИ =====
 
 # FastAPI Framework
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 pydantic>=2.5.0
-pydantic-settings>=2.0.0
 
-# HTTP Client
+# HTTP Client & Async
 aiohttp>=3.9.0
+asyncio-mqtt>=0.16.0
 
-# Configuration
+# Configuration & Environment
 python-dotenv>=1.0.0
 
-# RAG System (optional)
+# ===== RAG СИСТЕМА (ОПЦИОНАЛЬНО) =====
+
+# Sentence Transformers для эмбеддингов
 sentence-transformers>=2.2.0
+
+# FAISS для векторного поиска
 faiss-cpu>=1.7.0
+
+# NumPy для работы с векторами
 numpy>=1.24.0
+
+# PyTorch (зависимость sentence-transformers)
 torch>=2.0.0
 
-# Logging & Utils
-PyYAML>=6.0
+# ===== СИСТЕМНЫЕ УТИЛИТЫ =====
 
-# GUI Launcher
+# Управление процессами
 psutil>=5.9.0
 
-# Development & Testing
+# Работа с JSON/YAML
+PyYAML>=6.0
+
+# Логирование
+structlog>=23.1.0
+
+# Криптография для SSL
+cryptography>=41.0.0
+
+# ===== GUI ЛОНЧЕР =====
+
+# Tkinter уже включен в Python
+# Дополнительные GUI зависимости не требуются
+
+# ===== РАЗРАБОТКА И ТЕСТИРОВАНИЕ =====
+
+# Тестирование
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
 
-# Additional dependencies found in code
+# Линтеры и форматеры
+flake8>=6.0.0
+black>=23.0.0
+isort>=5.12.0
+
+# ===== ДОПОЛНИТЕЛЬНЫЕ ЗАВИСИМОСТИ =====
+
+# WebSockets поддержка
 websockets>=11.0.0
+
+# Мониторинг файлов для reload
 watchfiles>=0.20.0
+
+# HTTP клиент для тестов
+httpx>=0.25.0
+
+# Работа с датами
+python-dateutil>=2.8.0
+
+# Валидация данных
+email-validator>=2.0.0
+
+# Работа с путями
+pathlib2>=2.3.7; python_version < "3.4"
+
+# ===== ПРОИЗВОДСТВЕННЫЕ ЗАВИСИМОСТИ =====
+
+# Gunicorn для production (альтернатива uvicorn)
+gunicorn>=21.0.0
+
+# Prometheus метрики
+prometheus-client>=0.17.0
+
+# ===== ОПЦИОНАЛЬНЫЕ ЗАВИСИМОСТИ =====
+
+# Для работы с изображениями (если потребуется)
+# Pillow>=10.0.0
+
+# Для работы с PDF (если потребуется)
+# PyPDF2>=3.0.0
+
+# Для работы с Excel (если потребуется)
+# openpyxl>=3.1.0
+
+# ===== СОВМЕСТИМОСТЬ =====
+
+# Для Python 3.14 совместимости
+typing-extensions>=4.8.0
+
+# Для работы с временными зонами
+pytz>=2023.3
