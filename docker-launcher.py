@@ -21,6 +21,7 @@ import sys
 import os
 import time
 from pathlib import Path
+from src.utils.port_manager import ensure_port_free
 
 class DockerPythonLauncher:
     """Лончер для запуска Python команд через Docker"""
@@ -90,6 +91,12 @@ class DockerPythonLauncher:
     
     def run_fastapi(self):
         """Запуск FastAPI через Docker"""
+        # Проверка и освобождение порта 8000
+        if not ensure_port_free(8000):
+            print("❌ Не удалось освободить порт 8000")
+            return False
+        print("✅ Порт 8000 свободен")
+        
         return self.run_python_in_docker("run.py")
     
     def run_gui(self):

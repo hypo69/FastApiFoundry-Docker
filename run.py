@@ -30,6 +30,7 @@ import ssl
 import argparse
 from pathlib import Path
 from launcher_base import LauncherBase
+from src.utils.port_manager import ensure_port_free
 
 # Установить режим логирования
 os.environ["FASTAPI_FOUNDRY_MODE"] = os.getenv("FASTAPI_FOUNDRY_MODE", "dev")
@@ -104,7 +105,10 @@ class FastAPILauncher(LauncherBase):
             self.log_info(f"Logs directory: {logs_dir.absolute()}")
             
             self.log_info(f"Проверяем доступность порта {port}...")
-            self.kill_process_on_port(port)
+            if not ensure_port_free(port):
+                self.log_error(f"Не удалось освободить порт {port}")
+                return False
+            self.log_success(f"Порт {port} свободен")
             
             # Подождать немного после завершения процесса
             time.sleep(1)

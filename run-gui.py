@@ -26,6 +26,7 @@ import subprocess
 import time
 from pathlib import Path
 from launcher_base import LauncherBase
+from src.utils.port_manager import ensure_port_free
 
 class FastApiFoundryGUILauncher(LauncherBase):
     """GUI лончер для FastAPI Foundry"""
@@ -290,6 +291,12 @@ class FastApiFoundryGUILauncher(LauncherBase):
         """Запуск сервера в обычном режиме"""
         try:
             config = self._get_gui_config()
+            
+            # Проверка и освобождение порта
+            port = config['port']
+            if not ensure_port_free(port):
+                messagebox.showerror("Ошибка", f"Не удалось освободить порт {port}")
+                return
             
             if not self.validate_config(**config):
                 messagebox.showerror("Ошибка конфигурации", "Неверная конфигурация. Проверьте логи.")
