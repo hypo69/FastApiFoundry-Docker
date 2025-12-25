@@ -78,6 +78,18 @@ class UniversalLauncher(LauncherBase):
         except Exception as e:
             self.log_error(f"Failed to start in normal mode: {e}")
             return False
+
+class DockerLauncher(LauncherBase):
+    """Лончер для Docker режима"""
+    
+    def run_normal_mode(self, **kwargs) -> bool:
+        """Не поддерживается в Docker лончере"""
+        return False
+    
+    def run_docker_mode(self, **kwargs) -> bool:
+        """Запуск в Docker режиме"""
+        universal = UniversalLauncher()
+        return universal.run_docker_mode(**kwargs)
     
     def run_docker_mode(self, **kwargs) -> bool:
         """Запуск в Docker режиме"""
@@ -280,7 +292,7 @@ def main():
     else:
         # GUI режим (по умолчанию)
         try:
-            from run_gui_refactored import FastApiFoundryGUILauncher
+            from run_gui import FastApiFoundryGUILauncher
             gui_launcher = FastApiFoundryGUILauncher()
             gui_launcher.run()
             return
