@@ -109,14 +109,12 @@ class FastAPILauncher(LauncherBase):
             # Подождать немного после завершения процесса
             time.sleep(1)
             
-            # Проверить импорты
-            self.log_info("Checking imports...")
-            try:
-                from src.api.main import app
-                self.log_success("FastAPI app imported successfully")
-            except Exception as e:
-                self.log_error(f"Failed to import FastAPI app: {e}")
-                return False
+            # Предварительная проверка импорта (закомментировано - uvicorn сам проверит)
+            # try:
+            #     from src.api.main import app
+            # except Exception as e:
+            #     self.log_error(f"Failed to import FastAPI app: {e}")
+            #     return False
             
             # Запустить браузер в отдельном потоке (только в dev режиме)
             if env_vars.get('FASTAPI_FOUNDRY_MODE') != 'production':
