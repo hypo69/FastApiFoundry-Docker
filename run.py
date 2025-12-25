@@ -177,21 +177,22 @@ if __name__ == "__main__":
         
         # Настройка SSL контекста для HTTPS
         ssl_context = None
-        if settings.https_enabled:
-            try:
-                cert_file = Path(settings.ssl_cert_file).expanduser()
-                key_file = Path(settings.ssl_key_file).expanduser()
-                
-                if cert_file.exists() and key_file.exists():
-                    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-                    ssl_context.load_cert_chain(str(cert_file), str(key_file))
-                    logger.info("✅ HTTPS включен с SSL сертификатами")
-                else:
-                    logger.warning("⚠️ HTTPS включен, но SSL сертификаты не найдены")
-                    logger.info("🔒 Сгенерируйте сертификаты: .\\ssl-generator.ps1")
-            except Exception as e:
-                logger.error(f"❌ Ошибка настройки HTTPS: {e}")
-                logger.info("🔒 Сгенерируйте сертификаты: .\\ssl-generator.ps1")
+        # Временно отключаем HTTPS для отладки
+        # if settings.https_enabled:
+        #     try:
+        #         cert_file = Path(settings.ssl_cert_file).expanduser()
+        #         key_file = Path(settings.ssl_key_file).expanduser()
+        #         
+        #         if cert_file.exists() and key_file.exists():
+        #             ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        #             ssl_context.load_cert_chain(str(cert_file), str(key_file))
+        #             logger.info("✅ HTTPS включен с SSL сертификатами")
+        #         else:
+        #             logger.warning("⚠️ HTTPS включен, но SSL сертификаты не найдены")
+        #             logger.info("🔒 Сгенерируйте сертификаты: .\\ssl-generator.ps1")
+        #     except Exception as e:
+        #         logger.error(f"❌ Ошибка настройки HTTPS: {e}")
+        #         logger.info("🔒 Сгенерируйте сертификаты: .\\ssl-generator.ps1")
         
         uvicorn.run(
             "src.api.main:app",
