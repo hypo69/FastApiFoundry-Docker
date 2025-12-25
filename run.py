@@ -19,211 +19,218 @@
 # Copyright: © 2025 AiStros
 # Date: 9 декабря 2025
 # =============================================================================
+
 import uvicorn
 import webbrowser
 import threading
 import time
 import os
 import sys
-import subprocess
-import platform
 import ssl
+import argparse
 from pathlib import Path
+from launcher_base import LauncherBase
 
 # Установить режим логирования
-os.environ["FASTAPI_FOUNDRY_MODE"] = "dev"
+os.environ["FASTAPI_FOUNDRY_MODE"] = os.getenv("FASTAPI_FOUNDRY_MODE", "dev")
 
 # Настройка логирования
 from src.logger import logger
 
-def kill_process_on_port(port):
-    """Завершить процесс на указанном порту"""
-    system = platform.system().lower()
-    logger.info(f"Проверяем порт {port}...")
+class FastAPILauncher(LauncherBase):
+    """Лончер для FastAPI сервера"""
     
-    try:
-        if system == "windows":
-            # Найти процесс на порту
-            result = subprocess.run(
-                ["netstat", "-ano"], 
-                capture_output=True, 
-                text=True,
-                timeout=10
+    def __init__(self):
+        super().__init__()
+        self.logger = logger
+    
+    def log_info(self, message: str):
+        self.logger.info(message)
+    
+    def log_warning(self, message: str):
+        self.logger.warning(message)
+    
+    def log_error(self, message: str):
+        self.logger.error(message)
+    
+    def log_success(self, message: str):
+        self.logger.info(message)
+    
+    def open_browser(self, url: str, delay: int = 3):
+        """Открыть браузер через указанное время"""
+        def _open():
+            try:
+                time.sleep(delay)
+                self.log_info(f"Opening browser: {url}")
+                # Не открывать браузер в production режиме
+                if os.getenv('FASTAPI_FOUNDRY_MODE') != 'production':
+                    webbrowser.open(url)
+            except Exception as e:
+                self.log_error(f"Failed to open browser: {e}")
+        
+        thread = threading.Thread(target=_open)
+        thread.daemon = True
+        thread.start()
+    
+    def run_normal_mode(self, **kwargs) -> bool:
+        """Запуск в обычном режиме"""
+        try:
+            # Разрешение конфликтов портов
+            port = int(kwargs.get('port', self.config['fastapi_server']['port']))
+            host = kwargs.get('host', self.config['fastapi_server']['host'])
+            
+            resolved_port = self.resolve_port_conflict(port)
+            if resolved_port != port:
+                kwargs['port'] = resolved_port
+                port = resolved_port
+            
+            # Построение переменных окружения
+            env_vars = self.build_env_vars(**kwargs)
+            
+            # Обновление переменных окружения
+            for key, value in env_vars.items():
+                os.environ[key] = value
+            
+            self.log_info("=" * 60)
+            self.log_info("Starting FastAPI Foundry Application")
+            self.log_info(f"Mode: {env_vars.get('FASTAPI_FOUNDRY_MODE', 'dev')}")
+            self.log_info(f"Python: {sys.version}")
+            self.log_info(f"Working directory: {os.getcwd()}")
+            self.log_info("=" * 60)
+            
+            # Создать директорию для логов
+            logs_dir = Path("logs")
+            logs_dir.mkdir(exist_ok=True)
+            self.log_info(f"Logs directory: {logs_dir.absolute()}")
+            
+            self.log_info(f"Проверяем доступность порта {port}...")
+            self.kill_process_on_port(port)
+            
+            # Подождать немного после завершения процесса
+            time.sleep(1)
+            
+            # Проверить импорты
+            self.log_info("Checking imports...")
+            try:
+                from src.api.main import app
+                self.log_success("FastAPI app imported successfully")
+            except Exception as e:
+                self.log_error(f"Failed to import FastAPI app: {e}")
+                return False
+            
+            # Запустить браузер в отдельном потоке (только в dev режиме)
+            if env_vars.get('FASTAPI_FOUNDRY_MODE') != 'production':
+                self.open_browser(f"http://localhost:{port}")
+            
+            self.log_info(f"Starting FastAPI server on http://{host}:{port}")
+            self.log_info(f"Web interface: http://localhost:{port}")
+            self.log_info(f"API docs: http://localhost:{port}/docs")
+            
+            # Проверка SSL сертификатов
+            ssl_dir = Path.home() / ".ssl"
+            cert_file = ssl_dir / "cert.pem"
+            key_file = ssl_dir / "key.pem"
+            
+            if not (cert_file.exists() and key_file.exists()):
+                self.log_warning("⚠️  SSL сертификаты не найдены")
+                self.log_info("🔒 Для HTTPS поддержки запустите: .\\ssl-generator.ps1")
+            else:
+                self.log_info(f"✅ SSL сертификаты: {ssl_dir}")
+            
+            # Настройка SSL контекста для HTTPS
+            ssl_context = None
+            # Временно отключаем HTTPS для отладки
+            # if settings.https_enabled:
+            #     try:
+            #         cert_file = Path(settings.ssl_cert_file).expanduser()
+            #         key_file = Path(settings.ssl_key_file).expanduser()
+            #         
+            #         if cert_file.exists() and key_file.exists():
+            #             ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            #             ssl_context.load_cert_chain(str(cert_file), str(key_file))
+            #             logger.info("✅ HTTPS включен с SSL сертификатами")
+            #         else:
+            #             logger.warning("⚠️ HTTPS включен, но SSL сертификаты не найдены")
+            #             logger.info("🔒 Сгенерируйте сертификаты: .\\ssl-generator.ps1")
+            #     except Exception as e:
+            #         logger.error(f"❌ Ошибка настройки HTTPS: {e}")
+            #         logger.info("🔒 Сгенерируйте сертификаты: .\\ssl-generator.ps1")
+            
+            uvicorn.run(
+                "src.api.main:app",
+                host=host, 
+                port=port, 
+                reload=kwargs.get('reload', False),
+                log_level=kwargs.get('log_level', 'info').lower(),
+                access_log=True,
+                ssl_context=ssl_context
             )
             
-            if result.returncode == 0:
-                for line in result.stdout.split('\n'):
-                    if f":{port}" in line and "LISTENING" in line:
-                        parts = line.split()
-                        if len(parts) >= 5:
-                            pid = parts[-1]
-                            logger.warning(f"Найден процесс PID {pid} на порту {port}, завершаем...")
-                            
-                            kill_result = subprocess.run(
-                                ["taskkill", "/PID", pid, "/F"], 
-                                capture_output=True, 
-                                text=True,
-                                timeout=5
-                            )
-                            
-                            if kill_result.returncode == 0:
-                                logger.info(f"✅ Процесс PID {pid} успешно завершен")
-                                return True
-                            else:
-                                logger.error(f"❌ Не удалось завершить PID {pid}: {kill_result.stderr.strip()}")
-        else:
-            # Unix/Linux/macOS
-            result = subprocess.run(
-                ["lsof", "-ti", f":{port}"], 
-                capture_output=True, 
-                text=True,
-                timeout=10
-            )
+            return True
             
-            if result.stdout.strip():
-                pids = result.stdout.strip().split('\n')
-                for pid in pids:
-                    if pid:
-                        logger.warning(f"Найден процесс PID {pid} на порту {port}, завершаем...")
-                        subprocess.run(["kill", "-9", pid], capture_output=True, timeout=5)
-                        logger.info(f"✅ Процесс PID {pid} завершен")
-                        return True
-                        
-    except Exception as e:
-        logger.error(f"Ошибка при проверке порта {port}: {e}")
+        except KeyboardInterrupt:
+            self.log_info("\n" + "=" * 60)
+            self.log_info("Application stopped by user (Ctrl+C)")
+            self.log_info("=" * 60)
+            return True
+        except ImportError as e:
+            self.log_error(f"Import error: {e}")
+            self.log_error("Check if all dependencies are installed: pip install -r requirements.txt")
+            return False
+        except OSError as e:
+            if "Address already in use" in str(e):
+                self.log_error(f"Port {port} is already in use")
+                self.log_error("Run 'python stop.py' to stop existing servers")
+            else:
+                self.log_error(f"OS error: {e}")
+            return False
+        except Exception as e:
+            self.log_error(f"Application failed to start: {e}")
+            return False
+        finally:
+            self.log_info("=" * 60)
+            self.log_info("Application shutdown complete")
+            self.log_info("=" * 60)
     
-    logger.info(f"Порт {port} свободен")
-    return False
+    def run_docker_mode(self, **kwargs) -> bool:
+        """Запуск в Docker режиме"""
+        self.log_error("Docker mode not supported in run.py")
+        self.log_info("Use run-gui.py for Docker mode or docker-compose directly")
+        return False
 
-def open_browser():
-    """Открыть браузер через 3 секунды после запуска сервера"""
-    try:
-        time.sleep(3)
-        port = int(os.getenv('PORT', 8000))
-        url = f"http://localhost:{port}"
-        logger.info(f"Opening browser: {url}")
-        # Не открывать браузер в Docker контейнере
-        if os.getenv('FASTAPI_FOUNDRY_MODE') != 'production':
-            webbrowser.open(url)
-    except Exception as e:
-        logger.error(f"Failed to open browser: {e}")
+def parse_args():
+    """Парсинг аргументов командной строки"""
+    parser = argparse.ArgumentParser(description="FastAPI Foundry Server")
+    parser.add_argument('--host', default=None, help='Host to bind to')
+    parser.add_argument('--port', type=int, default=None, help='Port to bind to')
+    parser.add_argument('--mode', choices=['dev', 'production'], default=None, help='Run mode')
+    parser.add_argument('--workers', type=int, default=None, help='Number of workers')
+    parser.add_argument('--reload', action='store_true', help='Enable auto-reload')
+    parser.add_argument('--no-reload', action='store_true', help='Disable auto-reload')
+    parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default=None, help='Log level')
+    return parser.parse_args()
 
 if __name__ == "__main__":
-    try:
-        logger.info("=" * 60)
-        logger.info("Starting FastAPI Foundry Application")
-        logger.info(f"Mode: {os.getenv('FASTAPI_FOUNDRY_MODE', 'dev')}")
-        logger.info(f"Python: {sys.version}")
-        logger.info(f"Working directory: {os.getcwd()}")
-        logger.info("=" * 60)
-        
-        # Создать директорию для логов
-        logs_dir = Path("logs")
-        logs_dir.mkdir(exist_ok=True)
-        logger.info(f"Logs directory: {logs_dir.absolute()}")
-        
-        # Получить порт из переменных окружения или аргументов
-        port = int(os.getenv('PORT', 8000))
-        host = os.getenv('HOST', '0.0.0.0')
-        
-        # Проверить аргументы командной строки
-        if '--port' in sys.argv:
-            port_idx = sys.argv.index('--port') + 1
-            if port_idx < len(sys.argv):
-                port = int(sys.argv[port_idx])
-        
-        if '--host' in sys.argv:
-            host_idx = sys.argv.index('--host') + 1
-            if host_idx < len(sys.argv):
-                host = sys.argv[host_idx]
-        
-        # Проверить и освободить порт
-        logger.info(f"Проверяем доступность порта {port}...")
-        kill_process_on_port(port)
-        
-        # Подождать немного после завершения процесса
-        time.sleep(1)
-        # Проверить импорты
-        logger.debug("Checking imports...")
-        try:
-            from src.api.main import app
-            logger.info("✅ FastAPI app imported successfully")
-        except Exception as e:
-            logger.error(f"❌ Failed to import FastAPI app: {e}")
-            raise
-        
-        # Запустить браузер в отдельном потоке (только в dev режиме)
-        if os.getenv('FASTAPI_FOUNDRY_MODE') != 'production':
-            logger.debug("Starting browser thread...")
-            browser_thread = threading.Thread(target=open_browser)
-            browser_thread.daemon = True
-            browser_thread.start()
-            logger.info("Browser thread started")
-        
-        logger.info(f"Starting FastAPI server on http://{host}:{port}")
-        logger.info(f"Web interface: http://localhost:{port}")
-        logger.info(f"API docs: http://localhost:{port}/docs")
-        
-        # Проверка SSL сертификатов
-        ssl_dir = Path.home() / ".ssl"
-        cert_file = ssl_dir / "cert.pem"
-        key_file = ssl_dir / "key.pem"
-        
-        if not (cert_file.exists() and key_file.exists()):
-            logger.warning("⚠️  SSL сертификаты не найдены")
-            logger.info("🔒 Для HTTPS поддержки запустите: .\\ssl-generator.ps1")
-        else:
-            logger.info(f"✅ SSL сертификаты: {ssl_dir}")
-        
-        # Настройка SSL контекста для HTTPS
-        ssl_context = None
-        # Временно отключаем HTTPS для отладки
-        # if settings.https_enabled:
-        #     try:
-        #         cert_file = Path(settings.ssl_cert_file).expanduser()
-        #         key_file = Path(settings.ssl_key_file).expanduser()
-        #         
-        #         if cert_file.exists() and key_file.exists():
-        #             ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        #             ssl_context.load_cert_chain(str(cert_file), str(key_file))
-        #             logger.info("✅ HTTPS включен с SSL сертификатами")
-        #         else:
-        #             logger.warning("⚠️ HTTPS включен, но SSL сертификаты не найдены")
-        #             logger.info("🔒 Сгенерируйте сертификаты: .\\ssl-generator.ps1")
-        #     except Exception as e:
-        #         logger.error(f"❌ Ошибка настройки HTTPS: {e}")
-        #         logger.info("🔒 Сгенерируйте сертификаты: .\\ssl-generator.ps1")
-        
-        uvicorn.run(
-            "src.api.main:app",
-            host=host, 
-            port=port, 
-            reload=False,
-            log_level="info",
-            access_log=True,
-            ssl_context=ssl_context
-        )
-        
-    except KeyboardInterrupt:
-        logger.info("\n" + "=" * 60)
-        logger.info("Application stopped by user (Ctrl+C)")
-        logger.info("=" * 60)
-    except ImportError as e:
-        logger.error(f"❌ Import error: {e}")
-        logger.error("Check if all dependencies are installed: pip install -r requirements.txt")
-        sys.exit(1)
-    except OSError as e:
-        if "Address already in use" in str(e):
-            logger.error(f"❌ Port {port} is already in use")
-            logger.error("Run 'python stop.py' to stop existing servers")
-        else:
-            logger.error(f"❌ OS error: {e}")
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"❌ Application failed to start: {e}")
-        logger.exception("Full traceback:")
-        sys.exit(1)
-    finally:
-        logger.info("=" * 60)
-        logger.info("Application shutdown complete")
-        logger.info("=" * 60)
+    args = parse_args()
+    
+    # Подготовка параметров
+    kwargs = {}
+    if args.host:
+        kwargs['host'] = args.host
+    if args.port:
+        kwargs['port'] = args.port
+    if args.mode:
+        kwargs['mode'] = args.mode
+    if args.workers:
+        kwargs['workers'] = args.workers
+    if args.reload:
+        kwargs['reload'] = True
+    elif args.no_reload:
+        kwargs['reload'] = False
+    if args.log_level:
+        kwargs['log_level'] = args.log_level
+    
+    # Запуск лончера
+    launcher = FastAPILauncher()
+    success = launcher.run(docker_mode=False, **kwargs)
+    sys.exit(0 if success else 1)
