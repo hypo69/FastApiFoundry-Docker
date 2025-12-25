@@ -82,11 +82,10 @@ class FoundryClient:
                             "timestamp": datetime.now()
                         }
         except Exception as e:
-            logger.error("Критическая ошибка проверки здоровья Foundry", 
-                        error=str(e), url=self.base_url, exc_info=True)
+            logger.warning("Foundry сервер недоступен (порт 50477)", error=str(e))
             return {
-                "status": "error",
-                "error": str(e),
+                "status": "disconnected",
+                "error": "Foundry server not running on port 50477",
                 "url": self.base_url,
                 "timestamp": datetime.now()
             }
@@ -120,12 +119,12 @@ class FoundryClient:
                 }
                 
         except Exception as e:
-            logger.exception("Критическая ошибка проверки статуса сервиса", error=str(e))
+            logger.warning("Не удалось проверить статус Foundry сервиса", error=str(e))
             return {
                 "success": False,
                 "running": False,
-                "error": str(e),
-                "message": "Error checking service status"
+                "error": "Foundry server not available",
+                "message": "Cannot connect to Foundry service"
             }
 
     async def start_service(self) -> Dict[str, Any]:
@@ -183,10 +182,10 @@ class FoundryClient:
                             "models": []
                         }
         except Exception as e:
-            logger.exception("Критическая ошибка получения списка моделей", error=str(e))
+            logger.warning("Не удалось получить список моделей Foundry", error=str(e))
             return {
                 "success": False,
-                "error": str(e),
+                "error": "Foundry server not available",
                 "models": []
             }
     
@@ -216,3 +215,59 @@ class FoundryClient:
 
 # Глобальный экземпляр клиента
 foundry_client = FoundryClient()
+    async def generate_text(self, prompt: str, **kwargs) -> Dict[str, Any]:
+        """Генерация текста через Foundry"""
+        try:
+            # Проверяем доступность Foundry
+            health = await self.health_check()
+            if health["status"] != "healthy":
+                return {
+                    "success": False,
+                    "error": "Foundry server not available. Please start Foundry on port 50477.",
+                    "foundry_status": health["status"]
+                }
+            
+            session = await self._get_session()
+            url = f"{self.base_url.rstrip('/')}/chat/completions"
+            
+            payload = {
+                "model": kwargs.get('model', settings.foundry_default_model),
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": kwargs.get('temperature', settings.foundry_temperature),
+                "max_tokens": kwargs.get('max_tokens', settings.foundry_max_tokens),
+                "top_p": kwargs.get('top_p', settings.foundry_top_p),
+                "top_k": kwargs.get('top_k', settings.foundry_top_k),
+                "stream": False
+            }
+            
+            async with session.post(url, json=payload) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    content = data['choices'][0]['message']['content']
+                    
+                    logger.info("Текст успешно сгенерирован", 
+                               model=payload['model'],
+                               tokens=data.get('usage', {}).get('total_tokens', 0))
+                    
+                    return {
+                        "success": True,
+                        "content": content,
+                        "model": payload['model'],
+                        "tokens_used": data.get('usage', {}).get('total_tokens', 0),
+                        "response_data": data
+                    }
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Ошибка генерации текста: HTTP {response.status}", 
+                               error=error_text)
+                    return {
+                        "success": False,
+                        "error": f"HTTP {response.status}: {error_text}"
+                    }
+                    
+        except Exception as e:
+            logger.warning("Не удалось сгенерировать текст через Foundry", error=str(e))
+            return {
+                "success": False,
+                "error": "Cannot connect to Foundry server. Please start Foundry on port 50477."
+            }
