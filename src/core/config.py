@@ -1,112 +1,85 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# =============================================================================
+# Название процесса: Конфигурация FastAPI Foundry
+# =============================================================================
+# Описание:
+#   Простая конфигурация без Pydantic BaseSettings
+#   Загружает настройки из config.json и переменных окружения
+#
+# File: config.py
+# Project: FastApiFoundry (Docker)
+# Version: 0.2.1
+# Author: hypo69
+# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# Copyright: © 2025 AiStros
+# Date: 9 декабря 2025
+# =============================================================================
+
 import json
+import os
 from pathlib import Path
-from pydantic import Field
-from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
+# Загружаем переменные окружения
 load_dotenv()
 
-# Load config.json for application settings
+# Загружаем config.json
 config_file = Path(__file__).parent.parent / "config.json"
+config_data = {}
 if config_file.exists():
-    with open(config_file, 'r', encoding='utf-8') as f:
-        config_data = json.load(f)
-else:
-    config_data = {}
+    try:
+        with open(config_file, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+    except Exception:
+        config_data = {}
 
-class Settings(BaseSettings):
-    # FastAPI Server (from config.json)
-    api_host: str = Field(default="0.0.0.0", env="API_HOST")
-    api_port: int = Field(default=8000, env="API_PORT", ge=1, le=65535)
-    api_reload: bool = Field(default=False, env="API_RELOAD")
-    api_workers: int = Field(default=1, env="API_WORKERS", ge=1)
-    api_key: str = Field(default="", env="API_KEY")
-
-    # HTTPS settings
-    https_enabled: bool = Field(default=False)
-    ssl_cert_file: str = Field(default="~/.ssl/cert.pem")
-    ssl_key_file: str = Field(default="~/.ssl/key.pem")
-
-    # Foundry
-    foundry_base_url: str = Field(default="http://localhost:50477/v1/", env="FOUNDRY_BASE_URL")
-    foundry_default_model: str = Field(default="deepseek-r1-distill-qwen-7b-generic-cpu:3", env="FOUNDRY_DEFAULT_MODEL")
-    foundry_temperature: float = Field(default=0.6, env="FOUNDRY_TEMPERATURE", ge=0.0, le=2.0)
-    foundry_top_p: float = Field(default=0.9, env="FOUNDRY_TOP_P", ge=0.0, le=1.0)
-    foundry_top_k: int = Field(default=40, env="FOUNDRY_TOP_K", ge=1)
-    foundry_max_tokens: int = Field(default=2048, env="FOUNDRY_MAX_TOKENS", ge=1)
-    foundry_timeout: int = Field(default=300, env="FOUNDRY_TIMEOUT", ge=1)
-
-    # RAG
-    rag_enabled: bool = Field(default=True, env="RAG_ENABLED")
-    rag_index_dir: str = Field(default="./rag_index", env="RAG_INDEX_DIR")
-    rag_model: str = Field(default="sentence-transformers/all-MiniLM-L6-v2", env="RAG_MODEL")
-
-    # Logging
-    log_level: str = Field(default="INFO", env="LOG_LEVEL")
-    log_file: str = Field(default="logs/fastapi-foundry.log", env="LOG_FILE")
-
-    # CORS
-    cors_origins: str = Field(default='["*"]', env="CORS_ORIGINS")
-
-    def __init__(self, **kwargs):
-        # Загружаем значения из config.json если они есть
-        if config_data:
-            # FastAPI Server
-            if 'fastapi_server' in config_data:
-                fs = config_data['fastapi_server']
-                kwargs.setdefault('api_host', fs.get('host', '0.0.0.0'))
-                kwargs.setdefault('api_port', fs.get('port', 8000))
-                kwargs.setdefault('api_reload', fs.get('reload', False))
-                kwargs.setdefault('api_workers', fs.get('workers', 1))
-                kwargs.setdefault('cors_origins', json.dumps(fs.get('cors_origins', ['*'])))
-            
-            # Security
-            if 'security' in config_data:
-                sec = config_data['security']
-                kwargs.setdefault('api_key', sec.get('api_key', ''))
-                kwargs.setdefault('https_enabled', sec.get('https_enabled', False))
-                kwargs.setdefault('ssl_cert_file', sec.get('ssl_cert_file', '~/.ssl/cert.pem'))
-                kwargs.setdefault('ssl_key_file', sec.get('ssl_key_file', '~/.ssl/key.pem'))
-            
-            # Foundry AI
-            if 'foundry_ai' in config_data:
-                fa = config_data['foundry_ai']
-                kwargs.setdefault('foundry_base_url', fa.get('base_url', 'http://localhost:50477/v1/'))
-                kwargs.setdefault('foundry_default_model', fa.get('default_model', 'deepseek-r1-distill-qwen-7b-generic-cpu:3'))
-                kwargs.setdefault('foundry_temperature', fa.get('temperature', 0.6))
-                kwargs.setdefault('foundry_top_p', fa.get('top_p', 0.9))
-                kwargs.setdefault('foundry_top_k', fa.get('top_k', 40))
-                kwargs.setdefault('foundry_max_tokens', fa.get('max_tokens', 2048))
-                kwargs.setdefault('foundry_timeout', fa.get('timeout', 300))
-            
-            # RAG System
-            if 'rag_system' in config_data:
-                rag = config_data['rag_system']
-                kwargs.setdefault('rag_enabled', rag.get('enabled', True))
-                kwargs.setdefault('rag_index_dir', rag.get('index_dir', './rag_index'))
-                kwargs.setdefault('rag_model', rag.get('model', 'sentence-transformers/all-MiniLM-L6-v2'))
-            
-            # Logging
-            if 'logging' in config_data:
-                log = config_data['logging']
-                kwargs.setdefault('log_level', log.get('level', 'INFO'))
-                kwargs.setdefault('log_file', log.get('file', 'logs/fastapi-foundry.log'))
+class Settings:
+    """Простой класс настроек"""
+    
+    def __init__(self):
+        # FastAPI Server
+        fastapi_config = config_data.get('fastapi_server', {})
+        self.api_host = os.getenv('API_HOST', fastapi_config.get('host', '0.0.0.0'))
+        self.api_port = int(os.getenv('API_PORT', fastapi_config.get('port', 8000)))
+        self.api_reload = os.getenv('API_RELOAD', str(fastapi_config.get('reload', False))).lower() == 'true'
+        self.api_workers = int(os.getenv('API_WORKERS', fastapi_config.get('workers', 1)))
         
-        super().__init__(**kwargs)
+        # Security
+        security_config = config_data.get('security', {})
+        self.api_key = os.getenv('API_KEY', security_config.get('api_key', ''))
+        self.https_enabled = security_config.get('https_enabled', False)
+        self.ssl_cert_file = security_config.get('ssl_cert_file', '~/.ssl/cert.pem')
+        self.ssl_key_file = security_config.get('ssl_key_file', '~/.ssl/key.pem')
+        
+        # Foundry AI
+        foundry_config = config_data.get('foundry_ai', {})
+        self.foundry_base_url = os.getenv('FOUNDRY_BASE_URL', foundry_config.get('base_url', 'http://localhost:50477/v1/'))
+        self.foundry_default_model = os.getenv('FOUNDRY_DEFAULT_MODEL', foundry_config.get('default_model', 'deepseek-r1-distill-qwen-7b-generic-cpu:3'))
+        self.foundry_temperature = float(os.getenv('FOUNDRY_TEMPERATURE', foundry_config.get('temperature', 0.6)))
+        self.foundry_top_p = float(os.getenv('FOUNDRY_TOP_P', foundry_config.get('top_p', 0.9)))
+        self.foundry_top_k = int(os.getenv('FOUNDRY_TOP_K', foundry_config.get('top_k', 40)))
+        self.foundry_max_tokens = int(os.getenv('FOUNDRY_MAX_TOKENS', foundry_config.get('max_tokens', 2048)))
+        self.foundry_timeout = int(os.getenv('FOUNDRY_TIMEOUT', foundry_config.get('timeout', 300)))
+        
+        # RAG System
+        rag_config = config_data.get('rag_system', {})
+        self.rag_enabled = os.getenv('RAG_ENABLED', str(rag_config.get('enabled', True))).lower() == 'true'
+        self.rag_index_dir = os.getenv('RAG_INDEX_DIR', rag_config.get('index_dir', './rag_index'))
+        self.rag_model = os.getenv('RAG_MODEL', rag_config.get('model', 'sentence-transformers/all-MiniLM-L6-v2'))
+        
+        # Logging
+        logging_config = config_data.get('logging', {})
+        self.log_level = os.getenv('LOG_LEVEL', logging_config.get('level', 'INFO'))
+        self.log_file = os.getenv('LOG_FILE', logging_config.get('file', 'logs/fastapi-foundry.log'))
+        
+        # CORS
+        cors_origins = fastapi_config.get('cors_origins', ['*'])
+        self.cors_origins = json.loads(os.getenv('CORS_ORIGINS', json.dumps(cors_origins)))
 
-    model_config = {
-        "env_file": ".env",
-        "env_file_encoding": "utf-8",
-        "extra": "ignore"
-    }
-
-_settings = None
+# Создаем глобальный экземпляр настроек
+settings = Settings()
 
 def get_settings():
-    global _settings
-    if _settings is None:
-        _settings = Settings()
-    return _settings
-
-# Создаем глобальный экземпляр
-settings = get_settings()
+    """Получить настройки"""
+    return settings
