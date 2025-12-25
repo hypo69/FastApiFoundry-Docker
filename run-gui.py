@@ -352,10 +352,12 @@ class FastApiFoundryGUILauncher(LauncherBase):
     def run_docker_mode(self, **kwargs) -> bool:
         """Запуск в Docker режиме"""
         try:
-            # Импорт и запуск Docker лончера
-            from launcher import DockerLauncher
-            launcher = DockerLauncher()
-            return launcher.run_docker_mode(**kwargs)
+            # Импорт Docker лончера
+            from docker_launcher import DockerPythonLauncher
+            docker_launcher = DockerPythonLauncher()
+            
+            self.log_info("Запуск FastAPI Foundry через Docker...")
+            return docker_launcher.run_fastapi()
         except Exception as e:
             self.log_error(f"Ошибка запуска Docker режима: {e}")
             return False

@@ -1,200 +1,34 @@
-# -*- coding: utf-8 -*-
+# FastAPI Foundry - Core Dependencies
 # =============================================================================
-# Название процесса: Зависимости FastAPI Foundry (Полный анализ + Web UI)
-# =============================================================================
-# Описание:
-#   Полный список зависимостей на основе анализа всех файлов проекта
-#   Включает основные, веб-интерфейс, RAG, логирование и dev зависимости
-#
-# File: requirements.txt
-# Project: FastApiFoundry (Docker)
-# Version: 0.2.1
-# Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
-# =============================================================================
-
-# ===== ОСНОВНЫЕ ЗАВИСИМОСТИ =====
 
 # FastAPI Framework
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
-
-# Pydantic для валидации данных
 pydantic>=2.5.0
+pydantic-settings>=2.0.0
 
-# HTTP Client & Async
+# HTTP Client
 aiohttp>=3.9.0
 
-# Configuration & Environment
+# Configuration
 python-dotenv>=1.0.0
 
-# ===== ВЕБ-ИНТЕРФЕЙС =====
-
-# Static files (уже в FastAPI)
-# CORS middleware (уже в FastAPI)
-
-# Jinja2 для шаблонов (если потребуется)
-jinja2>=3.1.0
-
-# ===== ЛОГИРОВАНИЕ И МОНИТОРИНГ =====
-
-# Структурированное логирование (используется в logging_system.py)
-structlog>=23.1.0
-
-# Ротация логов (logging.handlers уже в стандартной библиотеке)
-
-# ===== RAG СИСТЕМА (ОПЦИОНАЛЬНО) =====
-
-# Sentence Transformers для эмбеддингов
+# RAG System (optional)
 sentence-transformers>=2.2.0
-
-# FAISS для векторного поиска
 faiss-cpu>=1.7.0
-
-# NumPy для работы с векторами
 numpy>=1.24.0
-
-# PyTorch (зависимость sentence-transformers)
 torch>=2.0.0
 
-# ===== СИСТЕМНЫЕ УТИЛИТЫ =====
-
-# Управление процессами (launcher_base.py)
-psutil>=5.9.0
-
-# Работа с JSON/YAML
+# Logging & Utils
 PyYAML>=6.0
 
-# Криптография для SSL
-cryptography>=41.0.0
+# GUI Launcher
+psutil>=5.9.0
 
-# ===== ВЕБ И API =====
-
-# WebSockets поддержка
-websockets>=11.0.0
-
-# Мониторинг файлов для reload
-watchfiles>=0.20.0
-
-# ===== ДОПОЛНИТЕЛЬНЫЕ ЗАВИСИМОСТИ =====
-
-# HTTP клиент для тестов
-httpx>=0.25.0
-
-# Работа с датами
-python-dateutil>=2.8.0
-
-# Валидация email
-email-validator>=2.0.0
-
-# ===== РАЗРАБОТКА И ТЕСТИРОВАНИЕ =====
-
-# Тестирование
+# Development & Testing
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
-pytest-cov>=4.1.0
 
-# Линтеры и форматеры
-flake8>=6.0.0
-black>=23.0.0
-isort>=5.12.0
-
-# ===== ПРОИЗВОДСТВЕННЫЕ ЗАВИСИМОСТИ =====
-
-# Gunicorn для production
-gunicorn>=21.0.0
-
-# Prometheus метрики (опционально)
-prometheus-client>=0.17.0
-
-# ===== СОВМЕСТИМОСТЬ =====
-
-# Для Python 3.14 совместимости
-typing-extensions>=4.8.0
-
-# Для работы с временными зонами
-pytz>=2023.3
-
-# ===== СТАНДАРТНЫЕ БИБЛИОТЕКИ (НЕ ТРЕБУЮТ УСТАНОВКИ) =====
-# Эти модули уже включены в Python:
-# - asyncio
-# - json
-# - logging
-# - logging.handlers
-# - sys
-# - os
-# - time
-# - pathlib
-# - datetime
-# - contextlib
-# - socket
-# - signal
-# - subprocess
-# - platform
-# - threading
-# - ssl
-# - argparse
-# - abc
-
-# ===== АНАЛИЗ ВЕБА-ИНТЕРФЕЙСА =====
-# static/index.html использует:
-# - Bootstrap 5.3.0 (CDN)
-# - Bootstrap Icons (CDN)
-# - Vanilla JavaScript (app.js)
-# 
-# static/app.js использует:
-# - Fetch API (встроенный в браузеры)
-# - DOM API (встроенный в браузеры)
-# - WebLogger для логирования
-# - Интеграция с FastAPI endpoints
-#
-# Дополнительные веб-зависимости не требуются!
-
-# ===== ОПЦИОНАЛЬНЫЕ ЗАВИСИМОСТИ =====
-# Раскомментируйте при необходимости:
-
-# Для работы с изображениями
-# Pillow>=10.0.0
-
-# Для работы с PDF
-# PyPDF2>=3.0.0
-
-# Для работы с Excel
-# openpyxl>=3.1.0
-
-# Для работы с базами данных
-# sqlalchemy>=2.0.0
-# alembic>=1.12.0
-
-# Для кэширования
-# redis>=5.0.0
-
-# Для очередей задач
-# celery>=5.3.0
-
-# Для расширенного веб-интерфейса
-# fastapi-users>=12.0.0
-# python-multipart>=0.0.6
-
-# ===== ИТОГОВЫЙ АНАЛИЗ =====
-# 
-# Проанализированы директории:
-# ✅ src/ - основной код приложения
-# ✅ static/ - веб-интерфейс
-# ✅ examples/ - примеры использования
-# ✅ mcp-servers/ - MCP серверы
-# ✅ utils/ - утилиты
-# ✅ корневые файлы - лончеры и конфигурация
-#
-# Веб-интерфейс включает:
-# - Современный UI с Bootstrap 5
-# - Чат с AI моделями
-# - Управление моделями
-# - Мониторинг логов и системы
-# - Запуск примеров
-# - Документация
-# - Настройки Foundry
-#
-# Все зависимости учтены!
+# Additional dependencies found in code
+websockets>=11.0.0
+watchfiles>=0.20.0
