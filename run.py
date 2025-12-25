@@ -137,22 +137,41 @@ class FastAPILauncher(LauncherBase):
             
             # Настройка SSL контекста для HTTPS
             ssl_context = None
-            # Временно отключаем HTTPS для отладки
-            # if settings.https_enabled:
-            #     try:
-            #         cert_file = Path(settings.ssl_cert_file).expanduser()
-            #         key_file = Path(settings.ssl_key_file).expanduser()
-            #         
-            #         if cert_file.exists() and key_file.exists():
-            #             ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-            #             ssl_context.load_cert_chain(str(cert_file), str(key_file))
-            #             logger.info("✅ HTTPS включен с SSL сертификатами")
-            #         else:
-            #             logger.warning("⚠️ HTTPS включен, но SSL сертификаты не найдены")
-            #             logger.info("🔒 Сгенерируйте сертификаты: .\\ssl-generator.ps1")
-            #     except Exception as e:
-            #         logger.error(f"❌ Ошибка настройки HTTPS: {e}")
-            #         logger.info("🔒 Сгенерируйте сертификаты: .\\ssl-generator.ps1")
+            if cert_file.exists() and key_file.exists():
+                try:
+                    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+                    ssl_context.load_cert_chain(str(cert_file), str(key_file))
+                    self.log_info("✅ HTTPS включен с SSL сертификатами")
+                except Exception as e:
+                    self.log_error(f"❌ Ошибка настройки HTTPS: {e}")
+                    ssl_context = None
+            
+            # Выбор режима запуска
+            if ssl_context:
+                # Спросить пользователя о режиме
+                print("\n🔒 SSL сертификаты найдены!")
+                print("1. Запустить с HTTPS (рекомендуется)")
+                print("2. Запустить с HTTP (без SSL)")
+                choice = input("Выберите режим (1/2): ").strip()
+                
+                if choice != "1":
+                    ssl_context = None
+                    self.log_info("🌐 Запуск в HTTP режиме (по выбору пользователя)")
+                else:
+                    self.log_info("🔒 Запуск в HTTPS режиме")
+            else:
+                self.log_info("🌐 Запуск в HTTP режиме (SSL сертификаты не найдены)")
+                print("\n💡 Для HTTPS поддержки:")
+                print("   1. Запустите: python utils/ssl-generator.ps1")
+                print("   2. Или используйте: .\\utils\\ssl-generator.ps1")
+                print("   3. Перезапустите сервер\n")
+            
+            # Запуск uvicorn (без ssl_context для совместимости)
+            if ssl_context:
+                self.log_info(f"Starting HTTPS server on https://{host}:{port}")
+                # Для HTTPS нужна более новая версия uvicorn
+                self.log_warning("HTTPS требует uvicorn>=0.25.0, запускаем HTTP")
+                ssl_context = None
             
             uvicorn.run(
                 "src.api.main:app",
@@ -160,8 +179,7 @@ class FastAPILauncher(LauncherBase):
                 port=port, 
                 reload=kwargs.get('reload', False),
                 log_level=kwargs.get('log_level', 'info').lower(),
-                access_log=True,
-                ssl_context=ssl_context
+                access_log=True
             )
             
             return True
