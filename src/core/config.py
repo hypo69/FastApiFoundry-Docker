@@ -52,5 +52,8 @@ class Settings:
         self.rag_enabled = get_config('rag_enabled', 'true').lower() == 'true'
         self.rag_index_dir = get_config('rag_index_dir', './rag_index')
         self.rag_model = get_config('rag_model', 'all-MiniLM-L6-v2')
+        
+        # CORS
+        self.cors_origins = get_config('cors_origins', '["*"]')
 
 settings = Settings()
