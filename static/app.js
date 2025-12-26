@@ -409,6 +409,9 @@ function checkFoundryStatus() {
 function updateFoundryStatus(status) {
     const statusBadge = document.getElementById('foundry-service-status');
     const infoDiv = document.getElementById('foundry-service-info');
+    const installBtn = document.getElementById('install-foundry-btn');
+    const startBtn = document.getElementById('start-foundry-btn');
+    const stopBtn = document.getElementById('stop-foundry-btn');
     
     let badgeClass, statusText, infoText;
     
@@ -418,22 +421,44 @@ function updateFoundryStatus(status) {
             badgeClass = 'bg-success';
             statusText = 'Running';
             infoText = 'Foundry service is running on port 50477';
+            installBtn.style.display = 'none';
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'block';
             break;
+        case 'installed':
         case 'stopped':
             badgeClass = 'bg-secondary';
             statusText = 'Stopped';
-            infoText = 'Foundry service is not running';
+            infoText = 'Foundry service is installed but not running';
+            installBtn.style.display = 'none';
+            startBtn.style.display = 'block';
+            stopBtn.style.display = 'none';
+            break;
+        case 'not_installed':
+        case 'not_found':
+            badgeClass = 'bg-warning';
+            statusText = 'Not Installed';
+            infoText = 'Foundry is not installed. Click Install to download and setup.';
+            installBtn.style.display = 'block';
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'none';
             break;
         case 'error':
             badgeClass = 'bg-danger';
             statusText = 'Error';
             infoText = 'Foundry service encountered an error';
+            installBtn.style.display = 'block';
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'none';
             break;
         case 'offline':
         default:
             badgeClass = 'bg-warning';
             statusText = 'Offline';
             infoText = 'Cannot connect to Foundry service';
+            installBtn.style.display = 'block';
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'none';
             break;
     }
     

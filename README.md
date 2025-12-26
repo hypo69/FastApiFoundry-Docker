@@ -47,7 +47,7 @@ FastAPI Foundry - это современный REST API сервер для р�
 docker-compose up --build
 
 # Или через скрипт
-start.bat  # Windows
+start-docker.bat  # Windows
 
 # Открыть веб-консоль
 http://localhost:8000

@@ -42,6 +42,15 @@ class FoundryResponse(BaseModel):
     models: Optional[List[str]] = None
     error: Optional[str] = None
 
+def is_foundry_installed() -> bool:
+    """Проверить, установлен ли Foundry"""
+    try:
+        result = subprocess.run(['foundry', '--version'], 
+                              capture_output=True, text=True, timeout=5)
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return False
+
 def is_foundry_running() -> bool:
     """Проверить, запущен ли Foundry процесс"""
     try:
@@ -304,6 +313,16 @@ async def stop_foundry():
 async def get_foundry_status():
     """Получить статус Foundry сервиса"""
     try:
+        # Проверяем установку
+        foundry_installed = is_foundry_installed()
+        
+        if not foundry_installed:
+            return FoundryResponse(
+                success=True,
+                message="Foundry не установлен",
+                status="not_installed"
+            )
+        
         # Проверить процессы
         process_running = is_foundry_running()
         port_in_use = is_port_in_use(50477)
@@ -328,7 +347,7 @@ async def get_foundry_status():
         else:
             return FoundryResponse(
                 success=True,
-                message="Foundry не запущен",
+                message="Foundry установлен, но не запущен",
                 status="stopped"
             )
             
