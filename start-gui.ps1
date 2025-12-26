@@ -28,7 +28,7 @@ function Write-ColorOutput {
 
 Clear-Host
 Write-ColorOutput "🚀 FastAPI Foundry - Quick Start" "Cyan"
-Write-ColorOutput "=" * 40 "Cyan"
+Write-ColorOutput "========================================" "Cyan"
 Write-Host ""
 
 # Проверка Docker

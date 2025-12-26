@@ -132,7 +132,7 @@ function Stop-ProcessOnPort {
 # Заголовок
 Clear-Host
 Write-ColorOutput "🐳 Docker FastAPI Foundry Launcher" "Cyan"
-Write-ColorOutput "=" * 50 "Cyan"
+Write-ColorOutput "==================================================" "Cyan"
 Write-Host ""
 
 # Проверка Docker
