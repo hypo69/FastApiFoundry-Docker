@@ -23,10 +23,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from ..core.config import settings
 from ..models.foundry_client import foundry_client
 from ..rag.rag_system import rag_system
-from .models import ErrorResponse
 
 logger = logging.getLogger(__name__)
 
@@ -63,10 +61,9 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory="static"), name="static")
     
     # CORS middleware
-    cors_origins = json.loads(settings.cors_origins) if isinstance(settings.cors_origins, str) else settings.cors_origins
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=cors_origins,
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -79,10 +76,10 @@ def create_app() -> FastAPI:
         logger.error(f"Unhandled exception: {exc}", exc_info=True)
         return JSONResponse(
             status_code=500,
-            content=ErrorResponse(
-                error="Internal server error",
-                detail=str(exc)
-            ).dict()
+            content={
+                "error": "Internal server error",
+                "detail": str(exc)
+            }
         )
     
     # Подключение роутеров

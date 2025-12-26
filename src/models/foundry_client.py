@@ -17,28 +17,17 @@
 import asyncio
 import aiohttp
 import json
-import logging
-import subprocess
-import time
-from typing import Dict, List, Optional, Any
 from datetime import datetime
-
-from ..core.config import settings
-from ..utils.logging_system import get_logger
-
-# Создать логгер для Foundry клиента
-logger = get_logger("foundry-client")
 
 class FoundryClient:
     """Клиент для работы с Foundry API"""
     
-    def __init__(self):
-        self.base_url = settings.foundry_base_url
-        self.timeout = aiohttp.ClientTimeout(total=settings.foundry_timeout)
-        self.session: Optional[aiohttp.ClientSession] = None
-        self._lock = asyncio.Lock()
+    def __init__(self, base_url="http://localhost:50477/v1"):
+        self.base_url = base_url
+        self.timeout = aiohttp.ClientTimeout(total=30)
+        self.session = None
     
-    async def _get_session(self) -> aiohttp.ClientSession:
+    async def _get_session(self):
         """Получить HTTP сессию"""
         if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession(timeout=self.timeout)
@@ -49,48 +38,38 @@ class FoundryClient:
         if self.session and not self.session.closed:
             await self.session.close()
     
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self):
         """Проверка здоровья Foundry сервиса"""
-        logger.debug("Начало проверки здоровья Foundry сервиса", url=self.base_url)
-        
         try:
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/models"
             
-            with logger.timer("foundry_health_check", url=url):
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        models_count = len(data.get('data', []))
-                        logger.info("Foundry сервис здоров", 
-                                   models_count=models_count, 
-                                   url=self.base_url)
-                        return {
-                            "status": "healthy",
-                            "models_count": models_count,
-                            "url": self.base_url,
-                            "timestamp": datetime.now()
-                        }
-                    else:
-                        logger.warning("Foundry сервис недоступен", 
-                                      status_code=response.status, 
-                                      url=self.base_url)
-                        return {
-                            "status": "unhealthy",
-                            "error": f"HTTP {response.status}",
-                            "url": self.base_url,
-                            "timestamp": datetime.now()
-                        }
+            async with session.get(url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    models_count = len(data.get('data', []))
+                    return {
+                        "status": "healthy",
+                        "models_count": models_count,
+                        "url": self.base_url,
+                        "timestamp": datetime.now().isoformat()
+                    }
+                else:
+                    return {
+                        "status": "unhealthy",
+                        "error": f"HTTP {response.status}",
+                        "url": self.base_url,
+                        "timestamp": datetime.now().isoformat()
+                    }
         except Exception as e:
-            logger.warning("Foundry сервер недоступен (порт 50477)", error=str(e))
             return {
                 "status": "disconnected",
                 "error": "Foundry server not running on port 50477",
                 "url": self.base_url,
-                "timestamp": datetime.now()
+                "timestamp": datetime.now().isoformat()
             }
     
-    async def generate_text(self, prompt: str, **kwargs) -> Dict[str, Any]:
+    async def generate_text(self, prompt: str, **kwargs):
         """Генерация текста через Foundry"""
         try:
             # Проверяем доступность Foundry
@@ -106,12 +85,12 @@ class FoundryClient:
             url = f"{self.base_url.rstrip('/')}/chat/completions"
             
             payload = {
-                "model": kwargs.get('model', settings.foundry_default_model),
+                "model": kwargs.get('model', "deepseek-r1:14b"),
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": kwargs.get('temperature', settings.foundry_temperature),
-                "max_tokens": kwargs.get('max_tokens', settings.foundry_max_tokens),
-                "top_p": kwargs.get('top_p', settings.foundry_top_p),
-                "top_k": kwargs.get('top_k', settings.foundry_top_k),
+                "temperature": kwargs.get('temperature', 0.7),
+                "max_tokens": kwargs.get('max_tokens', 2048),
+                "top_p": kwargs.get('top_p', 0.9),
+                "top_k": kwargs.get('top_k', 40),
                 "stream": False
             }
             
@@ -119,10 +98,6 @@ class FoundryClient:
                 if response.status == 200:
                     data = await response.json()
                     content = data['choices'][0]['message']['content']
-                    
-                    logger.info("Текст успешно сгенерирован", 
-                               model=payload['model'],
-                               tokens=data.get('usage', {}).get('total_tokens', 0))
                     
                     return {
                         "success": True,
@@ -133,51 +108,39 @@ class FoundryClient:
                     }
                 else:
                     error_text = await response.text()
-                    logger.error(f"Ошибка генерации текста: HTTP {response.status}", 
-                               error=error_text)
                     return {
                         "success": False,
                         "error": f"HTTP {response.status}: {error_text}"
                     }
                     
         except Exception as e:
-            logger.warning("Не удалось сгенерировать текст через Foundry", error=str(e))
             return {
                 "success": False,
                 "error": "Cannot connect to Foundry server. Please start Foundry on port 50477."
             }
 
-    async def list_available_models(self) -> Dict[str, Any]:
+    async def list_available_models(self):
         """Получить список доступных моделей"""
-        logger.debug("Запрос списка доступных моделей")
-        
         try:
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/models"
             
-            with logger.timer("list_models", url=url):
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        models = data.get('data', [])
-                        logger.info("Получен список моделей", 
-                                   models_count=len(models),
-                                   models=[m.get('id', 'unknown') for m in models[:5]])
-                        return {
-                            "success": True,
-                            "models": models,
-                            "count": len(models)
-                        }
-                    else:
-                        logger.error("Ошибка получения списка моделей", 
-                                    status_code=response.status)
-                        return {
-                            "success": False,
-                            "error": f"HTTP {response.status}",
-                            "models": []
-                        }
+            async with session.get(url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    models = data.get('data', [])
+                    return {
+                        "success": True,
+                        "models": models,
+                        "count": len(models)
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "error": f"HTTP {response.status}",
+                        "models": []
+                    }
         except Exception as e:
-            logger.warning("Не удалось получить список моделей Foundry", error=str(e))
             return {
                 "success": False,
                 "error": "Foundry server not available",

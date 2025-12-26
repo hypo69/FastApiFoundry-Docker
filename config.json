@@ -1,0 +1,47 @@
+{
+  "fastapi_server": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "mode": "dev",
+    "workers": 1,
+    "reload": true,
+    "log_level": "INFO"
+  },
+  "foundry_ai": {
+    "base_url": "http://localhost:50477/v1/",
+    "default_model": "deepseek-r1-distill-qwen-7b-generic-cpu:3",
+    "temperature": 0.6,
+    "top_p": 0.9,
+    "top_k": 40,
+    "max_tokens": 2048,
+    "timeout": 300
+  },
+  "rag_system": {
+    "enabled": true,
+    "index_dir": "./rag_index",
+    "model": "sentence-transformers/all-MiniLM-L6-v2",
+    "chunk_size": 1000,
+    "top_k": 5
+  },
+  "security": {
+    "api_key": "",
+    "https_enabled": false,
+    "cors_origins": ["*"],
+    "ssl_cert_file": "~/.ssl/cert.pem",
+    "ssl_key_file": "~/.ssl/key.pem"
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "logs/fastapi-foundry.log"
+  },
+  "mcp_server": {
+    "base_url": "http://localhost:51601/v1/",
+    "default_model": "deepseek-r1-distill-qwen-7b-generic-cpu:3",
+    "timeout": 30
+  },
+  "docker": {
+    "foundry_host": "localhost",
+    "foundry_port": 8008,
+    "rag_enabled": true
+  }
+}

@@ -1,12 +1,10 @@
-# FastAPI Foundry - Core Dependencies
+# FastAPI Foundry - Core Dependencies (Simplified)
 # =============================================================================
 # Minimum Python version: 3.11 (compatible with Docker image)
 
-# FastAPI Framework
+# FastAPI Framework (без Pydantic)
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
-pydantic>=2.5.0
-pydantic-settings>=2.0.0
 
 # HTTP Client
 aiohttp>=3.9.0
@@ -23,17 +21,12 @@ torch>=2.0.0
 
 # Logging & Utils
 PyYAML>=6.0
-
-# GUI Launcher
 psutil>=5.9.0
-
-# AI Models
-foundry-rs>=0.2.0
 
 # Development & Testing
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
 
-# Additional dependencies found in code
+# Additional dependencies
 websockets>=11.0.0
 watchfiles>=0.20.0

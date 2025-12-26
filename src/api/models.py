@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Модели данных FastAPI Foundry
+# Название процесса: Простые модели данных FastAPI Foundry
 # =============================================================================
 # Описание:
-#   Упрощенные Pydantic модели для API
+#   Простые функции для создания стандартных ответов API
+#   Без Pydantic - только словари
 #
 # File: models.py
 # Project: FastApiFoundry (Docker)
@@ -15,45 +16,37 @@
 # Date: 9 декабря 2025
 # =============================================================================
 
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel
 from datetime import datetime
 
-class GenerateRequest(BaseModel):
-    """Запрос на генерацию текста"""
-    prompt: str
-    model: Optional[str] = None
-    temperature: Optional[float] = None
-    max_tokens: Optional[int] = None
-    use_rag: bool = True
+def create_generate_response(success: bool, content: str = None, model: str = None, error: str = None) -> dict:
+    """Создать ответ на генерацию текста"""
+    return {
+        "success": success,
+        "content": content,
+        "model": model,
+        "error": error
+    }
 
-class GenerateResponse(BaseModel):
-    """Ответ на генерацию текста"""
-    success: bool
-    content: Optional[str] = None
-    model: Optional[str] = None
-    error: Optional[str] = None
+def create_health_response(status: str, foundry_status: str, rag_available: bool) -> dict:
+    """Создать ответ проверки здоровья"""
+    return {
+        "status": status,
+        "foundry_status": foundry_status,
+        "rag_available": rag_available,
+        "timestamp": datetime.now().isoformat()
+    }
 
-class HealthResponse(BaseModel):
-    """Ответ проверки здоровья"""
-    status: str
-    foundry_status: str
-    rag_available: bool
-    timestamp: datetime = datetime.now()
+def create_error_response(error: str, detail: str = None) -> dict:
+    """Создать ответ с ошибкой"""
+    return {
+        "error": error,
+        "detail": detail
+    }
 
-class ErrorResponse(BaseModel):
-    """Стандартный ответ с ошибкой"""
-    error: str
-    detail: Optional[str] = None
-
-class ModelInfo(BaseModel):
-    """Информация о модели"""
-    id: str
-    name: Optional[str] = None
-    status: Optional[str] = None
-
-class ModelsResponse(BaseModel):
-    """Ответ со списком моделей"""
-    success: bool
-    models: List[ModelInfo] = []
-    error: Optional[str] = None
+def create_models_response(success: bool, models: list = None, error: str = None) -> dict:
+    """Создать ответ со списком моделей"""
+    return {
+        "success": success,
+        "models": models or [],
+        "error": error
+    }
