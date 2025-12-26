@@ -41,12 +41,24 @@ FastAPI Foundry - это современный REST API сервер для р�
 ## 🚀 Быстрый старт
 
 ### 🖥️ GUI Лончер (Рекомендуется)
-```bash
-# Windows
+```powershell
+# Windows PowerShell (рекомендуется)
+.\start-gui.ps1
+
+# Или напрямую
 python run-gui.py
 
 # Linux/macOS
 python3 run-gui.py
+```
+
+### 🐳 Docker с GUI (Новое!)
+```powershell
+# Windows PowerShell - запуск GUI с Docker опцией
+.\start-docker.ps1
+
+# Или без GUI (прямой Docker запуск)
+.\start-docker.ps1 -NoGUI
 ```
 
 ### 📋 Командная строка

@@ -1,0 +1,55 @@
+# -*- coding: utf-8 -*-
+# =============================================================================
+# Название процесса: Quick GUI Launcher
+# =============================================================================
+# Описание:
+#   Быстрый запуск GUI лончера FastAPI Foundry
+#   Автоматически определяет лучший способ запуска
+#
+# File: start-gui.ps1
+# Project: FastApiFoundry (Docker)
+# Version: 0.2.1
+# Author: hypo69
+# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# Copyright: © 2025 AiStros
+# Date: 9 декабря 2025
+# =============================================================================
+
+# Цвета для вывода
+function Write-ColorOutput {
+    param(
+        [string]$Message,
+        [string]$Color = "White"
+    )
+    $Host.UI.RawUI.ForegroundColor = $Color
+    Write-Host $Message
+    $Host.UI.RawUI.ForegroundColor = "White"
+}
+
+Clear-Host
+Write-ColorOutput "🚀 FastAPI Foundry - Quick Start" "Cyan"
+Write-ColorOutput "=" * 40 "Cyan"
+Write-Host ""
+
+# Проверка Python
+try {
+    $pythonVersion = python --version 2>$null
+    Write-ColorOutput "✅ Python найден: $pythonVersion" "Green"
+    
+    # Проверка run-gui.py
+    if (Test-Path "run-gui.py") {
+        Write-ColorOutput "🖥️  Запуск GUI лончера..." "Yellow"
+        python run-gui.py
+    } else {
+        Write-ColorOutput "❌ run-gui.py не найден" "Red"
+        Write-ColorOutput "🔄 Попробуйте: .\start-docker.ps1" "Yellow"
+    }
+}
+catch {
+    Write-ColorOutput "❌ Python не найден" "Red"
+    Write-ColorOutput "📥 Установите Python: https://www.python.org/downloads/" "White"
+    Write-ColorOutput "🔄 Или используйте: .\start-docker.ps1 -NoGUI" "Yellow"
+}
+
+Write-Host ""
+Read-Host "Нажмите Enter для выхода"
