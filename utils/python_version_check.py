@@ -21,24 +21,24 @@ import platform
 def check_python_compatibility():
     """Проверить совместимость версии Python"""
     
-    # Минимальная версия (как в Docker)
-    min_major = 3
-    min_minor = 11
+    # Docker использует Python 3.11
+    docker_major = 3
+    docker_minor = 11
     
     current_major = sys.version_info.major
     current_minor = sys.version_info.minor
     current_micro = sys.version_info.micro
     
-    print(f"🐍 Текущая версия Python: {current_major}.{current_minor}.{current_micro}")
-    print(f"🐳 Docker использует: Python 3.11-slim")
-    print(f"📋 Минимальная версия: {min_major}.{min_minor}")
+    print(f"🐳 Docker использует: Python {docker_major}.{docker_minor}-slim")
+    print(f"🐍 Локальная версия Python: {current_major}.{current_minor}.{current_micro}")
+    print(f"📋 Для совместимости нужно: Python {docker_major}.{docker_minor}+")
     
-    if current_major == min_major and current_minor >= min_minor:
-        print("✅ Версия Python совместима!")
+    if current_major == docker_major and current_minor >= docker_minor:
+        print("✅ Локальная версия совместима с Docker!")
         return True
     else:
-        print("❌ Версия Python НЕ совместима!")
-        print(f"📥 Установите Python {min_major}.{min_minor}+ с https://www.python.org/downloads/")
+        print("❌ Локальная версия НЕ совместима с Docker!")
+        print(f"📥 Установите Python {docker_major}.{docker_minor}+ для совместимости")
         return False
 
 def get_system_info():
@@ -63,8 +63,9 @@ if __name__ == "__main__":
     
     print("\n" + "=" * 50)
     if compatible:
-        print("🎉 Система готова для запуска FastAPI Foundry!")
+        print("🎉 Локальная система совместима с Docker!")
+        print("🖥️  Можно запускать GUI лончер")
     else:
-        print("🔧 Требуется обновление Python для совместимости с Docker")
+        print("🐳 Используйте Docker для гарантированной совместимости")
     
     sys.exit(0 if compatible else 1)

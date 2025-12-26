@@ -145,33 +145,15 @@ if (-not (Test-DockerInstalled)) {
 }
 Write-ColorOutput "✅ Docker найден" "Green"
 
-# Проверка Python (для GUI)
+# Проверка GUI лончера
 if (-not $NoGUI) {
-    Write-ColorOutput "🔍 Проверяем Python..." "Yellow"
+    Write-ColorOutput "🔍 Проверяем GUI лончер..." "Yellow"
     
-    $pythonCheck = Test-PythonVersion
-    
-    if (-not $pythonCheck.Compatible) {
-        if ($pythonCheck.Version -eq "Not Found") {
-            Write-ColorOutput "❌ Python не найден" "Red"
-        } else {
-            Write-ColorOutput "⚠️  Несовместимая версия Python: $($pythonCheck.Version)" "Yellow"
-            Write-ColorOutput "📝 Требуется: Python $($pythonCheck.RequiredVersion) (как в Docker)" "White"
-        }
-        Write-ColorOutput "🐳 Используем Docker режим..." "Cyan"
+    if (-not (Test-Path "run-gui.py")) {
+        Write-ColorOutput "❌ run-gui.py не найден. Запуск без GUI..." "Yellow"
         $NoGUI = $true
     } else {
-        Write-ColorOutput "✅ Python совместим: $($pythonCheck.Version)" "Green"
-        
-        # Проверка venv
-        $venvStatus = Test-VirtualEnv
-        if ($venvStatus -eq "exists") {
-            Write-ColorOutput "🔧 Найдено venv, активируем..." "Yellow"
-            Activate-VirtualEnv | Out-Null
-        }
-        elseif ($venvStatus -eq $true) {
-            Write-ColorOutput "✅ venv уже активно" "Green"
-        }
+        Write-ColorOutput "✅ GUI лончер найден" "Green"
     }
 }
 
@@ -211,30 +193,24 @@ if ($NoGUI) {
         fastapi-foundry:0.2.1 `
         python run.py
 } else {
-    # Запуск GUI лончера
-    Write-ColorOutput "🖥️  Запуск GUI лончера..." "Green"
-    Write-ColorOutput "💡 GUI лончер откроется в новом окне" "Cyan"
-    Write-ColorOutput "🐳 Выберите вкладку 'Docker' для запуска в контейнере" "Cyan"
+    # Запуск GUI лончера через Docker
+    Write-ColorOutput "🖥️  Запуск GUI лончера через Docker..." "Green"
+    Write-ColorOutput "🐳 Используем Python 3.11 из Docker контейнера" "Cyan"
+    Write-ColorOutput "📝 Выберите вкладку 'Docker' для запуска в контейнере" "Cyan"
     Write-Host ""
     
     try {
-        # Проверяем, существует ли run-gui.py
-        if (Test-Path "run-gui.py") {
-            python run-gui.py
-        } else {
-            Write-ColorOutput "❌ Файл run-gui.py не найден" "Red"
-            Write-ColorOutput "🔄 Запуск напрямую через Docker..." "Yellow"
-            
-            docker run --rm -it `
-                -v "${PWD}:/app" `
-                -p "${Port}:8000" `
-                -w /app `
-                fastapi-foundry:0.2.1 `
-                python run.py
-        }
+        # Запуск GUI через Docker
+        docker run --rm -it `
+            -v "${PWD}:/app" `
+            -p "${Port}:8000" `
+            -w /app `
+            --entrypoint python `
+            fastapi-foundry:0.2.1 `
+            run-gui.py
     }
     catch {
-        Write-ColorOutput "❌ Ошибка запуска GUI: $($_.Exception.Message)" "Red"
+        Write-ColorOutput "❌ Ошибка запуска GUI через Docker: $($_.Exception.Message)" "Red"
         Write-ColorOutput "🔄 Запуск напрямую через Docker..." "Yellow"
         
         docker run --rm -it `
