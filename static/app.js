@@ -279,40 +279,6 @@ function initializeFoundryTab() {
     }, 1000);
 }
 
-function installFoundry() {
-    const btn = document.getElementById('install-foundry-btn');
-    const originalText = btn.innerHTML;
-    
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Installing...';
-    btn.disabled = true;
-    
-    addFoundryLog('INFO', 'Starting Foundry installation...');
-    
-    fetch(`${API_BASE}/foundry/install`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'}
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            addFoundryLog('SUCCESS', 'Foundry installed successfully');
-            updateFoundryStatus('installed');
-            showAlert('Foundry installed successfully', 'success');
-        } else {
-            addFoundryLog('ERROR', `Failed to install Foundry: ${data.error}`);
-            showAlert(`Failed to install Foundry: ${data.error}`, 'danger');
-        }
-    })
-    .catch(error => {
-        addFoundryLog('ERROR', `Installation error: ${error.message}`);
-        showAlert('Failed to install Foundry', 'danger');
-    })
-    .finally(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    });
-}
-
 function startFoundryService() {
     const btn = document.getElementById('start-foundry-btn');
     const originalText = btn.innerHTML;
@@ -409,7 +375,6 @@ function checkFoundryStatus() {
 function updateFoundryStatus(status) {
     const statusBadge = document.getElementById('foundry-service-status');
     const infoDiv = document.getElementById('foundry-service-info');
-    const installBtn = document.getElementById('install-foundry-btn');
     const startBtn = document.getElementById('start-foundry-btn');
     const stopBtn = document.getElementById('stop-foundry-btn');
     
@@ -421,43 +386,23 @@ function updateFoundryStatus(status) {
             badgeClass = 'bg-success';
             statusText = 'Running';
             infoText = 'Foundry service is running on port 50477';
-            installBtn.style.display = 'none';
             startBtn.style.display = 'none';
             stopBtn.style.display = 'block';
             break;
-        case 'installed':
         case 'stopped':
+        case 'not_installed':
+        default:
             badgeClass = 'bg-secondary';
             statusText = 'Stopped';
-            infoText = 'Foundry service is installed but not running';
-            installBtn.style.display = 'none';
+            infoText = 'Foundry service is not running';
             startBtn.style.display = 'block';
-            stopBtn.style.display = 'none';
-            break;
-        case 'not_installed':
-        case 'not_found':
-            badgeClass = 'bg-warning';
-            statusText = 'Not Installed';
-            infoText = 'Foundry is not installed. Click Install to download and setup.';
-            installBtn.style.display = 'block';
-            startBtn.style.display = 'none';
             stopBtn.style.display = 'none';
             break;
         case 'error':
             badgeClass = 'bg-danger';
             statusText = 'Error';
             infoText = 'Foundry service encountered an error';
-            installBtn.style.display = 'block';
-            startBtn.style.display = 'none';
-            stopBtn.style.display = 'none';
-            break;
-        case 'offline':
-        default:
-            badgeClass = 'bg-warning';
-            statusText = 'Offline';
-            infoText = 'Cannot connect to Foundry service';
-            installBtn.style.display = 'block';
-            startBtn.style.display = 'none';
+            startBtn.style.display = 'block';
             stopBtn.style.display = 'none';
             break;
     }

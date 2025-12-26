@@ -27,6 +27,9 @@ PyYAML>=6.0
 # GUI Launcher
 psutil>=5.9.0
 
+# AI Models
+foundry-rs>=0.2.0
+
 # Development & Testing
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
