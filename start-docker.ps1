@@ -37,6 +37,28 @@ function Write-ColorOutput {
     $Host.UI.RawUI.ForegroundColor = "White"
 }
 
+function Test-VirtualEnv {
+    if ($env:VIRTUAL_ENV) {
+        return $true
+    }
+    if (Test-Path "venv\Scripts\activate.ps1") {
+        return "exists"
+    }
+    return $false
+}
+
+function Activate-VirtualEnv {
+    try {
+        Write-ColorOutput "🔧 Активируем venv..." "Yellow"
+        & ".\venv\Scripts\Activate.ps1"
+        return $true
+    }
+    catch {
+        Write-ColorOutput "⚠️ Ошибка активации venv" "Yellow"
+        return $false
+    }
+}
+
 function Test-DockerInstalled {
     try {
         $null = docker --version 2>$null
@@ -44,6 +66,38 @@ function Test-DockerInstalled {
     }
     catch {
         return $false
+    }
+}
+
+function Test-PythonVersion {
+    try {
+        $pythonOutput = python --version 2>$null
+        if ($pythonOutput -match "Python (\d+)\.(\d+)\.(\d+)") {
+            $major = [int]$matches[1]
+            $minor = [int]$matches[2]
+            
+            # Минимальная версия Python 3.11 (как в Docker)
+            if ($major -eq 3 -and $minor -ge 11) {
+                return @{
+                    Compatible = $true
+                    Version = $pythonOutput
+                    Major = $major
+                    Minor = $minor
+                }
+            } else {
+                return @{
+                    Compatible = $false
+                    Version = $pythonOutput
+                    Major = $major
+                    Minor = $minor
+                    RequiredVersion = "3.11+"
+                }
+            }
+        }
+        return @{ Compatible = $false; Version = "Unknown" }
+    }
+    catch {
+        return @{ Compatible = $false; Version = "Not Found" }
     }
 }
 
@@ -94,11 +148,30 @@ Write-ColorOutput "✅ Docker найден" "Green"
 # Проверка Python (для GUI)
 if (-not $NoGUI) {
     Write-ColorOutput "🔍 Проверяем Python..." "Yellow"
-    if (-not (Test-PythonInstalled)) {
-        Write-ColorOutput "⚠️  Python не найден. Запуск без GUI..." "Yellow"
+    
+    $pythonCheck = Test-PythonVersion
+    
+    if (-not $pythonCheck.Compatible) {
+        if ($pythonCheck.Version -eq "Not Found") {
+            Write-ColorOutput "❌ Python не найден" "Red"
+        } else {
+            Write-ColorOutput "⚠️  Несовместимая версия Python: $($pythonCheck.Version)" "Yellow"
+            Write-ColorOutput "📝 Требуется: Python $($pythonCheck.RequiredVersion) (как в Docker)" "White"
+        }
+        Write-ColorOutput "🐳 Используем Docker режим..." "Cyan"
         $NoGUI = $true
     } else {
-        Write-ColorOutput "✅ Python найден" "Green"
+        Write-ColorOutput "✅ Python совместим: $($pythonCheck.Version)" "Green"
+        
+        # Проверка venv
+        $venvStatus = Test-VirtualEnv
+        if ($venvStatus -eq "exists") {
+            Write-ColorOutput "🔧 Найдено venv, активируем..." "Yellow"
+            Activate-VirtualEnv | Out-Null
+        }
+        elseif ($venvStatus -eq $true) {
+            Write-ColorOutput "✅ venv уже активно" "Green"
+        }
     }
 }
 

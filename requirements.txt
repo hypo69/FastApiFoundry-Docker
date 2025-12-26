@@ -1,5 +1,6 @@
 # FastAPI Foundry - Core Dependencies
 # =============================================================================
+# Minimum Python version: 3.11 (compatible with Docker image)
 
 # FastAPI Framework
 fastapi>=0.104.0
