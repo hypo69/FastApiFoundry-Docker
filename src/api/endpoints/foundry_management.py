@@ -80,6 +80,75 @@ async def check_foundry_health() -> dict:
     except Exception as e:
         return {'status': 'error', 'error': str(e)}
 
+@router.post("/install", response_model=FoundryResponse)
+async def install_foundry():
+    """Установить Foundry"""
+    try:
+        # Проверяем, не установлен ли уже
+        if is_foundry_running() or is_port_in_use(50477):
+            return FoundryResponse(
+                success=False,
+                message="Foundry уже установлен или запущен",
+                status="already_installed"
+            )
+        
+        # Установка Foundry через curl
+        try:
+            # Для Linux/Unix систем в Docker
+            process = subprocess.run(
+                ['curl', '-L', 'https://foundry.paradigm.xyz', '|', 'bash'],
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
+            
+            if process.returncode == 0:
+                # Запуск foundryup
+                foundryup_process = subprocess.run(
+                    ['foundryup'],
+                    capture_output=True,
+                    text=True,
+                    timeout=300
+                )
+                
+                if foundryup_process.returncode == 0:
+                    return FoundryResponse(
+                        success=True,
+                        message="Foundry успешно установлен",
+                        status="installed"
+                    )
+                else:
+                    return FoundryResponse(
+                        success=False,
+                        message="Ошибка при запуске foundryup",
+                        status="failed",
+                        error=foundryup_process.stderr
+                    )
+            else:
+                return FoundryResponse(
+                    success=False,
+                    message="Ошибка скачивания Foundry",
+                    status="failed",
+                    error=process.stderr
+                )
+                
+        except subprocess.TimeoutExpired:
+            return FoundryResponse(
+                success=False,
+                message="Таймаут установки Foundry",
+                status="timeout"
+            )
+            
+    except Exception as e:
+        logger.error(f"Error installing Foundry: {e}")
+        return FoundryResponse(
+            success=False,
+            message="Ошибка при установке Foundry",
+            status="error",
+            error=str(e)
+        )
+
 @router.post("/start", response_model=FoundryResponse)
 async def start_foundry():
     """Запустить Foundry сервис"""

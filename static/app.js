@@ -279,6 +279,40 @@ function initializeFoundryTab() {
     }, 1000);
 }
 
+function installFoundry() {
+    const btn = document.getElementById('install-foundry-btn');
+    const originalText = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Installing...';
+    btn.disabled = true;
+    
+    addFoundryLog('INFO', 'Starting Foundry installation...');
+    
+    fetch(`${API_BASE}/foundry/install`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            addFoundryLog('SUCCESS', 'Foundry installed successfully');
+            updateFoundryStatus('installed');
+            showAlert('Foundry installed successfully', 'success');
+        } else {
+            addFoundryLog('ERROR', `Failed to install Foundry: ${data.error}`);
+            showAlert(`Failed to install Foundry: ${data.error}`, 'danger');
+        }
+    })
+    .catch(error => {
+        addFoundryLog('ERROR', `Installation error: ${error.message}`);
+        showAlert('Failed to install Foundry', 'danger');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
 function startFoundryService() {
     const btn = document.getElementById('start-foundry-btn');
     const originalText = btn.innerHTML;
