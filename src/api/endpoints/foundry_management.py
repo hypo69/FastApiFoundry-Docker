@@ -31,6 +31,10 @@ from pydantic import BaseModel
 from typing import Optional, List
 import logging
 
+# Импортируем утилиту для управления портами
+sys.path.append(str(Path(__file__).parent.parent.parent.parent / "utils"))
+from port_manager import ensure_port_free
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/foundry", tags=["foundry"])
@@ -93,57 +97,12 @@ async def check_foundry_health() -> dict:
 async def start_foundry():
     """Запустить Foundry сервис"""
     try:
-        # Проверить, не запущен ли уже
-        if is_foundry_running() or is_port_in_use(50477):
-            return FoundryResponse(
-                success=False,
-                message="Foundry уже запущен или порт 50477 занят",
-                status="already_running"
-            )
+        # Освобождаем порт 50477 принудительно
+        logger.info("Ensuring port 50477 is free...")
+        ensure_port_free(50477)
         
         # Попытка запуска Foundry
-        # Используем наш launcher скрипт
         try:
-            # Сначала пробуем через наш launcher
-            launcher_path = Path(__file__).parent.parent.parent.parent / "utils" / "foundry_launcher.py"
-            if launcher_path.exists():
-                process = subprocess.Popen(
-                    [sys.executable, str(launcher_path), '--start', '--port', '50477'],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE
-                )
-                
-                # Ждем завершения launcher'а
-                stdout, stderr = process.communicate(timeout=30)
-                
-                if process.returncode == 0:
-                    # Проверяем, что Foundry действительно запустился
-                    await asyncio.sleep(2)
-                    health = await check_foundry_health()
-                    if health['status'] == 'healthy':
-                        return FoundryResponse(
-                            success=True,
-                            message="Foundry успешно запущен через launcher",
-                            status="running",
-                            models=health.get('models', [])
-                        )
-                    else:
-                        return FoundryResponse(
-                            success=False,
-                            message="Foundry запущен, но не отвечает на запросы",
-                            status="starting",
-                            error=health.get('error')
-                        )
-                else:
-                    error_msg = stderr.decode() if stderr else "Unknown launcher error"
-                    return FoundryResponse(
-                        success=False,
-                        message="Launcher не смог запустить Foundry",
-                        status="failed",
-                        error=error_msg
-                    )
-            
-            # Fallback: прямой запуск foundry
             process = subprocess.Popen(
                 ['foundry', '--port', '50477'],
                 stdout=subprocess.PIPE,
@@ -186,7 +145,7 @@ async def start_foundry():
                 success=False,
                 message="Foundry не найден в системе",
                 status="not_found",
-                error="Установите Foundry: https://github.com/foundry-rs/foundry"
+                error="Установите Foundry через requirements.txt"
             )
             
     except Exception as e:
