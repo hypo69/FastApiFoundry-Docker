@@ -190,11 +190,11 @@
                             </div>
                             <div class="card-body">
                                 <div class="d-grid gap-2">
-                                    <button class="btn btn-success" onclick="startFoundryService()">
-                                        <i class="bi bi-play-circle"></i> Start Service
+                                    <button id="start-foundry-btn" class="btn btn-success" onclick="startFoundryService()">
+                                        <i class="bi bi-play-circle"></i> Start Foundry
                                     </button>
-                                    <button class="btn btn-danger" onclick="stopFoundryService()">
-                                        <i class="bi bi-stop-circle"></i> Stop Service
+                                    <button id="stop-foundry-btn" class="btn btn-danger" onclick="stopFoundryService()">
+                                        <i class="bi bi-stop-circle"></i> Stop Foundry
                                     </button>
                                     <button class="btn btn-outline-primary" onclick="checkFoundryStatus()">
                                         <i class="bi bi-arrow-clockwise"></i> Check Status
@@ -203,6 +203,22 @@
                                 <hr>
                                 <div id="foundry-service-info" class="text-muted">
                                     <small>Service status will appear here</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">Foundry Logs</h6>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="clearFoundryLogs()">
+                                    <i class="bi bi-trash"></i> Clear
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="foundry-logs" style="height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; background-color: #f8f9fa; padding: 10px;">
+                                    <div class="text-muted text-center mt-5">
+                                        <i class="bi bi-terminal"></i><br>
+                                        Foundry logs will appear here
+                                    </div>
                                 </div>
                             </div>
                         </div>

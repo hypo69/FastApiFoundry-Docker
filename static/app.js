@@ -46,6 +46,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize logs tab
     initializeLogsTab();
+    
+    // Initialize Foundry tab
+    initializeFoundryTab();
 });
 
 // System Status
@@ -262,16 +265,204 @@ function refreshModels() {
     loadConnectedModels();
 }
 
+// ===== FOUNDRY MANAGEMENT =====
+
+function initializeFoundryTab() {
+    // Check Foundry status when tab is shown
+    document.getElementById('foundry-tab').addEventListener('shown.bs.tab', function() {
+        checkFoundryStatus();
+    });
+    
+    // Initial status check
+    setTimeout(() => {
+        checkFoundryStatus();
+    }, 1000);
+}
+
 function startFoundryService() {
-    showAlert('Foundry service management not implemented', 'info');
+    const btn = document.getElementById('start-foundry-btn');
+    const originalText = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Starting...';
+    btn.disabled = true;
+    
+    addFoundryLog('INFO', 'Starting Foundry service...');
+    
+    fetch(`${API_BASE}/foundry/start`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            addFoundryLog('SUCCESS', 'Foundry service started successfully');
+            updateFoundryStatus('running');
+            showAlert('Foundry service started', 'success');
+        } else {
+            addFoundryLog('ERROR', `Failed to start Foundry: ${data.error}`);
+            showAlert(`Failed to start Foundry: ${data.error}`, 'danger');
+        }
+    })
+    .catch(error => {
+        addFoundryLog('ERROR', `Connection error: ${error.message}`);
+        showAlert('Failed to connect to API', 'danger');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
 }
 
 function stopFoundryService() {
-    showAlert('Foundry service management not implemented', 'info');
+    const btn = document.getElementById('stop-foundry-btn');
+    const originalText = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Stopping...';
+    btn.disabled = true;
+    
+    addFoundryLog('INFO', 'Stopping Foundry service...');
+    
+    fetch(`${API_BASE}/foundry/stop`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            addFoundryLog('SUCCESS', 'Foundry service stopped');
+            updateFoundryStatus('stopped');
+            showAlert('Foundry service stopped', 'info');
+        } else {
+            addFoundryLog('ERROR', `Failed to stop Foundry: ${data.error}`);
+            showAlert(`Failed to stop Foundry: ${data.error}`, 'danger');
+        }
+    })
+    .catch(error => {
+        addFoundryLog('ERROR', `Connection error: ${error.message}`);
+        showAlert('Failed to connect to API', 'danger');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
 }
 
 function checkFoundryStatus() {
-    checkSystemStatus();
+    addFoundryLog('INFO', 'Checking Foundry status...');
+    
+    fetch(`${API_BASE}/foundry/status`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const status = data.status;
+            addFoundryLog('INFO', `Foundry status: ${status}`);
+            updateFoundryStatus(status);
+            
+            if (data.models && data.models.length > 0) {
+                addFoundryLog('INFO', `Available models: ${data.models.join(', ')}`);
+            }
+        } else {
+            addFoundryLog('ERROR', `Status check failed: ${data.error}`);
+            updateFoundryStatus('error');
+        }
+    })
+    .catch(error => {
+        addFoundryLog('ERROR', `Connection error: ${error.message}`);
+        updateFoundryStatus('offline');
+    });
+}
+
+function updateFoundryStatus(status) {
+    const statusBadge = document.getElementById('foundry-service-status');
+    const infoDiv = document.getElementById('foundry-service-info');
+    
+    let badgeClass, statusText, infoText;
+    
+    switch (status) {
+        case 'running':
+        case 'healthy':
+            badgeClass = 'bg-success';
+            statusText = 'Running';
+            infoText = 'Foundry service is running on port 50477';
+            break;
+        case 'stopped':
+            badgeClass = 'bg-secondary';
+            statusText = 'Stopped';
+            infoText = 'Foundry service is not running';
+            break;
+        case 'error':
+            badgeClass = 'bg-danger';
+            statusText = 'Error';
+            infoText = 'Foundry service encountered an error';
+            break;
+        case 'offline':
+        default:
+            badgeClass = 'bg-warning';
+            statusText = 'Offline';
+            infoText = 'Cannot connect to Foundry service';
+            break;
+    }
+    
+    statusBadge.className = `badge ${badgeClass}`;
+    statusBadge.textContent = statusText;
+    infoDiv.innerHTML = `<small>${infoText}</small>`;
+}
+
+function addFoundryLog(level, message) {
+    const logsContainer = document.getElementById('foundry-logs');
+    const timestamp = new Date().toLocaleTimeString();
+    
+    // Clear placeholder if it exists
+    if (logsContainer.querySelector('.text-muted.text-center')) {
+        logsContainer.innerHTML = '';
+    }
+    
+    const logEntry = document.createElement('div');
+    logEntry.className = 'foundry-log-entry';
+    
+    let levelClass, levelIcon;
+    switch (level) {
+        case 'SUCCESS':
+            levelClass = 'text-success';
+            levelIcon = '✅';
+            break;
+        case 'ERROR':
+            levelClass = 'text-danger';
+            levelIcon = '❌';
+            break;
+        case 'WARNING':
+            levelClass = 'text-warning';
+            levelIcon = '⚠️';
+            break;
+        default:
+            levelClass = 'text-info';
+            levelIcon = 'ℹ️';
+            break;
+    }
+    
+    logEntry.innerHTML = `
+        <span class="text-muted">[${timestamp}]</span>
+        <span class="${levelClass}">${levelIcon} ${level}:</span>
+        <span>${message}</span>
+    `;
+    
+    logsContainer.appendChild(logEntry);
+    logsContainer.scrollTop = logsContainer.scrollHeight;
+    
+    // Keep only last 100 entries
+    const entries = logsContainer.querySelectorAll('.foundry-log-entry');
+    if (entries.length > 100) {
+        entries[0].remove();
+    }
+}
+
+function clearFoundryLogs() {
+    document.getElementById('foundry-logs').innerHTML = `
+        <div class="text-muted text-center mt-5">
+            <i class="bi bi-terminal"></i><br>
+            Foundry logs cleared
+        </div>
+    `;
 }
 
 function listFoundryModels() {
