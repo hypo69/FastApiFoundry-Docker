@@ -193,25 +193,50 @@ if ($NoGUI) {
         fastapi-foundry:0.2.1 `
         python run.py
 } else {
-    # Запуск GUI лончера через Docker
-    Write-ColorOutput "🖥️  Запуск GUI лончера через Docker..." "Green"
-    Write-ColorOutput "🐳 Используем Python 3.11 из Docker контейнера" "Cyan"
-    Write-ColorOutput "📝 Выберите вкладку 'Docker' для запуска в контейнере" "Cyan"
+    # Запуск GUI лончера локально, FastAPI сервер в Docker
+    Write-ColorOutput "🖥️  Запуск GUI лончера локально..." "Green"
+    Write-ColorOutput "🐳 FastAPI сервер будет запущен в Docker контейнере" "Cyan"
+    Write-ColorOutput "📝 Выберите вкладку 'Docker' в GUI для запуска в контейнере" "Cyan"
     Write-Host ""
     
     try {
-        # Запуск GUI через Docker
-        docker run --rm -it `
-            -v "${PWD}:/app" `
-            -p "${Port}:8000" `
-            -w /app `
-            --entrypoint python `
-            fastapi-foundry:0.2.1 `
-            run-gui.py
+        # Проверяем локальный Python для GUI
+        $pythonFound = $false
+        try {
+            $null = python --version 2>$null
+            $pythonFound = $true
+        } catch {
+            try {
+                $null = python3 --version 2>$null
+                $pythonCmd = "python3"
+                $pythonFound = $true
+            } catch {
+                $pythonFound = $false
+            }
+        }
+        
+        if ($pythonFound) {
+            Write-ColorOutput "✅ Локальный Python найден для GUI" "Green"
+            if ($pythonCmd) {
+                & $pythonCmd run-gui.py
+            } else {
+                python run-gui.py
+            }
+        } else {
+            Write-ColorOutput "❌ Локальный Python не найден для GUI" "Red"
+            Write-ColorOutput "🔄 Запуск FastAPI сервера напрямую в Docker..." "Yellow"
+            
+            docker run --rm -it `
+                -v "${PWD}:/app" `
+                -p "${Port}:8000" `
+                -w /app `
+                fastapi-foundry:0.2.1 `
+                python run.py
+        }
     }
     catch {
-        Write-ColorOutput "❌ Ошибка запуска GUI через Docker: $($_.Exception.Message)" "Red"
-        Write-ColorOutput "🔄 Запуск напрямую через Docker..." "Yellow"
+        Write-ColorOutput "❌ Ошибка запуска GUI: $($_.Exception.Message)" "Red"
+        Write-ColorOutput "🔄 Запуск FastAPI сервера напрямую в Docker..." "Yellow"
         
         docker run --rm -it `
             -v "${PWD}:/app" `

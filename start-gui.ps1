@@ -31,27 +31,48 @@ Write-ColorOutput "🚀 FastAPI Foundry - Quick Start" "Cyan"
 Write-ColorOutput "========================================" "Cyan"
 Write-Host ""
 
-# Проверка Docker
+# Проверка Docker и локального Python
 try {
     $null = docker --version 2>$null
     Write-ColorOutput "✅ Docker найден" "Green"
     
-    # Проверка run-gui.py
-    if (Test-Path "run-gui.py") {
-        Write-ColorOutput "🖥️  Запуск GUI лончера через Docker..." "Yellow"
-        Write-ColorOutput "🐳 Используем Python 3.11 из Docker контейнера" "Cyan"
+    # Проверка локального Python для GUI
+    $pythonFound = $false
+    $pythonCmd = "python"
+    
+    try {
+        $null = python --version 2>$null
+        $pythonFound = $true
+    } catch {
+        try {
+            $null = python3 --version 2>$null
+            $pythonCmd = "python3"
+            $pythonFound = $true
+        } catch {
+            $pythonFound = $false
+        }
+    }
+    
+    if ($pythonFound -and (Test-Path "run-gui.py")) {
+        Write-ColorOutput "🖥️  Запуск GUI лончера локально..." "Yellow"
+        Write-ColorOutput "🐳 FastAPI сервер будет запущен в Docker" "Cyan"
+        Write-ColorOutput "📝 Выберите вкладку 'Docker' в GUI" "Cyan"
         
-        # Запуск через start-docker.ps1
-        & ".\start-docker.ps1"
+        & $pythonCmd run-gui.py
+    } elseif (-not $pythonFound) {
+        Write-ColorOutput "❌ Локальный Python не найден" "Red"
+        Write-ColorOutput "🔄 Запуск через start-docker.ps1 -NoGUI" "Yellow"
+        & ".\start-docker.ps1" -NoGUI
     } else {
         Write-ColorOutput "❌ run-gui.py не найден" "Red"
-        Write-ColorOutput "🔄 Попробуйте: .\start-docker.ps1 -NoGUI" "Yellow"
+        Write-ColorOutput "🔄 Запуск через start-docker.ps1 -NoGUI" "Yellow"
+        & ".\start-docker.ps1" -NoGUI
     }
 }
 catch {
     Write-ColorOutput "❌ Docker не найден" "Red"
     Write-ColorOutput "📥 Установите Docker Desktop: https://www.docker.com/products/docker-desktop" "White"
-    Write-ColorOutput "📝 Или создайте venv и установите Python 3.11+" "Yellow"
+    Write-ColorOutput "📝 Или создайте venv и установите зависимости" "Yellow"
 }
 
 Write-Host ""
