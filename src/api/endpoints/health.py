@@ -23,7 +23,6 @@
 
 from fastapi import APIRouter
 from ...models.foundry_client import foundry_client
-# from ...rag.rag_system import rag_system
 
 # Заглушка для RAG системы
 class DummyRAGSystem:
@@ -31,7 +30,6 @@ class DummyRAGSystem:
         return {"status": "disabled", "message": "RAG system is disabled"}
 
 rag_system = DummyRAGSystem()
-from ..models import create_health_response
 
 router = APIRouter()
 

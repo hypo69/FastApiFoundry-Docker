@@ -130,12 +130,65 @@ try {
     $env:FOUNDRY_BASE_URL = "http://localhost:$foundryPort/v1/"
     $env:FOUNDRY_PORT = $foundryPort
     Write-Host "🔗 Foundry URL: $env:FOUNDRY_BASE_URL" -ForegroundColor Green
+    Write-Host "🔗 Foundry Port: $env:FOUNDRY_PORT" -ForegroundColor Green
     
     # Запуск с выводом в консоль
     Write-Host "📋 Вывод сервера:" -ForegroundColor Cyan
     Write-Host "" -ForegroundColor Cyan
     
-    & $pythonExe "run.py"
+    # Запуск сервера в фоновом режиме
+    $serverJob = Start-Job -ScriptBlock {
+        param($pythonPath, $workingDir, $foundryUrl, $foundryPort)
+        Set-Location $workingDir
+        $env:FOUNDRY_BASE_URL = $foundryUrl
+        $env:FOUNDRY_PORT = $foundryPort
+        & $pythonPath "run.py"
+    } -ArgumentList $pythonExe, $PWD, $env:FOUNDRY_BASE_URL, $env:FOUNDRY_PORT
+    
+    # Ожидание запуска сервера
+    Write-Host "⏳ Ожидание запуска сервера..." -ForegroundColor Yellow
+    
+    $maxWait = 30
+    $waited = 0
+    $serverReady = $false
+    
+    while ($waited -lt $maxWait -and -not $serverReady) {
+        Start-Sleep -Seconds 2
+        $waited += 2
+        
+        try {
+            $response = Invoke-WebRequest -Uri "http://localhost:$Port/api/v1/health" -TimeoutSec 3 -ErrorAction Stop
+            if ($response.StatusCode -eq 200) {
+                $serverReady = $true
+                Write-Host "✅ Сервер готов!" -ForegroundColor Green
+            }
+        } catch {
+            Write-Host ".⏳" -NoNewline -ForegroundColor Yellow
+        }
+    }
+    
+    if ($serverReady) {
+        Write-Host "" -ForegroundColor Cyan
+        Write-Host "🎉 Система готова к работе!" -ForegroundColor Green
+        Write-Host "📱 Чат: http://localhost:$Port/static/chat.html" -ForegroundColor Cyan
+        Write-Host "📚 API: http://localhost:$Port/docs" -ForegroundColor Cyan
+        Write-Host "" -ForegroundColor Cyan
+        
+        # Открытие браузера ТОЛЬКО после полного запуска
+        Write-Host "🌐 Открытие веб-интерфейса..." -ForegroundColor Cyan
+        Start-Process "http://localhost:$Port"
+        
+        Write-Host "Для остановки нажмите Ctrl+C" -ForegroundColor Yellow
+        
+        # Ожидание завершения работы
+        Wait-Job $serverJob
+    } else {
+        Write-Host "" -ForegroundColor Red
+        Write-Host "❌ Сервер не запустился за $maxWait секунд" -ForegroundColor Red
+        Stop-Job $serverJob
+        Remove-Job $serverJob
+        exit 1
+    }
 
 } catch {
     Write-Host "❌ Критическая ошибка: $_" -ForegroundColor Red

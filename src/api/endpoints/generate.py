@@ -19,7 +19,6 @@ import aiohttp
 import asyncio
 from fastapi import APIRouter
 from ...models.foundry_client import foundry_client
-# from ...rag.rag_system import rag_system
 
 # Заглушка для RAG системы
 class DummyRAGSystem:
@@ -27,9 +26,19 @@ class DummyRAGSystem:
         return []
 
 rag_system = DummyRAGSystem()
-from ..models import create_generate_response
 
 router = APIRouter()
+
+def create_generate_response(success=False, content=None, model=None, error=None):
+    """Создать ответ для generate endpoint"""
+    response = {"success": success}
+    if content:
+        response["content"] = content
+    if model:
+        response["model"] = model
+    if error:
+        response["error"] = error
+    return response
 
 @router.post("/generate")
 async def generate_text(request: dict):

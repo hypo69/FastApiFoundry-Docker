@@ -97,6 +97,7 @@ def create_app() -> FastAPI:
     from .endpoints.logging_endpoints import router as logging_router
     from .endpoints.examples_endpoints import router as examples_router
     from .endpoints.foundry_management import router as foundry_management_router
+    from .endpoints.foundry_models import router as foundry_models_router
     from .endpoints.chat_endpoints import router as chat_router
     
     app.include_router(main.router)
@@ -105,6 +106,7 @@ def create_app() -> FastAPI:
     app.include_router(rag.router, prefix="/api/v1")
     app.include_router(foundry.router, prefix="/api/v1")
     app.include_router(foundry_management_router, prefix="/api/v1")
+    app.include_router(foundry_models_router, prefix="/api/v1")  # Новые Foundry models endpoints
     app.include_router(ai_router, prefix="/api/v1")  # Новые AI endpoints
     app.include_router(logging_router)
     app.include_router(examples_router)

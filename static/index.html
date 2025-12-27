@@ -189,20 +189,18 @@
                                 <span id="foundry-service-status" class="badge bg-secondary">Unknown</span>
                             </div>
                             <div class="card-body">
+                                <div class="alert alert-info" role="alert">
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>Управление Foundry:</strong> Используйте <code>start.ps1</code> для запуска и <code>Ctrl+C</code> для остановки.
+                                </div>
                                 <div class="d-grid gap-2">
-                                    <button id="start-foundry-btn" class="btn btn-success" onclick="startFoundryService()">
-                                        <i class="bi bi-play-circle"></i> Start Foundry
-                                    </button>
-                                    <button id="stop-foundry-btn" class="btn btn-danger" onclick="stopFoundryService()">
-                                        <i class="bi bi-stop-circle"></i> Stop Foundry
-                                    </button>
                                     <button class="btn btn-outline-primary" onclick="checkFoundryStatus()">
-                                        <i class="bi bi-arrow-clockwise"></i> Check Status
+                                        <i class="bi bi-arrow-clockwise"></i> Проверить статус
                                     </button>
                                 </div>
                                 <hr>
                                 <div id="foundry-service-info" class="text-muted">
-                                    <small>Service status will appear here</small>
+                                    <small>Статус сервиса отобразится здесь</small>
                                 </div>
                             </div>
                         </div>

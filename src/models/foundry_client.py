@@ -23,10 +23,21 @@ from datetime import datetime
 class FoundryClient:
     """Клиент для работы с Foundry API"""
     
-    def __init__(self, base_url="http://localhost:50477/v1"):
-        self.base_url = base_url
+    def __init__(self, base_url=None):
+        # Используем переменную окружения или по умолчанию
+        import os
+        if base_url:
+            self.base_url = base_url
+        else:
+            foundry_env_url = os.getenv('FOUNDRY_BASE_URL')
+            if foundry_env_url:
+                self.base_url = foundry_env_url.rstrip('/v1/').rstrip('/') + '/v1'
+            else:
+                self.base_url = "http://localhost:50477/v1"
+        
         self.timeout = aiohttp.ClientTimeout(total=30)
         self.session = None
+        print(f"🔗 Инициализация Foundry клиента: {self.base_url}")
     
     def get_foundry_port(self):
         """Получить реальный порт Foundry из запущенных процессов"""
@@ -73,8 +84,13 @@ class FoundryClient:
     async def health_check(self):
         """Проверка состояния Foundry сервиса"""
         try:
-            # Обновляем URL с реальным портом
-            self.update_base_url()
+            # Обновляем URL с реальным портом каждый раз
+            import os
+            foundry_env_url = os.getenv('FOUNDRY_BASE_URL')
+            if foundry_env_url:
+                self.base_url = foundry_env_url.rstrip('/v1/').rstrip('/') + '/v1'
+            else:
+                self.update_base_url()
             
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/models"
@@ -83,12 +99,13 @@ class FoundryClient:
                 if response.status == 200:
                     data = await response.json()
                     models_count = len(data.get('data', []))
-                    real_port = self.get_foundry_port()
+                    # Извлекаем порт из URL
+                    port = int(self.base_url.split(':')[2].split('/')[0])
                     return {
                         "status": "healthy",
                         "models_count": models_count,
                         "url": self.base_url,
-                        "port": real_port,
+                        "port": port,
                         "timestamp": datetime.now().isoformat()
                     }
                 else:
@@ -99,12 +116,19 @@ class FoundryClient:
                         "timestamp": datetime.now().isoformat()
                     }
         except Exception as e:
-            real_port = self.get_foundry_port()
+            # При ошибке получаем порт из переменной окружения
+            import os
+            foundry_env_url = os.getenv('FOUNDRY_BASE_URL', 'http://localhost:50477/v1/')
+            try:
+                port = int(foundry_env_url.split(':')[2].split('/')[0])
+            except:
+                port = 50477
+            
             return {
                 "status": "disconnected",
-                "error": f"Сервер Foundry не запущен на порту {real_port}",
-                "url": self.base_url,
-                "port": real_port,
+                "error": f"Сервер Foundry не запущен на порту {port}",
+                "url": foundry_env_url,
+                "port": port,
                 "timestamp": datetime.now().isoformat()
             }
     

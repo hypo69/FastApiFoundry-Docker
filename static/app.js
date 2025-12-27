@@ -168,62 +168,7 @@ function addMessageToChat(role, content) {
     return messageId;
 }
 
-// Foundry Management
-async function startFoundryService() {
-    const btn = document.getElementById('start-foundry-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Starting...';
-    
-    try {
-        const response = await fetch(`${API_BASE}/foundry/start`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'}
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showAlert('Foundry started successfully', 'success');
-            await loadConfig(); // Перезагружаем конфигурацию
-            checkSystemStatus();
-        } else {
-            showAlert(`Failed to start Foundry: ${data.error}`, 'danger');
-        }
-    } catch (error) {
-        showAlert('Failed to connect to API', 'danger');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-play-fill"></i> Start Foundry';
-    }
-}
-
-async function stopFoundryService() {
-    const btn = document.getElementById('stop-foundry-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Stopping...';
-    
-    try {
-        const response = await fetch(`${API_BASE}/foundry/stop`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'}
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showAlert('Foundry stopped', 'info');
-            checkSystemStatus();
-        } else {
-            showAlert(`Failed to stop Foundry: ${data.error}`, 'danger');
-        }
-    } catch (error) {
-        showAlert('Failed to connect to API', 'danger');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-stop-fill"></i> Stop Foundry';
-    }
-}
-
+// Foundry Status Check
 async function checkFoundryStatus() {
     try {
         const response = await fetch(`${API_BASE}/foundry/status`);
@@ -252,13 +197,18 @@ function updateFoundryStatus(status, data = {}) {
         case 'running':
         case 'healthy':
             badge.className = 'badge bg-success';
-            badge.textContent = 'Running';
-            info.innerHTML = `<small>Foundry running on ${foundryUrl}</small>`;
+            badge.textContent = 'Работает';
+            info.innerHTML = `<small>Foundry работает на ${foundryUrl}</small>`;
+            break;
+        case 'disabled':
+            badge.className = 'badge bg-info';
+            badge.textContent = 'Управляется через start.ps1';
+            info.innerHTML = '<small>Используйте start.ps1 для управления Foundry</small>';
             break;
         default:
             badge.className = 'badge bg-secondary';
-            badge.textContent = 'Stopped';
-            info.innerHTML = '<small>Foundry service is not running</small>';
+            badge.textContent = 'Остановлен';
+            info.innerHTML = '<small>Foundry сервис не запущен</small>';
             break;
     }
 }
@@ -298,4 +248,120 @@ function clearChat() {
 
 function refreshModels() {
     loadModels();
+}
+
+// Управление моделями Foundry
+async function listFoundryModels() {
+    try {
+        const response = await fetch(`${API_BASE}/foundry/models/loaded`);
+        const data = await response.json();
+        
+        const container = document.getElementById('foundry-models-list');
+        
+        if (data.success && data.models.length > 0) {
+            container.innerHTML = data.models.map(model => `
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div>
+                        <strong>${model.id}</strong><br>
+                        <small class="text-muted">Статус: ${model.status}</small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeFoundryModel('${model.id}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-inbox"></i><br>
+                    Модели не загружены<br>
+                    <small>Используйте "Загрузить модель" ниже</small>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Failed to list Foundry models:', error);
+        showAlert('Ошибка получения списка моделей', 'danger');
+    }
+}
+
+async function downloadAndRunModel() {
+    const select = document.getElementById('model-select');
+    const modelId = select.value;
+    
+    if (!modelId) {
+        showAlert('Выберите модель для загрузки', 'warning');
+        return;
+    }
+    
+    try {
+        showAlert(`Началась загрузка модели ${modelId}...`, 'info');
+        
+        const response = await fetch(`${API_BASE}/foundry/models/pull`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({model_id: modelId})
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            // Обновляем список через несколько секунд
+            setTimeout(() => {
+                listFoundryModels();
+                loadModels(); // Обновляем список в чате
+            }, 5000);
+        } else {
+            showAlert(`Ошибка: ${data.error}`, 'danger');
+        }
+    } catch (error) {
+        showAlert('Ошибка загрузки модели', 'danger');
+    }
+}
+
+async function removeFoundryModel(modelId) {
+    if (!confirm(`Удалить модель ${modelId}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/foundry/models/remove`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({model_id: modelId})
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            listFoundryModels();
+            loadModels();
+        } else {
+            showAlert(`Ошибка: ${data.error}`, 'danger');
+        }
+    } catch (error) {
+        showAlert('Ошибка удаления модели', 'danger');
+    }
+}
+
+function showModelInfo() {
+    const select = document.getElementById('model-select');
+    const modelId = select.value;
+    
+    if (!modelId) {
+        showAlert('Выберите модель для получения информации', 'warning');
+        return;
+    }
+    
+    const modelInfo = {
+        'qwen2.5-0.5b-instruct-generic-cpu:4': 'Самая легкая CPU модель (0.8 GB). Быстрая и эффективная.',
+        'qwen2.5-1.5b-instruct-generic-cpu:4': 'Средняя CPU модель (1.78 GB). Хороший баланс скорости и качества.',
+        'deepseek-r1-distill-qwen-7b-generic-cpu:3': 'Продвинутая CPU модель (6.43 GB). Высокое качество ответов.',
+        'phi-3-mini-4k-instruct-openvino-gpu:1': 'GPU модель (2.4 GB). Требует совместимую видеокарту.'
+    };
+    
+    const info = modelInfo[modelId] || 'Информация о модели недоступна';
+    showAlert(info, 'info');
 }
