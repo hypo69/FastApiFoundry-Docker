@@ -548,6 +548,15 @@ async function testModel(modelId) {
     try {
         showAlert(`Testing model ${modelId}...`, 'info');
         
+        // Получаем актуальный статус Foundry для правильного URL
+        const healthResponse = await fetch(`${API_BASE}/health`);
+        const healthData = await healthResponse.json();
+        
+        let foundryUrl = CONFIG.foundry_url;
+        if (healthData.foundry_details && healthData.foundry_details.url) {
+            foundryUrl = healthData.foundry_details.url;
+        }
+        
         const response = await fetch(`${API_BASE}/generate`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
