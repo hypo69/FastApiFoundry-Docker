@@ -86,7 +86,8 @@
                     
                     document.getElementById('status').textContent = 'Готов к чату. Выберите модель и начните новую сессию.';
                 } else {
-                    throw new Error(data.error || 'Не удалось загрузить модели');
+                    const errorMsg = (data && data.error) || 'Не удалось загрузить модели';
+                    throw new Error(errorMsg);
                 }
             } catch (error) {
                 console.error('Ошибка загрузки моделей:', error);
@@ -125,7 +126,8 @@
                     document.getElementById('chat-messages').innerHTML = '';
                     document.getElementById('status').textContent = `Сессия начата с моделью ${selectedModel}. Можете отправлять сообщения.`;
                 } else {
-                    document.getElementById('status').textContent = 'Ошибка: ' + data.error;
+                    const errorMsg = (data && data.error) || 'Неизвестная ошибка';
+                    document.getElementById('status').textContent = 'Ошибка: ' + errorMsg;
                 }
             } catch (error) {
                 console.error('Ошибка создания сессии:', error);
@@ -168,7 +170,7 @@
                     addMessage('assistant', data.response);
                     document.getElementById('status').textContent = 'Готов к следующему сообщению.';
                 } else {
-                    const errorMsg = data.error || data.detail || 'Неизвестная ошибка';
+                    const errorMsg = (data && (data.error || data.detail)) || 'Неизвестная ошибка';
                     document.getElementById('status').textContent = 'Ошибка: ' + errorMsg;
                     addMessage('assistant', 'Ошибка: ' + errorMsg);
                 }
