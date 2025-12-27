@@ -305,7 +305,7 @@
             <!-- Settings Tab -->
             <div class="tab-pane fade" id="settings" role="tabpanel">
                 <div class="row mt-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0">System Status</h5>
@@ -315,25 +315,187 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-8">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">Configuration</h5>
                                 <div>
-                                    <button class="btn btn-sm btn-outline-primary" onclick="loadConfig()">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="loadConfigFields()">
                                         <i class="bi bi-arrow-clockwise"></i> Reload
                                     </button>
-                                    <button class="btn btn-sm btn-success" onclick="saveConfig()">
-                                        <i class="bi bi-check-lg"></i> Save
+                                    <button class="btn btn-sm btn-success" onclick="saveConfigFields()">
+                                        <i class="bi bi-check-lg"></i> Save All
                                     </button>
                                 </div>
                             </div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <label class="form-label">config.json</label>
-                                    <textarea id="config-editor" class="form-control" rows="15" style="font-family: monospace; font-size: 0.9rem;"></textarea>
-                                    <div class="form-text">Edit the configuration and click Save to apply changes. A backup will be created automatically.</div>
+                            <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                                <!-- FastAPI Server -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary"><i class="bi bi-server"></i> FastAPI Server</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Host</label>
+                                                <input type="text" id="config-api-host" class="form-control" placeholder="0.0.0.0">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Port</label>
+                                                <input type="number" id="config-api-port" class="form-control" placeholder="8000">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Mode</label>
+                                                <select id="config-api-mode" class="form-select">
+                                                    <option value="dev">Development</option>
+                                                    <option value="prod">Production</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Workers</label>
+                                                <input type="number" id="config-api-workers" class="form-control" placeholder="1">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
+
+                                <!-- Foundry AI -->
+                                <div class="mb-4">
+                                    <h6 class="text-success"><i class="bi bi-robot"></i> Foundry AI</h6>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-2">
+                                                <label class="form-label">Base URL</label>
+                                                <input type="url" id="config-foundry-url" class="form-control" placeholder="http://localhost:50477/v1/">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-2">
+                                                <label class="form-label">Default Model</label>
+                                                <input type="text" id="config-foundry-model" class="form-control" placeholder="deepseek-r1-distill-qwen-7b-generic-cpu:3">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Temperature</label>
+                                                <input type="number" id="config-foundry-temp" class="form-control" step="0.1" min="0" max="2" placeholder="0.6">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Max Tokens</label>
+                                                <input type="number" id="config-foundry-tokens" class="form-control" placeholder="2048">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="config-foundry-autoload">
+                                                <label class="form-check-label" for="config-foundry-autoload">
+                                                    Auto-load default model on startup
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- RAG System -->
+                                <div class="mb-4">
+                                    <h6 class="text-info"><i class="bi bi-search"></i> RAG System</h6>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="config-rag-enabled">
+                                                <label class="form-check-label" for="config-rag-enabled">
+                                                    Enable RAG System
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Index Directory</label>
+                                                <input type="text" id="config-rag-index" class="form-control" placeholder="./rag_index">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Chunk Size</label>
+                                                <input type="number" id="config-rag-chunk" class="form-control" placeholder="1000">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Security -->
+                                <div class="mb-4">
+                                    <h6 class="text-warning"><i class="bi bi-shield-lock"></i> Security</h6>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-2">
+                                                <label class="form-label">API Key</label>
+                                                <input type="password" id="config-security-key" class="form-control" placeholder="Leave empty to disable">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="config-security-https">
+                                                <label class="form-check-label" for="config-security-https">
+                                                    Enable HTTPS
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Logging -->
+                                <div class="mb-4">
+                                    <h6 class="text-secondary"><i class="bi bi-file-text"></i> Logging</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Log Level</label>
+                                                <select id="config-log-level" class="form-select">
+                                                    <option value="DEBUG">Debug</option>
+                                                    <option value="INFO">Info</option>
+                                                    <option value="WARNING">Warning</option>
+                                                    <option value="ERROR">Error</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Log File</label>
+                                                <input type="text" id="config-log-file" class="form-control" placeholder="logs/fastapi-foundry.log">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Port Management -->
+                                <div class="mb-4">
+                                    <h6 class="text-dark"><i class="bi bi-ethernet"></i> Port Management</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Foundry Port</label>
+                                                <input type="number" id="config-port-foundry" class="form-control" placeholder="50477">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Conflict Resolution</label>
+                                                <select id="config-port-resolution" class="form-select">
+                                                    <option value="kill_process">Kill Process</option>
+                                                    <option value="find_free">Find Free Port</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div id="config-status" class="alert" style="display: none;"></div>
                             </div>
                         </div>

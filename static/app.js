@@ -30,16 +30,23 @@ async function loadConfig() {
             // Обновляем редактор конфигурации если он существует
             const configEditor = document.getElementById('config-editor');
             if (configEditor) {
+                // Форматируем JSON с отступами для лучшей читаемости
                 configEditor.value = JSON.stringify(data.config, null, 2);
+                console.log('Config editor updated with full config:', Object.keys(data.config));
             }
             
             // Проверяем доступность модели по умолчанию
             await validateDefaultModel();
             
             console.log('Config loaded:', CONFIG);
+            console.log('Full config sections:', Object.keys(data.config));
         }
     } catch (error) {
         console.error('Failed to load config:', error);
+        const configEditor = document.getElementById('config-editor');
+        if (configEditor) {
+            configEditor.value = 'Error loading configuration: ' + error.message;
+        }
     }
 }
 
@@ -150,49 +157,168 @@ function updateModelStatus(message, type) {
     }
 }
 
-// Сохранение конфигурации
-async function saveConfig() {
-    const configEditor = document.getElementById('config-editor');
-    const statusDiv = document.getElementById('config-status');
-    
-    if (!configEditor) return;
-    
+// Загрузка конфигурации в отдельные поля
+async function loadConfigFields() {
     try {
-        // Проверяем валидность JSON
-        const configData = JSON.parse(configEditor.value);
+        const response = await fetch(`${API_BASE}/config`);
+        const data = await response.json();
         
-        const response = await fetch(`${API_BASE}/config`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({config: configData})
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            statusDiv.className = 'alert alert-success';
-            statusDiv.innerHTML = `<i class="bi bi-check-circle"></i> ${result.message}`;
-            statusDiv.style.display = 'block';
+        if (data.success && data.config) {
+            const config = data.config;
+            
+            // FastAPI Server
+            document.getElementById('config-api-host').value = config.fastapi_server?.host || '0.0.0.0';
+            document.getElementById('config-api-port').value = config.fastapi_server?.port || 8000;
+            document.getElementById('config-api-mode').value = config.fastapi_server?.mode || 'dev';
+            document.getElementById('config-api-workers').value = config.fastapi_server?.workers || 1;
+            
+            // Foundry AI
+            document.getElementById('config-foundry-url').value = config.foundry_ai?.base_url || 'http://localhost:50477/v1/';
+            document.getElementById('config-foundry-model').value = config.foundry_ai?.default_model || '';
+            document.getElementById('config-foundry-temp').value = config.foundry_ai?.temperature || 0.6;
+            document.getElementById('config-foundry-tokens').value = config.foundry_ai?.max_tokens || 2048;
+            document.getElementById('config-foundry-autoload').checked = config.foundry_ai?.auto_load_default || false;
+            
+            // RAG System
+            document.getElementById('config-rag-enabled').checked = config.rag_system?.enabled || false;
+            document.getElementById('config-rag-index').value = config.rag_system?.index_dir || './rag_index';
+            document.getElementById('config-rag-chunk').value = config.rag_system?.chunk_size || 1000;
+            
+            // Security
+            document.getElementById('config-security-key').value = config.security?.api_key || '';
+            document.getElementById('config-security-https').checked = config.security?.https_enabled || false;
+            
+            // Logging
+            document.getElementById('config-log-level').value = config.logging?.level || 'INFO';
+            document.getElementById('config-log-file').value = config.logging?.file || 'logs/fastapi-foundry.log';
+            
+            // Port Management
+            document.getElementById('config-port-foundry').value = config.port_management?.foundry_port || 50477;
+            document.getElementById('config-port-resolution').value = config.port_management?.conflict_resolution || 'kill_process';
             
             // Обновляем глобальную конфигурацию
-            CONFIG.foundry_url = configData.foundry_ai.base_url;
+            CONFIG.foundry_url = config.foundry_ai?.base_url || CONFIG.foundry_url;
+            CONFIG.default_model = config.foundry_ai?.default_model || CONFIG.default_model;
+            CONFIG.auto_load_default = config.foundry_ai?.auto_load_default || false;
             
-            showAlert('Configuration saved successfully', 'success');
-        } else {
-            statusDiv.className = 'alert alert-danger';
-            statusDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Error: ${result.error}`;
-            statusDiv.style.display = 'block';
+            console.log('Config fields loaded successfully');
+            showAlert('Configuration loaded', 'success');
+        }
+    } catch (error) {
+        console.error('Failed to load config fields:', error);
+        showAlert('Failed to load configuration', 'danger');
+    }
+}
+
+// Сохранение конфигурации из отдельных полей
+async function saveConfigFields() {
+    const statusDiv = document.getElementById('config-status');
+    
+    try {
+        // Собираем конфигурацию из полей
+        const configData = {
+            fastapi_server: {
+                host: document.getElementById('config-api-host').value,
+                port: parseInt(document.getElementById('config-api-port').value),
+                mode: document.getElementById('config-api-mode').value,
+                workers: parseInt(document.getElementById('config-api-workers').value),
+                reload: true,
+                cors_origins: ["*"]
+            },
+            foundry_ai: {
+                base_url: document.getElementById('config-foundry-url').value,
+                default_model: document.getElementById('config-foundry-model').value,
+                auto_load_default: document.getElementById('config-foundry-autoload').checked,
+                temperature: parseFloat(document.getElementById('config-foundry-temp').value),
+                top_p: 0.9,
+                top_k: 40,
+                max_tokens: parseInt(document.getElementById('config-foundry-tokens').value),
+                timeout: 300
+            },
+            rag_system: {
+                enabled: document.getElementById('config-rag-enabled').checked,
+                index_dir: document.getElementById('config-rag-index').value,
+                model: "sentence-transformers/all-MiniLM-L6-v2",
+                chunk_size: parseInt(document.getElementById('config-rag-chunk').value),
+                top_k: 5
+            },
+            security: {
+                api_key: document.getElementById('config-security-key').value,
+                https_enabled: document.getElementById('config-security-https').checked,
+                cors_origins: ["*"],
+                ssl_cert_file: "~/.ssl/cert.pem",
+                ssl_key_file: "~/.ssl/key.pem"
+            },
+            logging: {
+                level: document.getElementById('config-log-level').value,
+                file: document.getElementById('config-log-file').value
+            },
+            port_management: {
+                conflict_resolution: document.getElementById('config-port-resolution').value,
+                auto_find_free_port: false,
+                port_range_start: 8000,
+                port_range_end: 8100,
+                foundry_port: parseInt(document.getElementById('config-port-foundry').value)
+            }
+        };
+        
+        // Получаем полную текущую конфигурацию и обновляем только измененные поля
+        const currentResponse = await fetch(`${API_BASE}/config`);
+        const currentData = await currentResponse.json();
+        
+        if (currentData.success && currentData.config) {
+            // Объединяем с существующими данными
+            const fullConfig = { ...currentData.config, ...configData };
+            
+            console.log('Saving config fields:', Object.keys(configData));
+            
+            const response = await fetch(`${API_BASE}/config`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({config: fullConfig})
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                statusDiv.className = 'alert alert-success';
+                statusDiv.innerHTML = `<i class="bi bi-check-circle"></i> ${result.message}`;
+                if (result.backup_created) {
+                    statusDiv.innerHTML += `<br><small>Backup: ${result.backup_created}</small>`;
+                }
+                statusDiv.style.display = 'block';
+                
+                // Обновляем глобальную конфигурацию
+                CONFIG.foundry_url = configData.foundry_ai.base_url;
+                CONFIG.default_model = configData.foundry_ai.default_model;
+                CONFIG.auto_load_default = configData.foundry_ai.auto_load_default;
+                
+                showAlert('Configuration saved successfully', 'success');
+                
+                // Перепроверяем модель по умолчанию
+                setTimeout(() => {
+                    validateDefaultModel();
+                }, 1000);
+            } else {
+                statusDiv.className = 'alert alert-danger';
+                statusDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Error: ${result.error}`;
+                statusDiv.style.display = 'block';
+                showAlert(`Error: ${result.error}`, 'danger');
+            }
         }
     } catch (error) {
         statusDiv.className = 'alert alert-danger';
-        statusDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Invalid JSON format: ${error.message}`;
+        statusDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Error: ${error.message}`;
         statusDiv.style.display = 'block';
+        showAlert(`Error: ${error.message}`, 'danger');
     }
     
-    // Скрыть статус через 5 секунд
+    // Скрыть статус через 10 секунд
     setTimeout(() => {
-        statusDiv.style.display = 'none';
-    }, 5000);
+        if (statusDiv) {
+            statusDiv.style.display = 'none';
+        }
+    }, 10000);
 }
 
 // Проверка статуса системы
@@ -703,7 +829,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab) {
         settingsTab.addEventListener('click', function() {
-            setTimeout(loadConfig, 100); // Загружаем конфигурацию
+            setTimeout(loadConfigFields, 100); // Загружаем конфигурацию в поля
         });
     }
     
