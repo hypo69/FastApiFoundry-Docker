@@ -14,8 +14,8 @@
   "foundry_ai": {
     "base_url": "http://localhost:50477/v1/",
     "default_model": "qwen2.5-0.5b-instruct-generic-cpu:4",
-    "auto_load_default": false,
-    "temperature": 0.6,
+    "auto_load_default": true,
+    "temperature": 0.7,
     "top_p": 0.9,
     "top_k": 40,
     "max_tokens": 2048,
@@ -29,7 +29,7 @@
     "top_k": 5
   },
   "security": {
-    "api_key": "",
+    "api_key": null,
     "https_enabled": false,
     "cors_origins": [
       "*"
@@ -114,8 +114,8 @@
     "foundry_port": 50477
   },
   "development": {
-    "debug": false,
-    "verbose": false,
+    "debug": true,
+    "verbose": true,
     "temp_dir": "./temp"
   }
 }

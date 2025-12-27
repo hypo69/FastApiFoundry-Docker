@@ -78,7 +78,9 @@ async function validateDefaultModel() {
                     updateModelStatus(`Загружаем модель по умолчанию "${CONFIG.default_model}"... <button class="btn btn-sm btn-outline-secondary ms-2" onclick="skipAutoLoad()">Пропустить</button>`, 'warning');
                     loadDefaultModel();
                 } else {
-                    updateModelStatus(`Модель по умолчанию "${CONFIG.default_model}" недоступна <button class="btn btn-sm btn-primary ms-2" onclick="loadDefaultModel()">Загрузить</button>`, 'danger');
+                    // Показываем более информативное сообщение
+                    const modelName = CONFIG.default_model.split(':')[0]; // Убираем версию для краткости
+                    updateModelStatus(`Модель "${modelName}" недоступна. <button class="btn btn-sm btn-primary ms-2" onclick="loadDefaultModel()">Загрузить</button> <button class="btn btn-sm btn-outline-secondary ms-2" onclick="showAvailableModels()">Показать доступные</button>`, 'warning');
                 }
                 
                 console.warn(`Default model "${CONFIG.default_model}" is not available. Available models:`, availableModels);
@@ -89,11 +91,11 @@ async function validateDefaultModel() {
                 }
             }
         } else {
-            updateModelStatus('Не удалось проверить доступные модели', 'warning');
+            updateModelStatus('Не удалось проверить доступные модели. Foundry может быть не запущен.', 'warning');
         }
     } catch (error) {
         console.error('Error validating default model:', error);
-        updateModelStatus('Ошибка проверки модели по умолчанию', 'danger');
+        updateModelStatus('Ошибка проверки модели по умолчанию. Проверьте подключение к Foundry.', 'danger');
     }
 }
 
@@ -1153,7 +1155,22 @@ function showModelInfo() {
 
 // Пропустить автозагрузку
 function skipAutoLoad() {
-    updateModelStatus(`Модель по умолчанию "${CONFIG.default_model}" недоступна <button class="btn btn-sm btn-primary ms-2" onclick="loadDefaultModel()">Загрузить</button>`, 'danger');
+    const modelName = CONFIG.default_model.split(':')[0];
+    updateModelStatus(`Модель "${modelName}" недоступна. <button class="btn btn-sm btn-primary ms-2" onclick="loadDefaultModel()">Загрузить</button> <button class="btn btn-sm btn-outline-secondary ms-2" onclick="showAvailableModels()">Показать доступные</button>`, 'warning');
+}
+
+// Показать доступные модели
+function showAvailableModels() {
+    // Переключаемся на вкладку Foundry
+    const foundryTab = document.getElementById('foundry-tab');
+    if (foundryTab) {
+        foundryTab.click();
+        // Показываем список моделей
+        setTimeout(() => {
+            listFoundryModels();
+        }, 100);
+    }
+    showAlert('Переключились на вкладку Foundry для просмотра доступных моделей', 'info');
 }
 
 // Скрыть прогресс-бар

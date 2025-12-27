@@ -19,7 +19,7 @@ from .client import FoundryClient
 from .models import GenerationRequest, GenerationResponse, ModelInfo, HealthStatus
 from .exceptions import FoundryError, FoundryConnectionError, FoundryAPIError
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 __all__ = [
     "FoundryClient",
     "GenerationRequest", 
