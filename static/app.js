@@ -455,6 +455,12 @@ async function loadConnectedModels() {
                                 <small class="text-muted">Provider: ${model.provider}</small><br>
                                 <small class="text-muted">Max tokens: ${model.max_tokens || 'N/A'}</small>
                             </p>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="default-model" id="default-${model.id}" value="${model.id}" ${CONFIG.default_model === model.id ? 'checked' : ''} onchange="setDefaultModel('${model.id}')">
+                                <label class="form-check-label" for="default-${model.id}">
+                                    <small>Use as default model</small>
+                                </label>
+                            </div>
                         </div>
                         <div class="card-footer bg-transparent">
                             <div class="btn-group w-100" role="group">
@@ -1096,6 +1102,24 @@ function selectFoundryModel(modelId) {
             chatTab.click();
         }
     }
+}
+
+// Установка модели по умолчанию через radio кнопку
+function setDefaultModel(modelId) {
+    saveDefaultModel(modelId);
+    showAlert(`Модель ${modelId} установлена как модель по умолчанию`, 'success');
+    
+    // Обновляем глобальную конфигурацию
+    CONFIG.default_model = modelId;
+    
+    // Обновляем селектор в чате
+    const chatModelSelect = document.getElementById('chat-model');
+    if (chatModelSelect) {
+        chatModelSelect.value = modelId;
+    }
+    
+    // Обновляем статус модели
+    updateModelStatus(`Модель по умолчанию: ${modelId}`, 'success');
 }
 
 // Сохранение модели по умолчанию в config.json
