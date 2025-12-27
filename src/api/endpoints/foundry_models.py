@@ -159,7 +159,42 @@ async def download_model(request: dict):
             "error": str(e)
         }
 
-@router.post("/remove")
+@router.post("/load")
+async def load_model(request: dict):
+    """Загрузить модель в сервис Foundry"""
+    model_id = request.get("model_id")
+    if not model_id:
+        raise HTTPException(status_code=400, detail="model_id is required")
+    
+    try:
+        logger.info(f"Starting model load: {model_id}")
+        
+        from pathlib import Path
+        script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "load-model.ps1"
+        
+        process = subprocess.Popen(
+            ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(script_path), '-ModelId', model_id],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        return {
+            "success": True,
+            "message": f"Начата загрузка модели {model_id} в сервис",
+            "model_id": model_id,
+            "status": "loading",
+            "pid": process.pid
+        }
+        
+    except Exception as e:
+        logger.error(f"Error loading model {model_id}: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@router.post("/unload")
 async def unload_model(request: dict):
     """Выгрузить модель из Foundry"""
     model_id = request.get("model_id")
@@ -167,7 +202,6 @@ async def unload_model(request: dict):
         raise HTTPException(status_code=400, detail="model_id is required")
     
     try:
-        # Используем PowerShell скрипт с абсолютным путем
         from pathlib import Path
         script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "unload-model.ps1"
         
@@ -199,62 +233,28 @@ async def unload_model(request: dict):
             "error": str(e)
         }
 
-@router.post("/auto-load-default")
-async def auto_load_default_model():
-    """Автоматически загрузить модель по умолчанию из config.json"""
+@router.get("/service/status")
+async def get_service_status():
+    """Получить статус Foundry сервиса"""
     try:
-        # Читаем config.json
-        import json
         from pathlib import Path
+        script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "service-status.ps1"
         
-        config_path = Path("config.json")
-        if not config_path.exists():
-            return {
-                "success": False,
-                "error": "Config file not found"
-            }
-        
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = json.load(f)
-        
-        default_model = config.get('foundry_ai', {}).get('default_model')
-        if not default_model:
-            return {
-                "success": False,
-                "error": "No default model specified in config"
-            }
-        
-        # Проверяем загружена ли модель
-        loaded_result = await list_loaded_models()
-        if loaded_result["success"]:
-            for model in loaded_result["models"]:
-                if model["id"] == default_model:
-                    return {
-                        "success": True,
-                        "message": f"Default model {default_model} already loaded",
-                        "model_id": default_model,
-                        "status": "already_loaded"
-                    }
-        
-        # Загружаем модель
-        logger.info(f"Auto-loading default model: {default_model}")
-        
-        process = subprocess.Popen(
-            ['powershell', '-Command', f'foundry model load {default_model}'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
+        result = subprocess.run(
+            ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(script_path)],
+            capture_output=True,
+            text=True,
+            timeout=30
         )
         
         return {
-            "success": True,
-            "message": f"Started loading default model {default_model}",
-            "model_id": default_model,
-            "status": "loading"
+            "success": result.returncode == 0,
+            "status": result.stdout.strip() if result.returncode == 0 else "error",
+            "error": result.stderr if result.returncode != 0 else None
         }
         
     except Exception as e:
-        logger.error(f"Error auto-loading default model: {e}")
+        logger.error(f"Error getting service status: {e}")
         return {
             "success": False,
             "error": str(e)

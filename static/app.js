@@ -636,7 +636,7 @@ async function downloadAndRunModel() {
         
         showAlert(`Началась загрузка модели ${modelId}...`, 'info');
         
-        const response = await fetch(`${API_BASE}/foundry/models/pull`, {
+        const response = await fetch(`${API_BASE}/foundry/models/load`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({model_id: modelId})
@@ -728,7 +728,7 @@ async function removeFoundryModel(modelId) {
     }
     
     try {
-        const response = await fetch(`${API_BASE}/foundry/models/remove`, {
+        const response = await fetch(`${API_BASE}/foundry/models/unload`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({model_id: modelId})
