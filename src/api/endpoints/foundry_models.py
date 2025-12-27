@@ -21,9 +21,10 @@ import aiohttp
 import os
 from fastapi import APIRouter, HTTPException
 from typing import Optional
-import logging
 
-logger = logging.getLogger(__name__)
+from ...utils.logging_system import get_logger
+
+logger = get_logger("foundry-models")
 router = APIRouter(prefix="/foundry/models", tags=["foundry-models"])
 
 def get_foundry_url():

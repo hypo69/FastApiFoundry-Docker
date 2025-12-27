@@ -35,27 +35,10 @@ class DummyRAGSystem:
 
 rag_system = DummyRAGSystem()
 
-logger = logging.getLogger(__name__)
+from ..utils.logging_system import get_logger
 
-# Настройка логирования запросов
-request_logger = logging.getLogger("fastapi-foundry")
-request_logger.setLevel(logging.INFO)
-
-# Создаем обработчик для файла логов
-if not request_logger.handlers:
-    from pathlib import Path
-    logs_dir = Path("logs")
-    logs_dir.mkdir(exist_ok=True)
-    
-    file_handler = logging.FileHandler(logs_dir / "fastapi-foundry.log", encoding='utf-8')
-    file_handler.setLevel(logging.INFO)
-    
-    formatter = logging.Formatter(
-        '%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-    file_handler.setFormatter(formatter)
-    request_logger.addHandler(file_handler)
+logger = get_logger("fastapi-app")
+request_logger = get_logger("fastapi-foundry")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

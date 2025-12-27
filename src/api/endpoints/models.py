@@ -21,10 +21,10 @@
 # Date: 9 декабря 2025
 # =============================================================================
 from fastapi import APIRouter, HTTPException
-import logging
+from ...utils.logging_system import get_logger
 from ...models.foundry_client import foundry_client
 
-logger = logging.getLogger(__name__)
+logger = get_logger("models-api")
 router = APIRouter()
 
 @router.get("/models")
