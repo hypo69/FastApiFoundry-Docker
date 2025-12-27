@@ -125,7 +125,7 @@ async def pull_model(request: dict):
         
         # Запускаем foundry model pull в фоне
         process = subprocess.Popen(
-            ['foundry', 'pull', model_id],  # Простая команда foundry pull
+            ['foundry', 'model', 'load', model_id],  # Правильная команда foundry model load
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -157,32 +157,32 @@ async def pull_model(request: dict):
 
 @router.post("/remove")
 async def remove_model(request: dict):
-    """Удалить модель из Foundry"""
+    """Удалить (выгрузить) модель из Foundry"""
     model_id = request.get("model_id")
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
     
     try:
-        # Используем правильную команду foundry для удаления модели
+        # Используем правильную команду foundry model unload
         result = subprocess.run(
-            ['foundry', 'rm', model_id],  # Простая команда foundry rm
+            ['foundry', 'model', 'unload', model_id],
             capture_output=True,
             text=True,
             timeout=30
         )
         
         if result.returncode == 0:
-            logger.info(f"Model {model_id} removed successfully")
+            logger.info(f"Model {model_id} unloaded successfully")
             return {
                 "success": True,
-                "message": f"Модель {model_id} удалена",
+                "message": f"Модель {model_id} выгружена",
                 "model_id": model_id
             }
         else:
-            logger.error(f"Failed to remove model {model_id}: {result.stderr}")
+            logger.error(f"Failed to unload model {model_id}: {result.stderr}")
             return {
                 "success": False,
-                "error": result.stderr or "Failed to remove model"
+                "error": result.stderr or "Failed to unload model"
             }
             
     except FileNotFoundError:
@@ -193,10 +193,10 @@ async def remove_model(request: dict):
     except subprocess.TimeoutExpired:
         return {
             "success": False,
-            "error": "Операция удаления превысила время ожидания"
+            "error": "Операция выгрузки превысила время ожидания"
         }
     except Exception as e:
-        logger.error(f"Error removing model {model_id}: {e}")
+        logger.error(f"Error unloading model {model_id}: {e}")
         return {
             "success": False,
             "error": str(e)
@@ -243,7 +243,7 @@ async def auto_load_default_model():
         logger.info(f"Auto-loading default model: {default_model}")
         
         process = subprocess.Popen(
-            ['foundry', 'pull', default_model],
+            ['foundry', 'model', 'load', default_model],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
