@@ -74,8 +74,13 @@
                     
                     availableModels.forEach(model => {
                         const option = document.createElement('option');
-                        option.value = model.id;
-                        option.textContent = `${model.name} (${model.type}, ${model.size})`;
+                        option.value = model.id || model.name || model;
+                        const displayName = model.name || model.id || model;
+                        const displayType = model.type || '';
+                        const displaySize = model.size || '';
+                        option.textContent = displayType && displaySize ? 
+                            `${displayName} (${displayType}, ${displaySize})` : 
+                            displayName;
                         select.appendChild(option);
                     });
                     
@@ -85,11 +90,12 @@
                 }
             } catch (error) {
                 console.error('Ошибка загрузки моделей:', error);
-                document.getElementById('status').textContent = 'Ошибка загрузки моделей: ' + error.message;
+                const errorMsg = error.message || 'Неизвестная ошибка';
+                document.getElementById('status').textContent = 'Ошибка загрузки моделей: ' + errorMsg;
                 
                 // Fallback - базовые модели
                 const select = document.getElementById('model-select');
-                select.innerHTML = '<option value="">Модели недоступны</option>';
+                select.innerHTML = '<option value="deepseek-r1:14b">DeepSeek R1 14B (fallback)</option>';
             }
         }
 
