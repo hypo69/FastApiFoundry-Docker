@@ -22,31 +22,21 @@ async function loadConfig() {
         const response = await fetch(`${API_BASE}/config`);
         const data = await response.json();
         
-        if (data.success && data.config) {
-            CONFIG.foundry_url = data.config.foundry_ai.base_url;
-            CONFIG.default_model = data.config.foundry_ai.default_model;
-            CONFIG.auto_load_default = data.config.foundry_ai.auto_load_default || false;
+        if (data.success) {
+            // Обновляем CONFIG с данными из API
+            CONFIG.foundry_url = data.foundry_ai.base_url;
+            CONFIG.default_model = data.foundry_ai.default_model;
+            CONFIG.auto_load_default = data.foundry_ai.auto_load_default || false;
             
-            // Обновляем редактор конфигурации если он существует
-            const configEditor = document.getElementById('config-editor');
-            if (configEditor) {
-                // Форматируем JSON с отступами для лучшей читаемости
-                configEditor.value = JSON.stringify(data.config, null, 2);
-                console.log('Config editor updated with full config:', Object.keys(data.config));
-            }
+            console.log('Config loaded from API:', CONFIG);
             
             // Проверяем доступность модели по умолчанию
             await validateDefaultModel();
-            
-            console.log('Config loaded:', CONFIG);
-            console.log('Full config sections:', Object.keys(data.config));
+        } else {
+            console.error('Failed to load config from API:', data.error);
         }
     } catch (error) {
         console.error('Failed to load config:', error);
-        const configEditor = document.getElementById('config-editor');
-        if (configEditor) {
-            configEditor.value = 'Error loading configuration: ' + error.message;
-        }
     }
 }
 

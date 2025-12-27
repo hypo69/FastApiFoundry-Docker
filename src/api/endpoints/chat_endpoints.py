@@ -1,39 +1,29 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Chat Endpoints
+# Название процесса: Chat Endpoints (Refactored)
 # =============================================================================
 # Описание:
-#   Endpoints для интерактивного чата с AI моделями
-#   Поддержка сессий разговора и стриминга ответов
+#   Упрощенные endpoints для интерактивного чата с AI моделями
 #
 # File: chat_endpoints.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.4.1
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 26 декабря 2025
 # =============================================================================
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
-from ...models.foundry_client import foundry_client
-# from ...rag.rag_system import rag_system
-
-# Заглушка для RAG системы
-class DummyRAGSystem:
-    async def search(self, query, top_k=3):
-        return []
-
-rag_system = DummyRAGSystem()
 import json
 import uuid
-import asyncio
-from typing import List, Dict, Optional
+from typing import Dict, List
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
+
+from ...models.foundry_client import foundry_client
 
 router = APIRouter()
 
-# Хранение сессий чата (в памяти, для простоты)
+# Хранение сессий чата в памяти
 chat_sessions: Dict[str, List[Dict]] = {}
 
 @router.post("/chat/start")
@@ -41,7 +31,6 @@ async def start_chat_session(request: dict):
     """Начать новую сессию чата"""
     session_id = str(uuid.uuid4())
     model = request.get("model", "default")
-    use_rag = request.get("use_rag", False)
     
     chat_sessions[session_id] = []
     
@@ -49,7 +38,6 @@ async def start_chat_session(request: dict):
         "success": True,
         "session_id": session_id,
         "model": model,
-        "use_rag": use_rag,
         "message": "Сессия чата начата"
     }
 
@@ -65,58 +53,39 @@ async def send_chat_message(request: dict):
     if not message:
         raise HTTPException(status_code=400, detail="Сообщение не может быть пустым")
     
-    # Добавить сообщение пользователя в историю
+    # Добавить сообщение пользователя
     chat_sessions[session_id].append({"role": "user", "content": message})
     
-    # Получить настройки сессии (предполагаем, что они хранятся где-то, или передать в запросе)
-    model = request.get("model")
-    use_rag = request.get("use_rag", False)
-    temperature = request.get("temperature", 0.7)
-    max_tokens = request.get("max_tokens", 2048)
-    
-    # Подготовить промпт из истории разговора
+    # Подготовить промпт из истории
     conversation_history = chat_sessions[session_id]
     prompt = "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_history])
     
-    # RAG enhancement
-    if use_rag:
-        try:
-            rag_results = await rag_system.search(message, top_k=3)
-            if rag_results:
-                context = "\n".join([r.get("text", "") for r in rag_results])
-                prompt = f"Context:\n{context}\n\n{prompt}"
-        except Exception as e:
-            print(f"RAG error: {e}")
-    
-    # Генерация ответа
     try:
         response = await foundry_client.generate_text(
             prompt,
-            model=model,
-            temperature=temperature,
-            max_tokens=max_tokens
+            model=request.get("model"),
+            temperature=request.get("temperature", 0.7),
+            max_tokens=request.get("max_tokens", 2048)
         )
         
         if response["success"]:
             ai_response = response.get("content", "")
+            chat_sessions[session_id].append({"role": "assistant", "content": ai_response})
+            
+            return {
+                "success": True,
+                "response": ai_response,
+                "session_id": session_id
+            }
         else:
             raise Exception(response.get("error", "Unknown error"))
-        
-        # Добавить ответ AI в историю
-        chat_sessions[session_id].append({"role": "assistant", "content": ai_response})
-        
-        return {
-            "success": True,
-            "response": ai_response,
-            "session_id": session_id
-        }
-        
+            
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка генерации: {str(e)}")
 
 @router.post("/chat/stream")
 async def send_chat_message_stream(request: dict):
-    """Отправить сообщение в чат с стримингом ответа"""
+    """Отправить сообщение в чат с стримингом"""
     session_id = request.get("session_id")
     message = request.get("message", "")
     
@@ -126,35 +95,21 @@ async def send_chat_message_stream(request: dict):
     if not message:
         raise HTTPException(status_code=400, detail="Сообщение не может быть пустым")
     
-    # Добавить сообщение пользователя в историю
+    # Добавить сообщение пользователя
     chat_sessions[session_id].append({"role": "user", "content": message})
-    
-    model = request.get("model")
-    use_rag = request.get("use_rag", False)
-    temperature = request.get("temperature", 0.7)
-    max_tokens = request.get("max_tokens", 2048)
     
     # Подготовить промпт
     conversation_history = chat_sessions[session_id]
     prompt = "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_history])
-    
-    if use_rag:
-        try:
-            rag_results = await rag_system.search(message, top_k=3)
-            if rag_results:
-                context = "\n".join([r.get("text", "") for r in rag_results])
-                prompt = f"Context:\n{context}\n\n{prompt}"
-        except Exception as e:
-            print(f"RAG error: {e}")
     
     async def generate_stream():
         try:
             accumulated_response = ""
             async for chunk in foundry_client.generate_stream(
                 prompt=prompt,
-                model=model,
-                temperature=temperature,
-                max_tokens=max_tokens
+                model=request.get("model"),
+                temperature=request.get("temperature", 0.7),
+                max_tokens=request.get("max_tokens", 2048)
             ):
                 if chunk["success"] and not chunk.get("finished", False):
                     content = chunk.get("content", "")
@@ -163,7 +118,7 @@ async def send_chat_message_stream(request: dict):
                 elif chunk.get("finished", False):
                     break
             
-            # После завершения стриминга добавить полный ответ в историю
+            # Добавить полный ответ в историю
             chat_sessions[session_id].append({"role": "assistant", "content": accumulated_response})
             yield f"data: {json.dumps({'done': True})}\n\n"
             
@@ -201,20 +156,18 @@ async def delete_chat_session(session_id: str):
 async def get_available_models():
     """Получить список доступных моделей"""
     try:
-        # Получаем список моделей через Foundry API
         models_response = await foundry_client.list_available_models()
         
         if models_response.get("success", False):
             foundry_models = models_response.get("models", [])
             
-            # Преобразуем в формат для чата
             chat_models = []
             for model in foundry_models:
                 model_id = model.get('id', '')
                 if model_id:
                     chat_models.append({
                         'id': model_id,
-                        'name': model_id,  # Используем ID как имя
+                        'name': model_id,
                         'type': 'AI Model',
                         'size': 'Unknown'
                     })
@@ -225,7 +178,6 @@ async def get_available_models():
                 "count": len(chat_models)
             }
         else:
-            # Fallback - возвращаем пустой список
             return {
                 "success": False,
                 "error": models_response.get("error", "Не удалось получить список моделей"),

@@ -39,6 +39,17 @@ Write-Host "📚 Установка Python зависимостей..." -Foregro
 & "$venvPath\Scripts\Activate.ps1"
 pip install --upgrade pip
 pip install -r requirements.txt
+
+# Установка RAG зависимостей
+Write-Host "🔍 Установка RAG зависимостей..." -ForegroundColor Yellow
+try {
+    pip install sentence-transformers faiss-cpu torch transformers
+    Write-Host "✅ RAG зависимости установлены"
+} catch {
+    Write-Warning "Не удалось установить RAG зависимости: $_"
+    Write-Host "Попробуйте позже: python install_rag_deps.py" -ForegroundColor Yellow
+}
+
 Write-Host "✅ Python зависимости установлены"
 
 # 3. Установка Foundry
@@ -137,7 +148,21 @@ LOG_LEVEL=INFO
     }
 }
 
-# 6. Проверка установки
+# 6. Создание RAG индекса
+Write-Host "🔍 Создание RAG индекса..." -ForegroundColor Yellow
+if (-not (Test-Path "rag_index")) {
+    try {
+        & "$venvPath\Scripts\python.exe" create_rag_index.py
+        Write-Host "✅ RAG индекс создан"
+    } catch {
+        Write-Warning "Не удалось создать RAG индекс: $_"
+        Write-Host "Попробуйте позже: python create_rag_index.py" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "✅ RAG индекс уже существует"
+}
+
+# 7. Проверка установки
 Write-Host "🧪 Проверка установки..." -ForegroundColor Yellow
 
 # Проверяем Python
@@ -174,3 +199,4 @@ Write-Host "Или использовать embedded Python:"
 Write-Host "  .\python.exe run.py"
 Write-Host ""
 Write-Host "Веб-интерфейс: http://localhost:8000"
+Write-Host "🔍 RAG система: http://localhost:8000/api/v1/rag/status"

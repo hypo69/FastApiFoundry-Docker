@@ -4,117 +4,221 @@
 # Название процесса: Запуск FastApiFoundry сервера
 # =============================================================================
 # Описание:
-#   Простой запуск FastAPI сервера. Для полного запуска с AI используйте start.ps1
+#   Простой запуск FastAPI сервера.
+#   Если Foundry уже запущен — AI будет доступен.
+#   Для полного запуска (Foundry + env) используйте start.ps1
 #
 # File: run.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.3.0
+# Version: 0.4.1
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# License: CC BY-NC-SA 4.0
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
 # =============================================================================
 
-import uvicorn
-import requests
 import sys
 import json
 import socket
+import os
+import logging
 from pathlib import Path
 
-def find_free_port(start_port=9696, end_port=9796):
+from src.core.config import config
+import requests
+import uvicorn
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('logs/app.log', encoding='utf-8')
+    ]
+)
+logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# Utils
+# =============================================================================
+def find_free_port(start_port: int = 9696, end_port: int = 9796) -> int | None:
     """Найти свободный порт в диапазоне"""
+    logger.debug(f"🔍 Поиск свободного порта в диапазоне {start_port}-{end_port}")
+    
     for port in range(start_port, end_port + 1):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             try:
-                s.bind(('localhost', port))
+                sock.bind(('localhost', port))
+                logger.info(f"✅ Найден свободный порт: {port}")
                 return port
             except OSError:
+                logger.debug(f"❌ Порт {port} занят")
                 continue
+    
+    logger.warning(f"⚠️ Не найден свободный порт в диапазоне {start_port}-{end_port}")
     return None
 
-def load_config():
-    """Загрузить конфигурацию из config.json"""
-    config_path = Path("config.json")
-    if config_path.exists():
-        with open(config_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {}
 
-def get_server_port():
-    """Получить порт для FastAPI сервера"""
-    config = load_config()
-    fastapi_config = config.get('fastapi_server', {})
-    port_config = config.get('port_management', {})
+# =============================================================================
+# Port management
+# =============================================================================
+def get_server_port() -> int:
+    """Определяется порт FastAPI сервера"""
+    default_port = config.api_port
+    auto_find = config.port_auto_find_free
     
-    default_port = fastapi_config.get('port', 9696)
-    auto_find = fastapi_config.get('auto_find_free_port', True)
-    
-    if auto_find:
-        start_port = port_config.get('port_range_start', 9696)
-        end_port = port_config.get('port_range_end', 9796)
-        
-        free_port = find_free_port(start_port, end_port)
-        if free_port:
-            print(f"🔍 Найден свободный порт: {free_port}")
-            return free_port
-        else:
-            print(f"⚠️ Свободный порт не найден, используем: {default_port}")
-            return default_port
-    else:
-        print(f"📌 Используем фиксированный порт: {default_port}")
+    logger.info(f"🔌 Определение порта FastAPI сервера...")
+    logger.debug(f"Порт по умолчанию: {default_port}")
+    logger.debug(f"Автопоиск свободного порта: {auto_find}")
+
+    if not auto_find:
+        logger.info(f'📌 Используется фиксированный порт: {default_port}')
         return default_port
 
-def check_foundry():
-    """Проверка работы Foundry на порту из переменной окружения"""
-    import os
-    foundry_url = os.getenv('FOUNDRY_BASE_URL', 'http://localhost:50477/v1/')
-    try:
-        response = requests.get(f"{foundry_url}models", timeout=3)
-        return response.status_code == 200
-    except:
+    start_port = config.port_range_start
+    end_port = config.port_range_end
+
+    free_port = find_free_port(start_port, end_port)
+    if free_port:
+        logger.info(f'🔍 Найден свободный порт: {free_port}')
+        return free_port
+
+    logger.warning(f'⚠️ Свободный порт не найден, используется порт {default_port}')
+    return default_port
+
+
+# =============================================================================
+# Foundry
+# =============================================================================
+def find_foundry_port() -> int | None:
+    """Найти порт запущенного Foundry"""
+    # Сначала проверяем известный порт 62171
+    test_ports = [62171, 50477, 58130]
+    print(f"🔍 Проверка известных портов: {test_ports}")
+    
+    for port in test_ports:
+        try:
+            response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=2)
+            if response.status_code == 200:
+                print(f"✅ Foundry найден на порту: {port}")
+                return port
+            else:
+                print(f"❌ Порт {port}: HTTP {response.status_code}")
+        except Exception as e:
+            print(f"❌ Порт {port}: {e}")
+    
+    # Если не найден, делаем полный поиск
+    print("🔍 Полный поиск портов 50000-65000...")
+    for port in range(50000, 65000, 100):  # Каждый 100-й порт для скорости
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(0.05)
+                if s.connect_ex(('127.0.0.1', port)) == 0:
+                    try:
+                        response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=1)
+                        if response.status_code == 200:
+                            print(f"✅ Foundry найден на порту: {port}")
+                            return port
+                    except:
+                        continue
+        except:
+            continue
+    
+    print("❌ Foundry не найден")
+    return None
+
+
+def resolve_foundry_base_url() -> str | None:
+    """Определяется base_url Foundry (только динамически)"""
+    # Только автоматическое определение порта
+    foundry_port = find_foundry_port()
+    if foundry_port:
+        foundry_url = f'http://localhost:{foundry_port}/v1/'
+        print(f'🔗 Найден Foundry на порту: {foundry_url}')
+        return foundry_url
+
+    print('⚠️ Foundry не найден')
+    return None
+
+
+def check_foundry(foundry_base_url: str | None) -> bool:
+    """Проверяется доступность Foundry"""
+    if not foundry_base_url:
         return False
 
-def main():
+    try:
+        response = requests.get(
+            f'{foundry_base_url}models',
+            timeout=3,
+        )
+        return response.status_code == 200
+    except Exception:
+        return False
+
+
+# =============================================================================
+# Main
+# =============================================================================
+def main() -> bool:
     """Основная функция запуска сервера"""
-    print("🚀 FastAPI Foundry")
-    print("=" * 50)
-    
-    # Получаем порт для сервера
-    port = get_server_port()
-    
-    # Проверка работы Foundry
-    foundry_status = check_foundry()
-    if not foundry_status:
-        print("\n⚠️ Foundry не запущен, но сервер будет запущен")
-        print("\n💡 Для полного запуска с AI моделями используйте:")
-        print("   .\\start.ps1")
-        print("   или")
-        print("   .\\start_simple.ps1")
+    logger.info('🚀 FastAPI Foundry')
+    logger.info('=' * 50)
+
+    # -------------------------------------------------------------------------
+    # Foundry
+    # -------------------------------------------------------------------------
+    logger.info("🔍 Поиск Foundry...")
+    foundry_base_url = resolve_foundry_base_url()
+
+    if foundry_base_url and check_foundry(foundry_base_url):
+        # Обновляем свойство Config с найденным URL
+        config.foundry_base_url = foundry_base_url
+        logger.info(f'✅ Foundry доступен: {foundry_base_url}')
     else:
-        print("✅ Foundry работает")
-    
-    print(f"\n🌐 Запуск FastAPI сервера на порту {port}...")
-    print(f"🔗 Веб-интерфейс: http://localhost:{port}")
-    print(f"📚 API документация: http://localhost:{port}/docs")
-    print(f"🏥 Health check: http://localhost:{port}/api/v1/health")
-    print("-" * 50)
-    
+        logger.warning('⚠️ Foundry недоступен — AI функции отключены')
+
+    # -------------------------------------------------------------------------
+    # FastAPI
+    # -------------------------------------------------------------------------
+    host = config.api_host
+    reload_enabled = config.api_reload
+    log_level = config.api_log_level.lower()
+    workers = config.api_workers
+
+    if reload_enabled:
+        workers = 1
+
+    port = get_server_port()
+
+    logger.info('\n🌐 Запуск FastAPI сервера')
+    logger.info(f'   Host: {host}')
+    logger.info(f'   Port: {port}')
+    logger.info(f'   Reload: {reload_enabled}')
+    logger.info(f'   Workers: {workers}')
+    logger.info('-' * 50)
+    logger.info(f'🔗 UI:   http://localhost:{port}')
+    logger.info(f'📚 Docs: http://localhost:{port}/docs')
+    logger.info(f'🏥 Health: http://localhost:{port}/api/v1/health')
+    logger.info('-' * 50)
+
     try:
         uvicorn.run(
-            "src.api.main:app",
-            host="0.0.0.0", 
-            port=port, 
-            reload=True,
-            log_level="info"
+            'src.api.main:app',
+            host=host,
+            port=port,
+            reload=reload_enabled,
+            workers=workers,
+            log_level=log_level,
         )
         return True
     except KeyboardInterrupt:
-        print("\n✅ Остановлено пользователем")
+        logger.info('\n✅ Остановлено пользователем')
         return True
-    except Exception as e:
-        print(f"❌ Ошибка запуска сервера: {e}")
+    except Exception as exc:
+        logger.error(f'❌ Ошибка запуска сервера: {exc}')
         return False
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     sys.exit(0 if main() else 1)

@@ -1,103 +1,109 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Logs API endpoint
+# Название процесса: Logs API Endpoints
 # =============================================================================
 # Описание:
-#   API endpoint для получения логов системы
+#   API endpoints для получения логов приложения
+#   Отображает логи на вкладке Logs в веб-интерфейсе
 #
 # File: logs.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.4.1
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
 # =============================================================================
 
-import logging
 import os
+import logging
 from pathlib import Path
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any
-from datetime import datetime
 
-logger = logging.getLogger("logs-api")
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
-@router.get("/logs/recent")
-async def get_recent_logs():
-    """Получить последние логи системы"""
+@router.get("/logs")
+async def get_logs(lines: int = 100) -> Dict[str, Any]:
+    """Получить последние строки логов"""
     try:
-        logs = []
+        log_file = Path("logs/app.log")
         
-        # Проверяем различные источники логов
-        log_sources = [
-            "logs/fastapi-foundry.log",
-            "logs/app.log",
-            "fastapi-foundry.log",
-            "app.log"
-        ]
+        if not log_file.exists():
+            logger.warning("Файл логов не найден")
+            return {
+                "success": True,
+                "logs": ["Файл логов не найден"],
+                "total_lines": 0
+            }
         
-        for log_file in log_sources:
-            log_path = Path(log_file)
-            if log_path.exists():
-                logger.info(f"Читаем логи из: {log_path.absolute()}")
-                try:
-                    with open(log_path, 'r', encoding='utf-8') as f:
-                        lines = f.readlines()
-                        # Берем последние 100 строк
-                        for line in lines[-100:]:
-                            line = line.strip()
-                            if line:
-                                logs.append({
-                                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                    "level": "info",
-                                    "logger": "system",
-                                    "message": line,
-                                    "source": str(log_path)
-                                })
-                except Exception as e:
-                    logger.error(f"Ошибка чтения {log_path}: {e}")
+        # Читаем последние N строк
+        with open(log_file, 'r', encoding='utf-8') as f:
+            all_lines = f.readlines()
+            
+        # Берем последние lines строк
+        recent_lines = all_lines[-lines:] if len(all_lines) > lines else all_lines
         
-        # Добавляем тестовые логи если нет реальных
-        if not logs:
-            test_logs = [
-                {
-                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "level": "info",
-                    "logger": "config-api",
-                    "message": "GET /config - запрос конфигурации",
-                    "source": "system"
-                },
-                {
-                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "level": "info", 
-                    "logger": "config-api",
-                    "message": "Конфигурация загружена успешно",
-                    "source": "system"
-                }
-            ]
-            logs.extend(test_logs)
+        # Убираем переносы строк
+        clean_lines = [line.rstrip('\n\r') for line in recent_lines]
         
-        logger.info(f"Возвращаем {len(logs)} записей логов")
+        logger.info(f"Получено {len(clean_lines)} строк логов")
         
         return {
             "success": True,
-            "data": {
-                "logs": logs,
-                "count": len(logs),
-                "message": f"Найдено {len(logs)} записей логов"
-            }
+            "logs": clean_lines,
+            "total_lines": len(all_lines),
+            "returned_lines": len(clean_lines)
         }
         
     except Exception as e:
-        logger.error(f"Ошибка получения логов: {e}")
-        return {
-            "success": False,
-            "error": str(e),
-            "data": {
-                "logs": [],
-                "count": 0,
-                "message": "Ошибка загрузки логов"
+        logger.error(f"Ошибка чтения логов: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка чтения логов: {str(e)}")
+
+@router.get("/logs/clear")
+async def clear_logs() -> Dict[str, Any]:
+    """Очистить файл логов"""
+    try:
+        log_file = Path("logs/app.log")
+        
+        if log_file.exists():
+            # Очищаем файл
+            with open(log_file, 'w', encoding='utf-8') as f:
+                f.write("")
+            
+            logger.info("Файл логов очищен")
+            return {
+                "success": True,
+                "message": "Логи очищены"
             }
-        }
+        else:
+            return {
+                "success": True,
+                "message": "Файл логов не существует"
+            }
+            
+    except Exception as e:
+        logger.error(f"Ошибка очистки логов: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка очистки логов: {str(e)}")
+
+@router.get("/logs/download")
+async def download_logs():
+    """Скачать файл логов"""
+    try:
+        log_file = Path("logs/app.log")
+        
+        if not log_file.exists():
+            raise HTTPException(status_code=404, detail="Файл логов не найден")
+        
+        from fastapi.responses import FileResponse
+        
+        logger.info("Скачивание файла логов")
+        return FileResponse(
+            path=str(log_file),
+            filename="app.log",
+            media_type="text/plain"
+        )
+        
+    except Exception as e:
+        logger.error(f"Ошибка скачивания логов: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка скачивания логов: {str(e)}")

@@ -1,9 +1,21 @@
 # -*- coding: utf-8 -*-
-from fastapi import APIRouter, HTTPException
-import logging
+# =============================================================================
+# Название процесса: Foundry Endpoints (Refactored)
+# =============================================================================
+# Описание:
+#   Упрощенные endpoints для работы с Foundry сервисом
+#
+# File: foundry.py
+# Project: FastApiFoundry (Docker)
+# Version: 0.4.1
+# Author: hypo69
+# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# Copyright: © 2025 AiStros
+# =============================================================================
+
+from fastapi import APIRouter
 from ...models.foundry_client import foundry_client
 
-logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("/foundry/status")
@@ -18,7 +30,6 @@ async def foundry_status():
             "url": health.get("url", "http://localhost:50477/v1")
         }
     except Exception as e:
-        logger.error(f"Error getting Foundry status: {e}")
         return {"success": False, "error": str(e)}
 
 @router.get("/foundry/models/list")
@@ -28,5 +39,4 @@ async def list_foundry_models():
         models = await foundry_client.list_available_models()
         return models
     except Exception as e:
-        logger.error(f"Error listing Foundry models: {e}")
         return {"success": False, "error": str(e), "models": []}
