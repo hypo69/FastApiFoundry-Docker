@@ -266,7 +266,16 @@ async function saveConfigFields() {
         
         if (currentData.success && currentData.config) {
             // Объединяем с существующими данными
-            const fullConfig = { ...currentData.config, ...configData };
+            const fullConfig = { ...currentData.config };
+            
+            // Обновляем только измененные поля
+            Object.keys(configData).forEach(section => {
+                if (fullConfig[section]) {
+                    fullConfig[section] = { ...fullConfig[section], ...configData[section] };
+                } else {
+                    fullConfig[section] = configData[section];
+                }
+            });
             
             console.log('Saving config fields:', Object.keys(configData));
             
@@ -278,9 +287,9 @@ async function saveConfigFields() {
             
             const result = await response.json();
             
-            if (result.success) {
+            if (result && result.success) {
                 statusDiv.className = 'alert alert-success';
-                statusDiv.innerHTML = `<i class="bi bi-check-circle"></i> ${result.message}`;
+                statusDiv.innerHTML = `<i class="bi bi-check-circle"></i> ${result.message || 'Configuration saved'}`;
                 if (result.backup_created) {
                     statusDiv.innerHTML += `<br><small>Backup: ${result.backup_created}</small>`;
                 }
@@ -299,10 +308,12 @@ async function saveConfigFields() {
                 }, 1000);
             } else {
                 statusDiv.className = 'alert alert-danger';
-                statusDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Error: ${result.error}`;
+                statusDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Error: ${result?.error || 'Unknown error'}`;
                 statusDiv.style.display = 'block';
-                showAlert(`Error: ${result.error}`, 'danger');
+                showAlert(`Error: ${result?.error || 'Unknown error'}`, 'danger');
             }
+        } else {
+            throw new Error('Failed to load current configuration');
         }
     } catch (error) {
         statusDiv.className = 'alert alert-danger';
