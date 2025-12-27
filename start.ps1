@@ -28,7 +28,7 @@ $script:ServerProcess = $null
 $script:ServerPort = $null
 
 Write-Host "🚀 FastAPI Foundry с AI моделями" -ForegroundColor Cyan
-Write-Host "=" * 60 -ForegroundColor Cyan
+Write-Host ("=" * 60) -ForegroundColor Cyan
 
 # Функция для проверки и освобождения порта
 function Free-Port {
