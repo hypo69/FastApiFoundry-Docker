@@ -78,35 +78,42 @@ def check_foundry():
 def main():
     """Основная функция запуска сервера"""
     print("🚀 FastAPI Foundry")
+    print("=" * 50)
     
     # Получаем порт для сервера
     port = get_server_port()
     
     # Проверка работы Foundry
-    if not check_foundry():
+    foundry_status = check_foundry()
+    if not foundry_status:
         print("\n⚠️ Foundry не запущен, но сервер будет запущен")
         print("\n💡 Для полного запуска с AI моделями используйте:")
         print("   .\\start.ps1")
+        print("   или")
+        print("   .\\start_simple.ps1")
     else:
         print("✅ Foundry работает")
     
-    print(f"🌐 Запуск FastAPI сервера на порту {port}...")
+    print(f"\n🌐 Запуск FastAPI сервера на порту {port}...")
     print(f"🔗 Веб-интерфейс: http://localhost:{port}")
     print(f"📚 API документация: http://localhost:{port}/docs")
+    print(f"🏥 Health check: http://localhost:{port}/api/v1/health")
+    print("-" * 50)
     
     try:
         uvicorn.run(
             "src.api.main:app",
             host="0.0.0.0", 
             port=port, 
-            reload=True
+            reload=True,
+            log_level="info"
         )
         return True
     except KeyboardInterrupt:
-        print("\n✅ Остановлено")
+        print("\n✅ Остановлено пользователем")
         return True
     except Exception as e:
-        print(f"❌ Ошибка: {e}")
+        print(f"❌ Ошибка запуска сервера: {e}")
         return False
 
 if __name__ == "__main__":

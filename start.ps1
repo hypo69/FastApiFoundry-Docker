@@ -140,76 +140,15 @@ try {
     Write-Host "🔗 Foundry URL: $env:FOUNDRY_BASE_URL" -ForegroundColor Green
     Write-Host "🔗 Foundry Port: $env:FOUNDRY_PORT" -ForegroundColor Green
     
-    # Запуск с выводом в консоль
-    Write-Host "📋 Вывод сервера:" -ForegroundColor Cyan
+    # Запуск сервера с выводом в консоль
+    Write-Host "📋 Запуск сервера с выводом:" -ForegroundColor Cyan
     Write-Host "" -ForegroundColor Cyan
     
-    # Запуск сервера в фоновом режиме
-    $serverJob = Start-Job -ScriptBlock {
-        param($pythonPath, $workingDir, $foundryUrl, $foundryPort)
-        Set-Location $workingDir
-        $env:FOUNDRY_BASE_URL = $foundryUrl
-        $env:FOUNDRY_PORT = $foundryPort
-        & $pythonPath "run.py"
-    } -ArgumentList $pythonExe, $PWD, $env:FOUNDRY_BASE_URL, $env:FOUNDRY_PORT
-    
-    # Ожидание запуска сервера
-    Write-Host "⏳ Ожидание запуска сервера..." -ForegroundColor Yellow
-    
-    $maxWait = 30
-    $waited = 0
-    $serverReady = $false
-    
-    while ($waited -lt $maxWait -and -not $serverReady) {
-        Start-Sleep -Seconds 2
-        $waited += 2
-        
-        try {
-            $response = Invoke-WebRequest -Uri "http://localhost:9696/api/v1/health" -TimeoutSec 3 -ErrorAction Stop
-            if ($response.StatusCode -eq 200) {
-                $serverReady = $true
-                Write-Host "✅ Сервер готов!" -ForegroundColor Green
-                $script:ServerPort = 9696
-            }
-        } catch {
-            # Пробуем другие порты в диапазоне
-            for ($testPort = 9696; $testPort -le 9796; $testPort++) {
-                try {
-                    $response = Invoke-WebRequest -Uri "http://localhost:$testPort/api/v1/health" -TimeoutSec 1 -ErrorAction Stop
-                    if ($response.StatusCode -eq 200) {
-                        $serverReady = $true
-                        Write-Host "✅ Сервер готов на порту $testPort!" -ForegroundColor Green
-                        $script:ServerPort = $testPort
-                        break
-                    }
-                } catch { }
-            }
-            if (-not $serverReady) {
-                Write-Host ".⏳" -NoNewline -ForegroundColor Yellow
-            }
-        }
-    }
-    
-    if ($serverReady) {
-        Write-Host "" -ForegroundColor Cyan
-        Write-Host "🎉 Система готова к работе!" -ForegroundColor Green
-        Write-Host "📱 Веб-интерфейс: http://localhost:$script:ServerPort" -ForegroundColor Cyan
-        Write-Host "📚 API: http://localhost:$script:ServerPort/docs" -ForegroundColor Cyan
-        Write-Host "" -ForegroundColor Cyan
-        
-        # Открытие браузера ТОЛЬКО после полного запуска
-        Write-Host "🌐 Открытие веб-интерфейса..." -ForegroundColor Cyan
-        Start-Process "http://localhost:$script:ServerPort"
-        
-        Write-Host "Для остановки нажмите Ctrl+C" -ForegroundColor Yellow
-        
-        # Ожидание завершения работы
-        Wait-Job $serverJob
-    } else {
-        Write-Host "" -ForegroundColor Red
-        Write-Host "❌ Сервер не запустился за $maxWait секунд" -ForegroundColor Red
-        Stop-Job $serverJob
-        Remove-Job $serverJob
+    # Запуск сервера напрямую (не в фоне) для отображения вывода
+    try {
+        & $pythonExe "run.py"
+    } catch {
+        Write-Host "❌ Ошибка запуска сервера: $_" -ForegroundColor Red
         exit 1
     }
 

@@ -7,11 +7,13 @@
     "workers": 1,
     "reload": true,
     "log_level": "INFO",
-    "cors_origins": ["*"]
+    "cors_origins": [
+      "*"
+    ]
   },
   "foundry_ai": {
     "base_url": "http://localhost:50477/v1/",
-    "default_model": "deepseek-r1-distill-qwen-7b-generic-cpu:3",
+    "default_model": "Phi-3-mini-4k-instruct-generic-cpu:2",
     "auto_load_default": false,
     "temperature": 0.6,
     "top_p": 0.9,
@@ -29,7 +31,9 @@
   "security": {
     "api_key": "",
     "https_enabled": false,
-    "cors_origins": ["*"],
+    "cors_origins": [
+      "*"
+    ],
     "ssl_cert_file": "~/.ssl/cert.pem",
     "ssl_key_file": "~/.ssl/key.pem"
   },

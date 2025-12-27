@@ -1,75 +1,91 @@
-# start_simple.ps1 - Простой запуск с одним портом
+# start_simple.ps1 - Упрощенный запуск FastAPI Foundry
 # =============================================================================
+# Описание:
+#   Простой запуск с отображением всего вывода в консоли
+#
 # File: start_simple.ps1
 # Project: FastApiFoundry (Docker)
 # Version: 0.2.1
 # Author: hypo69
+# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# Copyright: © 2025 AiStros
 # Date: 9 декабря 2025
 # =============================================================================
 
-param(
-    [string]$Model = "qwen2.5-0.5b-instruct-generic-cpu:4"
-)
+Write-Host "🚀 FastAPI Foundry - Упрощенный запуск" -ForegroundColor Cyan
+Write-Host "=" * 50 -ForegroundColor Cyan
 
-Write-Host "🚀 FastAPI Foundry - Простой запуск" -ForegroundColor Cyan
+# 1. Поиск и запуск Foundry
+Write-Host "🔍 Проверка Foundry..." -ForegroundColor Yellow
 
-# Киллинг ВСЕХ процессов foundry
-Write-Host "🛑 Киллинг всех процессов Foundry..." -ForegroundColor Red
-Get-Process -Name "foundry" -ErrorAction SilentlyContinue | Stop-Process -Force
-Start-Sleep -Seconds 2
+$foundryPort = $null
+$foundryProcesses = Get-Process -Name "foundry" -ErrorAction SilentlyContinue
 
-# Остановка сервиса Foundry
-Write-Host "🛑 Остановка сервиса Foundry..." -ForegroundColor Red
-& foundry service stop 2>$null
-Start-Sleep -Seconds 2
-
-# Киллинг всех процессов на портах 8000 и 50477
-Write-Host "🛑 Освобождение портов..." -ForegroundColor Yellow
-$ports = @(8000, 50477)
-foreach ($port in $ports) {
-    $connections = netstat -ano | findstr ":$port"
-    if ($connections) {
-        Write-Host "⚠️ Порт $port занят, киллинг процессов..." -ForegroundColor Yellow
-        foreach ($line in $connections) {
-            $parts = $line -split '\s+'
-            $processId = $parts[-1]
-            if ($processId -and $processId -ne "0") {
-                Write-Host "🛑 Киллинг PID: $processId" -ForegroundColor Red
-                taskkill /PID $processId /F 2>$null
-            }
+if ($foundryProcesses) {
+    Write-Host "✅ Foundry уже запущен" -ForegroundColor Green
+    # Попробуем найти порт
+    $netstatOutput = netstat -ano | Select-String "LISTENING"
+    foreach ($line in $netstatOutput) {
+        if ($line -match ":([0-9]+).*LISTENING") {
+            $port = $matches[1]
+            try {
+                $response = Invoke-WebRequest -Uri "http://localhost:$port/v1/models" -TimeoutSec 2 -ErrorAction Stop
+                if ($response.StatusCode -eq 200) {
+                    $foundryPort = $port
+                    Write-Host "✅ Foundry работает на порту $port" -ForegroundColor Green
+                    break
+                }
+            } catch { }
         }
     }
-}
-
-Write-Host "✅ Все процессы убиты" -ForegroundColor Green
-
-# Запуск Foundry и парсинг порта
-Write-Host "🚀 Запуск Foundry..." -ForegroundColor Yellow
-$foundryOutput = & foundry service start 2>&1
-$foundryPort = $null
-
-# Парсинг порта из вывода Foundry
-foreach ($line in $foundryOutput) {
-    if ($line -match "http://127\.0\.0\.1:(\d+)/") {
-        $foundryPort = $matches[1]
+} else {
+    Write-Host "🚀 Запуск Foundry..." -ForegroundColor Yellow
+    $foundryOutput = & foundry service start 2>&1
+    
+    foreach ($line in $foundryOutput) {
+        Write-Host "   $line" -ForegroundColor Gray
+        if ($line -match "http://127\.0\.0\.1:(\d+)/") {
+            $foundryPort = $matches[1]
+        }
+    }
+    
+    if ($foundryPort) {
         Write-Host "✅ Foundry запущен на порту $foundryPort" -ForegroundColor Green
-        break
+    } else {
+        Write-Host "⚠️ Foundry запущен, но порт не определен" -ForegroundColor Yellow
+        $foundryPort = "50477"  # Порт по умолчанию
     }
 }
 
-if (-not $foundryPort) {
-    Write-Host "❌ Не удалось получить порт Foundry" -ForegroundColor Red
-    exit 1
+# 2. Настройка переменных окружения
+if ($foundryPort) {
+    $env:FOUNDRY_BASE_URL = "http://localhost:$foundryPort/v1/"
+    $env:FOUNDRY_PORT = $foundryPort
+    Write-Host "🔗 Foundry URL: $env:FOUNDRY_BASE_URL" -ForegroundColor Green
 }
 
-# Сохранение порта в глобальную переменную
-$script:FoundryPort = $foundryPort
+# 3. Определение Python
+$pythonExe = $null
+if (Test-Path "$PSScriptRoot\venv\Scripts\python.exe") {
+    $pythonExe = "$PSScriptRoot\venv\Scripts\python.exe"
+    Write-Host "🐍 Используем venv Python" -ForegroundColor Green
+} elseif (Test-Path "$PSScriptRoot\python.exe") {
+    $pythonExe = "$PSScriptRoot\python.exe"
+    Write-Host "🐍 Используем embedded Python" -ForegroundColor Green
+} else {
+    $pythonExe = "python"
+    Write-Host "🐍 Используем системный Python" -ForegroundColor Yellow
+}
 
-# Запуск модели
-Write-Host "🤖 Загрузка модели $Model..." -ForegroundColor Yellow
-& foundry model run $Model
+# 4. Запуск FastAPI сервера
+Write-Host "" -ForegroundColor Cyan
+Write-Host "🌐 Запуск FastAPI сервера..." -ForegroundColor Cyan
+Write-Host "📋 Вывод сервера:" -ForegroundColor Cyan
+Write-Host "-" * 50 -ForegroundColor Gray
 
-# Запуск FastAPI с передачей порта Foundry
-Write-Host "🌐 Запуск FastAPI на порту 8000..." -ForegroundColor Green
-$env:FOUNDRY_BASE_URL = "http://localhost:$foundryPort/v1/"
-python run.py
+try {
+    & $pythonExe "run.py"
+} catch {
+    Write-Host "❌ Ошибка запуска: $_" -ForegroundColor Red
+    exit 1
+}
