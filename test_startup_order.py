@@ -44,7 +44,7 @@ def test_fastapi_connection():
     print("🔍 Тестируем подключение к FastAPI...")
     
     try:
-        response = requests.get("http://localhost:8000/api/v1/health", timeout=5)
+        response = requests.get("http://localhost:9696/api/v1/health", timeout=5)
         if response.status_code == 200:
             data = response.json()
             print(f"✅ FastAPI работает! Статус: {data.get('status', 'unknown')}")

@@ -173,7 +173,7 @@ tail -f /var/log/fastapi-foundry/app.log
 #!/bin/bash
 # health_check.sh
 
-HEALTH_URL="http://localhost:8000/api/v1/health"
+HEALTH_URL="http://localhost:9696/api/v1/health"
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_URL)
 
 if [ $RESPONSE -eq 200 ]; then

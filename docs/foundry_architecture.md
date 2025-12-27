@@ -222,13 +222,13 @@ foundry service stop
 
 ```bash
 # Список подключенных моделей
-curl http://localhost:8000/api/v1/models
+curl http://localhost:9696/api/v1/models
 
 # Проверка здоровья Foundry
-curl http://localhost:8000/api/v1/health
+curl http://localhost:9696/api/v1/health
 
 # Генерация текста
-curl -X POST http://localhost:8000/api/v1/generate \
+curl -X POST http://localhost:9696/api/v1/generate \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Hello", "model": "deepseek-r1:14b"}'
 ```

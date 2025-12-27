@@ -8,7 +8,7 @@
 #
 # Примеры:
 #   >>> import requests
-#   >>> response = requests.get('http://localhost:8000/api/v1/models')
+#   >>> response = requests.get('http://localhost:9696/api/v1/models')
 #   >>> models = response.json()['models']
 #   >>> print(f"Available models: {len(models)}")
 #

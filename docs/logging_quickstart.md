@@ -34,7 +34,7 @@ with logger.timer("database_query", query_type="SELECT"):
 
 ## 🌐 Веб-интерфейс
 
-1.  Откройте [http://localhost:8000](http://localhost:8000).
+1.  Откройте [http://localhost:9696](http://localhost:9696).
 2.  Перейдите на вкладку **"Logs"**.
 3.  Наблюдайте за логами в реальном времени и просматривайте дашборды с состоянием системы.
 
@@ -47,7 +47,7 @@ with logger.timer("database_query", query_type="SELECT"):
 
 **Пример запроса:**
 ```bash
-curl "http://localhost:8000/api/v1/logs/performance?hours=24"
+curl "http://localhost:9696/api/v1/logs/performance?hours=24"
 ```
 
 ## 📁 Файлы логов

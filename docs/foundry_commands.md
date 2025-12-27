@@ -104,7 +104,7 @@ foundry cache remove deepseek-r1-distill-qwen-7b-generic-cpu:3
 
 ## 🎯 ИНТЕГРАЦИЯ С WEB-КОНСОЛЬЮ
 
-Веб-консоль на http://localhost:8000 использует PowerShell скрипты:
+Веб-консоль на http://localhost:9696 использует PowerShell скрипты:
 
 - **`scripts/load-model.ps1`** - загрузка модели
 - **`scripts/unload-model.ps1`** - выгрузка модели

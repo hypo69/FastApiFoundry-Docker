@@ -102,7 +102,7 @@ foundry
 .\py.exe run.py
 
 # 4. Открыть веб-интерфейс
-# http://localhost:8000
+# http://localhost:9696
 ```
 
 ### 🐳 Docker (Альтернативный способ)
@@ -111,7 +111,7 @@ foundry
 docker-compose up --build
 
 # Открыть веб-консоль
-http://localhost:8000
+http://localhost:9696
 ```
 
 ### 📋 Системный Python (Linux/macOS)
@@ -134,7 +134,7 @@ foundry
 python run.py
 
 # 6. Открыть веб-интерфейс
-# http://localhost:8000
+# http://localhost:9696
 ```
 
 ### 🔧 Windows с Embedded Python (Рекомендуется)
@@ -156,7 +156,7 @@ foundry
 .\py.exe run.py
 
 # 5. Открыть веб-интерфейс
-# http://localhost:8000
+# http://localhost:9696
 ```
 
 ### 🧪 Быстрый тест
@@ -217,7 +217,7 @@ FastApiFoundry/
 
 ### 🐳 Docker (Альтернативный способ)
 - **Docker контейнер** с Python 3.11
-- **Веб-консоль** на http://localhost:8000
+- **Веб-консоль** на http://localhost:9696
 - **Управление Foundry** через веб-интерфейс
 - **Автоматическая установка** всех зависимостей
 
@@ -250,7 +250,7 @@ py run.py
 
 
 ### 🔧 Управление Foundry
-1. Открыть http://localhost:8000
+1. Открыть http://localhost:9696
 2. Перейти на вкладку "Foundry"
 3. Нажать "Install Foundry" (при первом запуске)
 4. Нажать "Start Foundry"
@@ -291,8 +291,8 @@ py run.py
 
 ## 📞 Поддержка
 
-- **Документация**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/api/v1/health
+- **Документация**: http://localhost:9696/docs
+- **Health Check**: http://localhost:9696/api/v1/health
 - **GitHub**: https://github.com/hypo69/FastApiFoundry-Docker
 - **Website**: https://aistros.com
 

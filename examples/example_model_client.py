@@ -23,7 +23,7 @@ async def demo_model_management():
     """Демонстрация управления моделями"""
     
     async with FastAPIFoundryClient(
-        base_url="http://localhost:8000",
+        base_url="http://localhost:9696",
         api_key=None  # API ключ отключен в .env
     ) as client:
         
@@ -144,26 +144,26 @@ async def demo_model_management():
         # 7. Полезные команды
         print("\n7️⃣ Useful Commands:")
         print("📋 List all endpoints:")
-        print("  curl http://localhost:8000/")
+        print("  curl http://localhost:9696/")
         print()
         print("🔍 Get connected models:")
-        print("  curl http://localhost:8000/api/v1/models/connected")
+        print("  curl http://localhost:9696/api/v1/models/connected")
         print()
         print("📦 Get providers:")
-        print("  curl http://localhost:8000/api/v1/models/providers")
+        print("  curl http://localhost:9696/api/v1/models/providers")
         print()
         print("🔗 Connect new model:")
-        print("  curl -X POST http://localhost:8000/api/v1/models/connect \\")
+        print("  curl -X POST http://localhost:9696/api/v1/models/connect \\")
         print("    -H 'Content-Type: application/json' \\")
         print("    -d '{\"model_id\": \"new-model\", \"provider\": \"foundry\"}'")
         print()
         print("🧪 Test model:")
-        print("  curl -X POST http://localhost:8000/api/v1/models/test-model-demo/test \\")
+        print("  curl -X POST http://localhost:9696/api/v1/models/test-model-demo/test \\")
         print("    -H 'Content-Type: application/json' \\")
         print("    -d '{\"test_prompt\": \"Hello, world!\"}'")
         print()
         print("❌ Disconnect model:")
-        print("  curl -X DELETE http://localhost:8000/api/v1/models/test-model-demo")
+        print("  curl -X DELETE http://localhost:9696/api/v1/models/test-model-demo")
         
         print("\n" + "=" * 60)
         print("🎉 Model Management Demo Complete!")

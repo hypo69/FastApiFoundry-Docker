@@ -222,7 +222,7 @@
   {
     "source": "deployment.md",
     "section": "docker-compose.prod.yml",
-    "text": "version: '3.8'\nservices:\nfastapi-foundry:\nbuild: .\ncontainer_name: fastapi-foundry-prod\nrestart: unless-stopped\nports:\n- \"8000:8000\"\nenvironment:\n- API_HOST=0.0.0.0\n- API_PORT=8000\n- API_WORKERS=4\n- LOG_LEVEL=INFO\n- FOUNDRY_BASE_URL=http://foundry:5272/v1/\nvolumes:\n- ./logs:/app/logs\n- ./rag_index:/app/rag_index\n- ./prod.env:/app/.env\ndepends_on:\n- foundry\nnetworks:\n- foundry-network\nhealthcheck:\ntest: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8000/api/v1/health\"]\ninterval: 30s\ntimeout: 10s\nretrie"
+    "text": "version: '3.8'\nservices:\nfastapi-foundry:\nbuild: .\ncontainer_name: fastapi-foundry-prod\nrestart: unless-stopped\nports:\n- \"8000:8000\"\nenvironment:\n- API_HOST=0.0.0.0\n- API_PORT=8000\n- API_WORKERS=4\n- LOG_LEVEL=INFO\n- FOUNDRY_BASE_URL=http://foundry:5272/v1/\nvolumes:\n- ./logs:/app/logs\n- ./rag_index:/app/rag_index\n- ./prod.env:/app/.env\ndepends_on:\n- foundry\nnetworks:\n- foundry-network\nhealthcheck:\ntest: [\"CMD\", \"curl\", \"-f\", \"http://localhost:9696/api/v1/health\"]\ninterval: 30s\ntimeout: 10s\nretrie"
   },
   {
     "source": "deployment.md",
@@ -362,7 +362,7 @@
   {
     "source": "deployment.md",
     "section": "health_check.sh",
-    "text": "HEALTH_URL=\"http://localhost:8000/api/v1/health\"\nRESPONSE=$(curl -s -o /dev/null -w \"%{http_code}\" $HEALTH_URL)\nif [ $RESPONSE -eq 200 ]; then\necho \"✅ FastAPI Foundry is healthy\"\nexit 0\nelse\necho \"❌ FastAPI Foundry is unhealthy (HTTP $RESPONSE)\"\nexit 1\nfi\n```"
+    "text": "HEALTH_URL=\"http://localhost:9696/api/v1/health\"\nRESPONSE=$(curl -s -o /dev/null -w \"%{http_code}\" $HEALTH_URL)\nif [ $RESPONSE -eq 200 ]; then\necho \"✅ FastAPI Foundry is healthy\"\nexit 0\nelse\necho \"❌ FastAPI Foundry is unhealthy (HTTP $RESPONSE)\"\nexit 1\nfi\n```"
   },
   {
     "source": "deployment.md",
@@ -412,7 +412,7 @@
   {
     "source": "deployment.md",
     "section": "Перезагрузить RAG через API",
-    "text": "curl -X POST http://localhost:8000/api/v1/rag/reload \\\n-H \"Authorization: Bearer your-api-key\"\n```"
+    "text": "curl -X POST http://localhost:9696/api/v1/rag/reload \\\n-H \"Authorization: Bearer your-api-key\"\n```"
   },
   {
     "source": "deployment.md",
@@ -567,12 +567,12 @@
   {
     "source": "deployment.md",
     "section": "Проверка всех сервисов",
-    "text": "curl http://localhost:8000/api/v1/health\ncurl http://localhost:5272/v1/models"
+    "text": "curl http://localhost:9696/api/v1/health\ncurl http://localhost:5272/v1/models"
   },
   {
     "source": "deployment.md",
     "section": "Тестирование API",
-    "text": "curl -X POST http://localhost:8000/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\"prompt\": \"Test prompt\"}'"
+    "text": "curl -X POST http://localhost:9696/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\"prompt\": \"Test prompt\"}'"
   },
   {
     "source": "deployment.md",
@@ -582,7 +582,7 @@
   {
     "source": "deployment.md",
     "section": "📚 Документация и ресурсы",
-    "text": "- **[📂 Индекс документации](DOCS_INDEX.md)** - Полный каталог всех документов\n- **[🚀 Быстрый старт](README.md)** - Основная документация\n- **[🏗️ Архитектура](howto.md)** - Подробное руководство по компонентам\n- **[🌐 Туннели](TUNNEL_GUIDE.md)** - Публичный доступ к API\n- **API Docs**: http://localhost:8000/docs - Автоматическая документация\n- **Health Check**: http://localhost:8000/api/v1/health - Мониторинг\n- **Конфигурация**: http://localhost:8000/api/v1/config - Текущие настройки"
+    "text": "- **[📂 Индекс документации](DOCS_INDEX.md)** - Полный каталог всех документов\n- **[🚀 Быстрый старт](README.md)** - Основная документация\n- **[🏗️ Архитектура](howto.md)** - Подробное руководство по компонентам\n- **[🌐 Туннели](TUNNEL_GUIDE.md)** - Публичный доступ к API\n- **API Docs**: http://localhost:9696/docs - Автоматическая документация\n- **Health Check**: http://localhost:9696/api/v1/health - Мониторинг\n- **Конфигурация**: http://localhost:9696/api/v1/config - Текущие настройки"
   },
   {
     "source": "deployment.md",
@@ -662,97 +662,97 @@
   {
     "source": "examples.md",
     "section": "Проверка здоровья системы",
-    "text": "curl http://localhost:8000/api/v1/health"
+    "text": "curl http://localhost:9696/api/v1/health"
   },
   {
     "source": "examples.md",
     "section": "Список доступных моделей",
-    "text": "curl http://localhost:8000/api/v1/models\n```"
+    "text": "curl http://localhost:9696/api/v1/models\n```"
   },
   {
     "source": "examples.md",
     "section": "Простая генерация",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompt\": \"Объясни что такое FastAPI\",\n\"temperature\": 0.7,\n\"max_tokens\": 500\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompt\": \"Объясни что такое FastAPI\",\n\"temperature\": 0.7,\n\"max_tokens\": 500\n}'\n```"
   },
   {
     "source": "examples.md",
     "section": "Генерация с RAG контекстом",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompt\": \"Как настроить FastAPI Foundry?\",\n\"use_rag\": true,\n\"temperature\": 0.6,\n\"max_tokens\": 1000\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompt\": \"Как настроить FastAPI Foundry?\",\n\"use_rag\": true,\n\"temperature\": 0.6,\n\"max_tokens\": 1000\n}'\n```"
   },
   {
     "source": "examples.md",
     "section": "Генерация с конкретной моделью",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompt\": \"Напиши код на Python для работы с API\",\n\"model\": \"deepseek-r1-distill-qwen-7b-generic-cpu:3\",\n\"temperature\": 0.3,\n\"max_tokens\": 800\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompt\": \"Напиши код на Python для работы с API\",\n\"model\": \"deepseek-r1-distill-qwen-7b-generic-cpu:3\",\n\"temperature\": 0.3,\n\"max_tokens\": 800\n}'\n```"
   },
   {
     "source": "examples.md",
     "section": "Обработка нескольких промптов",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/batch-generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompts\": [\n\"Что такое Python?\",\n\"Что такое Docker?\",\n\"Что такое Kubernetes?\"\n],\n\"temperature\": 0.6,\n\"max_tokens\": 200,\n\"use_rag\": true\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/batch-generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompts\": [\n\"Что такое Python?\",\n\"Что такое Docker?\",\n\"Что такое Kubernetes?\"\n],\n\"temperature\": 0.6,\n\"max_tokens\": 200,\n\"use_rag\": true\n}'\n```"
   },
   {
     "source": "examples.md",
     "section": "Генерация документации",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/batch-generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompts\": [\n\"Создай README для Python проекта\",\n\"Напиши docstring для функции обработки данных\",\n\"Создай пример использования API\"\n],\n\"temperature\": 0.4,\n\"max_tokens\": 500\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/batch-generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompts\": [\n\"Создай README для Python проекта\",\n\"Напиши docstring для функции обработки данных\",\n\"Создай пример использования API\"\n],\n\"temperature\": 0.4,\n\"max_tokens\": 500\n}'\n```"
   },
   {
     "source": "examples.md",
     "section": "Поиск в документации",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/rag/search \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"query\": \"настройка конфигурации\",\n\"top_k\": 5\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/rag/search \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"query\": \"настройка конфигурации\",\n\"top_k\": 5\n}'\n```"
   },
   {
     "source": "examples.md",
     "section": "Поиск технической информации",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/rag/search \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"query\": \"API endpoints FastAPI\",\n\"top_k\": 10\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/rag/search \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"query\": \"API endpoints FastAPI\",\n\"top_k\": 10\n}'\n```"
   },
   {
     "source": "examples.md",
     "section": "Перезагрузка RAG индекса",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/rag/reload \\\n-H \"Authorization: Bearer your-api-key\"\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/rag/reload \\\n-H \"Authorization: Bearer your-api-key\"\n```"
   },
   {
     "source": "examples.md",
     "section": "Подключение OpenAI модели",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/models/connect \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\n\"model_id\": \"gpt-3.5-turbo\",\n\"provider\": \"openai\",\n\"model_name\": \"GPT-3.5 Turbo\",\n\"endpoint_url\": \"https://api.openai.com/v1/\",\n\"api_key\": \"your-openai-key\"\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/models/connect \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\n\"model_id\": \"gpt-3.5-turbo\",\n\"provider\": \"openai\",\n\"model_name\": \"GPT-3.5 Turbo\",\n\"endpoint_url\": \"https://api.openai.com/v1/\",\n\"api_key\": \"your-openai-key\"\n}'\n```"
   },
   {
     "source": "examples.md",
     "section": "Подключение Ollama модели",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/models/connect \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\n\"model_id\": \"llama2:7b\",\n\"provider\": \"ollama\",\n\"model_name\": \"Llama 2 7B\",\n\"endpoint_url\": \"http://localhost:11434/api/\"\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/models/connect \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\n\"model_id\": \"llama2:7b\",\n\"provider\": \"ollama\",\n\"model_name\": \"Llama 2 7B\",\n\"endpoint_url\": \"http://localhost:11434/api/\"\n}'\n```"
   },
   {
     "source": "examples.md",
     "section": "Тестирование модели",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/models/gpt-3.5-turbo/test \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\n\"test_prompt\": \"Привет, как дела?\"\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/models/gpt-3.5-turbo/test \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\n\"test_prompt\": \"Привет, как дела?\"\n}'\n```"
   },
   {
     "source": "examples.md",
     "section": "Список подключенных моделей",
-    "text": "```bash\ncurl http://localhost:8000/api/v1/models/connected \\\n-H \"Authorization: Bearer your-api-key\"\n```"
+    "text": "```bash\ncurl http://localhost:9696/api/v1/models/connected \\\n-H \"Authorization: Bearer your-api-key\"\n```"
   },
   {
     "source": "examples.md",
     "section": "Запуск Foundry сервиса",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/foundry/service/start \\\n-H \"Authorization: Bearer your-api-key\"\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/foundry/service/start \\\n-H \"Authorization: Bearer your-api-key\"\n```"
   },
   {
     "source": "examples.md",
     "section": "Проверка статуса Foundry",
-    "text": "```bash\ncurl http://localhost:8000/api/v1/foundry/status\n```"
+    "text": "```bash\ncurl http://localhost:9696/api/v1/foundry/status\n```"
   },
   {
     "source": "examples.md",
     "section": "Список Foundry моделей",
-    "text": "```bash\ncurl http://localhost:8000/api/v1/foundry/models/list \\\n-H \"Authorization: Bearer your-api-key\"\n```"
+    "text": "```bash\ncurl http://localhost:9696/api/v1/foundry/models/list \\\n-H \"Authorization: Bearer your-api-key\"\n```"
   },
   {
     "source": "examples.md",
     "section": "Скачивание модели",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/foundry/models/download \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\n\"model_name\": \"deepseek-r1-distill-qwen-7b-generic-cpu:3\"\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/foundry/models/download \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer your-api-key\" \\\n-d '{\n\"model_name\": \"deepseek-r1-distill-qwen-7b-generic-cpu:3\"\n}'\n```"
   },
   {
     "source": "examples.md",
     "section": "Базовый клиент",
-    "text": "```python\nimport requests\nimport json\nclass FastAPIFoundryClient:\ndef __init__(self, base_url=\"http://localhost:8000\", api_key=None):\nself.base_url = base_url\nself.headers = {\"Content-Type\": \"application/json\"}\nif api_key:\nself.headers[\"Authorization\"] = f\"Bearer {api_key}\"\ndef generate(self, prompt, **kwargs):\ndata = {\"prompt\": prompt, **kwargs}\nresponse = requests.post(\nf\"{self.base_url}/api/v1/generate\",\nheaders=self.headers,\njson=data\n)\nreturn response."
+    "text": "```python\nimport requests\nimport json\nclass FastAPIFoundryClient:\ndef __init__(self, base_url=\"http://localhost:9696\", api_key=None):\nself.base_url = base_url\nself.headers = {\"Content-Type\": \"application/json\"}\nif api_key:\nself.headers[\"Authorization\"] = f\"Bearer {api_key}\"\ndef generate(self, prompt, **kwargs):\ndata = {\"prompt\": prompt, **kwargs}\nresponse = requests.post(\nf\"{self.base_url}/api/v1/generate\",\nheaders=self.headers,\njson=data\n)\nreturn response."
   },
   {
     "source": "examples.md",
@@ -787,7 +787,7 @@
   {
     "source": "examples.md",
     "section": "Асинхронный клиент",
-    "text": "```python\nimport aiohttp\nimport asyncio\nclass AsyncFoundryClient:\ndef __init__(self, base_url=\"http://localhost:8000\", api_key=None):\nself.base_url = base_url\nself.headers = {\"Content-Type\": \"application/json\"}\nif api_key:\nself.headers[\"Authorization\"] = f\"Bearer {api_key}\"\nasync def generate(self, prompt, **kwargs):\ndata = {\"prompt\": prompt, **kwargs}\nasync with aiohttp.ClientSession() as session:\nasync with session.post(\nf\"{self.base_url}/api/v1/generate\",\nheaders=self."
+    "text": "```python\nimport aiohttp\nimport asyncio\nclass AsyncFoundryClient:\ndef __init__(self, base_url=\"http://localhost:9696\", api_key=None):\nself.base_url = base_url\nself.headers = {\"Content-Type\": \"application/json\"}\nif api_key:\nself.headers[\"Authorization\"] = f\"Bearer {api_key}\"\nasync def generate(self, prompt, **kwargs):\ndata = {\"prompt\": prompt, **kwargs}\nasync with aiohttp.ClientSession() as session:\nasync with session.post(\nf\"{self.base_url}/api/v1/generate\",\nheaders=self."
   },
   {
     "source": "examples.md",
@@ -812,7 +812,7 @@
   {
     "source": "examples.md",
     "section": "Веб-приложение",
-    "text": "```html\n<!DOCTYPE html>\n<html>\n<head>\n<title>FastAPI Foundry Client</title>\n</head>\n<body>\n<div id=\"app\">\n<textarea id=\"prompt\" placeholder=\"Введите ваш промпт...\"></textarea>\n<button onclick=\"generate()\">Генерировать</button>\n<div id=\"result\"></div>\n</div>\n<script>\nconst API_BASE = 'http://localhost:8000/api/v1';\nasync function generate() {\nconst prompt = document.getElementById('prompt').value;\nconst resultDiv = document.getElementById('result');\nif (!"
+    "text": "```html\n<!DOCTYPE html>\n<html>\n<head>\n<title>FastAPI Foundry Client</title>\n</head>\n<body>\n<div id=\"app\">\n<textarea id=\"prompt\" placeholder=\"Введите ваш промпт...\"></textarea>\n<button onclick=\"generate()\">Генерировать</button>\n<div id=\"result\"></div>\n</div>\n<script>\nconst API_BASE = 'http://localhost:9696/api/v1';\nasync function generate() {\nconst prompt = document.getElementById('prompt').value;\nconst resultDiv = document.getElementById('result');\nif (!"
   },
   {
     "source": "examples.md",
@@ -832,7 +832,7 @@
   {
     "source": "examples.md",
     "section": "Node.js клиент",
-    "text": "```javascript\nconst axios = require('axios');\nclass FoundryClient {\nconstructor(baseURL = 'http://localhost:8000', apiKey = null) {\nthis.client = axios.create({\nbaseURL: baseURL + '/api/v1',\nheaders: {\n'Content-Type': 'application/json',\n...(apiKey && { 'Authorization': `Bearer ${apiKey}` })\n}\n});\n}\nasync generate(prompt, options = {}) {\ntry {\nconst response = await this.client.post('/generate', {\nprompt,\n...options\n});\nreturn response."
+    "text": "```javascript\nconst axios = require('axios');\nclass FoundryClient {\nconstructor(baseURL = 'http://localhost:9696', apiKey = null) {\nthis.client = axios.create({\nbaseURL: baseURL + '/api/v1',\nheaders: {\n'Content-Type': 'application/json',\n...(apiKey && { 'Authorization': `Bearer ${apiKey}` })\n}\n});\n}\nasync generate(prompt, options = {}) {\ntry {\nconst response = await this.client.post('/generate', {\nprompt,\n...options\n});\nreturn response."
   },
   {
     "source": "examples.md",
@@ -862,7 +862,7 @@
   {
     "source": "examples.md",
     "section": "Использование в запросах",
-    "text": "curl -H \"Authorization: Bearer your-secret-api-key-here\" \\\nhttp://localhost:8000/api/v1/models/connected\n```"
+    "text": "curl -H \"Authorization: Bearer your-secret-api-key-here\" \\\nhttp://localhost:9696/api/v1/models/connected\n```"
   },
   {
     "source": "examples.md",
@@ -877,7 +877,7 @@
   {
     "source": "examples.md",
     "section": "Защищенный запрос",
-    "text": "response = requests.post(\n\"http://localhost:8000/api/v1/generate\",\nheaders=headers,\njson={\n\"prompt\": \"Создай безопасный API endpoint\",\n\"temperature\": 0.5\n}\n)\nresult = response.json()\nprint(result[\"content\"])\n```"
+    "text": "response = requests.post(\n\"http://localhost:9696/api/v1/generate\",\nheaders=headers,\njson={\n\"prompt\": \"Создай безопасный API endpoint\",\n\"temperature\": 0.5\n}\n)\nresult = response.json()\nprint(result[\"content\"])\n```"
   },
   {
     "source": "examples.md",
@@ -1027,17 +1027,17 @@
   {
     "source": "examples.md",
     "section": "Полная диагностика",
-    "text": "curl -s http://localhost:8000/api/v1/health | jq ."
+    "text": "curl -s http://localhost:9696/api/v1/health | jq ."
   },
   {
     "source": "examples.md",
     "section": "Конфигурация системы",
-    "text": "curl -s http://localhost:8000/api/v1/config | jq ."
+    "text": "curl -s http://localhost:9696/api/v1/config | jq ."
   },
   {
     "source": "examples.md",
     "section": "Статус Foundry",
-    "text": "curl -s http://localhost:8000/api/v1/foundry/status | jq .\n```"
+    "text": "curl -s http://localhost:9696/api/v1/foundry/status | jq .\n```"
   },
   {
     "source": "examples.md",
@@ -1117,12 +1117,12 @@
   {
     "source": "howto.md",
     "section": "Простая проверка",
-    "text": "curl http://localhost:8000/api/v1/health"
+    "text": "curl http://localhost:9696/api/v1/health"
   },
   {
     "source": "howto.md",
     "section": "Детальная проверка с jq",
-    "text": "curl -s http://localhost:8000/api/v1/health | jq .\n```"
+    "text": "curl -s http://localhost:9696/api/v1/health | jq .\n```"
   },
   {
     "source": "howto.md",
@@ -1882,12 +1882,12 @@
   {
     "source": "project_info.md",
     "section": "Документация",
-    "text": "- **API Docs**: http://localhost:8000/docs\n- **README**: Основная документация\n- **DEPLOYMENT**: Руководство по развертыванию"
+    "text": "- **API Docs**: http://localhost:9696/docs\n- **README**: Основная документация\n- **DEPLOYMENT**: Руководство по развертыванию"
   },
   {
     "source": "project_info.md",
     "section": "Мониторинг",
-    "text": "- **Health**: http://localhost:8000/api/v1/health\n- **Config**: http://localhost:8000/api/v1/config\n- **Logs**: `logs/fastapi-foundry.log`"
+    "text": "- **Health**: http://localhost:9696/api/v1/health\n- **Config**: http://localhost:9696/api/v1/config\n- **Logs**: `logs/fastapi-foundry.log`"
   },
   {
     "source": "project_info.md",
@@ -2052,17 +2052,17 @@
   {
     "source": "running.md",
     "section": "Главная страница",
-    "text": "curl http://localhost:8000/"
+    "text": "curl http://localhost:9696/"
   },
   {
     "source": "running.md",
     "section": "Проверка здоровья",
-    "text": "curl http://localhost:8000/api/v1/health"
+    "text": "curl http://localhost:9696/api/v1/health"
   },
   {
     "source": "running.md",
     "section": "API документация",
-    "text": "open http://localhost:8000/docs\n```"
+    "text": "open http://localhost:9696/docs\n```"
   },
   {
     "source": "running.md",
@@ -2312,7 +2312,7 @@
   {
     "source": "tunnel_guide.md",
     "section": "Результат:",
-    "text": "```\nSession Status                online\nAccount                       your@email.com (Plan: Free)\nVersion                       3.1.0\nRegion                        United States (us)\nLatency                       45ms\nWeb Interface                 http://127.0.0.1:4040\nForwarding                    https://abc123.ngrok.io -> http://localhost:8000\nConnections                   ttl     opn     rt1     rt5     p50     p90\n0       0       0.00    0.00    0.00    0.00\n```"
+    "text": "```\nSession Status                online\nAccount                       your@email.com (Plan: Free)\nVersion                       3.1.0\nRegion                        United States (us)\nLatency                       45ms\nWeb Interface                 http://127.0.0.1:4040\nForwarding                    https://abc123.ngrok.io -> http://localhost:9696\nConnections                   ttl     opn     rt1     rt5     p50     p90\n0       0       0.00    0.00    0.00    0.00\n```"
   },
   {
     "source": "tunnel_guide.md",
@@ -2342,7 +2342,7 @@
   {
     "source": "tunnel_guide.md",
     "section": "Временный туннель",
-    "text": "cloudflared tunnel --url http://localhost:8000\n```"
+    "text": "cloudflared tunnel --url http://localhost:9696\n```"
   },
   {
     "source": "tunnel_guide.md",
@@ -2507,7 +2507,7 @@
   {
     "source": "tunnel_guide.md",
     "section": "Запустить туннель",
-    "text": "cloudflared tunnel --url http://localhost:8000"
+    "text": "cloudflared tunnel --url http://localhost:9696"
   },
   {
     "source": "tunnel_guide.md",
@@ -2607,7 +2607,7 @@
   {
     "source": "usage.md",
     "section": "Веб-интерфейс",
-    "text": "Откройте http://localhost:8000 в браузере для доступа к веб-интерфейсу."
+    "text": "Откройте http://localhost:9696 в браузере для доступа к веб-интерфейсу."
   },
   {
     "source": "usage.md",
@@ -2617,17 +2617,17 @@
   {
     "source": "usage.md",
     "section": "Генерация текста",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompt\": \"Привет, как дела?\",\n\"temperature\": 0.7,\n\"max_tokens\": 500,\n\"use_rag\": true\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompt\": \"Привет, как дела?\",\n\"temperature\": 0.7,\n\"max_tokens\": 500,\n\"use_rag\": true\n}'\n```"
   },
   {
     "source": "usage.md",
     "section": "Пакетная генерация",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/batch-generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompts\": [\"Что такое Python?\", \"Что такое Docker?\"],\n\"temperature\": 0.6\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/batch-generate \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"prompts\": [\"Что такое Python?\", \"Что такое Docker?\"],\n\"temperature\": 0.6\n}'\n```"
   },
   {
     "source": "usage.md",
     "section": "RAG поиск",
-    "text": "```bash\ncurl -X POST http://localhost:8000/api/v1/rag/search \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"query\": \"FastAPI endpoints\",\n\"top_k\": 5\n}'\n```"
+    "text": "```bash\ncurl -X POST http://localhost:9696/api/v1/rag/search \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"query\": \"FastAPI endpoints\",\n\"top_k\": 5\n}'\n```"
   },
   {
     "source": "usage.md",
@@ -2637,17 +2637,17 @@
   {
     "source": "usage.md",
     "section": "Список подключенных моделей",
-    "text": "curl http://localhost:8000/api/v1/models/connected"
+    "text": "curl http://localhost:9696/api/v1/models/connected"
   },
   {
     "source": "usage.md",
     "section": "Подключение новой модели",
-    "text": "curl -X POST http://localhost:8000/api/v1/models/connect \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"model_id\": \"gpt-3.5-turbo\",\n\"provider\": \"openai\",\n\"api_key\": \"your-key\"\n}'\n```"
+    "text": "curl -X POST http://localhost:9696/api/v1/models/connect \\\n-H \"Content-Type: application/json\" \\\n-d '{\n\"model_id\": \"gpt-3.5-turbo\",\n\"provider\": \"openai\",\n\"api_key\": \"your-key\"\n}'\n```"
   },
   {
     "source": "usage.md",
     "section": "Swagger документация",
-    "text": "Интерактивная документация API доступна по адресу:\nhttp://localhost:8000/docs\n---"
+    "text": "Интерактивная документация API доступна по адресу:\nhttp://localhost:9696/docs\n---"
   },
   {
     "source": "usage.md",

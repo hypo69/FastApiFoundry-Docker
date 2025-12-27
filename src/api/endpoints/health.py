@@ -8,7 +8,7 @@
 #
 # Примеры:
 #   >>> import requests
-#   >>> response = requests.get('http://localhost:8000/api/v1/health')
+#   >>> response = requests.get('http://localhost:9696/api/v1/health')
 #   >>> print(response.json())
 #   {'status': 'healthy', 'foundry_status': 'healthy', 'models_count': 3}
 #

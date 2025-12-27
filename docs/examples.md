@@ -23,7 +23,7 @@ import aiohttp
 import asyncio
 
 class AsyncFoundryClient:
-    def __init__(self, base_url="http://localhost:8000", api_key=None):
+    def __init__(self, base_url="http://localhost:9696", api_key=None):
         self.base_url = base_url
         self.headers = {"Content-Type": "application/json"}
         if api_key:
@@ -57,7 +57,7 @@ asyncio.run(main())
 const axios = require('axios');
 
 class FoundryClient {
-    constructor(baseURL = 'http://localhost:8000', apiKey = null) {
+    constructor(baseURL = 'http://localhost:9696', apiKey = null) {
         this.client = axios.create({
             baseURL: baseURL + '/api/v1',
             headers: {
@@ -124,7 +124,7 @@ class ChatBot:
 
 Вы можете запускать демонстрационные скрипты прямо из браузера.
 
-1.  Откройте [http://localhost:8000](http://localhost:8000)
+1.  Откройте [http://localhost:9696](http://localhost:9696)
 2.  Перейдите на вкладку **"Examples"**.
 3.  Нажмите на кнопку нужного примера.
 4.  Смотрите вывод в реальном времени.

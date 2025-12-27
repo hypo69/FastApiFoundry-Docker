@@ -22,7 +22,7 @@
 
 ### 2. Откройте веб-интерфейс
 
-Перейдите в браузере: http://localhost:8000/static/chat.html
+Перейдите в браузере: http://localhost:9696/static/chat.html
 
 ## 📋 API Endpoints
 
@@ -37,12 +37,12 @@
 
 ```bash
 # Начать сессию
-curl -X POST http://localhost:8000/api/v1/chat/start \
+curl -X POST http://localhost:9696/api/v1/chat/start \
   -H "Content-Type: application/json" \
   -d '{"model": "qwen2.5-0.5b-instruct-generic-cpu:4", "use_rag": false}'
 
 # Отправить сообщение
-curl -X POST http://localhost:8000/api/v1/chat/message \
+curl -X POST http://localhost:9696/api/v1/chat/message \
   -H "Content-Type: application/json" \
   -d '{
     "session_id": "your-session-id",

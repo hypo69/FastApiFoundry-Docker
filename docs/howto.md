@@ -24,7 +24,7 @@ print('Индекс успешно создан.')
 Если вы обновили файлы в RAG-индексе, его можно перезагрузить без перезапуска сервера.
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/rag/reload
+curl -X POST http://localhost:9696/api/v1/rag/reload
 ```
 
 ## Подключение моделей
@@ -34,7 +34,7 @@ curl -X POST http://localhost:8000/api/v1/rag/reload
 ### Подключение модели OpenAI (например, GPT-4)
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/models/connect \
+curl -X POST http://localhost:9696/api/v1/models/connect \
   -H "Content-Type: application/json" \
   -d '{
     "model_id": "gpt-4",
@@ -48,7 +48,7 @@ curl -X POST http://localhost:8000/api/v1/models/connect \
 ### Подключение локальной модели Ollama
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/models/connect \
+curl -X POST http://localhost:9696/api/v1/models/connect \
   -H "Content-Type: application/json" \
   -d '{
     "model_id": "llama3",
@@ -105,7 +105,7 @@ services:
 Простой способ проверить, что все компоненты системы работают.
 
 ```bash
-curl -s http://localhost:8000/api/v1/health | python -m json.tool
+curl -s http://localhost:9696/api/v1/health | python -m json.tool
 ```
 
 Ожидаемый ответ:

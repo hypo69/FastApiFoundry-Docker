@@ -73,7 +73,7 @@ docker-compose exec fastapi-foundry bash
 
 ### Проверка здоровья
 ```bash
-curl http://localhost:8000/api/v1/health
+curl http://localhost:9696/api/v1/health
 ```
 
 ## 🔧 Полезные команды
@@ -101,10 +101,10 @@ docker-compose up --build -d
 
 ## 🌐 Доступ к приложению
 
-- **API**: http://localhost:8000
-- **Документация**: http://localhost:8000/docs
-- **Веб-интерфейс**: http://localhost:8000/
-- **Health Check**: http://localhost:8000/api/v1/health
+- **API**: http://localhost:9696
+- **Документация**: http://localhost:9696/docs
+- **Веб-интерфейс**: http://localhost:9696/
+- **Health Check**: http://localhost:9696/api/v1/health
 
 ---
 ## 🚀 Навигация по разделу "Развертывание"

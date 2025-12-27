@@ -24,7 +24,7 @@ from typing import Dict, Any, List
 class FastAPIFoundryClient:
     """Клиент для FastAPI Foundry API"""
     
-    def __init__(self, base_url: str = "http://localhost:8000", api_key: str = None):
+    def __init__(self, base_url: str = "http://localhost:9696", api_key: str = None):
         self.base_url = base_url.rstrip('/')
         self.api_key = api_key
         self.session = None
