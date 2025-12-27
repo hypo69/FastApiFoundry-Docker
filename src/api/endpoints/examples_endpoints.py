@@ -116,10 +116,12 @@ async def run_example(request: RunExampleRequest):
         logger.exception("Критическая ошибка выполнения примера", 
                         example_type=example_type, 
                         error=str(e))
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Error running example: {str(e)}"
-        )
+        return {
+            "success": False,
+            "example_type": example_type,
+            "error": f"Error running example: {str(e)}",
+            "execution_time": execution_time
+        }
 
 @router.get("/list", response_model=Dict[str, Any])
 async def list_examples():

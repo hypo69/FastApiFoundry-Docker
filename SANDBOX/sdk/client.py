@@ -17,8 +17,8 @@
 import json
 import requests
 from typing import Dict, List, Optional, Any
-from .models import GenerationRequest, GenerationResponse, ModelInfo, HealthStatus
-from .exceptions import FoundryError, FoundryConnectionError, FoundryAPIError
+from models import GenerationRequest, GenerationResponse, ModelInfo, HealthStatus
+from exceptions import FoundryError, FoundryConnectionError, FoundryAPIError
 
 class FoundryClient:
     """Клиент для FastAPI Foundry API"""

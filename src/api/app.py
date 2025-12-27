@@ -130,10 +130,13 @@ def create_app() -> FastAPI:
     from .endpoints.foundry_management import router as foundry_management_router
     from .endpoints.foundry_models import router as foundry_models_router
     from .endpoints.chat_endpoints import router as chat_router
+    from .endpoints.models_extra import router as models_extra_router
+    from .endpoints.chat_endpoints_new import router as chat_new_router
     
     app.include_router(main.router)
     app.include_router(health.router, prefix="/api/v1")
     app.include_router(models.router, prefix="/api/v1")
+    app.include_router(models_extra_router, prefix="/api/v1")  # Дополнительные модели endpoints
     app.include_router(rag.router, prefix="/api/v1")
     app.include_router(foundry.router, prefix="/api/v1")
     app.include_router(foundry_management_router, prefix="/api/v1")
@@ -143,6 +146,7 @@ def create_app() -> FastAPI:
     app.include_router(examples_router)
     app.include_router(generate.router, prefix="/api/v1")
     app.include_router(chat_router, prefix="/api/v1")  # Chat endpoints
+    app.include_router(chat_new_router, prefix="/api/v1")  # Новые Chat endpoints
     app.include_router(config.router, prefix="/api/v1")  # Config endpoint
     app.include_router(logs.router)  # Logs endpoint
     

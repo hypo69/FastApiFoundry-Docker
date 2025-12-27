@@ -21,7 +21,8 @@ import os
 # Добавляем путь к SDK
 sys.path.insert(0, os.path.dirname(__file__))
 
-from sdk import FoundryClient, FoundryError
+from client import FoundryClient
+from exceptions import FoundryError
 
 def main():
     """Демонстрация использования SDK"""
