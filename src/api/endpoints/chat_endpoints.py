@@ -17,7 +17,7 @@
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
-from ...models.enhanced_foundry_client import enhanced_foundry_client
+from ...models.foundry_client import foundry_client
 # from ...rag.rag_system import rag_system
 
 # Заглушка для RAG системы
@@ -90,12 +90,11 @@ async def send_chat_message(request: dict):
     
     # Генерация ответа
     try:
-        response = await enhanced_foundry_client.generate_text(
+        response = await foundry_client.generate_text(
             prompt=prompt,
             model=model,
             temperature=temperature,
-            max_tokens=max_tokens,
-            stream=False  # Для простоты, без стриминга
+            max_tokens=max_tokens
         )
         
         if response["success"]:
