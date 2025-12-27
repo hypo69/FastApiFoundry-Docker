@@ -37,10 +37,14 @@ class Config:
         config_path = Path("config.json")
         
         if not config_path.exists():
-            raise FileNotFoundError("config.json not found")
+            raise FileNotFoundError(f"config.json not found at {config_path.absolute()}")
+        
+        print(f"Loading config from: {config_path.absolute()}")
         
         with open(config_path, 'r', encoding='utf-8') as f:
             self._config_data = json.load(f)
+            
+        print(f"Config loaded with sections: {list(self._config_data.keys())}")
     
     def reload(self):
         """Перезагрузить конфигурацию"""

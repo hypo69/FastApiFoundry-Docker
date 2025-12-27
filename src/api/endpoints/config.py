@@ -26,6 +26,8 @@ router = APIRouter()
 async def get_config():
     """Получить полную конфигурацию из config.json"""
     try:
+        # Перезагружаем конфигурацию для получения актуальных данных
+        config.reload()
         return {
             "success": True,
             "config": config.get_raw_config()
@@ -59,6 +61,9 @@ async def update_config(request: Request):
         
         # Обновляем конфигурацию
         config.update_config(new_config)
+        
+        # Перезагружаем конфигурацию для обновления всех свойств
+        config.reload()
         
         return {
             "success": True,
