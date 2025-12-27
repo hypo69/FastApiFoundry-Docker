@@ -12,13 +12,15 @@
     ]
   },
   "foundry_ai": {
+    "base_url": "${FOUNDRY_BASE_URL:http://localhost:50477/v1}",
+    "api_key": "${FOUNDRY_API_KEY}",
     "default_model": "qwen2.5-0.5b-instruct-generic-cpu:4",
     "auto_load_default": false,
     "temperature": 0.7,
     "top_p": 0.9,
     "top_k": 40,
     "max_tokens": 2048,
-    "timeout": 300
+    "timeout": "${FOUNDRY_TIMEOUT:300}"
   },
   "rag_system": {
     "enabled": true,
@@ -28,16 +30,15 @@
     "top_k": 5
   },
   "security": {
-    "api_key": null,
+    "api_key": "${API_KEY}",
+    "secret_key": "${SECRET_KEY}",
     "https_enabled": false,
-    "cors_origins": [
-      "*"
-    ],
+    "cors_origins": "${CORS_ORIGINS:*}",
     "ssl_cert_file": "~/.ssl/cert.pem",
     "ssl_key_file": "~/.ssl/key.pem"
   },
   "logging": {
-    "level": "INFO",
+    "level": "${LOG_LEVEL:INFO}",
     "file": "logs/fastapi-foundry.log"
   },
   "mcp_server": {
@@ -113,8 +114,9 @@
     "foundry_port": 50477
   },
   "development": {
-    "debug": true,
+    "debug": "${DEBUG:true}",
     "verbose": true,
-    "temp_dir": "./temp"
+    "temp_dir": "./temp",
+    "environment": "${ENVIRONMENT:development}"
   }
 }

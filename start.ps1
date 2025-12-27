@@ -41,14 +41,52 @@ if (-not (Test-Path $venvPath)) {
 # -----------------------------------------------------------------------------
 # Load .env
 # -----------------------------------------------------------------------------
-if (Test-Path "$Root\.env") {
-    Write-Host '⚙️ Loading .env...' -ForegroundColor Gray
-    Get-Content "$Root\.env" | ForEach-Object {
-        if ($_ -match '^\s*([^#=]+)=(.*)$') {
-            [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+function Load-EnvFile {
+    param([string]$EnvPath)
+    
+    if (-not (Test-Path $EnvPath)) {
+        Write-Host "⚠️ .env file not found: $EnvPath" -ForegroundColor Yellow
+        return
+    }
+    
+    Write-Host '⚙️ Loading .env variables...' -ForegroundColor Gray
+    
+    $envVars = 0
+    Get-Content $EnvPath | ForEach-Object {
+        $line = $_.Trim()
+        
+        # Пропускаем пустые строки и комментарии
+        if ($line -and -not $line.StartsWith('#')) {
+            if ($line -match '^\s*([^#=]+)=(.*)$') {
+                $key = $matches[1].Trim()
+                $value = $matches[2].Trim()
+                
+                # Убираем кавычки если есть
+                if ($value.StartsWith('"') -and $value.EndsWith('"')) {
+                    $value = $value.Substring(1, $value.Length - 2)
+                }
+                if ($value.StartsWith("'") -and $value.EndsWith("'")) {
+                    $value = $value.Substring(1, $value.Length - 2)
+                }
+                
+                [System.Environment]::SetEnvironmentVariable($key, $value)
+                $envVars++
+                
+                # Показываем только безопасные переменные
+                if ($key -notmatch '(PASSWORD|SECRET|KEY|TOKEN|PAT)') {
+                    Write-Host "  ✓ $key = $value" -ForegroundColor DarkGray
+                } else {
+                    Write-Host "  ✓ $key = ***" -ForegroundColor DarkGray
+                }
+            }
         }
     }
+    
+    Write-Host "✅ Loaded $envVars environment variables" -ForegroundColor Green
 }
+
+# Загружаем .env файл
+Load-EnvFile "$Root\.env"
 
 # -----------------------------------------------------------------------------
 # Helpers

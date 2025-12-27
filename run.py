@@ -10,10 +10,11 @@
 #
 # File: run.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
+# Version: 0.2.1
 # Author: hypo69
-# License: CC BY-NC-SA 4.0
+# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
+# Date: 9 декабря 2025
 # =============================================================================
 
 import sys
@@ -22,6 +23,14 @@ import socket
 import os
 import logging
 from pathlib import Path
+
+# Загружаем переменные окружения перед импортом конфигурации
+try:
+    from src.utils.env_processor import load_env_variables, process_config
+    load_env_variables()
+    print("✅ Environment variables loaded")
+except ImportError:
+    print("⚠️ Environment processor not available, using default config")
 
 from src.core.config import config
 import requests
