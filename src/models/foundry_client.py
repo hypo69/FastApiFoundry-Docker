@@ -20,6 +20,7 @@ import json
 import socket
 import requests
 import logging
+import os
 from datetime import datetime
 
 # Настройка логирования
@@ -29,7 +30,12 @@ class FoundryClient:
     """Клиент для работы с Foundry API"""
     
     def __init__(self, base_url=None):
-        # Не инициализируем base_url сразу - ждем пока run.py установит правильный
+        # Проверяем переменную окружения FOUNDRY_DYNAMIC_PORT
+        foundry_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
+        if foundry_port and not base_url:
+            base_url = f"http://localhost:{foundry_port}/v1/"
+            print(f"🔗 Foundry клиент: используется порт из окружения {foundry_port}")
+        
         self.base_url = base_url
         self.timeout = aiohttp.ClientTimeout(total=30)
         self.session = None
@@ -70,12 +76,19 @@ class FoundryClient:
         return None
     
     def _update_base_url(self):
-        """Обновить base_url из Config или найти Foundry"""
+        """Обновить base_url из переменной окружения или Config"""
+        # Сначала проверяем переменную окружения
+        foundry_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
+        if foundry_port:
+            self.base_url = f"http://localhost:{foundry_port}/v1/"
+            logger.debug(f"✅ Используется порт из окружения: {foundry_port}")
+            return
+        
         from ..core.config import config
         
         logger.debug("🔄 Обновление base_url...")
         
-        # Сначала проверяем Config
+        # Затем проверяем Config
         if config.foundry_base_url:
             self.base_url = config.foundry_base_url
             logger.info(f"✅ Используется URL из Config: {self.base_url}")
