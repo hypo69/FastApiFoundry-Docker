@@ -192,9 +192,9 @@ async function loadConfigFields() {
             document.getElementById('config-log-level').value = config.logging?.level || 'INFO';
             document.getElementById('config-log-file').value = config.logging?.file || 'logs/fastapi-foundry.log';
             
-            // Port Management
-            document.getElementById('config-port-foundry').value = config.port_management?.foundry_port || 50477;
-            document.getElementById('config-port-resolution').value = config.port_management?.conflict_resolution || 'kill_process';
+            // Development
+            document.getElementById('config-dev-debug').checked = config.development?.debug || false;
+            document.getElementById('config-dev-verbose').checked = config.development?.verbose || false;
             
             // Обновляем глобальную конфигурацию
             CONFIG.foundry_url = config.foundry_ai?.base_url || CONFIG.foundry_url;
@@ -253,12 +253,10 @@ async function saveConfigFields() {
                 level: document.getElementById('config-log-level').value,
                 file: document.getElementById('config-log-file').value
             },
-            port_management: {
-                conflict_resolution: document.getElementById('config-port-resolution').value,
-                auto_find_free_port: false,
-                port_range_start: 8000,
-                port_range_end: 8100,
-                foundry_port: parseInt(document.getElementById('config-port-foundry').value)
+            development: {
+                debug: document.getElementById('config-dev-debug').checked,
+                verbose: document.getElementById('config-dev-verbose').checked,
+                temp_dir: "./temp"
             }
         };
         

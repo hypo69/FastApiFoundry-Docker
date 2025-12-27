@@ -123,7 +123,7 @@ def create_app() -> FastAPI:
         )
     
     # Подключение роутеров
-    from .endpoints import main, models, rag, foundry, health, generate, config
+    from .endpoints import main, models, rag, foundry, health, generate, config, logs
     from .endpoints.ai_endpoints import router as ai_router
     from .endpoints.logging_endpoints import router as logging_router
     from .endpoints.examples_endpoints import router as examples_router
@@ -144,5 +144,6 @@ def create_app() -> FastAPI:
     app.include_router(generate.router, prefix="/api/v1")
     app.include_router(chat_router, prefix="/api/v1")  # Chat endpoints
     app.include_router(config.router, prefix="/api/v1")  # Config endpoint
+    app.include_router(logs.router)  # Logs endpoint
     
     return app
