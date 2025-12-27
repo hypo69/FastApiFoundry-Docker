@@ -112,15 +112,23 @@ if (Test-Path $embeddedPython) {
         $pythonLink = Join-Path $projectRoot "python.exe"
         $pyLink = Join-Path $projectRoot "py.exe"
         
-        if (-not (Test-Path $pythonLink)) {
-            New-Item -ItemType SymbolicLink -Path $pythonLink -Target $embeddedPython -Force
-            Write-Host "✅ python.exe -> embedded Python"
+        # Удаляем существующие ссылки если есть
+        if (Test-Path $pythonLink) {
+            Remove-Item $pythonLink -Force
+            Write-Host "🗑️ Удалена старая ссылка python.exe"
         }
         
-        if (-not (Test-Path $pyLink)) {
-            New-Item -ItemType SymbolicLink -Path $pyLink -Target $embeddedPython -Force
-            Write-Host "✅ py.exe -> embedded Python"
+        if (Test-Path $pyLink) {
+            Remove-Item $pyLink -Force
+            Write-Host "🗑️ Удалена старая ссылка py.exe"
         }
+        
+        # Создаем новые ссылки
+        New-Item -ItemType SymbolicLink -Path $pythonLink -Target $embeddedPython -Force
+        Write-Host "✅ python.exe -> embedded Python"
+        
+        New-Item -ItemType SymbolicLink -Path $pyLink -Target $embeddedPython -Force
+        Write-Host "✅ py.exe -> embedded Python"
     } catch {
         Write-Warning "Не удалось создать символические ссылки. Запустите PowerShell от имени администратора или включите Developer Mode"
     }
