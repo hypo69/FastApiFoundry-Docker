@@ -312,11 +312,6 @@ async function saveConfigFields() {
                 body: JSON.stringify({config: fullConfig})
             });
             
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || `HTTP ${response.status}`);
-            }
-            
             const result = await response.json();
             
             if (result && result.success) {
