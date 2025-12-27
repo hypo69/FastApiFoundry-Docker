@@ -18,9 +18,9 @@
 from fastapi import APIRouter
 from typing import Dict, Any
 from datetime import datetime
-import logging
+from ...utils.logging_system import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("logging-api")
 router = APIRouter()
 
 @router.get("/logs/recent")
@@ -33,11 +33,14 @@ async def get_recent_logs():
         logs_dir = Path("logs")
         all_logs = []
         
-        # Основные файлы логов
+        # Основные файлы логов (реальные файлы)
         log_files = [
+            "fastapi-app.log",
             "fastapi-foundry.log",
-            "foundry-client.log", 
-            "web-logs.log"
+            "foundry-client.log",
+            "models-api.log",
+            "logging-api.log",
+            "examples-api.log"
         ]
         
         for log_file in log_files:
