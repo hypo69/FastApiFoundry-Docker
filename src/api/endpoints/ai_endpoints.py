@@ -17,7 +17,7 @@
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
-from ...models.enhanced_foundry_client import enhanced_foundry_client
+from ...models.foundry_client import foundry_client
 # from ...rag.rag_system import rag_system
 
 # Заглушка для RAG системы
@@ -61,7 +61,7 @@ async def generate_text(request: dict):
             # Продолжаем без RAG если ошибка
             pass
     
-    result = await enhanced_foundry_client.generate_text(prompt, **params)
+    result = await foundry_client.generate_text(prompt, **params)
     return result
 
 @router.post("/ai/generate/stream")
@@ -78,7 +78,7 @@ async def generate_text_stream(request: dict):
     }
     
     async def generate():
-        async for chunk in enhanced_foundry_client.generate_stream(prompt, **params):
+        async for chunk in foundry_client.generate_stream(prompt, **params):
             yield f"data: {json.dumps(chunk)}\\n\\n"
     
     return StreamingResponse(generate(), media_type="text/plain")
@@ -86,13 +86,15 @@ async def generate_text_stream(request: dict):
 @router.get("/ai/models")
 async def list_models():
     """Получить список доступных моделей с детальной информацией"""
-    result = await enhanced_foundry_client.list_models()
+    foundry_client.update_base_url()
+    result = await foundry_client.list_models()
     return result
 
 @router.get("/ai/models/recommended")
 async def get_recommended_models():
     """Получить рекомендуемые модели для разных задач"""
-    models_result = await enhanced_foundry_client.list_models()
+    foundry_client.update_base_url()
+    models_result = await foundry_client.list_models()
     
     if not models_result["success"]:
         return models_result
@@ -131,19 +133,23 @@ async def get_recommended_models():
 @router.post("/ai/models/{model_id}/load")
 async def load_model(model_id: str):
     """Загрузить модель в память"""
-    result = await enhanced_foundry_client.load_model(model_id)
+    # Принудительно обновляем URL перед запросом
+    foundry_client.update_base_url()
+    result = await foundry_client.load_model(model_id)
     return result
 
 @router.post("/ai/models/{model_id}/unload")
 async def unload_model(model_id: str):
     """Выгрузить модель из памяти"""
-    result = await enhanced_foundry_client.unload_model(model_id)
+    foundry_client.update_base_url()
+    result = await foundry_client.unload_model(model_id)
     return result
 
 @router.get("/ai/health")
 async def health_check():
     """Проверка здоровья AI сервиса"""
-    result = await enhanced_foundry_client.health_check()
+    foundry_client.update_base_url()
+    result = await foundry_client.health_check()
     return result
 
 @router.post("/ai/chat")
@@ -173,7 +179,8 @@ async def chat_completion(request: dict):
         "max_tokens": request.get("max_tokens", 2048)
     }
     
-    result = await enhanced_foundry_client.generate_text(prompt, **params)
+    foundry_client.update_base_url()
+    result = await foundry_client.generate_text(prompt, **params)
     
     if result["success"]:
         # Форматируем ответ в стиле OpenAI
@@ -202,7 +209,8 @@ async def optimize_generation(request: dict):
     model_preference = request.get("model_preference", "balanced")  # fast, balanced, quality
     
     # Получаем список моделей
-    models_result = await enhanced_foundry_client.list_models()
+    foundry_client.update_base_url()
+    models_result = await foundry_client.list_models()
     if not models_result["success"]:
         return models_result
     

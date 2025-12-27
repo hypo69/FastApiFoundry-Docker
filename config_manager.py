@@ -82,6 +82,19 @@ class Config:
     # Foundry AI настройки
     @property
     def foundry_base_url(self) -> str:
+        # Проверяем переменную окружения сначала
+        import os
+        foundry_env_url = os.getenv('FOUNDRY_BASE_URL')
+        if foundry_env_url:
+            return foundry_env_url.rstrip('/') + '/'
+        
+        # Проверяем флаг динамического порта
+        use_dynamic = self._config_data.get("foundry_ai", {}).get("use_dynamic_port", False)
+        if use_dynamic:
+            foundry_port = os.getenv('FOUNDRY_PORT', '50477')
+            return f"http://localhost:{foundry_port}/v1/"
+        
+        # Используем статический URL из конфига
         return self._config_data.get("foundry_ai", {}).get("base_url", "http://localhost:50477/v1/")
     
     @property

@@ -322,5 +322,46 @@ class FoundryClient:
                 "models": []
             }
 
+    async def load_model(self, model_id: str):
+        """Загрузить модель в память"""
+        try:
+            # Обновляем URL перед запросом
+            self.update_base_url()
+            
+            session = await self._get_session()
+            url = f"{self.base_url.rstrip('/')}/models/{model_id}/load"
+            
+            async with session.post(url) as response:
+                if response.status == 200:
+                    return {"success": True, "message": f"Модель {model_id} загружена"}
+                else:
+                    error_text = await response.text()
+                    return {"success": False, "error": f"HTTP {response.status}: {error_text}"}
+        except Exception as e:
+            return {"success": False, "error": f"Cannot connect to host {self.base_url}: {str(e)}"}
+
+    async def unload_model(self, model_id: str):
+        """Выгрузить модель из памяти"""
+        try:
+            # Обновляем URL перед запросом
+            self.update_base_url()
+            
+            session = await self._get_session()
+            url = f"{self.base_url.rstrip('/')}/models/{model_id}/unload"
+            
+            async with session.post(url) as response:
+                if response.status == 200:
+                    return {"success": True, "message": f"Модель {model_id} выгружена"}
+                else:
+                    error_text = await response.text()
+                    return {"success": False, "error": f"HTTP {response.status}: {error_text}"}
+        except Exception as e:
+            return {"success": False, "error": f"Cannot connect to host {self.base_url}: {str(e)}"}
+
+    async def list_models(self):
+        """Получить список моделей с детальной информацией"""
+        return await self.list_available_models()
+
 # Глобальный экземпляр клиента
+# Инициализируется с динамическим определением порта
 foundry_client = FoundryClient()
