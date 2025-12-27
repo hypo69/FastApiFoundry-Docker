@@ -24,6 +24,7 @@ async function loadConfig() {
         if (data.success && data.config) {
             CONFIG.foundry_url = data.config.foundry_ai.base_url;
             CONFIG.default_model = data.config.foundry_ai.default_model;
+            CONFIG.auto_load_default = data.config.foundry_ai.auto_load_default || false;
             
             // Обновляем редактор конфигурации если он существует
             const configEditor = document.getElementById('config-editor');
@@ -64,7 +65,14 @@ async function validateDefaultModel() {
                     chatModelSelect.value = CONFIG.default_model;
                 }
             } else {
-                updateModelStatus(`Модель по умолчанию "${CONFIG.default_model}" недоступна`, 'danger');
+                // Проверяем настройку автозагрузки
+                if (CONFIG.auto_load_default) {
+                    updateModelStatus(`Загружаем модель по умолчанию "${CONFIG.default_model}"... <button class="btn btn-sm btn-outline-secondary ms-2" onclick="skipAutoLoad()">Пропустить</button>`, 'warning');
+                    loadDefaultModel();
+                } else {
+                    updateModelStatus(`Модель по умолчанию "${CONFIG.default_model}" недоступна <button class="btn btn-sm btn-primary ms-2" onclick="loadDefaultModel()">Загрузить</button>`, 'danger');
+                }
+                
                 console.warn(`Default model "${CONFIG.default_model}" is not available. Available models:`, availableModels);
                 // Сбрасываем выбор модели
                 const chatModelSelect = document.getElementById('chat-model');
@@ -78,6 +86,32 @@ async function validateDefaultModel() {
     } catch (error) {
         console.error('Error validating default model:', error);
         updateModelStatus('Ошибка проверки модели по умолчанию', 'danger');
+    }
+}
+
+// Загрузка модели по умолчанию
+async function loadDefaultModel() {
+    try {
+        showAlert('Начинаем загрузку модели по умолчанию...', 'info');
+        
+        const response = await fetch(`${API_BASE}/foundry/models/auto-load-default`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            // Обновляем статус через несколько секунд
+            setTimeout(() => {
+                validateDefaultModel();
+                loadModels();
+            }, 3000);
+        } else {
+            showAlert(`Ошибка: ${data.error}`, 'danger');
+        }
+    } catch (error) {
+        showAlert('Ошибка загрузки модели', 'danger');
     }
 }
 
@@ -801,6 +835,11 @@ function showModelInfo() {
     
     const info = modelInfo[modelId] || 'Информация о модели недоступна';
     showAlert(info, 'info');
+}
+
+// Пропустить автозагрузку
+function skipAutoLoad() {
+    updateModelStatus(`Модель по умолчанию "${CONFIG.default_model}" недоступна <button class="btn btn-sm btn-primary ms-2" onclick="loadDefaultModel()">Загрузить</button>`, 'danger');
 }
 
 // Скрыть прогресс-бар

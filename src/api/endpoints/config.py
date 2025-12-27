@@ -18,6 +18,7 @@ import json
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request
 from typing import Dict, Any
+from ...config_manager import config
 
 router = APIRouter()
 
@@ -25,16 +26,9 @@ router = APIRouter()
 async def get_config():
     """Получить полную конфигурацию из config.json"""
     try:
-        config_path = Path("config.json")
-        if not config_path.exists():
-            raise HTTPException(status_code=404, detail="Config file not found")
-        
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config_data = json.load(f)
-        
         return {
             "success": True,
-            "config": config_data
+            "config": config.get_raw_config()
         }
     except Exception as e:
         return {
@@ -46,17 +40,16 @@ async def get_config():
 async def update_config(request: Request):
     """Обновить конфигурацию в config.json"""
     try:
-        config_path = Path("config.json")
-        
         # Получаем JSON данные из запроса
         request_data = await request.json()
         
         if "config" not in request_data:
             raise HTTPException(status_code=400, detail="Missing 'config' field")
         
-        config_data = request_data["config"]
+        new_config = request_data["config"]
         
         # Создать бэкап
+        config_path = Path("config.json")
         backup_path = Path("config.json.backup")
         if config_path.exists():
             with open(config_path, 'r', encoding='utf-8') as f:
@@ -64,9 +57,8 @@ async def update_config(request: Request):
             with open(backup_path, 'w', encoding='utf-8') as f:
                 f.write(backup_data)
         
-        # Сохранить новую конфигурацию
-        with open(config_path, 'w', encoding='utf-8') as f:
-            json.dump(config_data, f, indent=2, ensure_ascii=False)
+        # Обновляем конфигурацию
+        config.update_config(new_config)
         
         return {
             "success": True,
