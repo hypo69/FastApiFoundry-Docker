@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadConfig();
     checkSystemStatus();
     await loadModels();
+    await loadConnectedModels(); // Добавляем загрузку подключенных моделей
     setInterval(checkSystemStatus, 30000);
 });
 
@@ -45,7 +46,7 @@ async function loadConfig() {
 // Проверка доступности модели по умолчанию
 async function validateDefaultModel() {
     if (!CONFIG.default_model) {
-        updateModelStatus('Модель по умолчанию не выбрана', 'warning');
+        updateModelStatus('Модель по умолчанию не выбрана', 'info');
         return;
     }
     
@@ -260,6 +261,140 @@ async function loadModels() {
     }
 }
 
+// Загрузка подключенных моделей для таба Models
+async function loadConnectedModels() {
+    try {
+        const response = await fetch(`${API_BASE}/models/connected`);
+        const data = await response.json();
+        
+        const container = document.getElementById('models-container');
+        
+        if (data.success && data.models && data.models.length > 0) {
+            container.innerHTML = data.models.map(model => `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card model-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="card-title mb-0">${model.name}</h6>
+                                <span class="badge ${
+                                    model.status === 'connected' ? 'bg-success' : 
+                                    model.status === 'offline' ? 'bg-danger' : 'bg-secondary'
+                                }">${model.status}</span>
+                            </div>
+                            <p class="card-text">
+                                <small class="text-muted">ID: ${model.id}</small><br>
+                                <small class="text-muted">Provider: ${model.provider}</small><br>
+                                <small class="text-muted">Max tokens: ${model.max_tokens || 'N/A'}</small>
+                            </p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-sm btn-primary" onclick="selectModelForChat('${model.id}')">
+                                    <i class="bi bi-chat"></i> Use in Chat
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="testModel('${model.id}')">
+                                    <i class="bi bi-play"></i> Test
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="col-12">
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-cpu" style="font-size: 3rem;"></i><br>
+                        <h5>No Connected Models</h5>
+                        <p>No models are currently connected. ${data.error ? `Error: ${data.error}` : 'Start Foundry and load a model to see it here.'}</p>
+                        <button class="btn btn-primary" onclick="refreshModels()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Failed to load connected models:', error);
+        document.getElementById('models-container').innerHTML = `
+            <div class="col-12">
+                <div class="text-center text-danger py-5">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i><br>
+                    <h5>Error Loading Models</h5>
+                    <p>Failed to connect to the API. Make sure the server is running.</p>
+                    <button class="btn btn-outline-primary" onclick="refreshModels()">
+                        <i class="bi bi-arrow-clockwise"></i> Try Again
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Выбор модели для чата
+function selectModelForChat(modelId) {
+    const chatModelSelect = document.getElementById('chat-model');
+    if (chatModelSelect) {
+        // Проверяем есть ли такая опция
+        let optionExists = false;
+        for (let option of chatModelSelect.options) {
+            if (option.value === modelId) {
+                optionExists = true;
+                break;
+            }
+        }
+        
+        // Если опции нет, добавляем
+        if (!optionExists) {
+            const option = document.createElement('option');
+            option.value = modelId;
+            option.textContent = modelId;
+            chatModelSelect.appendChild(option);
+        }
+        
+        // Выбираем модель
+        chatModelSelect.value = modelId;
+        
+        // Сохраняем как модель по умолчанию
+        saveDefaultModel(modelId);
+        
+        showAlert(`Model ${modelId} selected for chat`, 'success');
+        
+        // Переключаемся на вкладку чата
+        const chatTab = document.getElementById('chat-tab');
+        if (chatTab) {
+            chatTab.click();
+        }
+    }
+}
+
+// Тест модели
+async function testModel(modelId) {
+    try {
+        showAlert(`Testing model ${modelId}...`, 'info');
+        
+        const response = await fetch(`${API_BASE}/generate`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                prompt: 'Hello! Please respond with a short greeting.',
+                model: modelId,
+                max_tokens: 50
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(`Model ${modelId} test successful: "${data.content.substring(0, 100)}..."`, 'success');
+        } else {
+            showAlert(`Model ${modelId} test failed: ${data.error}`, 'danger');
+        }
+    } catch (error) {
+        showAlert(`Model ${modelId} test error: ${error.message}`, 'danger');
+    }
+}
+
 // Обновление списка моделей
 function updateModelSelect(models) {
     const select = document.getElementById('chat-model');
@@ -423,6 +558,7 @@ function clearChat() {
 
 function refreshModels() {
     loadModels();
+    loadConnectedModels(); // Добавляем загрузку подключенных моделей
 }
 
 // Функции для вкладки Logs
@@ -547,6 +683,14 @@ function clearLogsView() {
 
 // Автообновление логов каждые 30 секунд
 document.addEventListener('DOMContentLoaded', function() {
+    // При переключении на вкладку Models
+    const modelsTab = document.getElementById('models-tab');
+    if (modelsTab) {
+        modelsTab.addEventListener('click', function() {
+            setTimeout(loadConnectedModels, 100); // Небольшая задержка
+        });
+    }
+    
     // При переключении на вкладку Logs
     const logsTab = document.getElementById('logs-tab');
     if (logsTab) {
@@ -829,7 +973,7 @@ function showModelInfo() {
     const modelInfo = {
         'qwen2.5-0.5b-instruct-generic-cpu:4': 'Самая легкая CPU модель (0.8 GB). Быстрая и эффективная.',
         'qwen2.5-1.5b-instruct-generic-cpu:4': 'Средняя CPU модель (1.78 GB). Хороший баланс скорости и качества.',
-        'deepseek-r1-distill-qwen-7b-generic-cpu:3': 'Продвинутая CPU модель (6.43 GB). Высокое качество ответов.',
+        'deepseek-r1-distill-qwen-7b-generic-cpu:3': 'Продвинутая CPU модель (6.43 GB). Высокое качество ответов. (Недоступна)',
         'phi-3-mini-4k-instruct-openvino-gpu:1': 'GPU модель (2.4 GB). Требует совместимую видеокарту.'
     };
     

@@ -71,6 +71,10 @@ class Config:
     def api_log_level(self) -> str:
         return self._config_data.get("fastapi_server", {}).get("log_level", "INFO")
     
+    @property
+    def api_cors_origins(self) -> list:
+        return self._config_data.get("fastapi_server", {}).get("cors_origins", ["*"])
+    
     # Foundry AI настройки
     @property
     def foundry_base_url(self) -> str:
@@ -157,8 +161,36 @@ class Config:
     
     # MCP Server настройки
     @property
+    def mcp_name(self) -> str:
+        return self._config_data.get("mcp_server", {}).get("name", "aistros-foundry")
+    
+    @property
+    def mcp_version(self) -> str:
+        return self._config_data.get("mcp_server", {}).get("version", "1.0.0")
+    
+    @property
+    def mcp_description(self) -> str:
+        return self._config_data.get("mcp_server", {}).get("description", "")
+    
+    @property
+    def mcp_author(self) -> str:
+        return self._config_data.get("mcp_server", {}).get("author", "hypo69")
+    
+    @property
+    def mcp_license(self) -> str:
+        return self._config_data.get("mcp_server", {}).get("license", "CC BY-NC-SA 4.0")
+    
+    @property
+    def mcp_homepage(self) -> str:
+        return self._config_data.get("mcp_server", {}).get("homepage", "https://aistros.com")
+    
+    @property
+    def mcp_version_spec(self) -> str:
+        return self._config_data.get("mcp_server", {}).get("mcpVersion", "2024-11-05")
+    
+    @property
     def mcp_base_url(self) -> str:
-        return self._config_data.get("mcp_server", {}).get("base_url", "http://localhost:50477/v1/")
+        return self._config_data.get("mcp_server", {}).get("base_url", "http://localhost:51601/v1/")
     
     @property
     def mcp_default_model(self) -> str:
@@ -168,18 +200,110 @@ class Config:
     def mcp_timeout(self) -> int:
         return self._config_data.get("mcp_server", {}).get("timeout", 30)
     
+    @property
+    def mcp_capabilities(self) -> dict:
+        return self._config_data.get("mcp_server", {}).get("capabilities", {})
+    
+    # Web Interface настройки
+    @property
+    def web_api_base(self) -> str:
+        return self._config_data.get("web_interface", {}).get("api_base", "http://localhost:8002/api/v1")
+    
+    @property
+    def web_auto_refresh_interval(self) -> int:
+        return self._config_data.get("web_interface", {}).get("auto_refresh_interval", 30000)
+    
+    @property
+    def web_logs_refresh_interval(self) -> int:
+        return self._config_data.get("web_interface", {}).get("logs_refresh_interval", 10000)
+    
+    @property
+    def web_max_chat_history(self) -> int:
+        return self._config_data.get("web_interface", {}).get("max_chat_history", 100)
+    
+    # Examples настройки
+    @property
+    def examples_client_demo_enabled(self) -> bool:
+        return self._config_data.get("examples", {}).get("client_demo", {}).get("enabled", True)
+    
+    @property
+    def examples_rag_demo_enabled(self) -> bool:
+        return self._config_data.get("examples", {}).get("rag_demo", {}).get("enabled", True)
+    
+    @property
+    def examples_mcp_demo_enabled(self) -> bool:
+        return self._config_data.get("examples", {}).get("mcp_demo", {}).get("enabled", True)
+    
+    @property
+    def examples_model_demo_enabled(self) -> bool:
+        return self._config_data.get("examples", {}).get("model_demo", {}).get("enabled", True)
+    
     # Docker настройки
+    @property
+    def docker_image(self) -> str:
+        return self._config_data.get("docker", {}).get("image", "fastapi-foundry:0.2.1")
+    
+    @property
+    def docker_container_name(self) -> str:
+        return self._config_data.get("docker", {}).get("container_name", "fastapi-foundry-docker")
+    
+    @property
+    def docker_network(self) -> str:
+        return self._config_data.get("docker", {}).get("network", "fastapi-foundry-network")
+    
     @property
     def docker_foundry_host(self) -> str:
         return self._config_data.get("docker", {}).get("foundry_host", "localhost")
     
     @property
     def docker_foundry_port(self) -> int:
-        return self._config_data.get("docker", {}).get("foundry_port", 50477)
+        return self._config_data.get("docker", {}).get("foundry_port", 8008)
     
     @property
     def docker_rag_enabled(self) -> bool:
         return self._config_data.get("docker", {}).get("rag_enabled", True)
+    
+    @property
+    def docker_healthcheck(self) -> dict:
+        return self._config_data.get("docker", {}).get("healthcheck", {})
+    
+    @property
+    def docker_volumes(self) -> list:
+        return self._config_data.get("docker", {}).get("volumes", [])
+    
+    # Port Management настройки
+    @property
+    def port_conflict_resolution(self) -> str:
+        return self._config_data.get("port_management", {}).get("conflict_resolution", "kill_process")
+    
+    @property
+    def port_auto_find_free(self) -> bool:
+        return self._config_data.get("port_management", {}).get("auto_find_free_port", False)
+    
+    @property
+    def port_range_start(self) -> int:
+        return self._config_data.get("port_management", {}).get("port_range_start", 8000)
+    
+    @property
+    def port_range_end(self) -> int:
+        return self._config_data.get("port_management", {}).get("port_range_end", 8100)
+    
+    @property
+    def port_foundry_port(self) -> int:
+        return self._config_data.get("port_management", {}).get("foundry_port", 50477)
+    
+    # Development настройки
+    @property
+    def dev_debug(self) -> bool:
+        return self._config_data.get("development", {}).get("debug", False)
+    
+    @property
+    def dev_verbose(self) -> bool:
+        return self._config_data.get("development", {}).get("verbose", False)
+    
+    @property
+    def dev_temp_dir(self) -> str:
+        return self._config_data.get("development", {}).get("temp_dir", "./temp")
     
     # Методы для получения сырых данных
     def get_section(self, section: str) -> Dict[str, Any]:
