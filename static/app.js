@@ -52,43 +52,40 @@ async function loadConfig() {
 
 // Проверка доступности модели по умолчанию
 async function validateDefaultModel() {
-    if (!CONFIG.default_model) {
-        updateModelStatus('Модель по умолчанию не выбрана', 'info');
-        return;
-    }
-    
     try {
-        // Получаем список доступных моделей
+        // Получаем список доступных моделей из Foundry
         const response = await fetch(`${API_BASE}/foundry/models/loaded`);
         const data = await response.json();
         
         if (data.success && data.models) {
             const availableModels = data.models.map(m => m.id);
             
-            if (availableModels.includes(CONFIG.default_model)) {
+            if (CONFIG.default_model && availableModels.includes(CONFIG.default_model)) {
+                // Модель из config.json доступна - используем её
                 updateModelStatus(`Модель по умолчанию: ${CONFIG.default_model}`, 'success');
-                // Автоматически выбираем модель в селекторе чата
                 const chatModelSelect = document.getElementById('chat-model');
                 if (chatModelSelect) {
                     chatModelSelect.value = CONFIG.default_model;
                 }
-            } else {
-                // Проверяем настройку автозагрузки
-                if (CONFIG.auto_load_default) {
-                    updateModelStatus(`Загружаем модель по умолчанию "${CONFIG.default_model}"... <button class="btn btn-sm btn-outline-secondary ms-2" onclick="skipAutoLoad()">Пропустить</button>`, 'warning');
-                    loadDefaultModel();
-                } else {
-                    // Показываем более информативное сообщение
-                    const modelName = CONFIG.default_model.split(':')[0]; // Убираем версию для краткости
-                    updateModelStatus(`Модель "${modelName}" недоступна. <button class="btn btn-sm btn-primary ms-2" onclick="loadDefaultModel()">Загрузить</button> <button class="btn btn-sm btn-outline-secondary ms-2" onclick="showAvailableModels()">Показать доступные</button>`, 'warning');
-                }
+            } else if (availableModels.length > 0) {
+                // Есть доступные модели, но не та что в config - предлагаем выбрать
+                const firstAvailable = availableModels[0];
+                updateModelStatus(`Доступные модели найдены. <button class="btn btn-sm btn-primary ms-2" onclick="selectFoundryModel('${firstAvailable}')">${firstAvailable}</button> <button class="btn btn-sm btn-outline-secondary ms-2" onclick="showAvailableModels()">Показать все</button>`, 'info');
                 
-                console.warn(`Default model "${CONFIG.default_model}" is not available. Available models:`, availableModels);
-                // Сбрасываем выбор модели
+                // Автоматически заполняем селектор чата доступными моделями
                 const chatModelSelect = document.getElementById('chat-model');
                 if (chatModelSelect) {
-                    chatModelSelect.value = '';
+                    chatModelSelect.innerHTML = '<option value="">Выберите модель...</option>';
+                    availableModels.forEach(modelId => {
+                        const option = document.createElement('option');
+                        option.value = modelId;
+                        option.textContent = modelId;
+                        chatModelSelect.appendChild(option);
+                    });
                 }
+            } else {
+                // Нет доступных моделей
+                updateModelStatus('Модели не загружены. <button class="btn btn-sm btn-primary ms-2" onclick="showAvailableModels()">Загрузить модель</button>', 'warning');
             }
         } else {
             updateModelStatus('Не удалось проверить доступные модели. Foundry может быть не запущен.', 'warning');
