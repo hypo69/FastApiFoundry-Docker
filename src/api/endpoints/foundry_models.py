@@ -34,9 +34,9 @@ def get_foundry_url():
 async def list_available_models():
     """Получить список всех доступных моделей для загрузки"""
     try:
-        # Используем foundry model list для получения доступных моделей
+        # Используем PowerShell для foundry model list
         result = subprocess.run(
-            ['foundry', 'model', 'list'],
+            ['powershell', '-Command', 'foundry model list'],
             capture_output=True,
             text=True,
             timeout=30
@@ -127,9 +127,9 @@ async def pull_model(request: dict):
     try:
         logger.info(f"Starting model load: {model_id}")
         
-        # Используем foundry model load
+        # Используем PowerShell для foundry model load
         process = subprocess.Popen(
-            ['foundry', 'model', 'load', model_id],
+            ['powershell', '-Command', f'foundry model load {model_id}'],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -164,9 +164,9 @@ async def unload_model(request: dict):
         raise HTTPException(status_code=400, detail="model_id is required")
     
     try:
-        # Используем foundry model unload
+        # Используем PowerShell для выполнения foundry команд
         result = subprocess.run(
-            ['foundry', 'model', 'unload', model_id],
+            ['powershell', '-Command', f'foundry model unload {model_id}'],
             capture_output=True,
             text=True,
             timeout=30
@@ -186,16 +186,6 @@ async def unload_model(request: dict):
                 "error": result.stderr or "Failed to unload model"
             }
             
-    except FileNotFoundError:
-        return {
-            "success": False,
-            "error": "Foundry не установлен или не найден в PATH"
-        }
-    except subprocess.TimeoutExpired:
-        return {
-            "success": False,
-            "error": "Операция выгрузки превысила время ожидания"
-        }
     except Exception as e:
         logger.error(f"Error unloading model {model_id}: {e}")
         return {
@@ -244,7 +234,7 @@ async def auto_load_default_model():
         logger.info(f"Auto-loading default model: {default_model}")
         
         process = subprocess.Popen(
-            ['foundry', 'model', 'load', default_model],
+            ['powershell', '-Command', f'foundry model load {default_model}'],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
