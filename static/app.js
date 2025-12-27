@@ -11,7 +11,7 @@ let CONFIG = {
 document.addEventListener('DOMContentLoaded', async function() {
     await loadConfig();
     checkSystemStatus();
-    loadModels();
+    await loadModels();
     setInterval(checkSystemStatus, 30000);
 });
 
@@ -23,11 +23,141 @@ async function loadConfig() {
         
         if (data.success && data.config) {
             CONFIG.foundry_url = data.config.foundry_ai.base_url;
+            CONFIG.default_model = data.config.foundry_ai.default_model;
+            
+            // Обновляем редактор конфигурации если он существует
+            const configEditor = document.getElementById('config-editor');
+            if (configEditor) {
+                configEditor.value = JSON.stringify(data.config, null, 2);
+            }
+            
+            // Проверяем доступность модели по умолчанию
+            await validateDefaultModel();
+            
             console.log('Config loaded:', CONFIG);
         }
     } catch (error) {
         console.error('Failed to load config:', error);
     }
+}
+
+// Проверка доступности модели по умолчанию
+async function validateDefaultModel() {
+    if (!CONFIG.default_model) {
+        updateModelStatus('Модель по умолчанию не выбрана', 'warning');
+        return;
+    }
+    
+    try {
+        // Получаем список доступных моделей
+        const response = await fetch(`${API_BASE}/foundry/models/loaded`);
+        const data = await response.json();
+        
+        if (data.success && data.models) {
+            const availableModels = data.models.map(m => m.id);
+            
+            if (availableModels.includes(CONFIG.default_model)) {
+                updateModelStatus(`Модель по умолчанию: ${CONFIG.default_model}`, 'success');
+                // Автоматически выбираем модель в селекторе чата
+                const chatModelSelect = document.getElementById('chat-model');
+                if (chatModelSelect) {
+                    chatModelSelect.value = CONFIG.default_model;
+                }
+            } else {
+                updateModelStatus(`Модель по умолчанию "${CONFIG.default_model}" недоступна`, 'danger');
+                console.warn(`Default model "${CONFIG.default_model}" is not available. Available models:`, availableModels);
+                // Сбрасываем выбор модели
+                const chatModelSelect = document.getElementById('chat-model');
+                if (chatModelSelect) {
+                    chatModelSelect.value = '';
+                }
+            }
+        } else {
+            updateModelStatus('Не удалось проверить доступные модели', 'warning');
+        }
+    } catch (error) {
+        console.error('Error validating default model:', error);
+        updateModelStatus('Ошибка проверки модели по умолчанию', 'danger');
+    }
+}
+
+// Обновление статуса модели в интерфейсе
+function updateModelStatus(message, type) {
+    // Обновляем индикатор в чате
+    const indicator = document.getElementById('default-model-indicator');
+    if (indicator) {
+        const colorClass = type === 'success' ? 'text-success' : type === 'warning' ? 'text-warning' : 'text-danger';
+        const icon = type === 'success' ? 'bi-check-circle' : type === 'warning' ? 'bi-exclamation-triangle' : 'bi-x-circle';
+        indicator.innerHTML = `<i class="bi ${icon} ${colorClass}"></i> ${message}`;
+        indicator.className = `${colorClass}`;
+    }
+    
+    // Добавляем статус в системную информацию
+    const systemStatus = document.getElementById('system-status');
+    if (systemStatus) {
+        const statusHtml = systemStatus.innerHTML;
+        const modelStatusHtml = `
+            <div class="col-12 mt-2">
+                <strong>Модель по умолчанию:</strong><br>
+                <span class="badge bg-${type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'danger'}">${message}</span>
+            </div>
+        `;
+        
+        // Удаляем предыдущий статус модели если есть
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = statusHtml;
+        const existingModelStatus = tempDiv.querySelector('.col-12:last-child');
+        if (existingModelStatus && existingModelStatus.innerHTML.includes('Модель по умолчанию')) {
+            existingModelStatus.remove();
+        }
+        
+        systemStatus.innerHTML = tempDiv.innerHTML + modelStatusHtml;
+    }
+}
+
+// Сохранение конфигурации
+async function saveConfig() {
+    const configEditor = document.getElementById('config-editor');
+    const statusDiv = document.getElementById('config-status');
+    
+    if (!configEditor) return;
+    
+    try {
+        // Проверяем валидность JSON
+        const configData = JSON.parse(configEditor.value);
+        
+        const response = await fetch(`${API_BASE}/config`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({config: configData})
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            statusDiv.className = 'alert alert-success';
+            statusDiv.innerHTML = `<i class="bi bi-check-circle"></i> ${result.message}`;
+            statusDiv.style.display = 'block';
+            
+            // Обновляем глобальную конфигурацию
+            CONFIG.foundry_url = configData.foundry_ai.base_url;
+            
+            showAlert('Configuration saved successfully', 'success');
+        } else {
+            statusDiv.className = 'alert alert-danger';
+            statusDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Error: ${result.error}`;
+            statusDiv.style.display = 'block';
+        }
+    } catch (error) {
+        statusDiv.className = 'alert alert-danger';
+        statusDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Invalid JSON format: ${error.message}`;
+        statusDiv.style.display = 'block';
+    }
+    
+    // Скрыть статус через 5 секунд
+    setTimeout(() => {
+        statusDiv.style.display = 'none';
+    }, 5000);
 }
 
 // Проверка статуса системы
@@ -107,6 +237,17 @@ function updateModelSelect(models) {
             option.textContent = model.id;
             select.appendChild(option);
         });
+        
+        // Автоматически выбираем модель по умолчанию если она доступна
+        if (CONFIG.default_model) {
+            const availableModels = models.map(m => m.id);
+            if (availableModels.includes(CONFIG.default_model)) {
+                select.value = CONFIG.default_model;
+                console.log(`Default model "${CONFIG.default_model}" selected automatically`);
+            } else {
+                console.warn(`Default model "${CONFIG.default_model}" not available in current models`);
+            }
+        }
     }
 }
 
@@ -250,6 +391,156 @@ function refreshModels() {
     loadModels();
 }
 
+// Функции для вкладки Logs
+async function refreshLogs() {
+    try {
+        console.log('Загружаем логи...');
+        const response = await fetch('/logs/recent');
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Logs data:', data);
+        
+        const container = document.getElementById('logs-container');
+        
+        if (data.success && data.data.logs.length > 0) {
+            container.innerHTML = data.data.logs.map(log => `
+                <div class="log-entry log-${log.level}">
+                    <span class="log-timestamp">${log.timestamp}</span>
+                    <span class="log-logger">[${log.logger}]</span>
+                    <span class="log-message">${log.message}</span>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="text-center text-muted p-4">
+                    <i class="bi bi-file-text"></i><br>
+                    ${data.data?.message || 'Логи не найдены'}
+                </div>
+            `;
+        }
+        
+        // Обновляем статистику
+        updateLogsStats(data.data.logs);
+        
+    } catch (error) {
+        console.error('Failed to refresh logs:', error);
+        document.getElementById('logs-container').innerHTML = `
+            <div class="text-center text-danger p-4">
+                <i class="bi bi-exclamation-triangle"></i><br>
+                Ошибка загрузки логов
+            </div>
+        `;
+    }
+}
+
+function updateLogsStats(logs) {
+    const healthContainer = document.getElementById('logs-health-status');
+    const errorContainer = document.getElementById('error-summary');
+    const perfContainer = document.getElementById('performance-metrics');
+    
+    // Подсчет по уровням
+    const stats = {
+        error: logs.filter(l => l.level === 'error').length,
+        warning: logs.filter(l => l.level === 'warning').length,
+        info: logs.filter(l => l.level === 'info').length,
+        debug: logs.filter(l => l.level === 'debug').length
+    };
+    
+    // Статус системы
+    const healthStatus = stats.error > 0 ? 'critical' : (stats.warning > 0 ? 'warning' : 'healthy');
+    const healthColor = healthStatus === 'critical' ? 'danger' : (healthStatus === 'warning' ? 'warning' : 'success');
+    
+    healthContainer.innerHTML = `
+        <div class="text-center">
+            <i class="bi bi-heart-fill text-${healthColor}" style="font-size: 2rem;"></i><br>
+            <strong class="text-${healthColor}">${healthStatus.toUpperCase()}</strong><br>
+            <small>Всего записей: ${logs.length}</small>
+        </div>
+    `;
+    
+    // Ошибки
+    errorContainer.innerHTML = `
+        <div class="mb-2">
+            <span class="badge bg-danger">${stats.error}</span> Ошибок
+        </div>
+        <div class="mb-2">
+            <span class="badge bg-warning">${stats.warning}</span> Предупреждений
+        </div>
+        <div>
+            <span class="badge bg-info">${stats.info}</span> Информационных
+        </div>
+    `;
+    
+    // Производительность
+    perfContainer.innerHTML = `
+        <div class="mb-2">
+            <small>Последние записи:</small><br>
+            <strong>${logs.length}</strong>
+        </div>
+        <div>
+            <small>Статус:</small><br>
+            <span class="badge bg-${healthColor}">${healthStatus}</span>
+        </div>
+    `;
+}
+
+function filterLogs() {
+    const filter = document.getElementById('log-level-filter').value;
+    const entries = document.querySelectorAll('.log-entry');
+    
+    entries.forEach(entry => {
+        if (!filter || entry.classList.contains(`log-${filter}`)) {
+            entry.style.display = 'block';
+        } else {
+            entry.style.display = 'none';
+        }
+    });
+}
+
+function clearLogsView() {
+    document.getElementById('logs-container').innerHTML = `
+        <div class="text-muted text-center p-4">
+            <i class="bi bi-file-text"></i><br>
+            Логи очищены. Нажмите "Обновить" для загрузки.
+        </div>
+    `;
+}
+
+// Автообновление логов каждые 30 секунд
+document.addEventListener('DOMContentLoaded', function() {
+    // При переключении на вкладку Logs
+    const logsTab = document.getElementById('logs-tab');
+    if (logsTab) {
+        logsTab.addEventListener('click', function() {
+            setTimeout(refreshLogs, 100); // Небольшая задержка
+        });
+    }
+    
+    // При переключении на вкладку Settings
+    const settingsTab = document.getElementById('settings-tab');
+    if (settingsTab) {
+        settingsTab.addEventListener('click', function() {
+            setTimeout(loadConfig, 100); // Загружаем конфигурацию
+        });
+    }
+    
+    // Обработчик изменения модели в чате
+    const chatModelSelect = document.getElementById('chat-model');
+    if (chatModelSelect) {
+        chatModelSelect.addEventListener('change', function() {
+            const selectedModel = this.value;
+            if (selectedModel && selectedModel !== CONFIG.default_model) {
+                saveDefaultModel(selectedModel);
+            }
+        });
+    }
+});
+
 // Управление моделями Foundry
 async function listFoundryModels() {
     try {
@@ -265,9 +556,14 @@ async function listFoundryModels() {
                         <strong>${model.id}</strong><br>
                         <small class="text-muted">Статус: ${model.status}</small>
                     </div>
-                    <button class="btn btn-sm btn-outline-danger" onclick="removeFoundryModel('${model.id}')">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                    <div>
+                        <button class="btn btn-sm btn-primary me-2" onclick="selectFoundryModel('${model.id}')">
+                            <i class="bi bi-check-circle"></i> Использовать
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeFoundryModel('${model.id}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('');
         } else {
@@ -294,7 +590,16 @@ async function downloadAndRunModel() {
         return;
     }
     
+    const progressDiv = document.getElementById('download-progress');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    
     try {
+        // Показываем прогресс
+        progressDiv.style.display = 'block';
+        progressBar.style.width = '10%';
+        progressText.textContent = `Начинаем загрузку ${modelId}...`;
+        
         showAlert(`Началась загрузка модели ${modelId}...`, 'info');
         
         const response = await fetch(`${API_BASE}/foundry/models/pull`, {
@@ -306,18 +611,81 @@ async function downloadAndRunModel() {
         const data = await response.json();
         
         if (data.success) {
+            progressBar.style.width = '30%';
+            progressText.textContent = `Загрузка ${modelId} в процессе...`;
+            
             showAlert(data.message, 'success');
-            // Обновляем список через несколько секунд
-            setTimeout(() => {
-                listFoundryModels();
-                loadModels(); // Обновляем список в чате
-            }, 5000);
+            
+            // Начинаем отслеживание прогресса
+            monitorModelDownload(modelId, progressBar, progressText, progressDiv);
         } else {
+            progressDiv.style.display = 'none';
             showAlert(`Ошибка: ${data.error}`, 'danger');
         }
     } catch (error) {
+        progressDiv.style.display = 'none';
         showAlert('Ошибка загрузки модели', 'danger');
+        console.error('Download error:', error);
     }
+}
+
+// Отслеживание прогресса загрузки модели
+async function monitorModelDownload(modelId, progressBar, progressText, progressDiv) {
+    let attempts = 0;
+    const maxAttempts = 60; // 5 минут (по 5 секунд)
+    let currentProgress = 30;
+    
+    const checkInterval = setInterval(async () => {
+        attempts++;
+        
+        try {
+            // Проверяем статус модели
+            const response = await fetch(`${API_BASE}/foundry/models/status/${modelId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                if (data.status === 'loaded') {
+                    // Модель загружена!
+                    clearInterval(checkInterval);
+                    progressBar.style.width = '100%';
+                    progressText.textContent = `Модель ${modelId} успешно загружена!`;
+                    
+                    setTimeout(() => {
+                        progressDiv.style.display = 'none';
+                        showAlert(`Модель ${modelId} готова к использованию!`, 'success');
+                        
+                        // Обновляем списки
+                        listFoundryModels();
+                        loadModels();
+                    }, 2000);
+                    
+                    return;
+                } else {
+                    // Модель еще загружается
+                    currentProgress = Math.min(currentProgress + 2, 90);
+                    progressBar.style.width = currentProgress + '%';
+                    progressText.textContent = `Загрузка ${modelId}... (${attempts}/${maxAttempts})`;
+                }
+            }
+            
+            // Проверяем таймаут
+            if (attempts >= maxAttempts) {
+                clearInterval(checkInterval);
+                progressBar.classList.add('bg-warning');
+                progressText.textContent = `Загрузка ${modelId} занимает больше времени чем ожидалось...`;
+                
+                showAlert(`Загрузка ${modelId} продолжается в фоне. Проверьте логи Foundry.`, 'warning');
+                
+                setTimeout(() => {
+                    progressDiv.style.display = 'none';
+                }, 5000);
+            }
+            
+        } catch (error) {
+            console.error('Error checking model status:', error);
+            // Продолжаем проверку несмотря на ошибку
+        }
+    }, 5000); // Проверяем каждые 5 секунд
 }
 
 async function removeFoundryModel(modelId) {
@@ -346,6 +714,75 @@ async function removeFoundryModel(modelId) {
     }
 }
 
+function selectFoundryModel(modelId) {
+    // Устанавливаем модель в чате
+    const chatModelSelect = document.getElementById('chat-model');
+    if (chatModelSelect) {
+        // Проверяем есть ли такая опция
+        let optionExists = false;
+        for (let option of chatModelSelect.options) {
+            if (option.value === modelId) {
+                optionExists = true;
+                break;
+            }
+        }
+        
+        // Если опции нет, добавляем
+        if (!optionExists) {
+            const option = document.createElement('option');
+            option.value = modelId;
+            option.textContent = modelId;
+            chatModelSelect.appendChild(option);
+        }
+        
+        // Выбираем модель
+        chatModelSelect.value = modelId;
+        
+        // Сохраняем как модель по умолчанию
+        saveDefaultModel(modelId);
+        
+        showAlert(`Модель ${modelId} выбрана как модель по умолчанию`, 'success');
+        
+        // Переключаемся на вкладку чата
+        const chatTab = document.getElementById('chat-tab');
+        if (chatTab) {
+            chatTab.click();
+        }
+    }
+}
+
+// Сохранение модели по умолчанию в config.json
+async function saveDefaultModel(modelId) {
+    try {
+        // Получаем текущую конфигурацию
+        const response = await fetch(`${API_BASE}/config`);
+        const data = await response.json();
+        
+        if (data.success && data.config) {
+            // Обновляем модель по умолчанию
+            data.config.foundry_ai.default_model = modelId;
+            
+            // Сохраняем конфигурацию
+            const saveResponse = await fetch(`${API_BASE}/config`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({config: data.config})
+            });
+            
+            const saveResult = await saveResponse.json();
+            if (saveResult.success) {
+                console.log(`Default model saved: ${modelId}`);
+                // Обновляем глобальную конфигурацию
+                CONFIG.default_model = modelId;
+            } else {
+                console.error('Failed to save default model:', saveResult.error);
+            }
+        }
+    } catch (error) {
+        console.error('Error saving default model:', error);
+    }
+}
+
 function showModelInfo() {
     const select = document.getElementById('model-select');
     const modelId = select.value;
@@ -364,4 +801,12 @@ function showModelInfo() {
     
     const info = modelInfo[modelId] || 'Информация о модели недоступна';
     showAlert(info, 'info');
+}
+
+// Скрыть прогресс-бар
+function hideProgress() {
+    const progressDiv = document.getElementById('download-progress');
+    if (progressDiv) {
+        progressDiv.style.display = 'none';
+    }
 }

@@ -16,29 +16,62 @@
 
 import json
 from pathlib import Path
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Request
+from typing import Dict, Any
 
 router = APIRouter()
 
 @router.get("/config")
 async def get_config():
-    """Получить конфигурацию системы"""
-    import os
-    from ...core.config import settings
-    
+    """Получить полную конфигурацию из config.json"""
     try:
+        config_path = Path("config.json")
+        if not config_path.exists():
+            raise HTTPException(status_code=404, detail="Config file not found")
+        
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+        
         return {
             "success": True,
-            "config": {
-                "foundry_ai": {
-                    "base_url": settings.foundry_base_url,
-                    "default_model": settings.foundry_default_model
-                },
-                "fastapi_server": {
-                    "host": settings.api_host,
-                    "port": settings.api_port
-                }
-            }
+            "config": config_data
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@router.post("/config")
+async def update_config(request: Request):
+    """Обновить конфигурацию в config.json"""
+    try:
+        config_path = Path("config.json")
+        
+        # Получаем JSON данные из запроса
+        request_data = await request.json()
+        
+        if "config" not in request_data:
+            raise HTTPException(status_code=400, detail="Missing 'config' field")
+        
+        config_data = request_data["config"]
+        
+        # Создать бэкап
+        backup_path = Path("config.json.backup")
+        if config_path.exists():
+            with open(config_path, 'r', encoding='utf-8') as f:
+                backup_data = f.read()
+            with open(backup_path, 'w', encoding='utf-8') as f:
+                f.write(backup_data)
+        
+        # Сохранить новую конфигурацию
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(config_data, f, indent=2, ensure_ascii=False)
+        
+        return {
+            "success": True,
+            "message": "Configuration updated successfully",
+            "backup_created": str(backup_path)
         }
     except Exception as e:
         return {

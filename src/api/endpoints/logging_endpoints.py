@@ -27,19 +27,77 @@ router = APIRouter()
 async def get_recent_logs():
     """Получить последние записи логов"""
     try:
+        import os
+        from pathlib import Path
+        
+        logs_dir = Path("logs")
+        all_logs = []
+        
+        # Основные файлы логов
+        log_files = [
+            "fastapi-foundry.log",
+            "foundry-client.log", 
+            "web-logs.log"
+        ]
+        
+        for log_file in log_files:
+            log_path = logs_dir / log_file
+            if log_path.exists():
+                try:
+                    # Читаем последние 50 строк
+                    with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        lines = f.readlines()
+                        recent_lines = lines[-50:] if len(lines) > 50 else lines
+                        
+                        for line in recent_lines:
+                            if line.strip():
+                                # Парсим строку лога
+                                parts = line.strip().split(' | ')
+                                if len(parts) >= 3:
+                                    timestamp = parts[0]
+                                    level = parts[1].strip()
+                                    message = ' | '.join(parts[2:])
+                                    
+                                    all_logs.append({
+                                        "timestamp": timestamp,
+                                        "level": level.lower(),
+                                        "logger": log_file.replace('.log', ''),
+                                        "message": message
+                                    })
+                                else:
+                                    # Простая строка
+                                    all_logs.append({
+                                        "timestamp": datetime.now().strftime('%H:%M:%S'),
+                                        "level": "info",
+                                        "logger": log_file.replace('.log', ''),
+                                        "message": line.strip()
+                                    })
+                except Exception as e:
+                    logger.error(f"Error reading {log_file}: {e}")
+        
+        # Сортируем по времени (последние сверху)
+        all_logs = sorted(all_logs, key=lambda x: x['timestamp'], reverse=True)[:100]
+        
         return {
             "success": True,
             "data": {
-                "logs": [],
-                "total": 0,
-                "message": "Logs endpoint working"
+                "logs": all_logs,
+                "total": len(all_logs),
+                "message": f"Загружено {len(all_logs)} записей логов"
             },
             "timestamp": datetime.now().isoformat()
         }
+        
     except Exception as e:
+        logger.error(f"Error getting logs: {e}")
         return {
             "success": False,
-            "error": str(e)
+            "error": str(e),
+            "data": {
+                "logs": [],
+                "total": 0,
+                "message": "Ошибка чтения логов"
+            }
         }
 
 @router.post("/logs/web")

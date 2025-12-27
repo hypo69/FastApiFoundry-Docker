@@ -17,14 +17,14 @@ import logging
 import json
 from contextlib import asynccontextmanager
 from datetime import datetime
+import time
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from ..models.foundry_client import foundry_client
-# from ..rag.rag_system import rag_system
 
 # Заглушка для RAG системы
 class DummyRAGSystem:
@@ -36,6 +36,26 @@ class DummyRAGSystem:
 rag_system = DummyRAGSystem()
 
 logger = logging.getLogger(__name__)
+
+# Настройка логирования запросов
+request_logger = logging.getLogger("fastapi-foundry")
+request_logger.setLevel(logging.INFO)
+
+# Создаем обработчик для файла логов
+if not request_logger.handlers:
+    from pathlib import Path
+    logs_dir = Path("logs")
+    logs_dir.mkdir(exist_ok=True)
+    
+    file_handler = logging.FileHandler(logs_dir / "fastapi-foundry.log", encoding='utf-8')
+    file_handler.setLevel(logging.INFO)
+    
+    formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    file_handler.setFormatter(formatter)
+    request_logger.addHandler(file_handler)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -78,6 +98,34 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
+    # Middleware для логирования всех запросов
+    @app.middleware("http")
+    async def log_requests(request: Request, call_next):
+        start_time = time.time()
+        
+        # Логируем входящий запрос
+        request_logger.info(f"Запрос: {request.method} {request.url.path}")
+        
+        try:
+            response = await call_next(request)
+            process_time = time.time() - start_time
+            
+            # Логируем ответ
+            request_logger.info(
+                f"Ответ: {request.method} {request.url.path} -> {response.status_code} ({process_time:.3f}s)"
+            )
+            
+            return response
+            
+        except Exception as e:
+            process_time = time.time() - start_time
+            
+            # Логируем ошибку
+            request_logger.error(
+                f"Ошибка: {request.method} {request.url.path} -> {str(e)} ({process_time:.3f}s)"
+            )
+            raise
+    
     # Обработчики исключений
     @app.exception_handler(Exception)
     async def global_exception_handler(request, exc):
@@ -108,7 +156,7 @@ def create_app() -> FastAPI:
     app.include_router(foundry_management_router, prefix="/api/v1")
     app.include_router(foundry_models_router, prefix="/api/v1")  # Новые Foundry models endpoints
     app.include_router(ai_router, prefix="/api/v1")  # Новые AI endpoints
-    app.include_router(logging_router)
+    app.include_router(logging_router)  # Логи без префикса
     app.include_router(examples_router)
     app.include_router(generate.router, prefix="/api/v1")
     app.include_router(chat_router, prefix="/api/v1")  # Chat endpoints

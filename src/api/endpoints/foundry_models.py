@@ -121,22 +121,33 @@ async def pull_model(request: dict):
         raise HTTPException(status_code=400, detail="model_id is required")
     
     try:
-        # Запускаем foundry model pull в фоне
+        logger.info(f"Starting model pull: {model_id}")
+        
+        # Запускаем foundry pull в фоне
         process = subprocess.Popen(
-            ['foundry', 'model', 'pull', model_id],
+            ['foundry', 'pull', model_id],  # Используем 'pull' вместо 'model pull'
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
         )
         
-        # Не ждем завершения, возвращаем статус
+        # Сохраняем PID процесса для отслеживания
+        # В реальном приложении можно использовать Redis или базу данных
+        
         return {
             "success": True,
             "message": f"Начата загрузка модели {model_id}",
             "model_id": model_id,
-            "status": "downloading"
+            "status": "downloading",
+            "pid": process.pid
         }
         
+    except FileNotFoundError:
+        logger.error("Foundry command not found")
+        return {
+            "success": False,
+            "error": "Foundry не установлен или не найден в PATH"
+        }
     except Exception as e:
         logger.error(f"Error pulling model {model_id}: {e}")
         return {
@@ -152,26 +163,38 @@ async def remove_model(request: dict):
         raise HTTPException(status_code=400, detail="model_id is required")
     
     try:
-        # Запускаем foundry model remove
+        # Используем правильную команду foundry
         result = subprocess.run(
-            ['foundry', 'model', 'remove', model_id],
+            ['foundry', 'rm', model_id],  # Используем 'rm' вместо 'model remove'
             capture_output=True,
             text=True,
             timeout=30
         )
         
         if result.returncode == 0:
+            logger.info(f"Model {model_id} removed successfully")
             return {
                 "success": True,
                 "message": f"Модель {model_id} удалена",
                 "model_id": model_id
             }
         else:
+            logger.error(f"Failed to remove model {model_id}: {result.stderr}")
             return {
                 "success": False,
                 "error": result.stderr or "Failed to remove model"
             }
             
+    except FileNotFoundError:
+        return {
+            "success": False,
+            "error": "Foundry не установлен или не найден в PATH"
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "success": False,
+            "error": "Операция удаления превысила время ожидания"
+        }
     except Exception as e:
         logger.error(f"Error removing model {model_id}: {e}")
         return {
