@@ -8,7 +8,7 @@
 #
 # File: example.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.3.4
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
@@ -21,8 +21,8 @@ import os
 # Добавляем путь к SDK
 sys.path.insert(0, os.path.dirname(__file__))
 
-from client import FoundryClient
-from exceptions import FoundryError
+from .client import FoundryClient
+from .exceptions import FoundryError
 
 def main():
     """Демонстрация использования SDK"""
@@ -81,6 +81,10 @@ def main():
                 print(f"  Foundry URL: {foundry_config.get('base_url', 'N/A')}")
                 print(f"  Default model: {foundry_config.get('default_model', 'N/A')}")
                 print(f"  RAG enabled: {config.get('rag_system', {}).get('enabled', False)}")
+            
+            # 6. Очистка RAG (опционально)
+            print("\n6️⃣ RAG Clear (optional):")
+            print("  Skipped - use client.rag_clear() to clear RAG index")
             
             print("\n✅ SDK работает корректно!")
             

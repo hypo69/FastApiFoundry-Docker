@@ -89,6 +89,17 @@ for result in results:
     print(f"Text: {result['text'][:100]}...")
 ```
 
+### 🗑️ Очистка RAG индекса
+
+```python
+# Очистить все RAG chunks
+success = client.rag_clear()
+if success:
+    print("RAG индекс очищен")
+else:
+    print("Ошибка очистки RAG")
+```
+
 ### 📋 Список моделей
 
 ```python
@@ -170,5 +181,5 @@ CC BY-NC-SA 4.0 - https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 ---
 
-**FastAPI Foundry SDK** - часть экосистемы AiStros  
+**FastAPI Foundry SDK v0.3.4** - часть экосистемы AiStros  
 © 2025 AiStros Team
