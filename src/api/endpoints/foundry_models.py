@@ -34,9 +34,11 @@ def get_foundry_url():
 async def list_available_models():
     """Получить список всех доступных моделей для загрузки"""
     try:
-        # Используем PowerShell для foundry model list
+        from pathlib import Path
+        script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "list-models.ps1"
+        
         result = subprocess.run(
-            ['powershell', '-Command', 'foundry model list'],
+            ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(script_path), '-Type', 'available'],
             capture_output=True,
             text=True,
             timeout=30
@@ -47,7 +49,7 @@ async def list_available_models():
             models = []
             for line in result.stdout.split('\n'):
                 line = line.strip()
-                if line and not line.startswith('Available') and not line.startswith('---'):
+                if line and not line.startswith('Available') and not line.startswith('---') and not line.startswith('✅') and not line.startswith('Getting'):
                     models.append({
                         "id": line,
                         "name": line,
@@ -79,36 +81,41 @@ async def list_available_models():
 async def list_loaded_models():
     """Получить список загруженных моделей в Foundry"""
     try:
-        foundry_url = get_foundry_url()
-        base_url = foundry_url.rstrip('/v1/').rstrip('/')
+        from pathlib import Path
+        script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "list-models.ps1"
         
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f'{base_url}/v1/models', timeout=10) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    models = data.get('data', [])
-                    
-                    # Форматируем для фронтенда
-                    formatted_models = []
-                    for model in models:
-                        formatted_models.append({
-                            "id": model.get('id', 'unknown'),
-                            "name": model.get('id', 'unknown'),
-                            "status": "loaded",
-                            "type": "unknown"
-                        })
-                    
-                    return {
-                        "success": True,
-                        "models": formatted_models,
-                        "count": len(formatted_models)
-                    }
-                else:
-                    return {
-                        "success": False,
-                        "models": [],
-                        "error": f"HTTP {response.status}"
-                    }
+        result = subprocess.run(
+            ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(script_path), '-Type', 'loaded'],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        if result.returncode == 0:
+            # Парсим вывод foundry service list
+            models = []
+            for line in result.stdout.split('\n'):
+                line = line.strip()
+                if line and not line.startswith('Service') and not line.startswith('---') and not line.startswith('✅') and not line.startswith('Getting'):
+                    models.append({
+                        "id": line,
+                        "name": line,
+                        "status": "loaded",
+                        "type": "unknown"
+                    })
+            
+            return {
+                "success": True,
+                "models": models,
+                "count": len(models)
+            }
+        else:
+            return {
+                "success": False,
+                "models": [],
+                "error": result.stderr or "Failed to list loaded models"
+            }
+            
     except Exception as e:
         logger.error(f"Error listing loaded models: {e}")
         return {
@@ -117,19 +124,21 @@ async def list_loaded_models():
             "error": str(e)
         }
 
-@router.post("/pull")
-async def pull_model(request: dict):
-    """Загрузить модель в Foundry"""
+@router.post("/download")
+async def download_model(request: dict):
+    """Скачать модель в кэш Foundry"""
     model_id = request.get("model_id")
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
     
     try:
-        logger.info(f"Starting model load: {model_id}")
+        logger.info(f"Starting model download: {model_id}")
         
-        # Используем PowerShell скрипт
+        from pathlib import Path
+        script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "download-model.ps1"
+        
         process = subprocess.Popen(
-            ['powershell', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/load-model.ps1', '-ModelId', model_id],
+            ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(script_path), '-ModelId', model_id],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -137,14 +146,14 @@ async def pull_model(request: dict):
         
         return {
             "success": True,
-            "message": f"Начата загрузка модели {model_id}",
+            "message": f"Начато скачивание модели {model_id}",
             "model_id": model_id,
-            "status": "loading",
+            "status": "downloading",
             "pid": process.pid
         }
         
     except Exception as e:
-        logger.error(f"Error loading model {model_id}: {e}")
+        logger.error(f"Error downloading model {model_id}: {e}")
         return {
             "success": False,
             "error": str(e)
@@ -158,9 +167,12 @@ async def unload_model(request: dict):
         raise HTTPException(status_code=400, detail="model_id is required")
     
     try:
-        # Используем PowerShell скрипт
+        # Используем PowerShell скрипт с абсолютным путем
+        from pathlib import Path
+        script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "unload-model.ps1"
+        
         result = subprocess.run(
-            ['powershell', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/unload-model.ps1', '-ModelId', model_id],
+            ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(script_path), '-ModelId', model_id],
             capture_output=True,
             text=True,
             timeout=30
