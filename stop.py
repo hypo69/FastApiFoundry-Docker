@@ -25,6 +25,7 @@ def kill_processes_on_ports(ports):
     print(f"Checking ports: {ports}")
     system = platform.system().lower()
     killed_count = 0
+    found_pids = set()  # Используем set чтобы избежать дубликатов
     
     for port in ports:
         print(f"Checking port {port}...")
@@ -44,21 +45,23 @@ def kill_processes_on_ports(ports):
                             parts = line.split()
                             if len(parts) >= 5:
                                 pid = parts[-1]
-                                print(f"Found process PID {pid} on port {port}, killing...")
-                                
-                                kill_result = subprocess.run(
-                                    ["taskkill", "/PID", pid, "/F"], 
-                                    capture_output=True, 
-                                    text=True,
-                                    timeout=5
-                                )
-                                
-                                if kill_result.returncode == 0:
-                                    print(f"✅ Killed process PID {pid}")
-                                    killed_count += 1
-                                else:
-                                    print(f"❌ Failed to kill PID {pid}")
+                                if pid.isdigit() and pid != '0' and pid not in found_pids:
+                                    found_pids.add(pid)
+                                    print(f"🛑 Киллинг процесса PID: {pid}")
                                     
+                                    kill_result = subprocess.run(
+                                        ["taskkill", "/PID", pid, "/F"], 
+                                        capture_output=True, 
+                                        text=True,
+                                        timeout=5
+                                    )
+                                    
+                                    if kill_result.returncode == 0:
+                                        print(f"✅ Killed process PID {pid}")
+                                        killed_count += 1
+                                    else:
+                                        print(f"❌ Failed to kill PID {pid}")
+                                        
             except Exception as e:
                 print(f"Error checking port {port}: {e}")
         
@@ -74,8 +77,9 @@ def kill_processes_on_ports(ports):
                 if result.stdout.strip():
                     pids = result.stdout.strip().split('\n')
                     for pid in pids:
-                        if pid:
-                            print(f"Found process PID {pid} on port {port}, killing...")
+                        if pid and pid not in found_pids:
+                            found_pids.add(pid)
+                            print(f"🛑 Киллинг процесса PID: {pid}")
                             subprocess.run(["kill", "-9", pid], capture_output=True, timeout=5)
                             print(f"✅ Killed process PID {pid}")
                             killed_count += 1
@@ -83,15 +87,15 @@ def kill_processes_on_ports(ports):
             except Exception as e:
                 print(f"Error checking port {port}: {e}")
     
-    print(f"Total processes killed: {killed_count}")
+    print(f"Total unique processes killed: {killed_count}")
     return killed_count
 
 def main():
     print("🛑 FastAPI Foundry Stop Script")
     print("=" * 40)
     
-    # Порты по умолчанию
-    ports = [8000, 8001, 8002, 8003, 8004, 8005]
+    # Порты по умолчанию - только основной порт
+    ports = [8000]
     
     if len(sys.argv) > 1:
         try:

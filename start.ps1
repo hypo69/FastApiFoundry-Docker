@@ -41,18 +41,25 @@ function Free-Port {
     if ($connections) {
         Write-Host "⚠️  Порт $PortNumber занят. Освобождение..." -ForegroundColor Yellow
 
+        # Собираем уникальные PID
+        $uniquePids = @()
         foreach ($line in $connections) {
             $parts = $line -split '\s+'
             $processId = $parts[-1]
 
-            if ($processId -and $processId -ne "0") {
-                Write-Host "🛑 Киллинг процесса PID: $processId" -ForegroundColor Red
-                taskkill /PID $processId /F 2>$null
+            if ($processId -and $processId -ne "0" -and $processId -notin $uniquePids) {
+                $uniquePids += $processId
             }
         }
 
+        # Убиваем только уникальные процессы
+        foreach ($pid in $uniquePids) {
+            Write-Host "🛑 Киллинг процесса PID: $pid" -ForegroundColor Red
+            taskkill /PID $pid /F 2>$null
+        }
+
         Start-Sleep -Seconds 2
-        Write-Host "✅ Порт $PortNumber освобожден" -ForegroundColor Green
+        Write-Host "✅ Порт $PortNumber освобожден (убито $($uniquePids.Count) процессов)" -ForegroundColor Green
     } else {
         Write-Host "✅ Порт $PortNumber свободен" -ForegroundColor Green
     }
