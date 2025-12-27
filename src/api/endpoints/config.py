@@ -18,7 +18,6 @@ import json
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request
 from typing import Dict, Any
-from ...config_manager import config
 
 router = APIRouter()
 
@@ -26,11 +25,21 @@ router = APIRouter()
 async def get_config():
     """Получить полную конфигурацию из config.json"""
     try:
-        # Перезагружаем конфигурацию для получения актуальных данных
-        config.reload()
+        # Читаем напрямую из корневого config.json
+        config_path = Path("config.json")
+        
+        if not config_path.exists():
+            return {
+                "success": False,
+                "error": "config.json not found"
+            }
+        
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+        
         return {
             "success": True,
-            "config": config.get_raw_config()
+            "config": config_data
         }
     except Exception as e:
         return {
@@ -53,17 +62,16 @@ async def update_config(request: Request):
         # Создать бэкап
         config_path = Path("config.json")
         backup_path = Path("config.json.backup")
+        
         if config_path.exists():
             with open(config_path, 'r', encoding='utf-8') as f:
                 backup_data = f.read()
             with open(backup_path, 'w', encoding='utf-8') as f:
                 f.write(backup_data)
         
-        # Обновляем конфигурацию
-        config.update_config(new_config)
-        
-        # Перезагружаем конфигурацию для обновления всех свойств
-        config.reload()
+        # Сохраняем новую конфигурацию
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(new_config, f, indent=2, ensure_ascii=False)
         
         return {
             "success": True,
