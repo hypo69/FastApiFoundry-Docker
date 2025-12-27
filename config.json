@@ -13,7 +13,7 @@
   },
   "foundry_ai": {
     "base_url": "http://localhost:50477/v1/",
-    "default_model": "qwen2.5-0.5b-instruct-generic-cpu:4",
+    "default_model": "🟢  qwen2.5-0.5b                   qwen2.5-0.5b-instruct-generic-cpu:4",
     "auto_load_default": true,
     "temperature": 0.7,
     "top_p": 0.9,

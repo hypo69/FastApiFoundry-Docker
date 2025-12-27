@@ -150,7 +150,7 @@ async def send_chat_message_stream(request: dict):
     async def generate_stream():
         try:
             accumulated_response = ""
-            async for chunk in enhanced_foundry_client.generate_stream(
+            async for chunk in foundry_client.generate_stream(
                 prompt=prompt,
                 model=model,
                 temperature=temperature,
