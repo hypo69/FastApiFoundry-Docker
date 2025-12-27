@@ -100,13 +100,7 @@ async def update_config(request: Request):
         }
     except json.JSONDecodeError as e:
         logger.error(f"Ошибка парсинга JSON: {str(e)}")
-        return {
-            "success": False,
-            "error": f"Invalid JSON format: {str(e)}"
-        }
+        raise HTTPException(status_code=400, detail=f"Invalid JSON format: {str(e)}")
     except Exception as e:
         logger.error(f"Ошибка сохранения конфигурации: {str(e)}")
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        raise HTTPException(status_code=500, detail=str(e))

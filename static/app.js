@@ -215,47 +215,74 @@ async function saveConfigFields() {
     const statusDiv = document.getElementById('config-status');
     
     try {
-        // Собираем конфигурацию из полей
+        // Функция для безопасного получения значения
+        const getValue = (id, defaultValue = null) => {
+            const element = document.getElementById(id);
+            if (!element) return defaultValue;
+            const value = element.value;
+            return (value === '') ? null : value;
+        };
+        
+        const getIntValue = (id, defaultValue = null) => {
+            const value = getValue(id);
+            if (value === null || value === '') return defaultValue;
+            const parsed = parseInt(value);
+            return isNaN(parsed) ? defaultValue : parsed;
+        };
+        
+        const getFloatValue = (id, defaultValue = null) => {
+            const value = getValue(id);
+            if (value === null || value === '') return defaultValue;
+            const parsed = parseFloat(value);
+            return isNaN(parsed) ? defaultValue : parsed;
+        };
+        
+        const getBoolValue = (id, defaultValue = false) => {
+            const element = document.getElementById(id);
+            return element ? element.checked : defaultValue;
+        };
+        
+        // Собираем конфигурацию из полей с валидацией
         const configData = {
             fastapi_server: {
-                host: document.getElementById('config-api-host').value,
-                port: parseInt(document.getElementById('config-api-port').value),
-                mode: document.getElementById('config-api-mode').value,
-                workers: parseInt(document.getElementById('config-api-workers').value),
+                host: getValue('config-api-host') || '0.0.0.0',
+                port: getIntValue('config-api-port') || 8000,
+                mode: getValue('config-api-mode') || 'dev',
+                workers: getIntValue('config-api-workers') || 1,
                 reload: true,
                 cors_origins: ["*"]
             },
             foundry_ai: {
-                base_url: document.getElementById('config-foundry-url').value,
-                default_model: document.getElementById('config-foundry-model').value,
-                auto_load_default: document.getElementById('config-foundry-autoload').checked,
-                temperature: parseFloat(document.getElementById('config-foundry-temp').value),
+                base_url: getValue('config-foundry-url') || 'http://localhost:50477/v1/',
+                default_model: getValue('config-foundry-model'),
+                auto_load_default: getBoolValue('config-foundry-autoload', false),
+                temperature: getFloatValue('config-foundry-temp') || 0.6,
                 top_p: 0.9,
                 top_k: 40,
-                max_tokens: parseInt(document.getElementById('config-foundry-tokens').value),
+                max_tokens: getIntValue('config-foundry-tokens') || 2048,
                 timeout: 300
             },
             rag_system: {
-                enabled: document.getElementById('config-rag-enabled').checked,
-                index_dir: document.getElementById('config-rag-index').value,
+                enabled: getBoolValue('config-rag-enabled', false),
+                index_dir: getValue('config-rag-index') || './rag_index',
                 model: "sentence-transformers/all-MiniLM-L6-v2",
-                chunk_size: parseInt(document.getElementById('config-rag-chunk').value),
+                chunk_size: getIntValue('config-rag-chunk') || 1000,
                 top_k: 5
             },
             security: {
-                api_key: document.getElementById('config-security-key').value,
-                https_enabled: document.getElementById('config-security-https').checked,
+                api_key: getValue('config-security-key'),
+                https_enabled: getBoolValue('config-security-https', false),
                 cors_origins: ["*"],
                 ssl_cert_file: "~/.ssl/cert.pem",
                 ssl_key_file: "~/.ssl/key.pem"
             },
             logging: {
-                level: document.getElementById('config-log-level').value,
-                file: document.getElementById('config-log-file').value
+                level: getValue('config-log-level') || 'INFO',
+                file: getValue('config-log-file') || 'logs/fastapi-foundry.log'
             },
             development: {
-                debug: document.getElementById('config-dev-debug').checked,
-                verbose: document.getElementById('config-dev-verbose').checked,
+                debug: getBoolValue('config-dev-debug', false),
+                verbose: getBoolValue('config-dev-verbose', false),
                 temp_dir: "./temp"
             }
         };
@@ -284,6 +311,11 @@ async function saveConfigFields() {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({config: fullConfig})
             });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP ${response.status}`);
+            }
             
             const result = await response.json();
             
