@@ -71,7 +71,7 @@ class FoundryClient:
             await self.session.close()
     
     async def health_check(self):
-        """Проверка здоровья Foundry сервиса"""
+        """Проверка состояния Foundry сервиса"""
         try:
             # Обновляем URL с реальным портом
             self.update_base_url()
@@ -102,7 +102,7 @@ class FoundryClient:
             real_port = self.get_foundry_port()
             return {
                 "status": "disconnected",
-                "error": f"Foundry server not running on port {real_port}",
+                "error": f"Сервер Foundry не запущен на порту {real_port}",
                 "url": self.base_url,
                 "port": real_port,
                 "timestamp": datetime.now().isoformat()
@@ -117,7 +117,7 @@ class FoundryClient:
                 real_port = health.get("port", 50477)
                 return {
                     "success": False,
-                    "error": f"Foundry server not available. Please start Foundry on port {real_port}.",
+                    "error": f"Сервер Foundry недоступен. Пожалуйста, запустите Foundry на порту {real_port}.",
                     "foundry_status": health["status"]
                 }
             
@@ -157,7 +157,7 @@ class FoundryClient:
             real_port = self.get_foundry_port()
             return {
                 "success": False,
-                "error": f"Cannot connect to Foundry server. Please start Foundry on port {real_port}."
+                "error": f"Не удается подключиться к серверу Foundry. Пожалуйста, запустите Foundry на порту {real_port}."
             }
 
     async def list_available_models(self):
@@ -184,7 +184,7 @@ class FoundryClient:
         except Exception as e:
             return {
                 "success": False,
-                "error": "Foundry server not available",
+                "error": "Сервер Foundry недоступен",
                 "models": []
             }
 

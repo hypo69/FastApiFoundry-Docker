@@ -99,105 +99,23 @@ async def check_foundry_health() -> dict:
 
 @router.post("/start", response_model=FoundryResponse)
 async def start_foundry():
-    """Запустить Foundry сервис"""
-    try:
-        # Попытка запуска Foundry
-        try:
-            process = subprocess.Popen(
-                ['foundry', 'service', 'start'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if hasattr(subprocess, 'CREATE_NEW_PROCESS_GROUP') else 0
-            )
-            
-            # Ждем немного, чтобы процесс запустился
-            await asyncio.sleep(2)
-            
-            # Проверяем, что процесс действительно запустился
-            if process.poll() is None:  # Процесс еще работает
-                health = await check_foundry_health()
-                if health['status'] == 'healthy':
-                    return FoundryResponse(
-                        success=True,
-                        message="Foundry успешно запущен",
-                        status="running",
-                        models=health.get('models', [])
-                    )
-                else:
-                    return FoundryResponse(
-                        success=False,
-                        message="Foundry запущен, но не отвечает на запросы",
-                        status="starting",
-                        error=health.get('error')
-                    )
-            else:
-                # Процесс завершился с ошибкой
-                stderr = process.stderr.read().decode() if process.stderr else "Unknown error"
-                return FoundryResponse(
-                    success=False,
-                    message="Foundry не удалось запустить",
-                    status="failed",
-                    error=stderr
-                )
-                
-        except FileNotFoundError:
-            return FoundryResponse(
-                success=False,
-                message="Foundry не найден в системе",
-                status="not_found",
-                error="Установите Foundry через requirements.txt"
-            )
-            
-    except Exception as e:
-        logger.error(f"Error starting Foundry: {e}")
-        return FoundryResponse(
-            success=False,
-            message="Ошибка при запуске Foundry",
-            status="error",
-            error=str(e)
-        )
+    """Запустить Foundry сервис (отключено - используйте start.ps1)"""
+    return FoundryResponse(
+        success=False,
+        message="Запуск Foundry отключен. Используйте start.ps1 для управления Foundry",
+        status="disabled",
+        error="Use start.ps1 script to manage Foundry"
+    )
 
 @router.post("/stop", response_model=FoundryResponse)
 async def stop_foundry():
-    """Остановить Foundry сервис"""
-    try:
-        stopped_processes = 0
-        
-        # Найти и остановить все процессы Foundry
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-            try:
-                cmdline = proc.info.get('cmdline', [])
-                if cmdline and any('foundry' in str(arg).lower() for arg in cmdline):
-                    proc.terminate()
-                    stopped_processes += 1
-                    logger.info(f"Terminated Foundry process {proc.pid}")
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                continue
-        
-        if stopped_processes > 0:
-            # Ждем немного, чтобы процессы завершились
-            await asyncio.sleep(1)
-            
-            return FoundryResponse(
-                success=True,
-                message=f"Остановлено {stopped_processes} процессов Foundry",
-                status="stopped"
-            )
-        else:
-            return FoundryResponse(
-                success=False,
-                message="Foundry процессы не найдены",
-                status="not_running"
-            )
-            
-    except Exception as e:
-        logger.error(f"Error stopping Foundry: {e}")
-        return FoundryResponse(
-            success=False,
-            message="Ошибка при остановке Foundry",
-            status="error",
-            error=str(e)
-        )
+    """Остановить Foundry сервис (отключено - используйте Ctrl+C)"""
+    return FoundryResponse(
+        success=False,
+        message="Остановка Foundry отключена. Используйте Ctrl+C в консоли start.ps1",
+        status="disabled",
+        error="Use Ctrl+C in start.ps1 console to stop"
+    )
 
 @router.get("/status", response_model=FoundryResponse)
 async def get_foundry_status():

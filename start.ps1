@@ -115,50 +115,29 @@ try {
 
     # Активация venv и запуск сервера
     Write-Host "🔧 Активация виртуального окружения..." -ForegroundColor Yellow
-    & "$PSScriptRoot\venv\Scripts\Activate.ps1"
+    
+    if (Test-Path "$PSScriptRoot\venv\Scripts\Activate.ps1") {
+        & "$PSScriptRoot\venv\Scripts\Activate.ps1"
+        $pythonExe = "$PSScriptRoot\venv\Scripts\python.exe"
+    } else {
+        Write-Host "⚠️  venv не найден, используем embedded Python" -ForegroundColor Yellow
+        $pythonExe = "$PSScriptRoot\python.exe"
+    }
 
     Write-Host "🚀 Запуск FastAPI сервера..." -ForegroundColor Green
+    
+    # Передача порта Foundry в приложение
     $env:FOUNDRY_BASE_URL = "http://localhost:$foundryPort/v1/"
-    $script:ServerProcess = Start-Process -FilePath "python" -ArgumentList "run.py" -NoNewWindow -PassThru
-
-    # Проверка запуска сервера
-    Start-Sleep -Seconds 5
-
-    # Проверка запуска сервера
-    try {
-        $response = Invoke-WebRequest -Uri "http://localhost:$Port/api/v1/health" -TimeoutSec 10 -ErrorAction Stop
-        if ($response.StatusCode -eq 200) {
-            Write-Host "✅ FastAPI сервер запущен успешно" -ForegroundColor Green
-
-            # Открытие браузера
-            Write-Host "🌐 Открытие веб-интерфейса..." -ForegroundColor Cyan
-            Start-Process "http://localhost:$Port/static/chat.html"
-
-            Write-Host "" -ForegroundColor Cyan
-            Write-Host "🎉 Система готова к работе!" -ForegroundColor Green
-            Write-Host "📱 Чат: http://localhost:$Port/static/chat.html" -ForegroundColor Cyan
-            Write-Host "📚 API: http://localhost:$Port/docs" -ForegroundColor Cyan
-            Write-Host "" -ForegroundColor Cyan
-            Write-Host "Для остановки нажмите Ctrl+C" -ForegroundColor Yellow
-
-            # Ожидание завершения сервера
-            $script:ServerProcess.WaitForExit()
-        } else {
-            Write-Host "❌ FastAPI сервер не отвечает" -ForegroundColor Red
-            exit 1
-        }
-    } catch {
-        Write-Host "❌ Ошибка запуска FastAPI сервера: $_" -ForegroundColor Red
-        exit 1
-    }
+    $env:FOUNDRY_PORT = $foundryPort
+    Write-Host "🔗 Foundry URL: $env:FOUNDRY_BASE_URL" -ForegroundColor Green
+    
+    # Запуск с выводом в консоль
+    Write-Host "📋 Вывод сервера:" -ForegroundColor Cyan
+    Write-Host "" -ForegroundColor Cyan
+    
+    & $pythonExe "run.py"
 
 } catch {
     Write-Host "❌ Критическая ошибка: $_" -ForegroundColor Red
     exit 1
-} finally {
-    # Очистка при завершении
-    if ($script:ServerProcess -and -not $script:ServerProcess.HasExited) {
-        Write-Host "🛑 Остановка сервера..." -ForegroundColor Yellow
-        $script:ServerProcess.Kill()
-    }
 }

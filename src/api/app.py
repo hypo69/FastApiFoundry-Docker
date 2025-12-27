@@ -40,8 +40,8 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Управление жизненным циклом приложения"""
-    # Startup
-    logger.info("Starting FastAPI Foundry...")
+    # Запуск
+    logger.info("Запуск FastAPI Foundry...")
     
     # Инициализация RAG системы (отключена)
     # await rag_system.initialize()
@@ -52,8 +52,8 @@ async def lifespan(app: FastAPI):
     
     yield
     
-    # Shutdown
-    logger.info("Shutting down FastAPI Foundry...")
+    # Остановка
+    logger.info("Остановка FastAPI Foundry...")
     # await foundry_client.close()
 
 def create_app() -> FastAPI:
@@ -78,15 +78,15 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
-    # Exception handlers
+    # Обработчики исключений
     @app.exception_handler(Exception)
     async def global_exception_handler(request, exc):
         """Глобальный обработчик исключений"""
-        logger.error(f"Unhandled exception: {exc}", exc_info=True)
+        logger.error(f"Необработанное исключение: {exc}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content={
-                "error": "Internal server error",
+                "error": "Внутренняя ошибка сервера",
                 "detail": str(exc)
             }
         )
