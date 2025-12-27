@@ -92,7 +92,7 @@
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button">
-                    <i class="bi bi-book"></i> Documentation
+                    <i class="bi bi-book"></i> API Documentation
                 </button>
             </li>
         </ul>
@@ -663,33 +663,19 @@
                 </div>
             </div>
 
-            <!-- Documentation Tab -->
+            <!-- API Documentation Tab -->
             <div class="tab-pane fade" id="docs" role="tabpanel">
                 <div class="row mt-3">
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">Documentation & Help</h5>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="loadDocumentation()">
-                                    <i class="bi bi-arrow-clockwise"></i> Refresh
-                                </button>
+                                <h5 class="mb-0">API Documentation</h5>
+                                <a href="/docs" target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
+                                </a>
                             </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <div class="list-group" id="docs-menu">
-                                            <!-- Documentation menu items will be loaded here -->
-                                        </div>
-                                    </div>
-                                    <div class="col-md-9">
-                                        <div id="docs-content" style="max-height: 600px; overflow-y: auto;">
-                                            <div class="text-muted text-center py-5">
-                                                <i class="bi bi-book" style="font-size: 2rem;"></i><br>
-                                                <small>Select a topic from the menu</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="card-body p-0">
+                                <iframe src="/docs" style="width: 100%; height: 600px; border: none;"></iframe>
                             </div>
                         </div>
                     </div>
