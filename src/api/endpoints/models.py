@@ -3,9 +3,6 @@
 # Название процесса: Models Management Endpoints (Refactored)
 # =============================================================================
 # Описание:
-<<<<<<< HEAD
-#   Упрощенные API endpoints для управления моделями AI
-=======
 #   API endpoints для управления моделями AI
 #   Получение списка доступных и подключенных моделей через Foundry
 #
@@ -14,14 +11,14 @@
 #   >>> response = requests.get('http://localhost:9696/api/v1/models')
 #   >>> models = response.json()['models']
 #   >>> print(f"Available models: {len(models)}")
->>>>>>> a76fcff509d3210e0d5dbe66516b2c1d02333d90
 #
 # File: models.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
+# Version: 0.3.3
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
+# Date: 9 декабря 2025
 # =============================================================================
 
 from fastapi import APIRouter
