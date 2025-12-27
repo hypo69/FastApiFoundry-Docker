@@ -36,15 +36,15 @@ class FoundryClient:
         foundry_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
         if foundry_port and not base_url:
             base_url = f"http://localhost:{foundry_port}/v1/"
-            print(f"🔗 Foundry клиент: используется порт из окружения {foundry_port}")
+            print(f"Foundry client: using port from environment {foundry_port}")
         
         self.base_url = base_url
         self.timeout = aiohttp.ClientTimeout(total=30)
         self.session = None
         if self.base_url:
-            print(f"🔗 Foundry клиент: {self.base_url}")
+            print(f"Foundry client: {self.base_url}")
         else:
-            print("🔗 Foundry клиент: ожидание URL...")
+            print("Foundry client: waiting for URL...")
     
     async def _get_session(self):
         """Получить HTTP сессию"""

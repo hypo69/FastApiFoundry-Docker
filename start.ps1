@@ -44,8 +44,15 @@ if (-not (Test-Path $venvPath)) {
 function Load-EnvFile {
     param([string]$EnvPath)
     
-    if (-not (Test-Path $EnvPath)) {
-        Write-Host "⚠️ .env file not found: $EnvPath" -ForegroundColor Yellow
+    # Проверяем что это файл, а не директория
+    if (-not (Test-Path $EnvPath -PathType Leaf)) {
+        if (Test-Path $EnvPath -PathType Container) {
+            Write-Host "⚠️ .env is a directory, not a file: $EnvPath" -ForegroundColor Yellow
+            Write-Host "💡 Create .env file from .env.example template" -ForegroundColor Cyan
+        } else {
+            Write-Host "⚠️ .env file not found: $EnvPath" -ForegroundColor Yellow
+            Write-Host "💡 Copy .env.example to .env and configure your settings" -ForegroundColor Cyan
+        }
         return
     }
     

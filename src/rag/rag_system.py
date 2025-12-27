@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import numpy as np
 
-from ..core.config import settings
+from ..core.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +38,8 @@ class RAGSystem:
     """Система поиска и извлечения контекста (RAG)"""
     
     def __init__(self):
-        self.index_dir = Path(settings.rag_index_dir)
-        self.model_name = settings.rag_model
+        self.index_dir = Path(config.rag_index_dir)
+        self.model_name = config.rag_model
         self.index = None
         self.chunks = []
         self.model = None
@@ -52,7 +52,7 @@ class RAGSystem:
             logger.warning("RAG not available - missing dependencies")
             return False
         
-        if not settings.rag_enabled:
+        if not config.rag_enabled:
             logger.info("RAG disabled in configuration")
             return False
         
@@ -177,7 +177,7 @@ class RAGSystem:
         """Получить статус RAG системы"""
         return {
             'available': RAG_AVAILABLE,
-            'enabled': settings.rag_enabled,
+            'enabled': config.rag_enabled,
             'loaded': self.loaded,
             'index_dir': str(self.index_dir),
             'model': self.model_name,

@@ -22,24 +22,24 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from ..models.foundry_client import foundry_client
-from ..rag.rag_system import rag_system
+# from ..rag.rag_system import rag_system
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Управление жизненным циклом приложения"""
-    print("🚀 Запуск FastAPI Foundry...")
+    print("Zapusk FastAPI Foundry...")
     
-    # Инициализация RAG системы
-    print("🔍 Инициализация RAG системы...")
-    rag_initialized = await rag_system.initialize()
-    if rag_initialized:
-        print("✅ RAG система инициализирована")
-    else:
-        print("⚠️ RAG система не инициализирована")
+    # RAG система временно отключена из-за проблем с torch DLL
+    print("RAG system disabled (torch DLL issue)")
+    # rag_initialized = await rag_system.initialize()
+    # if rag_initialized:
+    #     print("✅ RAG система инициализирована")
+    # else:
+    #     print("⚠️ RAG система не инициализирована")
     
     yield
     
-    print("🛑 Остановка FastAPI Foundry...")
+    print("Ostanovka FastAPI Foundry...")
     await foundry_client.close()
 
 def create_app() -> FastAPI:
@@ -83,7 +83,7 @@ def create_app() -> FastAPI:
     # Глобальный обработчик исключений
     @app.exception_handler(Exception)
     async def global_exception_handler(request, exc):
-        print(f"❌ Ошибка: {exc}")
+        print(f"Error: {exc}")
         return JSONResponse(
             status_code=500,
             content={
@@ -93,7 +93,7 @@ def create_app() -> FastAPI:
         )
     
     # Подключение основных роутеров
-    from .endpoints import main, models, health, generate, foundry, rag, config, logs
+    from .endpoints import main, models, health, generate, foundry, config, logs
     from .endpoints.chat_endpoints import router as chat_router
     
     app.include_router(main.router)
@@ -102,7 +102,7 @@ def create_app() -> FastAPI:
     app.include_router(foundry.router, prefix="/api/v1")
     app.include_router(generate.router, prefix="/api/v1")
     app.include_router(chat_router, prefix="/api/v1")
-    app.include_router(rag.router, prefix="/api/v1")
+    # app.include_router(rag.router, prefix="/api/v1")
     app.include_router(config.router, prefix="/api/v1")
     app.include_router(logs.router, prefix="/api/v1")
     
