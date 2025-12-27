@@ -1210,3 +1210,86 @@ function hideProgress() {
         progressDiv.style.display = 'none';
     }
 }
+
+// Очистка вывода примеров
+function clearExampleOutput() {
+    document.getElementById('example-output').innerHTML = `
+        <div class="text-muted text-center mt-5">
+            <i class="bi bi-play-circle" style="font-size: 2rem;"></i><br>
+            Выберите пример SDK для запуска
+        </div>
+    `;
+    document.getElementById('example-status').innerHTML = `
+        <div class="text-muted text-center">
+            <i class="bi bi-clock"></i><br>
+            Ready to run SDK examples
+        </div>
+    `;
+}
+
+// Запуск SDK примеров
+async function runSDKExample(type) {
+    const outputDiv = document.getElementById('example-output');
+    const statusDiv = document.getElementById('example-status');
+    
+    outputDiv.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div><br>Запуск SDK примера...</div>';
+    statusDiv.innerHTML = '<div class="text-warning"><i class="bi bi-play-circle"></i> Выполняется...</div>';
+    
+    try {
+        let endpoint = '';
+        let description = '';
+        
+        switch(type) {
+            case 'basic':
+                endpoint = '/api/v1/examples/sdk-basic';
+                description = 'Основное использование SDK';
+                break;
+            case 'rag':
+                endpoint = '/api/v1/examples/sdk-rag';
+                description = 'RAG поиск через SDK';
+                break;
+            case 'batch':
+                endpoint = '/api/v1/examples/sdk-batch';
+                description = 'Пакетная генерация через SDK';
+                break;
+            case 'models':
+                endpoint = '/api/v1/examples/sdk-models';
+                description = 'Работа с моделями через SDK';
+                break;
+            default:
+                throw new Error('Неизвестный тип примера');
+        }
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            outputDiv.innerHTML = `
+                <div class="mb-2"><strong>${description}</strong></div>
+                <div class="mb-2"><small class="text-muted">Время выполнения: ${data.execution_time || 'N/A'}</small></div>
+                <pre class="mb-0">${data.output || data.result || 'Пример выполнен успешно'}</pre>
+            `;
+            statusDiv.innerHTML = '<div class="text-success"><i class="bi bi-check-circle"></i> Выполнено успешно</div>';
+        } else {
+            outputDiv.innerHTML = `
+                <div class="text-danger">
+                    <strong>Ошибка выполнения примера:</strong><br>
+                    <pre>${data.error || 'Неизвестная ошибка'}</pre>
+                </div>
+            `;
+            statusDiv.innerHTML = '<div class="text-danger"><i class="bi bi-x-circle"></i> Ошибка выполнения</div>';
+        }
+    } catch (error) {
+        outputDiv.innerHTML = `
+            <div class="text-danger">
+                <strong>Ошибка подключения:</strong><br>
+                <pre>${error.message}</pre>
+            </div>
+        `;
+        statusDiv.innerHTML = '<div class="text-danger"><i class="bi bi-x-circle"></i> Ошибка подключения</div>';
+    }
+}

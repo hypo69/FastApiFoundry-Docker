@@ -518,7 +518,7 @@
                     <div class="col-md-8">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">Example Scripts</h5>
+                                <h5 class="mb-0">FastAPI Foundry SDK Examples</h5>
                                 <button class="btn btn-sm btn-outline-secondary" onclick="clearExampleOutput()">
                                     <i class="bi bi-trash"></i> Clear Output
                                 </button>
@@ -526,34 +526,34 @@
                             <div class="card-body">
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <button class="btn btn-primary w-100 mb-2" onclick="runExample('client')">
-                                            <i class="bi bi-play-fill"></i> API Client Demo
+                                        <button class="btn btn-primary w-100 mb-2" onclick="runSDKExample('basic')">
+                                            <i class="bi bi-play-fill"></i> Basic SDK Usage
                                         </button>
-                                        <small class="text-muted">Демонстрация всех API endpoints</small>
+                                        <small class="text-muted">Основное использование SDK</small>
                                     </div>
                                     <div class="col-md-6">
-                                        <button class="btn btn-success w-100 mb-2" onclick="runExample('rag')">
+                                        <button class="btn btn-success w-100 mb-2" onclick="runSDKExample('rag')">
                                             <i class="bi bi-search"></i> RAG Search Demo
                                         </button>
-                                        <small class="text-muted">Поиск в документации</small>
+                                        <small class="text-muted">Поиск через RAG систему</small>
                                     </div>
                                     <div class="col-md-6">
-                                        <button class="btn btn-info w-100 mb-2" onclick="runExample('mcp')">
-                                            <i class="bi bi-link-45deg"></i> MCP Client Demo
+                                        <button class="btn btn-info w-100 mb-2" onclick="runSDKExample('batch')">
+                                            <i class="bi bi-layers"></i> Batch Generation
                                         </button>
-                                        <small class="text-muted">Model Context Protocol</small>
+                                        <small class="text-muted">Пакетная генерация</small>
                                     </div>
                                     <div class="col-md-6">
-                                        <button class="btn btn-warning w-100 mb-2" onclick="runExample('model')">
-                                            <i class="bi bi-cpu"></i> Model Client Demo
+                                        <button class="btn btn-warning w-100 mb-2" onclick="runSDKExample('models')">
+                                            <i class="bi bi-cpu"></i> Models & Config
                                         </button>
-                                        <small class="text-muted">Работа с моделями</small>
+                                        <small class="text-muted">Модели и конфигурация</small>
                                     </div>
                                 </div>
                                 <div id="example-output" class="border rounded p-3" style="height: 400px; overflow-y: auto; background-color: #f8f9fa; font-family: monospace; font-size: 0.9rem;">
                                     <div class="text-muted text-center mt-5">
                                         <i class="bi bi-play-circle" style="font-size: 2rem;"></i><br>
-                                        Выберите пример для запуска
+                                        Выберите пример SDK для запуска
                                     </div>
                                 </div>
                             </div>
@@ -562,37 +562,42 @@
                     <div class="col-md-4">
                         <div class="card mb-3">
                             <div class="card-header">
-                                <h6 class="mb-0">Example Status</h6>
+                                <h6 class="mb-0">SDK Status</h6>
                             </div>
                             <div class="card-body" id="example-status">
                                 <div class="text-muted text-center">
                                     <i class="bi bi-clock"></i><br>
-                                    Ready to run examples
+                                    Ready to run SDK examples
                                 </div>
                             </div>
                         </div>
                         <div class="card">
                             <div class="card-header">
-                                <h6 class="mb-0">Available Examples</h6>
+                                <h6 class="mb-0">Available SDK Examples</h6>
                             </div>
                             <div class="card-body">
                                 <div class="list-group list-group-flush">
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>API Client</span>
-                                        <span class="badge bg-primary rounded-pill">examples/example_client.py</span>
+                                        <span>Basic Usage</span>
+                                        <span class="badge bg-primary rounded-pill">SANDBOX/sdk/example.py</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>RAG Search</span>
-                                        <span class="badge bg-success rounded-pill">examples/example_rag_client.py</span>
+                                        <span class="badge bg-success rounded-pill">SDK RAG Demo</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>MCP Client</span>
-                                        <span class="badge bg-info rounded-pill">examples/example_mcp_client.py</span>
+                                        <span>Batch Generation</span>
+                                        <span class="badge bg-info rounded-pill">SDK Batch Demo</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>Model Client</span>
-                                        <span class="badge bg-warning rounded-pill">examples/example_model_client.py</span>
+                                        <span>Models & Config</span>
+                                        <span class="badge bg-warning rounded-pill">SDK Models Demo</span>
                                     </div>
+                                </div>
+                                <div class="mt-3">
+                                    <a href="/static/SANDBOX/sdk/README.md" target="_blank" class="btn btn-sm btn-outline-primary w-100">
+                                        <i class="bi bi-book"></i> SDK Documentation
+                                    </a>
                                 </div>
                             </div>
                         </div>
