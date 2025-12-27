@@ -127,9 +127,9 @@ async def pull_model(request: dict):
     try:
         logger.info(f"Starting model load: {model_id}")
         
-        # Используем PowerShell для foundry model load
+        # Используем PowerShell скрипт
         process = subprocess.Popen(
-            ['powershell', '-Command', f'foundry model load {model_id}'],
+            ['powershell', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/load-model.ps1', '-ModelId', model_id],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -143,12 +143,6 @@ async def pull_model(request: dict):
             "pid": process.pid
         }
         
-    except FileNotFoundError:
-        logger.error("Foundry command not found")
-        return {
-            "success": False,
-            "error": "Foundry не установлен или не найден в PATH"
-        }
     except Exception as e:
         logger.error(f"Error loading model {model_id}: {e}")
         return {
@@ -164,9 +158,9 @@ async def unload_model(request: dict):
         raise HTTPException(status_code=400, detail="model_id is required")
     
     try:
-        # Используем PowerShell для выполнения foundry команд
+        # Используем PowerShell скрипт
         result = subprocess.run(
-            ['powershell', '-Command', f'foundry model unload {model_id}'],
+            ['powershell', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/unload-model.ps1', '-ModelId', model_id],
             capture_output=True,
             text=True,
             timeout=30
