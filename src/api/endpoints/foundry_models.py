@@ -34,7 +34,7 @@ def get_foundry_url():
 @router.get("/available")
 async def list_available_models():
     """Получить список всех доступных моделей для загрузки"""
-    try {
+    try:
         from pathlib import Path
         script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "list-models.ps1"
         
@@ -189,7 +189,7 @@ async def load_model(request: dict):
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
     
-    try {
+    try:
         from pathlib import Path
         script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "load-model.ps1"
         
@@ -231,7 +231,7 @@ async def unload_model(request: dict):
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
     
-    try {
+    try:
         from pathlib import Path
         script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "unload-model.ps1"
         
