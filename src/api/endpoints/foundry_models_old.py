@@ -4,7 +4,7 @@
 # =============================================================================
 # Описание:
 #   API endpoints для управления моделями в Foundry
-#   Использует правильные команды foundry model
+#   Загрузка, выгрузка и получение списка доступных моделей
 #
 # File: foundry_models.py
 # Project: FastApiFoundry (Docker)
@@ -33,47 +33,43 @@ def get_foundry_url():
 @router.get("/available")
 async def list_available_models():
     """Получить список всех доступных моделей для загрузки"""
-    try:
-        # Используем foundry model list для получения доступных моделей
-        result = subprocess.run(
-            ['foundry', 'model', 'list'],
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
-        
-        if result.returncode == 0:
-            # Парсим вывод foundry model list
-            models = []
-            for line in result.stdout.split('\n'):
-                line = line.strip()
-                if line and not line.startswith('Available') and not line.startswith('---'):
-                    models.append({
-                        "id": line,
-                        "name": line,
-                        "status": "available",
-                        "type": "unknown"
-                    })
-            
-            return {
-                "success": True,
-                "models": models,
-                "count": len(models)
-            }
-        else:
-            return {
-                "success": False,
-                "models": [],
-                "error": result.stderr or "Failed to list models"
-            }
-            
-    except Exception as e:
-        logger.error(f"Error listing available models: {e}")
-        return {
-            "success": False,
-            "models": [],
-            "error": str(e)
+    # Популярные модели для загрузки
+    available_models = [
+        {
+            "id": "qwen2.5-0.5b-instruct-generic-cpu:4",
+            "name": "Qwen 2.5 0.5B (CPU)",
+            "size": "0.8 GB",
+            "type": "cpu",
+            "description": "Самая легкая CPU модель"
+        },
+        {
+            "id": "qwen2.5-1.5b-instruct-generic-cpu:4", 
+            "name": "Qwen 2.5 1.5B (CPU)",
+            "size": "1.78 GB",
+            "type": "cpu",
+            "description": "Средняя CPU модель"
+        },
+        {
+            "id": "deepseek-r1-distill-qwen-7b-generic-cpu:3",
+            "name": "DeepSeek R1 Distill 7B (CPU)",
+            "size": "6.43 GB", 
+            "type": "cpu",
+            "description": "Продвинутая CPU модель"
+        },
+        {
+            "id": "phi-3-mini-4k-instruct-openvino-gpu:1",
+            "name": "Phi-3 Mini 4K (GPU)",
+            "size": "2.4 GB",
+            "type": "gpu", 
+            "description": "GPU модель"
         }
+    ]
+    
+    return {
+        "success": True,
+        "models": available_models,
+        "count": len(available_models)
+    }
 
 @router.get("/loaded")
 async def list_loaded_models():
@@ -125,21 +121,24 @@ async def pull_model(request: dict):
         raise HTTPException(status_code=400, detail="model_id is required")
     
     try:
-        logger.info(f"Starting model load: {model_id}")
+        logger.info(f"Starting model pull: {model_id}")
         
-        # Используем foundry model load
+        # Запускаем foundry model pull в фоне
         process = subprocess.Popen(
-            ['foundry', 'model', 'load', model_id],
+            ['foundry', 'model', 'load', model_id],  # Правильная команда foundry model load
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
         )
         
+        # Сохраняем PID процесса для отслеживания
+        # В реальном приложении можно использовать Redis или базу данных
+        
         return {
             "success": True,
             "message": f"Начата загрузка модели {model_id}",
             "model_id": model_id,
-            "status": "loading",
+            "status": "downloading",
             "pid": process.pid
         }
         
@@ -150,21 +149,21 @@ async def pull_model(request: dict):
             "error": "Foundry не установлен или не найден в PATH"
         }
     except Exception as e:
-        logger.error(f"Error loading model {model_id}: {e}")
+        logger.error(f"Error pulling model {model_id}: {e}")
         return {
             "success": False,
             "error": str(e)
         }
 
 @router.post("/remove")
-async def unload_model(request: dict):
-    """Выгрузить модель из Foundry"""
+async def remove_model(request: dict):
+    """Удалить (выгрузить) модель из Foundry"""
     model_id = request.get("model_id")
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
     
     try:
-        # Используем foundry model unload
+        # Используем правильную команду foundry model unload
         result = subprocess.run(
             ['foundry', 'model', 'unload', model_id],
             capture_output=True,
