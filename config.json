@@ -1,7 +1,8 @@
 {
   "fastapi_server": {
     "host": "0.0.0.0",
-    "port": 8000,
+    "port": 9696,
+    "auto_find_free_port": true,
     "mode": "dev",
     "workers": 1,
     "reload": true,
@@ -103,9 +104,9 @@
   },
   "port_management": {
     "conflict_resolution": "kill_process",
-    "auto_find_free_port": false,
-    "port_range_start": 8000,
-    "port_range_end": 8100,
+    "auto_find_free_port": true,
+    "port_range_start": 9696,
+    "port_range_end": 9796,
     "foundry_port": 50477
   },
   "development": {

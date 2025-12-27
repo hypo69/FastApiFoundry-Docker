@@ -8,7 +8,7 @@
 #
 # Примеры:
 #   .\start.ps1
-#   .\start.ps1 -Port 8080
+#   .\start.ps1 -Port 9696
 #   .\start.ps1 -Model "deepseek-r1-7b"
 #
 # File: start.ps1
@@ -19,17 +19,16 @@
 # =============================================================================
 
 param(
-    [int]$Port = 8000
+    [string]$Model = $null
 )
 
 # Глобальные переменные
 $script:FoundryPort = $null
 $script:ServerProcess = $null
+$script:ServerPort = $null
 
 Write-Host "🚀 FastAPI Foundry с AI моделями" -ForegroundColor Cyan
-Write-Host "Порт: $Port" -ForegroundColor Cyan
 Write-Host "=" * 60 -ForegroundColor Cyan
-Write-Host "=" * 50 -ForegroundColor Cyan
 
 # Функция для проверки и освобождения порта
 function Free-Port {
@@ -73,10 +72,7 @@ function Free-Port {
 
 # Основная логика
 try {
-    # 1. Освобождение порта
-    Free-Port -PortNumber $Port
-
-    # 2. Поиск уже запущенного Foundry
+    # 1. Поиск уже запущенного Foundry
     Write-Host "🔍 Поиск запущенного Foundry..." -ForegroundColor Yellow
     $foundryPort = $null
     
@@ -120,10 +116,9 @@ try {
     
     $script:FoundryPort = $foundryPort
 
-    # 3. Запуск FastAPI сервера
-    Write-Host "🌐 Запуск FastAPI сервера на порту $Port..." -ForegroundColor Cyan
-    Write-Host "📚 Документация: http://localhost:$Port/docs" -ForegroundColor Cyan
-    Write-Host "💬 Чат: http://localhost:$Port/static/chat.html" -ForegroundColor Cyan
+    # 2. Запуск FastAPI сервера
+    Write-Host "🌐 Запуск FastAPI сервера..." -ForegroundColor Cyan
+    Write-Host "📚 Порт будет определен автоматически из config.json" -ForegroundColor Cyan
     Write-Host "" -ForegroundColor Cyan
 
     # Активация venv и запуск сервера
@@ -170,26 +165,41 @@ try {
         $waited += 2
         
         try {
-            $response = Invoke-WebRequest -Uri "http://localhost:$Port/api/v1/health" -TimeoutSec 3 -ErrorAction Stop
+            $response = Invoke-WebRequest -Uri "http://localhost:9696/api/v1/health" -TimeoutSec 3 -ErrorAction Stop
             if ($response.StatusCode -eq 200) {
                 $serverReady = $true
                 Write-Host "✅ Сервер готов!" -ForegroundColor Green
+                $script:ServerPort = 9696
             }
         } catch {
-            Write-Host ".⏳" -NoNewline -ForegroundColor Yellow
+            # Пробуем другие порты в диапазоне
+            for ($testPort = 9696; $testPort -le 9796; $testPort++) {
+                try {
+                    $response = Invoke-WebRequest -Uri "http://localhost:$testPort/api/v1/health" -TimeoutSec 1 -ErrorAction Stop
+                    if ($response.StatusCode -eq 200) {
+                        $serverReady = $true
+                        Write-Host "✅ Сервер готов на порту $testPort!" -ForegroundColor Green
+                        $script:ServerPort = $testPort
+                        break
+                    }
+                } catch { }
+            }
+            if (-not $serverReady) {
+                Write-Host ".⏳" -NoNewline -ForegroundColor Yellow
+            }
         }
     }
     
     if ($serverReady) {
         Write-Host "" -ForegroundColor Cyan
         Write-Host "🎉 Система готова к работе!" -ForegroundColor Green
-        Write-Host "📱 Чат: http://localhost:$Port/static/chat.html" -ForegroundColor Cyan
-        Write-Host "📚 API: http://localhost:$Port/docs" -ForegroundColor Cyan
+        Write-Host "📱 Веб-интерфейс: http://localhost:$script:ServerPort" -ForegroundColor Cyan
+        Write-Host "📚 API: http://localhost:$script:ServerPort/docs" -ForegroundColor Cyan
         Write-Host "" -ForegroundColor Cyan
         
         # Открытие браузера ТОЛЬКО после полного запуска
         Write-Host "🌐 Открытие веб-интерфейса..." -ForegroundColor Cyan
-        Start-Process "http://localhost:$Port"
+        Start-Process "http://localhost:$script:ServerPort"
         
         Write-Host "Для остановки нажмите Ctrl+C" -ForegroundColor Yellow
         

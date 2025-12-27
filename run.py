@@ -18,6 +18,52 @@
 import uvicorn
 import requests
 import sys
+import json
+import socket
+from pathlib import Path
+
+def find_free_port(start_port=9696, end_port=9796):
+    """Найти свободный порт в диапазоне"""
+    for port in range(start_port, end_port + 1):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(('localhost', port))
+                return port
+            except OSError:
+                continue
+    return None
+
+def load_config():
+    """Загрузить конфигурацию из config.json"""
+    config_path = Path("config.json")
+    if config_path.exists():
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {}
+
+def get_server_port():
+    """Получить порт для FastAPI сервера"""
+    config = load_config()
+    fastapi_config = config.get('fastapi_server', {})
+    port_config = config.get('port_management', {})
+    
+    default_port = fastapi_config.get('port', 9696)
+    auto_find = fastapi_config.get('auto_find_free_port', True)
+    
+    if auto_find:
+        start_port = port_config.get('port_range_start', 9696)
+        end_port = port_config.get('port_range_end', 9796)
+        
+        free_port = find_free_port(start_port, end_port)
+        if free_port:
+            print(f"🔍 Найден свободный порт: {free_port}")
+            return free_port
+        else:
+            print(f"⚠️ Свободный порт не найден, используем: {default_port}")
+            return default_port
+    else:
+        print(f"📌 Используем фиксированный порт: {default_port}")
+        return default_port
 
 def check_foundry():
     """Проверка работы Foundry на порту из переменной окружения"""
@@ -33,22 +79,26 @@ def main():
     """Основная функция запуска сервера"""
     print("🚀 FastAPI Foundry")
     
+    # Получаем порт для сервера
+    port = get_server_port()
+    
     # Проверка работы Foundry
     if not check_foundry():
-        print("\n❌ Foundry не запущен!")
+        print("\n⚠️ Foundry не запущен, но сервер будет запущен")
         print("\n💡 Для полного запуска с AI моделями используйте:")
         print("   .\\start.ps1")
-        print("\n🛑 Выход...")
-        return False
+    else:
+        print("✅ Foundry работает")
     
-    print("✅ Foundry работает")
-    print("🌐 Запуск FastAPI сервера...")
+    print(f"🌐 Запуск FastAPI сервера на порту {port}...")
+    print(f"🔗 Веб-интерфейс: http://localhost:{port}")
+    print(f"📚 API документация: http://localhost:{port}/docs")
     
     try:
         uvicorn.run(
             "src.api.main:app",
             host="0.0.0.0", 
-            port=8000, 
+            port=port, 
             reload=True
         )
         return True

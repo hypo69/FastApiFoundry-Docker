@@ -168,7 +168,8 @@ async function loadConfigFields() {
             
             // FastAPI Server
             document.getElementById('config-api-host').value = config.fastapi_server?.host || '0.0.0.0';
-            document.getElementById('config-api-port').value = config.fastapi_server?.port || 8000;
+            document.getElementById('config-api-port').value = config.fastapi_server?.port || 9696;
+            document.getElementById('config-api-auto-port').checked = config.fastapi_server?.auto_find_free_port || true;
             document.getElementById('config-api-mode').value = config.fastapi_server?.mode || 'dev';
             document.getElementById('config-api-workers').value = config.fastapi_server?.workers || 1;
             
@@ -246,7 +247,8 @@ async function saveConfigFields() {
         const configData = {
             fastapi_server: {
                 host: getValue('config-api-host') || '0.0.0.0',
-                port: getIntValue('config-api-port') || 8000,
+                port: getIntValue('config-api-port') || 9696,
+                auto_find_free_port: getBoolValue('config-api-auto-port', true),
                 mode: getValue('config-api-mode') || 'dev',
                 workers: getIntValue('config-api-workers') || 1,
                 reload: true,
@@ -343,6 +345,12 @@ async function saveConfigFields() {
             throw new Error('Failed to load current configuration');
         }
     } catch (error) {
+        console.error('Save config error:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack
+        });
+        
         statusDiv.className = 'alert alert-danger';
         statusDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Error: ${error.message}`;
         statusDiv.style.display = 'block';
@@ -384,10 +392,10 @@ async function checkSystemStatus() {
 function updateSystemInfo(data) {
     const container = document.getElementById('system-status');
     
-    // Получаем реальный порт из данных
+    // Получаем реальный порт из данных API
     let foundryUrl = CONFIG.foundry_url;
-    if (data.foundry_details && data.foundry_details.port) {
-        foundryUrl = `http://localhost:${data.foundry_details.port}/v1/`;
+    if (data.foundry_details && data.foundry_details.url) {
+        foundryUrl = data.foundry_details.url;
         CONFIG.foundry_url = foundryUrl; // Обновляем глобальную конфигурацию
     }
     

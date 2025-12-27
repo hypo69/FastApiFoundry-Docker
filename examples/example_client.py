@@ -190,7 +190,7 @@ async def main():
     
     # Инициализация клиента
     async with FastAPIFoundryClient(
-        base_url=os.getenv("FASTAPI_BASE_URL", "http://localhost:8002"),
+        base_url=os.getenv("FASTAPI_BASE_URL", "http://localhost:9696"),
         api_key=os.getenv("API_KEY")  # API ключ из .env
     ) as client:
         
@@ -257,7 +257,7 @@ async def main():
         print(f"Tunnel active: {tunnel_status['active']}")
         
         print("\n✅ FastAPI Foundry API работает корректно!")
-        print("⚠️  Для полной функциональности убедитесь, что Foundry сервер запущен (по умолчанию порт 55581)")
+        print("⚠️  Для полной функциональности убедитесь, что Foundry сервер запущен (порт определяется автоматически)"))
 
 if __name__ == "__main__":
     asyncio.run(main())

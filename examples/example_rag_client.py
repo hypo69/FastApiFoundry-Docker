@@ -23,7 +23,7 @@ async def demo_rag_system():
     """Демонстрация RAG системы"""
     
     async with FastAPIFoundryClient(
-        base_url="http://localhost:8000",
+        base_url="http://localhost:9696",
         api_key=None  # API ключ отключен в .env
     ) as client:
         
@@ -186,17 +186,17 @@ async def demo_rag_system():
         print("   python rag_indexer.py")
         print()
         print("🔍 Поиск через API:")
-        print("   curl -X POST http://localhost:8000/api/v1/rag/search \\")
+        print("   curl -X POST http://localhost:9696/api/v1/rag/search \\")
         print("     -H 'Content-Type: application/json' \\")
         print("     -d '{\"query\": \"installation\", \"top_k\": 5}'")
         print()
         print("🤖 Генерация с RAG:")
-        print("   curl -X POST http://localhost:8000/api/v1/generate \\")
+        print("   curl -X POST http://localhost:9696/api/v1/generate \\")
         print("     -H 'Content-Type: application/json' \\")
         print("     -d '{\"prompt\": \"How to install?\", \"use_rag\": true}'")
         print()
         print("📊 Проверка статуса RAG:")
-        print("   curl http://localhost:8000/api/v1/health")
+        print("   curl http://localhost:9696/api/v1/health"))
         print()
         print("🔧 Переиндексация:")
         print("   python rag_indexer.py --rebuild")
