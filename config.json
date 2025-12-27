@@ -8,8 +8,8 @@
     "log_level": "INFO"
   },
   "foundry_ai": {
-    "base_url": "http://localhost:50477/v1/",
-    "default_model": "deepseek-r1-distill-qwen-7b-generic-cpu:3",
+    "base_url": "http://localhost:58717/v1/",
+    "default_model": "Phi-3-mini-4k-instruct-openvino-gpu:1",
     "temperature": 0.6,
     "top_p": 0.9,
     "top_k": 40,
@@ -17,7 +17,7 @@
     "timeout": 300
   },
   "rag_system": {
-    "enabled": true,
+    "enabled": false,
     "index_dir": "./rag_index",
     "model": "sentence-transformers/all-MiniLM-L6-v2",
     "chunk_size": 1000,

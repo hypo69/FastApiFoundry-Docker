@@ -4,41 +4,7 @@
 # Название процесса: Запуск FastApiFoundry сервера
 # =============================================================================
 # Описание:
-#   Основной скрипт запуска FastAPI сервера
-#   Простой и надежный запуск с чтением конфигурации
-#
-# Примеры использования:
-#   python run.py
-#     → Запуск с настройками по умолчанию (host=0.0.0.0, port=8000, mode=dev)
-#
-#   python run.py --host 127.0.0.1
-#     → Изменить хост на локальный (по умолчанию 0.0.0.0 - все интерфейсы)
-#
-#   python run.py --port 8001
-#     → Запуск на порту 8001 (по умолчанию 8000)
-#
-#   python run.py --reload
-#     → Включить автоперезагрузку при изменении кода (по умолчанию false)
-#
-#   python run.py --log-level DEBUG
-#     → Установить уровень логирования (по умолчанию INFO)
-#     → Доступные уровни: DEBUG, INFO, WARNING, ERROR
-#
-#   python run.py --host 127.0.0.1 --port 8002 --reload --log-level DEBUG
-#     → Комбинация параметров для разработки
-#
-# Источники конфигурации (по приоритету):
-#   1. Аргументы командной строки (--host, --port, etc.) - высший приоритет
-#   2. Переменные окружения (.env файл)
-#   3. config.json файл
-#   4. Значения по умолчанию - низший приоритет
-#
-# Настройки по умолчанию:
-#   host: 0.0.0.0 (все сетевые интерфейсы)
-#   port: 8000
-#   mode: dev (автоматически открывает браузер)
-#   reload: true (автоперезагрузка включена в dev режиме)
-#   log_level: INFO
+#   Простой запуск FastAPI сервера с проверкой Foundry
 #
 # File: run.py
 # Project: FastApiFoundry (Docker)
@@ -62,181 +28,111 @@ import requests
 from pathlib import Path
 from utils.port_manager import ensure_port_free
 
-def check_foundry_status(base_url="http://localhost:50477/v1"):
-    """Проверить статус Foundry сервера"""
+def check_foundry(base_url="http://localhost:50477/v1"):
+    """Проверить Foundry сервер"""
     try:
         response = requests.get(f"{base_url}/models", timeout=5)
         if response.status_code == 200:
-            data = response.json()
-            models_count = len(data.get('data', []))
-            return True, f"Foundry работает, доступно моделей: {models_count}"
-        else:
-            return False, f"Foundry отвечает с ошибкой: HTTP {response.status_code}"
+            models = len(response.json().get('data', []))
+            return True, f"✅ Foundry работает, моделей: {models}"
+        return False, f"❌ Foundry HTTP {response.status_code}"
     except requests.exceptions.ConnectionError:
-        return False, "Foundry не запущен (порт 50477 недоступен)"
+        return False, "❌ Foundry не запущен (порт 50477)"
     except Exception as e:
-        return False, f"Ошибка проверки Foundry: {e}"
+        return False, f"❌ Ошибка Foundry: {e}"
 
-def start_foundry():
+def try_start_foundry():
     """Попытаться запустить Foundry"""
-    print("Попытка запуска Foundry...")
     try:
-        # Попробовать запустить foundry через командную строку
-        if os.name == 'nt':  # Windows
-            subprocess.Popen(['foundry'], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        else:  # Linux/Mac
-            subprocess.Popen(['foundry'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-        # Подождать немного для запуска
+        cmd = ['foundry']
+        kwargs = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
+        if os.name == 'nt':
+            kwargs['shell'] = True
+        subprocess.Popen(cmd, **kwargs)
         time.sleep(3)
         return True
-    except Exception as e:
-        print(f"Не удалось запустить Foundry автоматически: {e}")
+    except Exception:
         return False
 
-def ensure_foundry_running(base_url="http://localhost:50477/v1", max_retries=3):
-    """Убедиться что Foundry запущен и работает"""
-    print("Проверяем статус Foundry сервера...")
+def ensure_foundry(base_url="http://localhost:50477/v1"):
+    """Проверить и запустить Foundry"""
+    print("🔍 Проверяем Foundry...")
     
-    for attempt in range(max_retries):
-        is_running, message = check_foundry_status(base_url)
+    # Проверяем 3 раза
+    for i in range(3):
+        is_running, message = check_foundry(base_url)
+        print(message)
         
         if is_running:
-            print(f"✅ {message}")
             return True
-        
-        print(f"❌ {message}")
-        
-        if attempt < max_retries - 1:
-            print(f"Попытка {attempt + 1}/{max_retries}: Пытаемся запустить Foundry...")
-            if start_foundry():
-                # Подождать больше времени после запуска
-                print("Ждем запуска Foundry (10 секунд)...")
-                time.sleep(10)
-            else:
-                print("Не удалось запустить Foundry автоматически")
-                break
+            
+        if i < 2:  # Не последняя попытка
+            print(f"🚀 Попытка {i+1}/3: запускаем Foundry...")
+            if try_start_foundry():
+                time.sleep(7)  # Ждем запуска
     
-    print("\n" + "="*60)
-    print("⚠️  ВНИМАНИЕ: Foundry сервер не запущен!")
-    print("")
-    print("Для работы с AI моделями необходимо:")
-    print("1. Установить Foundry: https://github.com/foundry-rs/foundry")
-    print("2. Запустить Foundry сервер на порту 50477")
-    print("3. Или использовать веб-интерфейс для управления Foundry")
-    print("")
-    print("FastAPI консоль запустится, но AI функции будут недоступны")
-    print("="*60 + "\n")
-    
+    print("\n⚠️  Foundry не запущен. FastAPI запустится без AI функций.\n")
     return False
 
 def load_config():
-    """Загрузить конфигурацию из config.json"""
-    config_path = Path("config.json")
-    if config_path.exists():
-        with open(config_path, 'r', encoding='utf-8') as f:
+    """Загрузить config.json"""
+    try:
+        with open("config.json", 'r', encoding='utf-8') as f:
             return json.load(f)
-    return {
-        "fastapi_server": {
-            "host": "0.0.0.0",
-            "port": 8000,
-            "mode": "dev",
-            "reload": True,
-            "log_level": "INFO"
-        },
-        "foundry_ai": {
-            "base_url": "http://localhost:50477/v1/"
-        },
-        "rag_system": {
-            "enabled": True
+    except FileNotFoundError:
+        return {
+            "fastapi_server": {"host": "0.0.0.0", "port": 8000, "mode": "dev", "reload": True, "log_level": "INFO"},
+            "foundry_ai": {"base_url": "http://localhost:50477/v1/"},
+            "rag_system": {"enabled": True}
         }
-    }
 
-def open_browser(url: str, delay: int = 3):
-    """Открыть браузер через указанное время"""
+def open_browser(url, delay=3):
+    """Открыть браузер"""
     def _open():
-        try:
-            time.sleep(delay)
-            print(f"Opening browser: {url}")
-            if os.getenv('FASTAPI_FOUNDRY_MODE') != 'production':
-                webbrowser.open(url)
-        except Exception as e:
-            print(f"Failed to open browser: {e}")
+        time.sleep(delay)
+        if os.getenv('FASTAPI_FOUNDRY_MODE') != 'production':
+            webbrowser.open(url)
     
-    thread = threading.Thread(target=_open)
-    thread.daemon = True
-    thread.start()
+    threading.Thread(target=_open, daemon=True).start()
 
 def main():
-    """Главная функция запуска"""
+    """Главная функция"""
     parser = argparse.ArgumentParser(description="FastAPI Foundry Server")
     parser.add_argument('--host', help='Host to bind to')
     parser.add_argument('--port', type=int, help='Port to bind to')
     parser.add_argument('--reload', action='store_true', help='Enable auto-reload')
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], help='Log level')
-    
     args = parser.parse_args()
     
-    # Загрузить конфигурацию
     config = load_config()
     
-    # Получить финальные значения
+    # Получаем настройки
     host = args.host or config["fastapi_server"]["host"]
     port = args.port or config["fastapi_server"]["port"]
     reload = args.reload or config["fastapi_server"]["reload"]
     log_level = args.log_level or config["fastapi_server"]["log_level"]
     mode = config["fastapi_server"]["mode"]
     
-    # Установить режим логирования
     os.environ["FASTAPI_FOUNDRY_MODE"] = mode
     
-    print("=" * 60)
-    print("Starting FastAPI Foundry Application")
-    print(f"Mode: {mode}")
-    print(f"Config source: config.json + args")
-    print(f"Python: {sys.version}")
-    print(f"Working directory: {os.getcwd()}")
-    print("=" * 60)
+    print(f"🚀 FastAPI Foundry | Mode: {mode} | Port: {port}")
     
-    # ПРОВЕРКА И ЗАПУСК FOUNDRY (ПЕРВЫЙ ПРИОРИТЕТ!)
-    foundry_running = ensure_foundry_running(config['foundry_ai']['base_url'])
+    # Проверяем Foundry
+    ensure_foundry(config['foundry_ai']['base_url'])
     
-    if not foundry_running:
-        print("Продолжаем запуск FastAPI консоли без Foundry...")
-        time.sleep(2)
-    
-    # Создать директорию для логов
-    logs_dir = Path("logs")
-    logs_dir.mkdir(exist_ok=True)
-    print(f"Logs directory: {logs_dir.absolute()}")
-    
-    # ПРОВЕРКА ПОРТА FASTAPI (ВТОРОЙ ПРИОРИТЕТ)
-    print(f"\nПроверяем доступность порта {port} для FastAPI...")
+    # Проверяем порт
+    Path("logs").mkdir(exist_ok=True)
     if not ensure_port_free(port):
-        print(f"Не удалось освободить порт {port}")
+        print(f"❌ Порт {port} занят")
         return False
-    print(f"Порт {port} свободен")
     
-    # Подождать немного после завершения процесса
-    time.sleep(1)
-    
-    # ЗАПУСК FASTAPI КОНСОЛИ (ТРЕТИЙ ПРИОРИТЕТ)
-    print("\n" + "=" * 60)
-    print("🚀 Запускаем FastAPI консоль...")
-    print("=" * 60)
-    
-    # Запустить браузер в отдельном потоке (только в dev режиме)
+    # Открываем браузер
     if mode != 'production':
         open_browser(f"http://localhost:{port}")
     
-    print(f"Starting FastAPI server on http://{host}:{port}")
-    print(f"Web interface: http://localhost:{port}")
-    print(f"API docs: http://localhost:{port}/docs")
-    print(f"Foundry URL: {config['foundry_ai']['base_url']}")
-    print(f"RAG enabled: {config['rag_system']['enabled']}")
+    print(f"🌐 http://localhost:{port} | 📚 http://localhost:{port}/docs")
     
     try:
-        # Запуск uvicorn
         uvicorn.run(
             "src.api.main:app",
             host=host, 
@@ -246,31 +142,16 @@ def main():
             access_log=True
         )
         return True
-        
     except KeyboardInterrupt:
-        print("\n" + "=" * 60)
-        print("Application stopped by user (Ctrl+C)")
-        print("=" * 60)
+        print("\n✅ Остановлено пользователем")
         return True
     except ImportError as e:
-        print(f"Import error: {e}")
-        print("Check if all dependencies are installed: pip install -r requirements.txt")
+        print(f"❌ Import error: {e}")
         return False
     except OSError as e:
         if "Address already in use" in str(e):
-            print(f"Port {port} is already in use")
-            print("Run 'python stop.py' to stop existing servers")
-        else:
-            print(f"OS error: {e}")
+            print(f"❌ Порт {port} уже используется")
         return False
-    except Exception as e:
-        print(f"Application failed to start: {e}")
-        return False
-    finally:
-        print("=" * 60)
-        print("Application shutdown complete")
-        print("=" * 60)
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    sys.exit(0 if main() else 1)

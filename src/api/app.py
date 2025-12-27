@@ -24,7 +24,16 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from ..models.foundry_client import foundry_client
-from ..rag.rag_system import rag_system
+# from ..rag.rag_system import rag_system
+
+# Заглушка для RAG системы
+class DummyRAGSystem:
+    async def initialize(self):
+        pass
+    async def search(self, query, top_k=3):
+        return []
+
+rag_system = DummyRAGSystem()
 
 logger = logging.getLogger(__name__)
 
@@ -34,18 +43,18 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting FastAPI Foundry...")
     
-    # Инициализация RAG системы
-    await rag_system.initialize()
+    # Инициализация RAG системы (отключена)
+    # await rag_system.initialize()
     
-    # Проверка Foundry сервера
-    health = await foundry_client.health_check()
-    logger.info(f"Foundry health: {health}")
+    # Проверка Foundry сервера (отключена)
+    # health = await foundry_client.health_check()
+    # logger.info(f"Foundry health: {health}")
     
     yield
     
     # Shutdown
     logger.info("Shutting down FastAPI Foundry...")
-    await foundry_client.close()
+    # await foundry_client.close()
 
 def create_app() -> FastAPI:
     """Создание и настройка FastAPI приложения"""
@@ -84,9 +93,11 @@ def create_app() -> FastAPI:
     
     # Подключение роутеров
     from .endpoints import main, models, rag, foundry, health, generate
+    from .endpoints.ai_endpoints import router as ai_router
     from .endpoints.logging_endpoints import router as logging_router
     from .endpoints.examples_endpoints import router as examples_router
     from .endpoints.foundry_management import router as foundry_management_router
+    from .endpoints.chat_endpoints import router as chat_router
     
     app.include_router(main.router)
     app.include_router(health.router, prefix="/api/v1")
@@ -94,8 +105,10 @@ def create_app() -> FastAPI:
     app.include_router(rag.router, prefix="/api/v1")
     app.include_router(foundry.router, prefix="/api/v1")
     app.include_router(foundry_management_router, prefix="/api/v1")
+    app.include_router(ai_router, prefix="/api/v1")  # Новые AI endpoints
     app.include_router(logging_router)
     app.include_router(examples_router)
     app.include_router(generate.router, prefix="/api/v1")
+    app.include_router(chat_router, prefix="/api/v1")  # Chat endpoints
     
     return app

@@ -19,7 +19,14 @@ import aiohttp
 import asyncio
 from fastapi import APIRouter
 from ...models.foundry_client import foundry_client
-from ...rag.rag_system import rag_system
+# from ...rag.rag_system import rag_system
+
+# Заглушка для RAG системы
+class DummyRAGSystem:
+    async def search(self, query, top_k=3):
+        return []
+
+rag_system = DummyRAGSystem()
 from ..models import create_generate_response
 
 router = APIRouter()
