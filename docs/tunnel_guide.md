@@ -48,7 +48,7 @@ python start_with_tunnel.py --tunnel-only --port 8000
 
 ### Cloudflare Tunnel
 1.  **Установка**: `winget install Cloudflare.cloudflared` (Windows) или скачать с [GitHub](https://github.com/cloudflare/cloudflared/releases).
-2.  **Запуск**: `cloudflared tunnel --url http://localhost:8000`.
+2.  **Запуск**: `cloudflared tunnel --url http://localhost:9696`.
 
 ## 🔐 Безопасность
 

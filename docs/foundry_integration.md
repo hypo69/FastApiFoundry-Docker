@@ -413,7 +413,7 @@ while ($true) {
         }
         
         # Проверяем FastAPI
-        $response = Invoke-WebRequest "http://localhost:8000/api/v1/health" -TimeoutSec 5
+        $response = Invoke-WebRequest "http://localhost:9696/api/v1/health" -TimeoutSec 5
         if ($response.StatusCode -ne 200) {
             Write-Host "Перезапуск FastAPI..."
             # Restart logic
@@ -496,7 +496,7 @@ foundry --verbose service start
 curl http://localhost:50477/v1/models
 
 # Тест через FastAPI
-curl http://localhost:8000/api/v1/models
+curl http://localhost:9696/api/v1/models
 
 # Тест генерации
 curl -X POST http://localhost:50477/v1/chat/completions \

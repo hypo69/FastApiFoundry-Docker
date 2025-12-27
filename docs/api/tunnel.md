@@ -18,7 +18,7 @@
 
 **Пример запроса:**
 ```bash
-curl -X POST "http://localhost:8000/api/v1/tunnel/start?tunnel_type=ngrok&port=8443"
+curl -X POST "http://localhost:9696/api/v1/tunnel/start?tunnel_type=ngrok&port=8443"
 ```
 
 **Ответ (`200 OK`):**

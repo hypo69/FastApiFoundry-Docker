@@ -12,27 +12,27 @@
 ### 🔍 Health Check
 ```bash
 # Проверка здоровья системы
-curl -s http://localhost:8000/api/v1/health | python -m json.tool
+curl -s http://localhost:9696/api/v1/health | python -m json.tool
 
 # Быстрая проверка статуса
-curl -s http://localhost:8000/api/v1/health | grep -o '"status":"[^"]*"'
+curl -s http://localhost:9696/api/v1/health | grep -o '"status":"[^"]*"'
 ```
 
 ### 🤖 Модели
 
 ```bash
 # Получить список доступных моделей
-curl -s http://localhost:8000/api/v1/models | python -m json.tool
+curl -s http://localhost:9696/api/v1/models | python -m json.tool
 
 # Проверить количество моделей
-curl -s http://localhost:8000/api/v1/models | python -c "import sys, json; data=json.load(sys.stdin); print('Models:', len(data.get('models', [])))"
+curl -s http://localhost:9696/api/v1/models | python -c "import sys, json; data=json.load(sys.stdin); print('Models:', len(data.get('models', [])))"
 ```
 
 ### 💬 Генерация текста
 
 ```bash
 # Простая генерация без RAG
-curl -X POST http://localhost:8000/api/v1/generate \
+curl -X POST http://localhost:9696/api/v1/generate \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "Привет! Как дела?",
@@ -42,7 +42,7 @@ curl -X POST http://localhost:8000/api/v1/generate \
   }' | python -m json.tool
 
 # Генерация с RAG контекстом
-curl -X POST http://localhost:8000/api/v1/generate \
+curl -X POST http://localhost:9696/api/v1/generate \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "Как настроить FastAPI Foundry?",
@@ -55,7 +55,7 @@ curl -X POST http://localhost:8000/api/v1/generate \
 
 ```bash
 # Поиск в документации
-curl -X POST http://localhost:8000/api/v1/rag/search \
+curl -X POST http://localhost:9696/api/v1/rag/search \
   -H "Content-Type: application/json" \
   -d '{
     "query": "FastAPI configuration",
@@ -89,16 +89,16 @@ curl -X POST http://localhost:50477/v1/chat/completions \
 ### Быстрые проверки
 ```bash
 # Проверка доступности сервера
-curl -I http://localhost:8000/
+curl -I http://localhost:9696/
 
 # Проверка CORS
 curl -H "Origin: http://localhost:3000" \
      -H "Access-Control-Request-Method: POST" \
      -H "Access-Control-Request-Headers: Content-Type" \
-     -X OPTIONS http://localhost:8000/api/v1/generate
+     -X OPTIONS http://localhost:9696/api/v1/generate
 
 # Проверка статических файлов
-curl -I http://localhost:8000/static/simple.html
+curl -I http://localhost:9696/static/simple.html
 ```
 
 ---

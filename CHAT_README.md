@@ -1,3 +1,28 @@
+<!--
+===============================================================================
+Название процесса: Чат с AI моделями через FastAPI Foundry
+===============================================================================
+Описание:
+    Интерактивная веб-система для общения с локальными AI моделями через Foundry.
+    Включает веб-интерфейс, API endpoints и автоматический запуск системы.
+
+Примеры:
+    Запуск системы:
+    .\start.ps1
+    
+    API запрос:
+    curl -X POST http://localhost:9696/api/v1/chat/start
+
+File: CHAT_README.md
+Project: FastApiFoundry (Docker)
+Version: 0.2.1
+Author: hypo69
+License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+Copyright: © 2025 AiStros
+Date: 9 декабря 2025
+===============================================================================
+-->
+
 # FastAPI Foundry - Чат с AI моделями
 
 Интерактивная веб-система для общения с локальными AI моделями через Foundry.
@@ -22,7 +47,7 @@
 
 ### 2. Откройте веб-интерфейс
 
-Перейдите в браузере: http://localhost:8000/static/chat.html
+Перейдите в браузере: http://localhost:9696/static/chat.html
 
 ## 📋 API Endpoints
 
@@ -37,12 +62,12 @@
 
 ```bash
 # Начать сессию
-curl -X POST http://localhost:8000/api/v1/chat/start \
+curl -X POST http://localhost:9696/api/v1/chat/start \
   -H "Content-Type: application/json" \
   -d '{"model": "qwen2.5-0.5b-instruct-generic-cpu:4", "use_rag": false}'
 
 # Отправить сообщение
-curl -X POST http://localhost:8000/api/v1/chat/message \
+curl -X POST http://localhost:9696/api/v1/chat/message \
   -H "Content-Type: application/json" \
   -d '{
     "session_id": "your-session-id",

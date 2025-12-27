@@ -143,7 +143,11 @@ import aiohttp
 import json
 
 class AsyncFoundryClient:
+<<<<<<< HEAD
     def __init__(self, base_url="http://localhost:9696"):
+=======
+    def __init__(self, base_url="http://localhost:9696", api_key=None):
+>>>>>>> a76fcff509d3210e0d5dbe66516b2c1d02333d90
         self.base_url = base_url
         self.api_url = f"{base_url}/api/v1"
     
@@ -267,10 +271,15 @@ client.chat('Как дела?', 'web_session').then(response => {
 // examples/node_client.js
 const axios = require('axios');
 
+<<<<<<< HEAD
 class NodeFoundryClient {
     constructor(baseUrl = 'http://localhost:9696') {
         this.baseUrl = baseUrl;
         this.apiUrl = `${baseUrl}/api/v1`;
+=======
+class FoundryClient {
+    constructor(baseURL = 'http://localhost:9696', apiKey = null) {
+>>>>>>> a76fcff509d3210e0d5dbe66516b2c1d02333d90
         this.client = axios.create({
             baseURL: this.apiUrl,
             timeout: 30000
@@ -441,9 +450,16 @@ if ($chatResponse) {
 
 ### Поиск в документации
 
+<<<<<<< HEAD
 ```python
 # examples/rag_client.py
 import requests
+=======
+1.  Откройте [http://localhost:9696](http://localhost:9696)
+2.  Перейдите на вкладку **"Examples"**.
+3.  Нажмите на кнопку нужного примера.
+4.  Смотрите вывод в реальном времени.
+>>>>>>> a76fcff509d3210e0d5dbe66516b2c1d02333d90
 
 class RAGClient:
     def __init__(self, base_url="http://localhost:9696"):

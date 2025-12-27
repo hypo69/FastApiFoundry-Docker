@@ -91,7 +91,7 @@
 {
   "source": "examples.md", 
   "section": "Генерация текста",
-  "text": "curl -X POST http://localhost:8000/api/v1/generate..."
+  "text": "curl -X POST http://localhost:9696/api/v1/generate..."
 }
 ```
 
@@ -100,7 +100,7 @@
 ### 🔍 Поиск через API
 ```bash
 # Поиск в документации
-curl -X POST http://localhost:8000/api/v1/rag/search \
+curl -X POST http://localhost:9696/api/v1/rag/search \
   -H "Content-Type: application/json" \
   -d '{
     "query": "как настроить конфигурацию",
@@ -111,7 +111,7 @@ curl -X POST http://localhost:8000/api/v1/rag/search \
 ### 🤖 Генерация с RAG контекстом
 ```bash
 # Генерация с использованием найденного контекста
-curl -X POST http://localhost:8000/api/v1/generate \
+curl -X POST http://localhost:9696/api/v1/generate \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "Как настроить FastAPI Foundry?",
@@ -145,7 +145,7 @@ curl -X POST http://localhost:8000/api/v1/generate \
 python rag_indexer.py --docs-dir docs/ --output-dir rag_index/
 
 # Через API
-curl -X POST http://localhost:8000/api/v1/rag/reload \
+curl -X POST http://localhost:9696/api/v1/rag/reload \
   -H "Authorization: Bearer your-api-key"
 ```
 
@@ -213,7 +213,7 @@ await rag_system.add_document(
 ### 🔍 Диагностика
 ```bash
 # Проверка состояния RAG системы
-curl http://localhost:8000/api/v1/rag/status
+curl http://localhost:9696/api/v1/rag/status
 
 # Статистика индекса
 ls -la rag_index/

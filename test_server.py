@@ -38,7 +38,7 @@ def main():
     print("🧪 Тестирование FastAPI Foundry сервера...")
     print("=" * 50)
     
-    base_url = "http://localhost:8000"
+    base_url = "http://localhost:9696"
     
     # Список endpoints для тестирования
     endpoints = [

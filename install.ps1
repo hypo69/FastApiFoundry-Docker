@@ -198,5 +198,9 @@ Write-Host ""
 Write-Host "Или использовать embedded Python:"
 Write-Host "  .\python.exe run.py"
 Write-Host ""
+<<<<<<< HEAD
 Write-Host "Веб-интерфейс: http://localhost:8000"
 Write-Host "🔍 RAG система: http://localhost:8000/api/v1/rag/status"
+=======
+Write-Host "Веб-интерфейс: http://localhost:9696"
+>>>>>>> a76fcff509d3210e0d5dbe66516b2c1d02333d90

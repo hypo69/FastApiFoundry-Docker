@@ -316,3 +316,6 @@ profiles/
 !.env.example
 !.gitignore
 !README*.md
+
+
+python-3.11.0-embed-amd64/
