@@ -93,13 +93,9 @@
                 const errorMsg = error.message || 'Неизвестная ошибка';
                 document.getElementById('status').textContent = 'Ошибка загрузки моделей: ' + errorMsg;
                 
-                // Fallback - базовые модели
+                // Fallback - пустой список с сообщением
                 const select = document.getElementById('model-select');
-                select.innerHTML = `
-                    <option value="qwen2.5-0.5b">Qwen 2.5 0.5B</option>
-                    <option value="deepseek-r1-7b">DeepSeek R1 7B</option>
-                    <option value="phi-3-mini-4k">Phi-3 Mini 4K</option>
-                `;
+                select.innerHTML = '<option value="">Модели недоступны - проверьте Foundry</option>';
             }
         }
 

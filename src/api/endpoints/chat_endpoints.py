@@ -201,17 +201,34 @@ async def delete_chat_session(session_id: str):
 async def get_available_models():
     """Получить список доступных моделей"""
     try:
-        models_info = await foundry_client.list_available_models()
-        if models_info.get("success", False):
+        # Получаем список моделей через Foundry API
+        models_response = await foundry_client.list_available_models()
+        
+        if models_response.get("success", False):
+            foundry_models = models_response.get("models", [])
+            
+            # Преобразуем в формат для чата
+            chat_models = []
+            for model in foundry_models:
+                model_id = model.get('id', '')
+                if model_id:
+                    chat_models.append({
+                        'id': model_id,
+                        'name': model_id,  # Используем ID как имя
+                        'type': 'AI Model',
+                        'size': 'Unknown'
+                    })
+            
             return {
                 "success": True,
-                "models": models_info.get("models", []),
-                "count": models_info.get("count", 0)
+                "models": chat_models,
+                "count": len(chat_models)
             }
         else:
+            # Fallback - возвращаем пустой список
             return {
                 "success": False,
-                "error": models_info.get("error", "Не удалось получить список моделей"),
+                "error": models_response.get("error", "Не удалось получить список моделей"),
                 "models": []
             }
     except Exception as e:
