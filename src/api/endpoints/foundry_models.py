@@ -125,7 +125,7 @@ async def pull_model(request: dict):
         
         # Запускаем foundry model pull в фоне
         process = subprocess.Popen(
-            ['foundry', 'model', 'pull', model_id],  # Правильная команда
+            ['foundry', 'pull', model_id],  # Простая команда foundry pull
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -165,7 +165,7 @@ async def remove_model(request: dict):
     try:
         # Используем правильную команду foundry для удаления модели
         result = subprocess.run(
-            ['foundry', 'model', 'rm', model_id],  # Правильная команда
+            ['foundry', 'rm', model_id],  # Простая команда foundry rm
             capture_output=True,
             text=True,
             timeout=30
@@ -243,7 +243,7 @@ async def auto_load_default_model():
         logger.info(f"Auto-loading default model: {default_model}")
         
         process = subprocess.Popen(
-            ['foundry', 'model', 'pull', default_model],
+            ['foundry', 'pull', default_model],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
