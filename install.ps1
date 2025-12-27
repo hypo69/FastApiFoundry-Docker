@@ -201,4 +201,3 @@ Write-Host ""
 Write-Host "Веб-интерфейс: http://localhost:8000"
 Write-Host "🔍 RAG система: http://localhost:8000/api/v1/rag/status"
 Write-Host "Веб-интерфейс: http://localhost:9696"
-
