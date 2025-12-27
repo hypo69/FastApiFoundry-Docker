@@ -3,9 +3,6 @@
 # Название процесса: Health Check Endpoint (Refactored)
 # =============================================================================
 # Описание:
-<<<<<<< HEAD
-#   Упрощенный endpoint для проверки здоровья сервиса
-=======
 #   Endpoint для проверки здоровья сервиса FastAPI Foundry
 #   Проверяет статус API, Foundry сервера, RAG системы и количество моделей
 #
@@ -14,14 +11,14 @@
 #   >>> response = requests.get('http://localhost:9696/api/v1/health')
 #   >>> print(response.json())
 #   {'status': 'healthy', 'foundry_status': 'healthy', 'models_count': 3}
->>>>>>> a76fcff509d3210e0d5dbe66516b2c1d02333d90
 #
 # File: health.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
+# Version: 0.3.3
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
+# Date: 9 декабря 2025
 # =============================================================================
 
 from fastapi import APIRouter

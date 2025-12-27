@@ -23,6 +23,8 @@ import logging
 import os
 from datetime import datetime
 
+from ..utils.foundry_finder import find_foundry_port, find_foundry_url
+
 # Настройка логирования
 logger = logging.getLogger(__name__)
 

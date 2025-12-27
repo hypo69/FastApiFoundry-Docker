@@ -21,46 +21,48 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def find_foundry() -> str | None:
-    """
-    Найти запущенный Foundry сервис
-    
-    Returns:
-        str | None: URL Foundry API или None если не найден
-    """
-    # Проверяем переменную окружения
+def find_foundry_port() -> int | None:
+    """Найти порт запущенного Foundry"""
+    # Сначала проверяем переменную окружения
     foundry_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
     if foundry_port:
-        url = f"http://localhost:{foundry_port}/v1/"
-        if _test_foundry_url(url):
-            logger.info(f"✅ Foundry найден через переменную окружения: {url}")
-            return url
+        try:
+            port = int(foundry_port)
+            if _test_foundry_port(port):
+                logger.info(f"✅ Foundry найден через переменную окружения: {port}")
+                return port
+        except ValueError:
+            pass
     
     # Проверяем известные порты
-    test_ports = [62171, 50477, 58130, 51601]
-    logger.debug(f"🔍 Поиск Foundry на портах: {test_ports}")
+    test_ports = [62171, 50477, 58130]
+    logger.info(f"🔍 Поиск Foundry на портах: {test_ports}")
     
     for port in test_ports:
-        url = f"http://localhost:{port}/v1/"
-        if _test_foundry_url(url):
-            logger.info(f"✅ Foundry найден на порту {port}: {url}")
-            return url
+        if _test_foundry_port(port):
+            logger.info(f"✅ Foundry найден на порту: {port}")
+            return port
     
-    logger.warning("❌ Foundry не найден")
+    logger.warning("❌ Foundry не найден на известных портах")
     return None
 
-def _test_foundry_url(url: str) -> bool:
-    """
-    Проверить доступность Foundry API
-    
-    Args:
-        url: URL для проверки
-        
-    Returns:
-        bool: True если Foundry доступен
-    """
+def _test_foundry_port(port: int) -> bool:
+    """Проверить доступность Foundry на порту"""
     try:
-        response = requests.get(f"{url.rstrip('/')}/models", timeout=2)
-        return response.status_code == 200
-    except Exception:
+        logger.debug(f"Проверка порта {port}...")
+        response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=2)
+        if response.status_code == 200:
+            return True
+        else:
+            logger.debug(f"❌ Порт {port}: HTTP {response.status_code}")
+            return False
+    except Exception as e:
+        logger.debug(f"❌ Порт {port}: {e}")
         return False
+
+def find_foundry_url() -> str | None:
+    """Найти URL запущенного Foundry"""
+    port = find_foundry_port()
+    if port:
+        return f"http://localhost:{port}/v1/"
+    return None
