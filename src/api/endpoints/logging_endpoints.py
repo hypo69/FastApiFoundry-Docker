@@ -54,21 +54,31 @@ async def get_recent_logs():
                         
                         for line in recent_lines:
                             if line.strip():
-                                # Парсим строку лога
-                                parts = line.strip().split(' | ')
-                                if len(parts) >= 3:
-                                    timestamp = parts[0]
-                                    level = parts[1].strip()
-                                    message = ' | '.join(parts[2:])
-                                    
-                                    all_logs.append({
-                                        "timestamp": timestamp,
-                                        "level": level.lower(),
-                                        "logger": log_file.replace('.log', ''),
-                                        "message": message
-                                    })
+                                # Парсим новый формат логов: 2025-12-23 17:54:51 | INFO | fastapi-foundry | info | 117 | message
+                                if ' | ' in line:
+                                    parts = line.strip().split(' | ')
+                                    if len(parts) >= 5:
+                                        timestamp = parts[0]
+                                        level = parts[1].strip().lower()
+                                        logger_name = parts[2].strip()
+                                        message = ' | '.join(parts[4:])
+                                        
+                                        all_logs.append({
+                                            "timestamp": timestamp,
+                                            "level": level,
+                                            "logger": logger_name,
+                                            "message": message
+                                        })
+                                    else:
+                                        # Старый формат или простая строка
+                                        all_logs.append({
+                                            "timestamp": datetime.now().strftime('%H:%M:%S'),
+                                            "level": "info",
+                                            "logger": log_file.replace('.log', ''),
+                                            "message": line.strip()
+                                        })
                                 else:
-                                    # Простая строка
+                                    # Простая строка без разделителей
                                     all_logs.append({
                                         "timestamp": datetime.now().strftime('%H:%M:%S'),
                                         "level": "info",

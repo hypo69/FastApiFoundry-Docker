@@ -39,20 +39,33 @@ function Free-Port {
 
     $connections = netstat -ano | findstr ":$PortNumber"
     if ($connections) {
-        Write-Host "⚠️  Порт $PortNumber занят. Освобождение..." -ForegroundColor Yellow
+        Write-Host "⚠️  Порт $PortNumber занят. Проверка процессов..." -ForegroundColor Yellow
 
         foreach ($line in $connections) {
             $parts = $line -split '\s+'
             $processId = $parts[-1]
 
             if ($processId -and $processId -ne "0") {
-                Write-Host "🛑 Киллинг процесса PID: $processId" -ForegroundColor Red
-                taskkill /PID $processId /F 2>$null
+                try {
+                    $process = Get-Process -Id $processId -ErrorAction Stop
+                    $processName = $process.ProcessName.ToLower()
+                    
+                    # Убиваем только FastAPI/uvicorn/python процессы, НЕ IDE
+                    if ($processName -match "python|uvicorn|fastapi" -and 
+                        $processName -notmatch "code|pycharm|idea|studio|devenv") {
+                        Write-Host "🛑 Киллинг FastAPI процесса: $processName (PID: $processId)" -ForegroundColor Red
+                        taskkill /PID $processId /F 2>$null
+                    } else {
+                        Write-Host "⚠️  Пропускаем процесс: $processName (PID: $processId) - возможно IDE" -ForegroundColor Yellow
+                    }
+                } catch {
+                    Write-Host "⚠️  Не удалось получить информацию о процессе PID: $processId" -ForegroundColor Yellow
+                }
             }
         }
 
         Start-Sleep -Seconds 2
-        Write-Host "✅ Порт $PortNumber освобожден" -ForegroundColor Green
+        Write-Host "✅ Порт $PortNumber проверен" -ForegroundColor Green
     } else {
         Write-Host "✅ Порт $PortNumber свободен" -ForegroundColor Green
     }
