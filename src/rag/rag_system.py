@@ -194,6 +194,40 @@ class RAGSystem:
         self.model = None
         
         return await self.initialize()
+    
+    async def clear_index(self) -> bool:
+        """Очистить RAG индекс и все chunks"""
+        try:
+            logger.info("Clearing RAG index...")
+            
+            # Сбросить состояние
+            self.loaded = False
+            self.index = None
+            self.chunks = []
+            self.model = None
+            
+            # Удалить файлы индекса
+            index_path = self.index_dir / "faiss.index"
+            chunks_path = self.index_dir / "chunks.json"
+            info_path = self.index_dir / "index_info.json"
+            
+            files_removed = []
+            for file_path in [index_path, chunks_path, info_path]:
+                if file_path.exists():
+                    file_path.unlink()
+                    files_removed.append(file_path.name)
+                    logger.info(f"Removed: {file_path}")
+            
+            if files_removed:
+                logger.info(f"RAG index cleared. Removed files: {', '.join(files_removed)}")
+            else:
+                logger.info("RAG index was already empty")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to clear RAG index: {e}")
+            return False
 
 # Глобальный экземпляр RAG системы
 rag_system = RAGSystem()

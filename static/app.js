@@ -1283,3 +1283,28 @@ async function runSDKExample(type) {
         statusDiv.innerHTML = '<div class="text-danger"><i class="bi bi-x-circle"></i> Ошибка подключения</div>';
     }
 }
+
+// Очистка RAG chunks
+async function clearRAGChunks() {
+    if (!confirm('Вы уверены, что хотите удалить все индексированные документы из RAG системы?\n\nЭто действие нельзя отменить.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/rag/clear`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message || 'RAG chunks успешно очищены', 'success');
+        } else {
+            showAlert(`Ошибка: ${data.error}`, 'danger');
+        }
+    } catch (error) {
+        showAlert('Ошибка очистки RAG chunks', 'danger');
+        console.error('Clear RAG chunks error:', error);
+    }
+}

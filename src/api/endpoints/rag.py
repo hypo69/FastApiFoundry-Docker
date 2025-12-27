@@ -120,3 +120,18 @@ async def rag_initialize():
             "success": False,
             "error": str(e)
         }
+
+@router.post("/rag/clear")
+async def rag_clear():
+    """Очистить RAG индекс и все chunks"""
+    try:
+        success = await rag_system.clear_index()
+        return {
+            "success": success,
+            "message": "RAG индекс и chunks успешно очищены" if success else "Ошибка очистки RAG"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
