@@ -123,9 +123,9 @@ async def pull_model(request: dict):
     try:
         logger.info(f"Starting model pull: {model_id}")
         
-        # Запускаем foundry pull в фоне
+        # Запускаем foundry model pull в фоне
         process = subprocess.Popen(
-            ['foundry', 'pull', model_id],  # Используем 'pull' вместо 'model pull'
+            ['foundry', 'model', 'pull', model_id],  # Правильная команда
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -163,9 +163,9 @@ async def remove_model(request: dict):
         raise HTTPException(status_code=400, detail="model_id is required")
     
     try:
-        # Используем правильную команду foundry
+        # Используем правильную команду foundry для удаления модели
         result = subprocess.run(
-            ['foundry', 'rm', model_id],  # Используем 'rm' вместо 'model remove'
+            ['foundry', 'model', 'rm', model_id],  # Правильная команда
             capture_output=True,
             text=True,
             timeout=30
@@ -243,7 +243,7 @@ async def auto_load_default_model():
         logger.info(f"Auto-loading default model: {default_model}")
         
         process = subprocess.Popen(
-            ['foundry', 'pull', default_model],
+            ['foundry', 'model', 'pull', default_model],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
