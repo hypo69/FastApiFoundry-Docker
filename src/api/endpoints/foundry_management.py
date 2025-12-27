@@ -79,9 +79,13 @@ def is_port_in_use(port: int) -> bool:
 
 async def check_foundry_health() -> dict:
     """Проверить здоровье Foundry через HTTP"""
+    import os
+    foundry_url = os.getenv('FOUNDRY_BASE_URL', 'http://localhost:50477/v1/')
+    base_url = foundry_url.rstrip('/v1/').rstrip('/')
+    
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get('http://localhost:50477/v1/models', timeout=5) as response:
+            async with session.get(f'{base_url}/v1/models', timeout=5) as response:
                 if response.status == 200:
                     data = await response.json()
                     models = [model.get('id', 'unknown') for model in data.get('data', [])]
@@ -97,14 +101,10 @@ async def check_foundry_health() -> dict:
 async def start_foundry():
     """Запустить Foundry сервис"""
     try:
-        # Освобождаем порт 50477 принудительно
-        logger.info("Ensuring port 50477 is free...")
-        ensure_port_free(50477)
-        
         # Попытка запуска Foundry
         try:
             process = subprocess.Popen(
-                ['foundry', '--port', '50477'],
+                ['foundry', 'service', 'start'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if hasattr(subprocess, 'CREATE_NEW_PROCESS_GROUP') else 0

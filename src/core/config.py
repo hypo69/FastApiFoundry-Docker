@@ -43,8 +43,12 @@ class Settings:
         self.api_port = int(get_config('port', 8000))
         self.api_key = get_config('api_key', '')
         
-        # Foundry
-        self.foundry_base_url = get_config('foundry_base_url', 'http://localhost:50477/v1/')
+        # Foundry - используем переменную окружения или config.json
+        foundry_env_url = os.getenv('FOUNDRY_BASE_URL')
+        if foundry_env_url:
+            self.foundry_base_url = foundry_env_url
+        else:
+            self.foundry_base_url = config_data.get('foundry_ai', {}).get('base_url', 'http://localhost:50477/v1/')
         self.foundry_default_model = get_config('foundry_default_model', 'deepseek-r1-distill-qwen-7b-generic-cpu:3')
         self.foundry_timeout = int(get_config('foundry_timeout', 30))
         

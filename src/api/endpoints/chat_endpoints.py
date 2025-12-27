@@ -91,7 +91,7 @@ async def send_chat_message(request: dict):
     # Генерация ответа
     try:
         response = await foundry_client.generate_text(
-            prompt=prompt,
+            prompt,
             model=model,
             temperature=temperature,
             max_tokens=max_tokens
@@ -201,7 +201,7 @@ async def delete_chat_session(session_id: str):
 async def get_available_models():
     """Получить список доступных моделей"""
     try:
-        models_info = await enhanced_foundry_client.list_models()
+        models_info = await foundry_client.list_available_models()
         if models_info.get("success", False):
             return {
                 "success": True,

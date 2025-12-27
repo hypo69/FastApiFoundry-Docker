@@ -19,8 +19,7 @@
 # =============================================================================
 
 param(
-    [int]$Port = 8000,
-    [string]$Model = "qwen2.5-0.5b-instruct-generic-cpu:4"
+    [int]$Port = 8000
 )
 
 # Глобальные переменные
@@ -28,7 +27,7 @@ $script:FoundryPort = $null
 $script:ServerProcess = $null
 
 Write-Host "🚀 FastAPI Foundry с AI моделями" -ForegroundColor Cyan
-Write-Host "Модель: $Model | Порт: $Port" -ForegroundColor Cyan
+Write-Host "Порт: $Port" -ForegroundColor Cyan
 Write-Host "=" * 60 -ForegroundColor Cyan
 Write-Host "=" * 50 -ForegroundColor Cyan
 
@@ -36,19 +35,19 @@ Write-Host "=" * 50 -ForegroundColor Cyan
 function Free-Port {
     param([int]$PortNumber)
 
-    Write-Host "🔍 Проверяем порт $PortNumber..." -ForegroundColor Yellow
+    Write-Host "🔍 Проверка порта $PortNumber..." -ForegroundColor Yellow
 
     $connections = netstat -ano | findstr ":$PortNumber"
     if ($connections) {
-        Write-Host "⚠️  Порт $PortNumber занят. Освобождаем..." -ForegroundColor Yellow
+        Write-Host "⚠️  Порт $PortNumber занят. Освобождение..." -ForegroundColor Yellow
 
         foreach ($line in $connections) {
             $parts = $line -split '\s+'
             $processId = $parts[-1]
 
             if ($processId -and $processId -ne "0") {
-                Write-Host "🛑 Убиваем процесс PID: $processId" -ForegroundColor Red
-                taskkill /PID $processId /F | Out-Null
+                Write-Host "🛑 Киллинг процесса PID: $processId" -ForegroundColor Red
+                taskkill /PID $processId /F 2>$null
             }
         }
 
@@ -59,158 +58,80 @@ function Free-Port {
     }
 }
 
-# Функция для проверки Foundry
-function Check-Foundry {
-    # Проверяем распространенные порты Foundry
-    $ports = @(50477, 49788, 58717, 51601, 5272)
-
-    foreach ($port in $ports) {
-        try {
-            $response = Invoke-WebRequest -Uri "http://localhost:$port/v1/models" -TimeoutSec 3 -ErrorAction Stop
-            if ($response.StatusCode -eq 200) {
-                $models = ($response.Content | ConvertFrom-Json).data.Count
-                Write-Host "✅ Foundry работает на порту $port, моделей: $models" -ForegroundColor Green
-                # Сохраняем рабочий порт в глобальную переменную
-                $script:FoundryPort = $port
-                return $true
-            }
-        } catch {
-            # Продолжаем проверку следующего порта
-        }
-    }
-
-    Write-Host "❌ Foundry не найден на стандартных портах" -ForegroundColor Red
-    return $false
-}
-
-# Функция для получения порта Foundry
-function Get-Foundry-Port {
-    # Если порт уже сохранен, возвращаем его
-    if ($script:FoundryPort) {
-        return $script:FoundryPort
-    }
-
-    # Ищем Foundry на стандартных портах
-    $ports = @(49788, 50477, 8000, 8080)
-    foreach ($port in $ports) {
-        try {
-            $response = Invoke-WebRequest -Uri "http://localhost:$port/v1/models" -TimeoutSec 2 -ErrorAction Stop
-            if ($response.StatusCode -eq 200) {
-                $script:FoundryPort = $port
-                return $port
-            }
-        } catch {
-            # Продолжаем проверку
-        }
-    }
-
-    return $null
-}
-
-# Функция для запуска Foundry
-function Start-Foundry {
-    Write-Host "🚀 Запускаем Foundry service..." -ForegroundColor Yellow
-    $foundryProcess = Start-Process -FilePath "foundry" -ArgumentList "service", "start" -NoNewWindow -PassThru
-
-    Write-Host "⏳ Ждем запуска Foundry (15 сек)..." -ForegroundColor Yellow
-    Start-Sleep -Seconds 15
-
-    return $foundryProcess
-}
-
-# Функция для запуска модели
-function Start-Model {
-    param([string]$ModelName)
-
-    Write-Host "🤖 Запускаем модель: $ModelName" -ForegroundColor Yellow
-
-    # Проверяем, не запущена ли уже модель (пробуем через API)
-    try {
-        $foundryPort = Get-Foundry-Port
-        if ($foundryPort) {
-            $response = Invoke-WebRequest -Uri "http://localhost:$foundryPort/v1/models" -TimeoutSec 5 -ErrorAction Stop
-            $modelsData = $response.Content | ConvertFrom-Json
-            $runningModels = $modelsData.data | Where-Object { $_.id -eq $ModelName }
-
-            if ($runningModels) {
-                Write-Host "✅ Модель $ModelName уже запущена" -ForegroundColor Green
-                return $true
-            }
-        }
-    } catch {
-        Write-Host "⚠️  Не удалось проверить статус модели через API" -ForegroundColor Yellow
-    }
-
-    # Запускаем модель через foundry CLI
-    Write-Host "📥 Загружаем модель $ModelName..." -ForegroundColor Cyan
-    try {
-        $runResult = & foundry model run $ModelName 2>&1
-        $runOutput = $runResult -join "`n"
-
-        if ($LASTEXITCODE -eq 0 -or $runOutput -match "loaded successfully") {
-            Write-Host "✅ Модель $ModelName запущена успешно" -ForegroundColor Green
-            return $true
-        } elseif ($runOutput -match "already running") {
-            Write-Host "✅ Модель $ModelName уже была запущена" -ForegroundColor Green
-            return $true
-        } else {
-            Write-Host "❌ Ошибка запуска модели: $runOutput" -ForegroundColor Red
-            return $false
-        }
-    } catch {
-        Write-Host "❌ Ошибка запуска модели: $_" -ForegroundColor Red
-        return $false
-    }
-}
-
 # Основная логика
 try {
-    # 1. Освобождаем порт
+    # 1. Освобождение порта
     Free-Port -PortNumber $Port
 
-    # 2. Проверяем Foundry
-    $foundryRunning = Check-Foundry
-    if (-not $foundryRunning) {
-        $foundryProcess = Start-Foundry
-        Start-Sleep -Seconds 5  # Дополнительное ожидание
-        $foundryRunning = Check-Foundry
-        if (-not $foundryRunning) {
+    # 2. Поиск уже запущенного Foundry
+    Write-Host "🔍 Поиск запущенного Foundry..." -ForegroundColor Yellow
+    $foundryPort = $null
+    
+    # Ищем процесс foundry и его порт
+    $foundryProcesses = Get-Process -Name "foundry" -ErrorAction SilentlyContinue
+    if ($foundryProcesses) {
+        $netstatOutput = netstat -ano | Select-String "$($foundryProcesses[0].Id)"
+        foreach ($line in $netstatOutput) {
+            if ($line -match ":([0-9]+)\s+.*LISTENING") {
+                $port = $matches[1]
+                try {
+                    $response = Invoke-WebRequest -Uri "http://localhost:$port/v1/models" -TimeoutSec 2 -ErrorAction Stop
+                    if ($response.StatusCode -eq 200) {
+                        $foundryPort = $port
+                        Write-Host "✅ Foundry найден на порту $port" -ForegroundColor Green
+                        break
+                    }
+                } catch { }
+            }
+        }
+    }
+    
+    if (-not $foundryPort) {
+        Write-Host "🚀 Foundry не найден, запускаем..." -ForegroundColor Yellow
+        $foundryOutput = & foundry service start 2>&1
+        
+        # Парсинг порта из вывода
+        foreach ($line in $foundryOutput) {
+            if ($line -match "http://127\.0\.0\.1:(\d+)/") {
+                $foundryPort = $matches[1]
+                Write-Host "✅ Foundry запущен на порту $foundryPort" -ForegroundColor Green
+                break
+            }
+        }
+        
+        if (-not $foundryPort) {
             Write-Host "❌ Не удалось запустить Foundry" -ForegroundColor Red
             exit 1
         }
     }
+    
+    $script:FoundryPort = $foundryPort
 
-    # 3. Запускаем модель Deepseek R1
-    $modelStarted = Start-Model -ModelName $Model
-    if (-not $modelStarted) {
-        Write-Host "❌ Не удалось запустить модель $Model" -ForegroundColor Red
-        exit 1
-    }
-
-    # 4. Запускаем FastAPI сервер
+    # 3. Запуск FastAPI сервера
     Write-Host "🌐 Запуск FastAPI сервера на порту $Port..." -ForegroundColor Cyan
     Write-Host "📚 Документация: http://localhost:$Port/docs" -ForegroundColor Cyan
     Write-Host "💬 Чат: http://localhost:$Port/static/chat.html" -ForegroundColor Cyan
     Write-Host "" -ForegroundColor Cyan
 
-    # Активируем venv и запускаем сервер
-    Write-Host "🔧 Активируем виртуальное окружение..." -ForegroundColor Yellow
+    # Активация venv и запуск сервера
+    Write-Host "🔧 Активация виртуального окружения..." -ForegroundColor Yellow
     & "$PSScriptRoot\venv\Scripts\Activate.ps1"
 
-    Write-Host "🚀 Запускаем FastAPI сервер..." -ForegroundColor Green
-    $script:ServerProcess = Start-Process -FilePath "python" -ArgumentList "simple_server.py", $Port -NoNewWindow -PassThru
+    Write-Host "🚀 Запуск FastAPI сервера..." -ForegroundColor Green
+    $env:FOUNDRY_BASE_URL = "http://localhost:$foundryPort/v1/"
+    $script:ServerProcess = Start-Process -FilePath "python" -ArgumentList "run.py" -NoNewWindow -PassThru
 
-    # Ждем запуска сервера
-    Start-Sleep -Seconds 3
+    # Проверка запуска сервера
+    Start-Sleep -Seconds 5
 
-    # Проверяем, запустился ли сервер
+    # Проверка запуска сервера
     try {
-        $response = Invoke-WebRequest -Uri "http://localhost:$Port/api/v1/health" -TimeoutSec 5 -ErrorAction Stop
+        $response = Invoke-WebRequest -Uri "http://localhost:$Port/api/v1/health" -TimeoutSec 10 -ErrorAction Stop
         if ($response.StatusCode -eq 200) {
             Write-Host "✅ FastAPI сервер запущен успешно" -ForegroundColor Green
 
-            # Открываем браузер
-            Write-Host "🌐 Открываем веб-интерфейс..." -ForegroundColor Cyan
+            # Открытие браузера
+            Write-Host "🌐 Открытие веб-интерфейса..." -ForegroundColor Cyan
             Start-Process "http://localhost:$Port/static/chat.html"
 
             Write-Host "" -ForegroundColor Cyan
@@ -220,7 +141,7 @@ try {
             Write-Host "" -ForegroundColor Cyan
             Write-Host "Для остановки нажмите Ctrl+C" -ForegroundColor Yellow
 
-            # Ждем завершения сервера
+            # Ожидание завершения сервера
             $script:ServerProcess.WaitForExit()
         } else {
             Write-Host "❌ FastAPI сервер не отвечает" -ForegroundColor Red
@@ -237,7 +158,7 @@ try {
 } finally {
     # Очистка при завершении
     if ($script:ServerProcess -and -not $script:ServerProcess.HasExited) {
-        Write-Host "🛑 Останавливаем сервер..." -ForegroundColor Yellow
+        Write-Host "🛑 Остановка сервера..." -ForegroundColor Yellow
         $script:ServerProcess.Kill()
     }
 }

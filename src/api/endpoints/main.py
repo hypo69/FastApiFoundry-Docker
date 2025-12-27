@@ -7,7 +7,7 @@ router = APIRouter()
 
 @router.get("/")
 async def root():
-    """Веб-интерфейс FastAPI Foundry"""
+    """Панель управления FastAPI Foundry"""
     return FileResponse('static/index.html')
 
 @router.get("/api")

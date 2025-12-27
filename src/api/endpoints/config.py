@@ -23,20 +23,23 @@ router = APIRouter()
 @router.get("/config")
 async def get_config():
     """Получить конфигурацию системы"""
+    import os
+    from ...core.config import settings
+    
     try:
-        config_file = Path("config.json")
-        if config_file.exists():
-            with open(config_file, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-            return {
-                "success": True,
-                "config": config
+        return {
+            "success": True,
+            "config": {
+                "foundry_ai": {
+                    "base_url": settings.foundry_base_url,
+                    "default_model": settings.foundry_default_model
+                },
+                "fastapi_server": {
+                    "host": settings.api_host,
+                    "port": settings.api_port
+                }
             }
-        else:
-            return {
-                "success": False,
-                "error": "Config file not found"
-            }
+        }
     except Exception as e:
         return {
             "success": False,

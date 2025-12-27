@@ -17,6 +17,7 @@
 import asyncio
 import aiohttp
 import json
+import psutil
 from datetime import datetime
 
 class FoundryClient:
@@ -26,6 +27,37 @@ class FoundryClient:
         self.base_url = base_url
         self.timeout = aiohttp.ClientTimeout(total=30)
         self.session = None
+    
+    def get_foundry_port(self):
+        """Получить реальный порт Foundry из запущенных процессов"""
+        try:
+            # Проверяем порты в диапазоне 50400-50800
+            import socket
+            for port in range(50400, 50800):
+                try:
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                        s.settimeout(0.1)
+                        result = s.connect_ex(('127.0.0.1', port))
+                        if result == 0:
+                            # Порт открыт, проверяем что это Foundry
+                            try:
+                                import requests
+                                response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=1)
+                                if response.status_code == 200:
+                                    return port
+                            except:
+                                continue
+                except:
+                    continue
+        except:
+            pass
+        return 50477  # Порт по умолчанию
+    
+    def update_base_url(self):
+        """Обновить base_url с реальным портом"""
+        real_port = self.get_foundry_port()
+        self.base_url = f"http://localhost:{real_port}/v1"
+        return self.base_url
     
     async def _get_session(self):
         """Получить HTTP сессию"""
@@ -41,6 +73,9 @@ class FoundryClient:
     async def health_check(self):
         """Проверка здоровья Foundry сервиса"""
         try:
+            # Обновляем URL с реальным портом
+            self.update_base_url()
+            
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/models"
             
@@ -48,10 +83,12 @@ class FoundryClient:
                 if response.status == 200:
                     data = await response.json()
                     models_count = len(data.get('data', []))
+                    real_port = self.get_foundry_port()
                     return {
                         "status": "healthy",
                         "models_count": models_count,
                         "url": self.base_url,
+                        "port": real_port,
                         "timestamp": datetime.now().isoformat()
                     }
                 else:
@@ -62,10 +99,12 @@ class FoundryClient:
                         "timestamp": datetime.now().isoformat()
                     }
         except Exception as e:
+            real_port = self.get_foundry_port()
             return {
                 "status": "disconnected",
-                "error": "Foundry server not running on port 50477",
+                "error": f"Foundry server not running on port {real_port}",
                 "url": self.base_url,
+                "port": real_port,
                 "timestamp": datetime.now().isoformat()
             }
     
@@ -75,9 +114,10 @@ class FoundryClient:
             # Проверяем доступность Foundry
             health = await self.health_check()
             if health["status"] != "healthy":
+                real_port = health.get("port", 50477)
                 return {
                     "success": False,
-                    "error": "Foundry server not available. Please start Foundry on port 50477.",
+                    "error": f"Foundry server not available. Please start Foundry on port {real_port}.",
                     "foundry_status": health["status"]
                 }
             
@@ -114,9 +154,10 @@ class FoundryClient:
                     }
                     
         except Exception as e:
+            real_port = self.get_foundry_port()
             return {
                 "success": False,
-                "error": "Cannot connect to Foundry server. Please start Foundry on port 50477."
+                "error": f"Cannot connect to Foundry server. Please start Foundry on port {real_port}."
             }
 
     async def list_available_models(self):
