@@ -33,9 +33,19 @@ def get_foundry_url():
 @router.get("/available")
 async def list_available_models():
     """Получить список всех доступных моделей для загрузки"""
-    try:
+    try {
         from pathlib import Path
         script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "list-models.ps1"
+        
+        if not script_path.exists():
+            logger.error(f"PowerShell script not found: {script_path}")
+            return {
+                "success": False,
+                "models": [],
+                "error": f"Script not found: {script_path}"
+            }
+        
+        logger.info(f"Listing available models using script: {script_path}")
         
         result = subprocess.run(
             ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(script_path), '-Type', 'available'],
@@ -43,6 +53,8 @@ async def list_available_models():
             text=True,
             timeout=30
         )
+        
+        logger.info(f"PowerShell result: returncode={result.returncode}, stdout length={len(result.stdout)}, stderr={result.stderr}")
         
         if result.returncode == 0:
             # Парсим вывод foundry model list
@@ -57,20 +69,30 @@ async def list_available_models():
                         "type": "unknown"
                     })
             
+            logger.info(f"Found {len(models)} available models")
             return {
                 "success": True,
                 "models": models,
                 "count": len(models)
             }
         else:
+            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+            logger.error(f"Failed to list models: {error_msg}")
             return {
                 "success": False,
                 "models": [],
-                "error": result.stderr or "Failed to list models"
+                "error": error_msg
             }
             
+    except subprocess.TimeoutExpired:
+        logger.error("Timeout listing available models")
+        return {
+            "success": False,
+            "models": [],
+            "error": "Operation timed out"
+        }
     except Exception as e:
-        logger.error(f"Error listing available models: {e}")
+        logger.error(f"Error listing available models: {str(e)}")
         return {
             "success": False,
             "models": [],
@@ -166,11 +188,18 @@ async def load_model(request: dict):
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
     
-    try:
-        logger.info(f"Starting model load: {model_id}")
-        
+    try {
         from pathlib import Path
         script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "load-model.ps1"
+        
+        if not script_path.exists():
+            logger.error(f"PowerShell script not found: {script_path}")
+            return {
+                "success": False,
+                "error": f"Script not found: {script_path}"
+            }
+        
+        logger.info(f"Loading model {model_id} using script: {script_path}")
         
         process = subprocess.Popen(
             ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(script_path), '-ModelId', model_id],
@@ -188,7 +217,7 @@ async def load_model(request: dict):
         }
         
     except Exception as e:
-        logger.error(f"Error loading model {model_id}: {e}")
+        logger.error(f"Error loading model {model_id}: {str(e)}")
         return {
             "success": False,
             "error": str(e)
@@ -201,9 +230,18 @@ async def unload_model(request: dict):
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
     
-    try:
+    try {
         from pathlib import Path
         script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "unload-model.ps1"
+        
+        if not script_path.exists():
+            logger.error(f"PowerShell script not found: {script_path}")
+            return {
+                "success": False,
+                "error": f"Script not found: {script_path}"
+            }
+        
+        logger.info(f"Unloading model {model_id} using script: {script_path}")
         
         result = subprocess.run(
             ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(script_path), '-ModelId', model_id],
@@ -211,6 +249,8 @@ async def unload_model(request: dict):
             text=True,
             timeout=30
         )
+        
+        logger.info(f"PowerShell result: returncode={result.returncode}, stdout={result.stdout}, stderr={result.stderr}")
         
         if result.returncode == 0:
             logger.info(f"Model {model_id} unloaded successfully")
@@ -220,14 +260,21 @@ async def unload_model(request: dict):
                 "model_id": model_id
             }
         else:
-            logger.error(f"Failed to unload model {model_id}: {result.stderr}")
+            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+            logger.error(f"Failed to unload model {model_id}: {error_msg}")
             return {
                 "success": False,
-                "error": result.stderr or "Failed to unload model"
+                "error": error_msg
             }
             
+    except subprocess.TimeoutExpired:
+        logger.error(f"Timeout unloading model {model_id}")
+        return {
+            "success": False,
+            "error": "Operation timed out"
+        }
     except Exception as e:
-        logger.error(f"Error unloading model {model_id}: {e}")
+        logger.error(f"Error unloading model {model_id}: {str(e)}")
         return {
             "success": False,
             "error": str(e)
