@@ -95,7 +95,11 @@
                 
                 // Fallback - базовые модели
                 const select = document.getElementById('model-select');
-                select.innerHTML = '<option value="deepseek-r1:14b">DeepSeek R1 14B (fallback)</option>';
+                select.innerHTML = `
+                    <option value="qwen2.5-0.5b">Qwen 2.5 0.5B</option>
+                    <option value="deepseek-r1-7b">DeepSeek R1 7B</option>
+                    <option value="phi-3-mini-4k">Phi-3 Mini 4K</option>
+                `;
             }
         }
 
