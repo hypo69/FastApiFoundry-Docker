@@ -24,8 +24,8 @@
   },
   "rag_system": {
     "enabled": true,
-    "index_dir": "./rag_index",
-    "model": "sentence-transformers/all-MiniLM-L6-v2",
+    "index_dir": "rag_index",
+    "model": "sentence-transformers/all-mpnet-base-v2",
     "chunk_size": 1000,
     "top_k": 5
   },

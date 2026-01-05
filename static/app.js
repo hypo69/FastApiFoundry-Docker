@@ -1347,12 +1347,31 @@ async function refreshRAGStatus() {
 }
 
 async function saveRAGConfig() {
+    const config = {
+        enabled: document.getElementById('rag-enabled').checked,
+        index_dir: document.getElementById('rag-index-dir').value || './rag_index',
+        model: document.getElementById('rag-model').value || 'sentence-transformers/all-MiniLM-L6-v2',
+        chunk_size: parseInt(document.getElementById('rag-chunk-size').value) || 1000,
+        top_k: parseInt(document.getElementById('rag-top-k').value) || 5
+    };
+    
     try {
-        console.log('Save RAG Config clicked');
-        showAlert('RAG configuration saved (local only)', 'info');
+        const response = await fetch(`${API_BASE}/rag/config`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            showAlert('RAG configuration saved successfully', 'success');
+            refreshRAGStatus();
+        } else {
+            showAlert(`Error: ${data.error}`, 'danger');
+        }
     } catch (error) {
-        console.error('Error in saveRAGConfig:', error);
         showAlert('Error saving RAG config', 'danger');
+        console.error('RAG config save error:', error);
     }
 }
 
