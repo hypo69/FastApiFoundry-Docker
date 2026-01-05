@@ -100,9 +100,12 @@ Load-EnvFile "$Root\.env"
 # -----------------------------------------------------------------------------
 function Test-FoundryCli {
     try {
-        Get-Command foundry -ErrorAction Stop | Out-Null
+        $foundryCmd = Get-Command foundry -ErrorAction Stop
+        Write-Host "✅ Foundry CLI найден: $($foundryCmd.Source)" -ForegroundColor Green
         return $true
     } catch {
+        Write-Host "❌ Foundry CLI не найден в PATH" -ForegroundColor Red
+        Write-Host "💡 Установите Microsoft Foundry: https://github.com/microsoft/foundry" -ForegroundColor Cyan
         return $false
     }
 }
@@ -157,23 +160,88 @@ if ($foundryPort) {
     $env:FOUNDRY_DYNAMIC_PORT = $foundryPort
 }
 else {
-    if (-not (Test-FoundryCli)) {
-        Write-Host '⚠️ Foundry CLI not found. Skipping AI startup.' -ForegroundColor Yellow
-        Write-Host 'Install Foundry: https://github.com/foundry-rs/foundry' -ForegroundColor Gray
+    $foundryInstalled = Test-FoundryCli
+    
+    if (-not $foundryInstalled) {
+        Write-Host '⚠️ Foundry CLI не установлен. Пропускаем AI запуск.' -ForegroundColor Yellow
+        Write-Host ''
+        Write-Host '🤖 Хотите установить Microsoft Foundry для AI функций?' -ForegroundColor Cyan
+        Write-Host '   Foundry позволяет запускать локальные AI модели' -ForegroundColor Gray
+        Write-Host ''
+        $install = Read-Host 'Установить Foundry? (y/N)'
+        
+        if ($install -eq 'y' -or $install -eq 'Y') {
+            Write-Host '🚀 Запуск GUI установщика...' -ForegroundColor Green
+            
+            if (Test-Path "$Root\install-gui.ps1") {
+                try {
+                    & "$Root\install-gui.ps1"
+                    Write-Host '✅ Установка завершена!' -ForegroundColor Green
+                } catch {
+                    Write-Host "❌ Ошибка запуска GUI: $_" -ForegroundColor Red
+                    
+                    # Фолбэк на консольный установщик
+                    if (Test-Path "$Root\install-foundry.ps1") {
+                        Write-Host '🔄 Переход на консольный установщик...' -ForegroundColor Yellow
+                        & "$Root\install-foundry.ps1"
+                    }
+                }
+            } else {
+                Write-Host '📥 Открываем страницу загрузки...' -ForegroundColor Yellow
+                Start-Process 'https://github.com/microsoft/foundry/releases'
+            }
+        } else {
+            Write-Host '⏭️ Продолжаем без AI функций' -ForegroundColor Yellow
+        }
     }
     else {
-        Write-Host '🚀 Foundry not running, starting service...' -ForegroundColor Yellow
+        Write-Host '🚀 Foundry не запущен, пытаемся запустить...' -ForegroundColor Yellow
 
-        $output = & foundry service start 2>&1
-        Write-Host "📋 Foundry output: $output" -ForegroundColor Gray
-        
-        # Парсим порт из вывода
-        if ($output -match "http://127\.0\.0\.1:(\d+)/") {
-            $foundryPort = $matches[1]
-            Write-Host "✅ Foundry started on port $foundryPort" -ForegroundColor Green
-            $env:FOUNDRY_DYNAMIC_PORT = $foundryPort
-        } else {
-            Write-Host '⚠️ Could not parse Foundry port from output. Continuing without AI.' -ForegroundColor Yellow
+        try {
+            Write-Host '🔄 Выполняем: foundry service start' -ForegroundColor Gray
+            $output = & foundry service start 2>&1
+            
+            Write-Host "📋 Вывод Foundry:" -ForegroundColor Gray
+            $output | ForEach-Object { Write-Host "   $_" -ForegroundColor DarkGray }
+            
+            # Парсим порт из вывода
+            $foundryPort = $null
+            foreach ($line in $output) {
+                if ($line -match "http://127\.0\.0\.1:(\d+)/") {
+                    $foundryPort = $matches[1]
+                    break
+                }
+                if ($line -match "localhost:(\d+)") {
+                    $foundryPort = $matches[1]
+                    break
+                }
+                if ($line -match "port\s+(\d+)") {
+                    $foundryPort = $matches[1]
+                    break
+                }
+            }
+            
+            if ($foundryPort) {
+                Write-Host "✅ Foundry запущен на порту $foundryPort" -ForegroundColor Green
+                $env:FOUNDRY_DYNAMIC_PORT = $foundryPort
+                
+                # Проверяем что API действительно работает
+                Start-Sleep 3
+                try {
+                    $response = Invoke-WebRequest -Uri "http://localhost:$foundryPort/v1/models" -TimeoutSec 5 -UseBasicParsing
+                    Write-Host "✅ Foundry API подтвержден" -ForegroundColor Green
+                } catch {
+                    Write-Host "⚠️ Foundry запущен, но API не отвечает: $_" -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host '⚠️ Не удалось определить порт Foundry. Продолжаем без AI.' -ForegroundColor Yellow
+                Write-Host '💡 Попробуйте запустить Foundry вручную' -ForegroundColor Cyan
+            }
+        } catch {
+            Write-Host "❌ Ошибка запуска Foundry: $_" -ForegroundColor Red
+            Write-Host '💡 Попробуйте:' -ForegroundColor Cyan
+            Write-Host '   foundry --help' -ForegroundColor Gray
+            Write-Host '   foundry service --help' -ForegroundColor Gray
         }
     }
 }
