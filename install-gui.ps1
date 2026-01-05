@@ -215,7 +215,7 @@ $installButton.Add_Click({
         Update-Progress 100
         Write-Log ""
         Write-Log "🎉 Установка завершена!"
-        Write-Log "💡 Теперь можете запустить: .\start.ps1"
+        Write-Log "💡 Теперь можете запустить: python311 run.py"
         
     } catch {
         Write-Log "❌ Критическая ошибка: $_"

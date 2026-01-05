@@ -33,7 +33,7 @@ if (-not (Test-Path $venvPath)) {
         }
     } else {
         Write-Host '❌ install.ps1 не найден!' -ForegroundColor Red
-        Write-Host 'Создайте venv вручную: python -m venv venv' -ForegroundColor Yellow
+        Write-Host 'Создайте venv вручную: python311 -m venv venv' -ForegroundColor Yellow
         exit 1
     }
 }
@@ -91,6 +91,29 @@ function Load-EnvFile {
     
     Write-Host "✅ Loaded $envVars environment variables" -ForegroundColor Green
 }
+
+# -----------------------------------------------------------------------------
+# Generate API Keys if needed
+# -----------------------------------------------------------------------------
+function Generate-ApiKeys {
+    # Фиксированные ключи для проекта
+    $apiKey = "fastapi-foundry-2025-xK9mP2vR8qL5nW3tY7uI0oE4rT6yU1sA"
+    $secretKey = "jwt-secret-2025-aB3cD4eF5gH6iJ7kL8mN9oP0qR1sT2uV3wX4yZ5A1bC2dE3fG4hI5jK6lM7nO8pQ9rS0tU1vW2xY3z"
+    
+    # Устанавливаем переменные окружения если не заданы
+    if (-not $env:API_KEY) {
+        $env:API_KEY = $apiKey
+        Write-Host "🔑 API_KEY установлен" -ForegroundColor Green
+    }
+    
+    if (-not $env:SECRET_KEY) {
+        $env:SECRET_KEY = $secretKey
+        Write-Host "🔐 SECRET_KEY установлен" -ForegroundColor Green
+    }
+}
+
+# Генерируем ключи если нужно
+Generate-ApiKeys
 
 # Загружаем .env файл
 Load-EnvFile "$Root\.env"

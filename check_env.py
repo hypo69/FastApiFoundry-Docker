@@ -7,8 +7,8 @@
 #   Проверяет наличие обязательных переменных и их корректность
 #
 # Примеры:
-#   python check_env.py
-#   python check_env.py --show-secrets
+#   python311 check_env.py
+#   python311 check_env.py --show-secrets
 #
 # File: check_env.py
 # Project: FastApiFoundry (Docker)
@@ -200,8 +200,8 @@ def generate_secure_keys():
     print("\n🔐 Generate Secure Keys:")
     print("Run these commands to generate secure keys:")
     print()
-    print("python -c \"import secrets; print(f'API_KEY={secrets.token_urlsafe(32)}')\"")
-    print("python -c \"import secrets; print(f'SECRET_KEY={secrets.token_urlsafe(64)}')\"")
+    print("python311 -c \"import secrets; print(f'API_KEY={secrets.token_urlsafe(32)}')\"")
+    print("python311 -c \"import secrets; print(f'SECRET_KEY={secrets.token_urlsafe(64)}')\"")
 
 def main():
     parser = argparse.ArgumentParser(description='Check environment variables')

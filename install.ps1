@@ -30,7 +30,7 @@ if (Test-Path $venvPath) {
 }
 
 if (-not (Test-Path $venvPath)) {
-    python -m venv $venvPath
+    python311 -m venv $venvPath
     Write-Host "✅ venv создан"
 }
 
@@ -47,7 +47,7 @@ try {
     Write-Host "✅ RAG зависимости установлены"
 } catch {
     Write-Warning "Не удалось установить RAG зависимости: $_"
-    Write-Host "Попробуйте позже: python install_rag_deps.py" -ForegroundColor Yellow
+    Write-Host "Попробуйте позже: python311 install_rag_deps.py" -ForegroundColor Yellow
 }
 
 Write-Host "✅ Python зависимости установлены"
@@ -164,7 +164,7 @@ if (-not (Test-Path "rag_index")) {
         Write-Host "✅ RAG индекс создан"
     } catch {
         Write-Warning "Не удалось создать RAG индекс: $_"
-        Write-Host "Попробуйте позже: python create_rag_index.py" -ForegroundColor Yellow
+        Write-Host "Попробуйте позже: python311 create_rag_index.py" -ForegroundColor Yellow
     }
 } else {
     Write-Host "✅ RAG индекс уже существует"
@@ -201,7 +201,7 @@ Write-Host "=" * 50
 Write-Host "Запуск:"
 Write-Host "  1. Активировать venv: .\venv\Scripts\Activate.ps1"
 Write-Host "  2. Запустить Foundry: foundry"
-Write-Host "  3. Запустить FastAPI: python run.py"
+Write-Host "  3. Запустить FastAPI: python311 run.py"
 Write-Host ""
 Write-Host "Или использовать embedded Python:"
 Write-Host "  .\python.exe run.py"

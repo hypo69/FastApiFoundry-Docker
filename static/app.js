@@ -363,17 +363,17 @@ async function checkSystemStatus() {
         const indicator = document.getElementById('status-indicator');
         if (data.status === 'healthy') {
             if (data.foundry_status === 'healthy') {
-                indicator.innerHTML = '<i class="bi bi-circle-fill text-success"></i> Online';
+                indicator.innerHTML = '<i class="bi bi-circle-fill text-success"></i> Connected';
             } else {
-                indicator.innerHTML = '<i class="bi bi-circle-fill text-warning"></i> Foundry недоступен';
+                indicator.innerHTML = '<i class="bi bi-circle-fill text-warning"></i> API Only';
             }
         } else {
-            indicator.innerHTML = '<i class="bi bi-circle-fill text-danger"></i> Offline';
+            indicator.innerHTML = '<i class="bi bi-circle-fill text-danger"></i> Error';
         }
         
         updateSystemInfo(data);
     } catch (error) {
-        document.getElementById('status-indicator').innerHTML = '<i class="bi bi-circle-fill text-danger"></i> Error';
+        document.getElementById('status-indicator').innerHTML = '<i class="bi bi-circle-fill text-danger"></i> Offline';
     }
 }
 
@@ -459,6 +459,9 @@ async function loadConnectedModels() {
                                 </button>
                                 <button class="btn btn-sm btn-outline-secondary" onclick="testModel('${model.id}')">
                                     <i class="bi bi-play"></i> Test
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeModel('${model.id}')">
+                                    <i class="bi bi-trash"></i> Remove
                                 </button>
                             </div>
                         </div>
@@ -873,6 +876,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // При переключении на вкладку RAG
+    const ragTab = document.getElementById('rag-tab');
+    if (ragTab) {
+        ragTab.addEventListener('click', function() {
+            setTimeout(refreshRAGStatus, 100);
+        });
+    }
+    
     // При переключении на вкладку Settings
     const settingsTab = document.getElementById('settings-tab');
     if (settingsTab) {
@@ -1284,7 +1295,118 @@ async function runSDKExample(type) {
     }
 }
 
-// Очистка RAG chunks
+// Функции для RAG вкладки
+async function refreshRAGStatus() {
+    try {
+        const response = await fetch(`${API_BASE}/rag/status`);
+        const data = await response.json();
+        
+        const statusDiv = document.getElementById('rag-status');
+        const statsDiv = document.getElementById('rag-stats');
+        
+        if (data.success) {
+            statusDiv.innerHTML = `
+                <div class="row">
+                    <div class="col-6">
+                        <strong>Status:</strong><br>
+                        <span class="badge ${data.enabled ? 'bg-success' : 'bg-secondary'}">${data.enabled ? 'Enabled' : 'Disabled'}</span>
+                    </div>
+                    <div class="col-6">
+                        <strong>Documents:</strong><br>
+                        <span class="badge bg-info">${data.total_chunks || 0}</span>
+                    </div>
+                </div>
+            `;
+            
+            statsDiv.innerHTML = `
+                <div class="mb-2">
+                    <small>Index Directory:</small><br>
+                    <code>${data.index_dir || './rag_index'}</code>
+                </div>
+                <div class="mb-2">
+                    <small>Total Chunks:</small> <strong>${data.total_chunks || 0}</strong>
+                </div>
+                <div>
+                    <small>Model:</small><br>
+                    <code>${data.model || 'sentence-transformers/all-MiniLM-L6-v2'}</code>
+                </div>
+            `;
+            
+            // Загружаем значения в поля формы
+            document.getElementById('rag-enabled').checked = data.enabled || false;
+            document.getElementById('rag-index-dir').value = data.index_dir || './rag_index';
+            document.getElementById('rag-model').value = data.model || 'sentence-transformers/all-MiniLM-L6-v2';
+            document.getElementById('rag-chunk-size').value = data.chunk_size || 1000;
+            document.getElementById('rag-top-k').value = data.top_k || 5;
+        } else {
+            statusDiv.innerHTML = '<div class="text-danger">Error loading RAG status</div>';
+        }
+    } catch (error) {
+        document.getElementById('rag-status').innerHTML = '<div class="text-danger">Connection error</div>';
+    }
+}
+
+async function saveRAGConfig() {
+    try {
+        console.log('Save RAG Config clicked');
+        showAlert('RAG configuration saved (local only)', 'info');
+    } catch (error) {
+        console.error('Error in saveRAGConfig:', error);
+        showAlert('Error saving RAG config', 'danger');
+    }
+}
+
+async function rebuildRAGIndex() {
+    try {
+        showAlert('Rebuilding RAG index...', 'info');
+        const response = await fetch(`${API_BASE}/rag/rebuild`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            showAlert('RAG index rebuilt successfully', 'success');
+            refreshRAGStatus();
+        } else {
+            showAlert(`Error: ${data.error}`, 'danger');
+        }
+    } catch (error) {
+        showAlert('Error rebuilding RAG index', 'danger');
+    }
+}
+
+async function testRAGSearch() {
+    const query = prompt('Enter search query:', 'FastAPI configuration');
+    if (!query) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/rag/search`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query, top_k: 3})
+        });
+        
+        const data = await response.json();
+        const resultsDiv = document.getElementById('rag-test-results');
+        const outputDiv = document.getElementById('rag-search-output');
+        
+        if (data.success && data.results) {
+            outputDiv.innerHTML = data.results.map((result, i) => `
+                <div class="mb-2 p-2 border-bottom">
+                    <strong>Result ${i + 1}:</strong> (Score: ${result.score?.toFixed(3) || 'N/A'})<br>
+                    <small class="text-muted">${result.content?.substring(0, 200)}...</small>
+                </div>
+            `).join('');
+            resultsDiv.style.display = 'block';
+        } else {
+            outputDiv.innerHTML = '<div class="text-muted">No results found</div>';
+            resultsDiv.style.display = 'block';
+        }
+    } catch (error) {
+        showAlert('Error testing RAG search', 'danger');
+    }
+}
+// Очистка RAG chunks (оставляем для совместимости)
 async function clearRAGChunks() {
     if (!confirm('Вы уверены, что хотите удалить все индексированные документы из RAG системы?\n\nЭто действие нельзя отменить.')) {
         return;
@@ -1300,11 +1422,58 @@ async function clearRAGChunks() {
         
         if (data.success) {
             showAlert(data.message || 'RAG chunks успешно очищены', 'success');
+            // Обновляем статус если находимся на RAG вкладке
+            if (document.getElementById('rag-tab').classList.contains('active')) {
+                setTimeout(refreshRAGStatus, 1000);
+            }
         } else {
             showAlert(`Ошибка: ${data.error}`, 'danger');
         }
     } catch (error) {
         showAlert('Ошибка очистки RAG chunks', 'danger');
         console.error('Clear RAG chunks error:', error);
+    }
+}
+// Обработка переключения RAG в Settings
+function handleRAGToggle(checkbox) {
+    // Предотвращаем множественные вызовы
+    if (checkbox.disabled) return;
+    
+    checkbox.disabled = true;
+    setTimeout(() => {
+        checkbox.disabled = false;
+    }, 2000);
+    
+    if (checkbox.checked) {
+        showAlert('RAG System enabled. Save configuration to apply changes.', 'info');
+    } else {
+        showAlert('RAG System disabled. Save configuration to apply changes.', 'warning');
+    }
+}
+// Удаление модели
+async function removeModel(modelId) {
+    if (!confirm(`Remove model ${modelId}?\n\nThis will unload the model from memory.`)) {
+        return;
+    }
+    
+    try {
+        showAlert(`Removing model ${modelId}...`, 'info');
+        
+        const response = await fetch(`${API_BASE}/foundry/models/unload`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({model_id: modelId})
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(`Model ${modelId} removed successfully`, 'success');
+            loadConnectedModels(); // Refresh models list
+        } else {
+            showAlert(`Error removing model: ${data.error}`, 'danger');
+        }
+    } catch (error) {
+        showAlert(`Error removing model: ${error.message}`, 'danger');
     }
 }

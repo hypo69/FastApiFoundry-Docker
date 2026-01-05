@@ -135,3 +135,22 @@ async def rag_clear():
             "success": False,
             "error": str(e)
         }
+
+@router.get("/rag/chunks")
+async def rag_list_chunks():
+    """Получить список всех RAG chunks"""
+    try:
+        chunks = await rag_system.get_all_chunks()
+        return {
+            "success": True,
+            "chunks": chunks,
+            "total": len(chunks),
+            "message": f"Найдено {len(chunks)} chunks"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "chunks": [],
+            "total": 0,
+            "error": str(e)
+        }

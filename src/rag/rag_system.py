@@ -228,6 +228,26 @@ class RAGSystem:
         except Exception as e:
             logger.error(f"Failed to clear RAG index: {e}")
             return False
+    
+    async def get_all_chunks(self) -> List[Dict[str, Any]]:
+        """Получить все RAG chunks с метаданными"""
+        if not self.loaded:
+            return []
+        
+        try:
+            # Возвращаем копию chunks с дополнительной информацией
+            chunks_with_info = []
+            for i, chunk in enumerate(self.chunks):
+                chunk_info = chunk.copy()
+                chunk_info['chunk_id'] = i
+                chunk_info['text_length'] = len(chunk.get('text', ''))
+                chunks_with_info.append(chunk_info)
+            
+            return chunks_with_info
+            
+        except Exception as e:
+            logger.error(f"Failed to get chunks: {e}")
+            return []
 
 # Глобальный экземпляр RAG системы
 rag_system = RAGSystem()
