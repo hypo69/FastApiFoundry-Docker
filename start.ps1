@@ -1,4 +1,11 @@
-param([string]$Config = 'config.json')
+# start.ps1 — FastAPI Foundry Smart Launcher
+# =============================================================================
+# Автоматически устанавливает зависимости при первом запуске
+# =============================================================================
+
+param(
+    [string]$Config = 'config.json'
+)
 
 $ErrorActionPreference = 'Continue'
 $Root = $PSScriptRoot
