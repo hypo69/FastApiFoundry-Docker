@@ -29,17 +29,43 @@ router = APIRouter()
 @router.get("/health")
 async def health_check():
     """Проверка здоровья сервиса"""
-    foundry_health = await foundry_client.health_check()
-    models_result = await foundry_client.list_available_models()
-    models_count = models_result.get('count', 0) if models_result.get('success') else 0
-
-    return {
-        "status": "healthy" if foundry_health.get('status') == 'healthy' else "unhealthy",
-        "foundry_status": foundry_health.get('status', 'unknown'),
-        "foundry_details": {
-            "port": foundry_health.get('port', 50477),
-            "url": foundry_health.get('url', 'http://localhost:50477/v1')
-        },
-        "models_count": models_count,
-        "timestamp": foundry_health.get('timestamp')
-    }
+    try:
+        foundry_health = await foundry_client.health_check()
+        
+        # API всегда здоров, если мы дошли до этой точки
+        api_status = "healthy"
+        foundry_status = foundry_health.get('status', 'disconnected')
+        
+        # Получаем список моделей только если Foundry доступен
+        models_count = 0
+        if foundry_status == 'healthy':
+            try:
+                models_result = await foundry_client.list_available_models()
+                models_count = models_result.get('count', 0) if models_result.get('success') else 0
+            except Exception:
+                models_count = 0
+        
+        return {
+            "status": api_status,
+            "foundry_status": foundry_status,
+            "foundry_details": {
+                "port": foundry_health.get('port'),
+                "url": foundry_health.get('url'),
+                "error": foundry_health.get('error') if foundry_status != 'healthy' else None
+            },
+            "models_count": models_count,
+            "timestamp": foundry_health.get('timestamp')
+        }
+    except Exception as e:
+        # Даже если есть ошибка, API работает
+        return {
+            "status": "healthy",
+            "foundry_status": "error",
+            "foundry_details": {
+                "port": None,
+                "url": None,
+                "error": str(e)
+            },
+            "models_count": 0,
+            "timestamp": None
+        }
