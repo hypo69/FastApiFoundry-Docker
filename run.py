@@ -128,6 +128,15 @@ def find_foundry_port() -> int | None:
         print("requests not available, cannot search for Foundry")
         return None
     
+    # ИСПРАВЛЕНО: Сначала проверяем фиксированный порт 50477
+    try:
+        response = requests.get('http://127.0.0.1:50477/v1/models', timeout=2)
+        if response.status_code == 200:
+            print("Foundry found on fixed port: 50477")
+            return 50477
+    except Exception:
+        print("Fixed port 50477 not responding, searching processes...")
+    
     try:
         # Ищем процесс Foundry
         import subprocess
@@ -147,14 +156,14 @@ def find_foundry_port() -> int | None:
                     if len(parts) >= 2:
                         addr = parts[1]
                         if '127.0.0.1:' in addr:
-                            port = int(addr.split(':')[1])
-                            # Проверяем, что это Foundry API
                             try:
+                                port = int(addr.split(':')[1])
+                                # Проверяем, что это Foundry API
                                 response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=1)
                                 if response.status_code == 200:
                                     print(f"Foundry found on port: {port}")
                                     return port
-                            except:
+                            except Exception:
                                 continue
         
         print("Foundry process not found")
@@ -209,61 +218,72 @@ def check_foundry(foundry_base_url: str | None) -> bool:
 # =============================================================================
 def main() -> bool:
     """Основная функция запуска сервера"""
-    logger.info('FastAPI Foundry')
-    logger.info('=' * 50)
-
-    # -------------------------------------------------------------------------
-    # Foundry
-    # -------------------------------------------------------------------------
-    logger.info("Poisk Foundry...")
-    foundry_base_url = resolve_foundry_base_url()
-
-    if foundry_base_url and check_foundry(foundry_base_url):
-        # Обновляем свойство Config с найденным URL
-        config.foundry_base_url = foundry_base_url
-        logger.info(f'Foundry dostupен: {foundry_base_url}')
-    else:
-        logger.warning('Foundry nedostupен — AI funkcii otklyucheny')
-
-    # -------------------------------------------------------------------------
-    # FastAPI
-    # -------------------------------------------------------------------------
-    host = config.api_host
-    reload_enabled = config.api_reload
-    log_level = config.api_log_level.lower()
-    workers = config.api_workers
-
-    if reload_enabled:
-        workers = 1
-
-    port = get_server_port()
-
-    logger.info('\nZapusk FastAPI servera')
-    logger.info(f'   Host: {host}')
-    logger.info(f'   Port: {port}')
-    logger.info(f'   Reload: {reload_enabled}')
-    logger.info(f'   Workers: {workers}')
-    logger.info('-' * 50)
-    logger.info(f'UI:   http://localhost:{port}')
-    logger.info(f'Docs: http://localhost:{port}/docs')
-    logger.info(f'Health: http://localhost:{port}/api/v1/health')
-    logger.info('-' * 50)
-
     try:
-        uvicorn.run(
-            'src.api.main:app',
-            host=host,
-            port=port,
-            reload=reload_enabled,
-            workers=workers,
-            log_level=log_level,
-        )
-        return True
-    except KeyboardInterrupt:
-        logger.info('\nStopped by user')
-        return True
-    except Exception as exc:
-        logger.error(f'Server startup error: {exc}')
+        logger.info('FastAPI Foundry')
+        logger.info('=' * 50)
+
+        # -------------------------------------------------------------------------
+        # Foundry
+        # -------------------------------------------------------------------------
+        logger.info("Poisk Foundry...")
+        foundry_base_url = resolve_foundry_base_url()
+
+        if foundry_base_url and check_foundry(foundry_base_url):
+            # Обновляем свойство Config с найденным URL
+            config.foundry_base_url = foundry_base_url
+            logger.info(f'Foundry dostupен: {foundry_base_url}')
+        else:
+            logger.warning('Foundry nedostupен — AI funkcii otklyucheny')
+
+        # -------------------------------------------------------------------------
+        # FastAPI
+        # -------------------------------------------------------------------------
+        host = config.api_host
+        reload_enabled = config.api_reload
+        log_level = config.api_log_level.lower()
+        workers = config.api_workers
+
+        if reload_enabled:
+            workers = 1
+
+        port = get_server_port()
+
+        logger.info('\nZapusk FastAPI servera')
+        logger.info(f'   Host: {host}')
+        logger.info(f'   Port: {port}')
+        logger.info(f'   Reload: {reload_enabled}')
+        logger.info(f'   Workers: {workers}')
+        logger.info('-' * 50)
+        logger.info(f'UI:   http://localhost:{port}')
+        logger.info(f'Docs: http://localhost:{port}/docs')
+        logger.info(f'Health: http://localhost:{port}/api/v1/health')
+        logger.info('-' * 50)
+
+        # ИСПРАВЛЕНО: Добавлен полный контроль ошибок для запуска uvicorn
+        try:
+            uvicorn.run(
+                'src.api.main:app',
+                host=host,
+                port=port,
+                reload=reload_enabled,
+                workers=workers,
+                log_level=log_level,
+            )
+            return True
+        except KeyboardInterrupt:
+            logger.info('\nStopped by user')
+            return True
+        except ImportError as e:
+            logger.error(f'Import error - missing dependencies: {e}')
+            logger.error('Try: venv\\Scripts\\python311.exe -m pip install -r requirements.txt')
+            return False
+        except Exception as exc:
+            logger.error(f'Server startup error: {exc}')
+            logger.error('Check if port is already in use or dependencies are missing')
+            return False
+            
+    except Exception as e:
+        logger.error(f'Critical error in main function: {e}')
         return False
 
 

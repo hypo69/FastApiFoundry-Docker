@@ -1,0 +1,15 @@
+C:\Work\FastApiFoundry-Docker\start.ps1:90 знак:6
++     }
++      ~
+В операторе Try отсутствует блок Catch или блок Finally.
+C:\Work\FastApiFoundry-Docker\start.ps1:129 знак:34
++             if ($conn -match ":([0-9]+)\s+.*LISTENING") {
++                                  ~
+Отсутствует имя типа после знака "[".
+C:\Work\FastApiFoundry-Docker\start.ps1:21 знак:33
++ if (-not (Test-Path $venvPath)) {
++                                 ~
+Отсутствует закрывающий знак "}" в блоке операторов или определении типа.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : MissingCatchOrFinally
+ 

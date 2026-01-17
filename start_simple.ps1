@@ -1,91 +1,96 @@
-# start_simple.ps1 - Упрощенный запуск FastAPI Foundry
-# =============================================================================
-# Описание:
-#   Простой запуск с отображением всего вывода в консоли
-#
-# File: start_simple.ps1
-# Project: FastApiFoundry (Docker)
-# Version: 0.2.1
-# Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
-# =============================================================================
+# start_simple.ps1 - FastAPI Foundry Simple Launcher
+param([string]$Config = 'config.json')
 
-Write-Host "🚀 FastAPI Foundry - Упрощенный запуск" -ForegroundColor Cyan
-Write-Host "=" * 50 -ForegroundColor Cyan
+$ErrorActionPreference = 'Continue'
+$Root = $PSScriptRoot
 
-# 1. Поиск и запуск Foundry
-Write-Host "🔍 Проверка Foundry..." -ForegroundColor Yellow
+Write-Host '🚀 FastAPI Foundry Simple Launcher' -ForegroundColor Cyan
+Write-Host ('=' * 60) -ForegroundColor Cyan
 
-$foundryPort = $null
-$foundryProcesses = Get-Process -Name "foundry" -ErrorAction SilentlyContinue
-
-if ($foundryProcesses) {
-    Write-Host "✅ Foundry уже запущен" -ForegroundColor Green
-    # Попробуем найти порт
-    $netstatOutput = netstat -ano | Select-String "LISTENING"
-    foreach ($line in $netstatOutput) {
-        if ($line -match ":([0-9]+).*LISTENING") {
-            $port = $matches[1]
-            try {
-                $response = Invoke-WebRequest -Uri "http://localhost:$port/v1/models" -TimeoutSec 2 -ErrorAction Stop
-                if ($response.StatusCode -eq 200) {
-                    $foundryPort = $port
-                    Write-Host "✅ Foundry работает на порту $port" -ForegroundColor Green
-                    break
-                }
-            } catch { }
-        }
-    }
-} else {
-    Write-Host "🚀 Запуск Foundry..." -ForegroundColor Yellow
-    $foundryOutput = & foundry service start 2>&1
-    
-    foreach ($line in $foundryOutput) {
-        Write-Host "   $line" -ForegroundColor Gray
-        if ($line -match "http://127\.0\.0\.1:(\d+)/") {
-            $foundryPort = $matches[1]
-        }
-    }
-    
-    if ($foundryPort) {
-        Write-Host "✅ Foundry запущен на порту $foundryPort" -ForegroundColor Green
-    } else {
-        Write-Host "⚠️ Foundry запущен, но порт не определен" -ForegroundColor Yellow
-        $foundryPort = "50477"  # Порт по умолчанию
-    }
-}
-
-# 2. Настройка переменных окружения
-if ($foundryPort) {
-    $env:FOUNDRY_BASE_URL = "http://localhost:$foundryPort/v1/"
-    $env:FOUNDRY_PORT = $foundryPort
-    Write-Host "🔗 Foundry URL: $env:FOUNDRY_BASE_URL" -ForegroundColor Green
-}
-
-# 3. Определение Python
-$pythonExe = $null
-if (Test-Path "$PSScriptRoot\venv\Scripts\python.exe") {
-    $pythonExe = "$PSScriptRoot\venv\Scripts\python.exe"
-    Write-Host "🐍 Используем venv Python" -ForegroundColor Green
-} elseif (Test-Path "$PSScriptRoot\python.exe") {
-    $pythonExe = "$PSScriptRoot\python.exe"
-    Write-Host "🐍 Используем embedded Python" -ForegroundColor Green
-} else {
-    $pythonExe = "python"
-    Write-Host "🐍 Используем системный Python" -ForegroundColor Yellow
-}
-
-# 4. Запуск FastAPI сервера
-Write-Host "" -ForegroundColor Cyan
-Write-Host "🌐 Запуск FastAPI сервера..." -ForegroundColor Cyan
-Write-Host "📋 Вывод сервера:" -ForegroundColor Cyan
-Write-Host "-" * 50 -ForegroundColor Gray
-
-try {
-    & $pythonExe "run.py"
-} catch {
-    Write-Host "❌ Ошибка запуска: $_" -ForegroundColor Red
+# Проверка venv
+$venvPath = "$Root\venv\Scripts\python.exe"
+if (-not (Test-Path $venvPath)) {
+    Write-Host '❌ venv not found. Run install.ps1 first!' -ForegroundColor Red
     exit 1
 }
+
+# Загрузка .env
+$envFile = "$Root\.env"
+if (Test-Path $envFile -PathType Leaf) {
+    Write-Host '⚙️ Loading .env variables...' -ForegroundColor Gray
+    $envVars = 0
+    Get-Content $envFile | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -and -not $line.StartsWith('#')) {
+            if ($line -match '^([^=]+)=(.*)$') {
+                $key = $matches[1].Trim()
+                $value = $matches[2].Trim()
+                [System.Environment]::SetEnvironmentVariable($key, $value)
+                $envVars++
+                if ($key -notmatch '(PASSWORD|SECRET|KEY|TOKEN|PAT)') {
+                    Write-Host "  ✓ $key = $value" -ForegroundColor DarkGray
+                } else {
+                    Write-Host "  ✓ $key = ***" -ForegroundColor DarkGray
+                }
+            }
+        }
+    }
+    Write-Host "✅ Loaded $envVars environment variables" -ForegroundColor Green
+} else {
+    Write-Host "⚠️ .env file not found" -ForegroundColor Yellow
+}
+
+# Проверка Foundry
+Write-Host '🔍 Checking Foundry...' -ForegroundColor Cyan
+$foundryProcess = Get-Process -Name "foundry" -ErrorAction SilentlyContinue
+if ($foundryProcess) {
+    Write-Host "✅ Foundry process found (PID: $($foundryProcess.Id))" -ForegroundColor Green
+    
+    # Попробуем найти порт через netstat
+    $netstatOutput = netstat -ano | Select-String "$($foundryProcess.Id)" | Select-String "LISTENING"
+    foreach ($line in $netstatOutput) {
+        if ($line -match ':(\d+)\s+.*LISTENING') {
+            $port = $matches[1]
+            $testUrl = "http://localhost:$port/v1/models"
+            Write-Host "🔍 Testing Foundry API on port $port..." -ForegroundColor Gray
+            
+            $webRequest = $null
+            try {
+                $webRequest = Invoke-WebRequest -Uri $testUrl -TimeoutSec 3 -UseBasicParsing -ErrorAction Stop
+                if ($webRequest.StatusCode -eq 200) {
+                    Write-Host "✅ Foundry API confirmed on port $port" -ForegroundColor Green
+                    $env:FOUNDRY_DYNAMIC_PORT = $port
+                    break
+                }
+            } catch {
+                Write-Host "❌ Port $port not responding to API calls" -ForegroundColor Red
+            }
+        }
+    }
+} else {
+    Write-Host "⚠️ Foundry process not found" -ForegroundColor Yellow
+    
+    # Попробуем запустить Foundry
+    $foundryCmd = Get-Command foundry -ErrorAction SilentlyContinue
+    if ($foundryCmd) {
+        Write-Host '🚀 Starting Foundry service...' -ForegroundColor Yellow
+        $foundryOutput = & foundry service start 2>&1
+        Write-Host "📋 Foundry output: $foundryOutput" -ForegroundColor Gray
+        
+        if ($foundryOutput -match 'http://127\.0\.0\.1:(\d+)/') {
+            $foundryPort = $matches[1]
+            Write-Host "✅ Foundry started on port $foundryPort" -ForegroundColor Green
+            $env:FOUNDRY_DYNAMIC_PORT = $foundryPort
+        }
+    } else {
+        Write-Host '⚠️ Foundry CLI not found' -ForegroundColor Yellow
+    }
+}
+
+# Запуск FastAPI
+Write-Host '🐍 Starting FastAPI server...' -ForegroundColor Cyan
+Write-Host "🔗 FOUNDRY_DYNAMIC_PORT = $env:FOUNDRY_DYNAMIC_PORT" -ForegroundColor Gray
+Write-Host "📱 Web interface: http://localhost:9696" -ForegroundColor Cyan
+Write-Host ('=' * 60) -ForegroundColor Cyan
+
+& $venvPath run.py --config $Config
