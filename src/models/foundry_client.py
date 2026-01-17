@@ -283,6 +283,15 @@ class FoundryClient:
         
         try:
             self._update_base_url()
+            
+            if not self.base_url:
+                logger.error("❌ Foundry не найден")
+                return {
+                    "success": False,
+                    "error": "Foundry недоступен",
+                    "models": []
+                }
+            
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/models"
             
