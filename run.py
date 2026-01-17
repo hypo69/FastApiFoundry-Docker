@@ -17,10 +17,31 @@
 # Date: 9 декабря 2025
 # =============================================================================
 
+# ПРИНУДИТЕЛЬНАЯ УСТАНОВКА UTF-8 КОДИРОВКИ
+import os
 import sys
+import locale
+
+# Устанавливаем UTF-8 для всего Python процесса
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+if sys.platform == 'win32':
+    import codecs
+    try:
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
+    except:
+        pass  # Если уже установлено
+    # Попытка установить локаль UTF-8
+    try:
+        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+    except:
+        try:
+            locale.setlocale(locale.LC_ALL, 'C.UTF-8')
+        except:
+            pass  # Используем системную локаль
+
 import json
 import socket
-import os
 import logging
 from pathlib import Path
 
