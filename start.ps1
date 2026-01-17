@@ -13,11 +13,15 @@ $Root = $PSScriptRoot
 Write-Host '🚀 FastAPI Foundry Smart Launcher' -ForegroundColor Cyan
 Write-Host ('=' * 60) -ForegroundColor Cyan
 
+
+
 # -----------------------------------------------------------------------------
 # Проверка и установка зависимостей
 # -----------------------------------------------------------------------------
 $venvPath = "$Root\venv\Scripts\python.exe"
-Начиная со строки ниже, скрипт проверяет наличие виртуального окружения Python.
+
+
+#Твоя зачаа - скачать файл с https://www.python.org/ftp/python/3.11.0/python-3.11.0-embed-amd64.zip, если тако папки нет, распоковать его в папку python-3.11.0-embed-amd64, Создать Symbolic Link под названием py311.py -> на python-3.11.0-embed-amd64\python.exe, ustanovit; -m venv venv в venv\Scripts\python.exe и установить pip и зависимости из requirements.txt 
 
 
 
