@@ -11,9 +11,11 @@ let CONFIG = {
 document.addEventListener('DOMContentLoaded', async function() {
     await loadConfig();
     checkSystemStatus();
+    checkFoundryStatus();
     await loadModels();
-    await loadConnectedModels(); // Добавляем загрузку подключенных моделей
+    await loadConnectedModels();
     setInterval(checkSystemStatus, 30000);
+    setInterval(checkFoundryStatus, 30000);
 });
 
 // Загрузка конфигурации
@@ -661,8 +663,10 @@ async function checkFoundryStatus() {
         const response = await fetch(`${API_BASE}/foundry/status`);
         const data = await response.json();
         
-        if (data.success) {
-            updateFoundryStatus(data.status, data);
+        if (data.running) {
+            updateFoundryStatus('running', data);
+        } else {
+            updateFoundryStatus('stopped');
         }
     } catch (error) {
         updateFoundryStatus('error');
@@ -671,32 +675,79 @@ async function checkFoundryStatus() {
 
 function updateFoundryStatus(status, data = {}) {
     const badge = document.getElementById('foundry-service-status');
+    const portIndicator = document.getElementById('foundry-port-indicator');
     const info = document.getElementById('foundry-service-info');
-    
-    // Получаем реальный URL
-    let foundryUrl = CONFIG.foundry_url;
-    if (data.port) {
-        foundryUrl = `http://localhost:${data.port}/v1/`;
-        CONFIG.foundry_url = foundryUrl;
-    }
+    const startBtn = document.getElementById('foundry-start-btn');
+    const stopBtn = document.getElementById('foundry-stop-btn');
     
     switch (status) {
         case 'running':
-        case 'healthy':
             badge.className = 'badge bg-success';
-            badge.textContent = 'Работает';
-            info.innerHTML = `<small>Foundry работает на ${foundryUrl}</small>`;
+            badge.textContent = 'Running';
+            if (data.port) {
+                portIndicator.className = 'badge bg-info me-2';
+                portIndicator.textContent = `Port: ${data.port}`;
+                info.innerHTML = `<small>Foundry API: ${data.url || `http://localhost:${data.port}/v1/`}</small>`;
+            }
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
             break;
-        case 'disabled':
-            badge.className = 'badge bg-info';
-            badge.textContent = 'Управляется через start.ps1';
-            info.innerHTML = '<small>Используйте start.ps1 для управления Foundry</small>';
+        case 'stopped':
+            badge.className = 'badge bg-secondary';
+            badge.textContent = 'Stopped';
+            portIndicator.className = 'badge bg-secondary me-2';
+            portIndicator.textContent = 'Port: Unknown';
+            info.innerHTML = '<small>Foundry service is not running</small>';
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
             break;
         default:
-            badge.className = 'badge bg-secondary';
-            badge.textContent = 'Остановлен';
-            info.innerHTML = '<small>Foundry сервис не запущен</small>';
+            badge.className = 'badge bg-danger';
+            badge.textContent = 'Error';
+            portIndicator.className = 'badge bg-secondary me-2';
+            portIndicator.textContent = 'Port: Unknown';
+            info.innerHTML = '<small>Error checking Foundry status</small>';
+            startBtn.disabled = false;
+            stopBtn.disabled = false;
             break;
+    }
+}
+
+async function startFoundryService() {
+    try {
+        showAlert('Starting Foundry service...', 'info');
+        const response = await fetch(`${API_BASE}/foundry/start`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            showAlert(data.message, 'success');
+            setTimeout(checkFoundryStatus, 3000);
+        } else {
+            showAlert(`Error: ${data.detail}`, 'danger');
+        }
+    } catch (error) {
+        showAlert('Error starting Foundry service', 'danger');
+    }
+}
+
+async function stopFoundryService() {
+    try {
+        showAlert('Stopping Foundry service...', 'info');
+        const response = await fetch(`${API_BASE}/foundry/stop`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            showAlert(data.message, 'success');
+            setTimeout(checkFoundryStatus, 2000);
+        } else {
+            showAlert(`Error: ${data.detail}`, 'danger');
+        }
+    } catch (error) {
+        showAlert('Error stopping Foundry service', 'danger');
     }
 }
 
@@ -865,6 +916,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (modelsTab) {
         modelsTab.addEventListener('click', function() {
             setTimeout(loadConnectedModels, 100); // Небольшая задержка
+        });
+    }
+    
+    // При переключении на вкладку Foundry
+    const foundryTab = document.getElementById('foundry-tab');
+    if (foundryTab) {
+        foundryTab.addEventListener('click', function() {
+            setTimeout(() => {
+                checkFoundryStatus();
+                listFoundryModels();
+            }, 100);
         });
     }
     

@@ -12,10 +12,10 @@
     ]
   },
   "foundry_ai": {
-    "base_url": "${FOUNDRY_BASE_URL:http://localhost:50477/v1}",
+    "base_url": "${FOUNDRY_BASE_URL}",
     "api_key": "${FOUNDRY_API_KEY}",
     "default_model": "qwen2.5-0.5b-instruct-generic-cpu:4",
-    "auto_load_default": true,
+    "auto_load_default": false,
     "temperature": 0.7,
     "top_p": 0.9,
     "top_k": 40,
@@ -110,8 +110,7 @@
     "conflict_resolution": "kill_process",
     "auto_find_free_port": true,
     "port_range_start": 9696,
-    "port_range_end": 9796,
-    "foundry_port": 50477
+    "port_range_end": 9796
   },
   "development": {
     "debug": "${DEBUG:true}",
