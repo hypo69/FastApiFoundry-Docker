@@ -169,7 +169,7 @@ function Get-FoundryPort {
 # -----------------------------------------------------------------------------
 Write-Host '🔍 Checking Local Foundry...' -ForegroundColor Cyan
 
-# ИСПРАВЛЕНО: Сначала проверяем фиксированный порт 50477
+# Сначала проверяем фиксированный порт 50477
 try {
     $response = Invoke-WebRequest -Uri "http://localhost:50477/v1/models" -TimeoutSec 3 -UseBasicParsing -ErrorAction Stop
     if ($response.StatusCode -eq 200) {
