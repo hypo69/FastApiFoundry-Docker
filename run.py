@@ -17,10 +17,31 @@
 # Date: 9 декабря 2025
 # =============================================================================
 
+# ПРИНУДИТЕЛЬНАЯ УСТАНОВКА UTF-8 КОДИРОВКИ
+import os
 import sys
+import locale
+
+# Устанавливаем UTF-8 для всего Python процесса
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+if sys.platform == 'win32':
+    import codecs
+    try:
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
+    except:
+        pass  # Если уже установлено
+    # Попытка установить локаль UTF-8
+    try:
+        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+    except:
+        try:
+            locale.setlocale(locale.LC_ALL, 'C.UTF-8')
+        except:
+            pass  # Используем системную локаль
+
 import json
 import socket
-import os
 import logging
 from pathlib import Path
 
@@ -58,7 +79,7 @@ except ImportError:
     UVICORN_AVAILABLE = False
     sys.exit(1)
 
-# Настройка логирования
+# Настройка логирования с подавлением watchfiles
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -67,6 +88,11 @@ logging.basicConfig(
         logging.FileHandler('logs/app.log', encoding='utf-8')
     ]
 )
+
+# Подавляем INFO логи от watchfiles
+logging.getLogger('watchfiles.main').setLevel(logging.WARNING)
+logging.getLogger('watchfiles').setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 
@@ -123,71 +149,65 @@ def get_server_port() -> int:
 # Foundry
 # =============================================================================
 def find_foundry_port() -> int | None:
-    """Найти порт запущенного Foundry по имени процесса"""
     if not REQUESTS_AVAILABLE:
-        print("requests not available, cannot search for Foundry")
         return None
     
-    # ИСПРАВЛЕНО: Сначала проверяем фиксированный порт 50477
     try:
-        response = requests.get('http://127.0.0.1:50477/v1/models', timeout=2)
-        if response.status_code == 200:
-            print("Foundry found on fixed port: 50477")
-            return 50477
-    except Exception:
-        print("Fixed port 50477 not responding, searching processes...")
-    
-    try:
-        # Ищем процесс Foundry
         import subprocess
-        result = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq foundry*'], 
+        result = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq Inference.Service.Agent*'], 
                               capture_output=True, text=True, shell=True)
         
-        if 'foundry' in result.stdout.lower():
-            print("Foundry process found")
+        if 'Inference.Service.Agent' not in result.stdout:
+            return None
             
-            # Ищем порт через netstat
-            netstat_result = subprocess.run(['netstat', '-ano'], 
-                                           capture_output=True, text=True)
-            
-            for line in netstat_result.stdout.split('\n'):
-                if 'LISTENING' in line and '127.0.0.1:' in line:
-                    parts = line.split()
-                    if len(parts) >= 2:
-                        addr = parts[1]
-                        if '127.0.0.1:' in addr:
-                            try:
-                                port = int(addr.split(':')[1])
-                                # Проверяем, что это Foundry API
-                                response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=1)
-                                if response.status_code == 200:
-                                    print(f"Foundry found on port: {port}")
-                                    return port
-                            except Exception:
-                                continue
-        
-        print("Foundry process not found")
-        return None
-        
-    except Exception as e:
-        print(f"Error searching for Foundry: {e}")
-        return None
+        for line in result.stdout.split('\n'):
+            if 'Inference.Service.Agent' in line:
+                parts = line.split()
+                if len(parts) >= 2:
+                    pid = parts[1]
+                    netstat_result = subprocess.run(['netstat', '-ano'], 
+                                                   capture_output=True, text=True)
+                    
+                    for netline in netstat_result.stdout.split('\n'):
+                        if 'LISTENING' in netline and pid in netline:
+                            parts = netline.split()
+                            if len(parts) >= 2:
+                                addr = parts[1]
+                                if ':' in addr:
+                                    try:
+                                        port = int(addr.split(':')[-1])
+                                        response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=1)
+                                        if response.status_code == 200:
+                                            print(f"Foundry API confirmed on port: {port}")
+                                            return port
+                                    except Exception:
+                                        continue
+                    break
+    except Exception:
+        pass
+    return None
 
 
 def resolve_foundry_base_url() -> str | None:
-    """Определяется base_url Foundry (только динамически)"""
-    # Проверяем переменную окружения FOUNDRY_DYNAMIC_PORT
+    """Определяется base_url Foundry (динамически)"""
+    # Проверяем переменную окружения FOUNDRY_BASE_URL
+    foundry_url = os.getenv('FOUNDRY_BASE_URL')
+    if foundry_url:
+        print(f'Found Foundry from env var: {foundry_url}')
+        return foundry_url
+    
+    # Проверяем переменную окружения FOUNDRY_DYNAMIC_PORT (старая)
     foundry_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
     if foundry_port:
         try:
             port = int(foundry_port)
             foundry_url = f'http://localhost:{port}/v1/'
-            print(f'Found Foundry from env var on port: {foundry_url}')
+            print(f'Found Foundry from legacy env var on port: {foundry_url}')
             return foundry_url
         except ValueError:
             pass
     
-    # Только автоматическое определение порта
+    # Автоматическое определение порта
     foundry_port = find_foundry_port()
     if foundry_port:
         foundry_url = f'http://localhost:{foundry_port}/v1/'

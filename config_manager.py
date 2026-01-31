@@ -45,7 +45,7 @@ class Config:
             
         print(f"Config loaded with sections: {list(self._config_data.keys())}")
     
-    def reload(self):
+    def reload_config(self):
         """Перезагрузить конфигурацию"""
         self._load_config()
     

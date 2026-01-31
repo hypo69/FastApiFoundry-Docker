@@ -11,9 +11,11 @@ let CONFIG = {
 document.addEventListener('DOMContentLoaded', async function() {
     await loadConfig();
     checkSystemStatus();
+    checkFoundryStatus();
     await loadModels();
-    await loadConnectedModels(); // Добавляем загрузку подключенных моделей
+    await loadConnectedModels();
     setInterval(checkSystemStatus, 30000);
+    setInterval(checkFoundryStatus, 30000);
 });
 
 // Загрузка конфигурации
@@ -361,7 +363,9 @@ async function checkSystemStatus() {
         const data = await response.json();
         
         const indicator = document.getElementById('status-indicator');
-        if (data.status === 'healthy') {
+        
+        // API статус основан на том, что мы получили ответ
+        if (response.ok && data.status === 'healthy') {
             if (data.foundry_status === 'healthy') {
                 indicator.innerHTML = '<i class="bi bi-circle-fill text-success"></i> Connected';
             } else {
@@ -373,7 +377,23 @@ async function checkSystemStatus() {
         
         updateSystemInfo(data);
     } catch (error) {
-        document.getElementById('status-indicator').innerHTML = '<i class="bi bi-circle-fill text-danger"></i> Offline';
+        console.error('System status check failed:', error);
+        const indicator = document.getElementById('status-indicator');
+        if (indicator) {
+            indicator.innerHTML = '<i class="bi bi-circle-fill text-danger"></i> Offline';
+        }
+        
+        // Отображаем ошибку в системной информации
+        const container = document.getElementById('system-status');
+        if (container) {
+            container.innerHTML = `
+                <div class="text-center text-danger">
+                    <i class="bi bi-exclamation-triangle"></i><br>
+                    <strong>Connection Error</strong><br>
+                    <small>Cannot connect to API server</small>
+                </div>
+            `;
+        }
     }
 }
 
@@ -381,12 +401,26 @@ async function checkSystemStatus() {
 function updateSystemInfo(data) {
     const container = document.getElementById('system-status');
     
-    // Получаем реальный порт из данных API
-    let foundryUrl = CONFIG.foundry_url;
-    if (data.foundry_details && data.foundry_details.url) {
-        foundryUrl = data.foundry_details.url;
-        CONFIG.foundry_url = foundryUrl; // Обновляем глобальную конфигурацию
+    // Получаем реальный порт и URL из данных API
+    let foundryUrl = 'Not connected';
+    let foundryPort = 'Unknown';
+    
+    if (data.foundry_details) {
+        if (data.foundry_details.url) {
+            foundryUrl = data.foundry_details.url;
+            CONFIG.foundry_url = foundryUrl; // Обновляем глобальную конфигурацию
+        }
+        if (data.foundry_details.port) {
+            foundryPort = data.foundry_details.port;
+        }
     }
+    
+    const foundryStatusText = data.foundry_status === 'healthy' ? 'Connected' : 
+                             data.foundry_status === 'disconnected' ? 'Disconnected' :
+                             data.foundry_status === 'error' ? 'Error' : 'Unknown';
+    
+    const foundryBadgeClass = data.foundry_status === 'healthy' ? 'bg-success' : 
+                             data.foundry_status === 'disconnected' ? 'bg-warning' : 'bg-danger';
     
     container.innerHTML = `
         <div class="row">
@@ -396,11 +430,15 @@ function updateSystemInfo(data) {
             </div>
             <div class="col-6">
                 <strong>Foundry:</strong><br>
-                <span class="badge ${data.foundry_status === 'healthy' ? 'bg-success' : 'bg-warning'}">${data.foundry_status === 'healthy' ? 'Connected' : 'Disconnected'}</span>
+                <span class="badge ${foundryBadgeClass}">${foundryStatusText}</span>
             </div>
             <div class="col-12 mt-2">
                 <strong>Foundry URL:</strong><br>
                 <small class="text-muted">${foundryUrl}</small>
+            </div>
+            <div class="col-12 mt-1">
+                <strong>Port:</strong> <span class="badge bg-info">${foundryPort}</span>
+                <strong class="ms-3">Models:</strong> <span class="badge bg-secondary">${data.models_count || 0}</span>
             </div>
         </div>
     `;
@@ -661,8 +699,10 @@ async function checkFoundryStatus() {
         const response = await fetch(`${API_BASE}/foundry/status`);
         const data = await response.json();
         
-        if (data.success) {
-            updateFoundryStatus(data.status, data);
+        if (data.running) {
+            updateFoundryStatus('running', data);
+        } else {
+            updateFoundryStatus('stopped');
         }
     } catch (error) {
         updateFoundryStatus('error');
@@ -671,32 +711,83 @@ async function checkFoundryStatus() {
 
 function updateFoundryStatus(status, data = {}) {
     const badge = document.getElementById('foundry-service-status');
+    const portIndicator = document.getElementById('foundry-port-indicator');
     const info = document.getElementById('foundry-service-info');
-    
-    // Получаем реальный URL
-    let foundryUrl = CONFIG.foundry_url;
-    if (data.port) {
-        foundryUrl = `http://localhost:${data.port}/v1/`;
-        CONFIG.foundry_url = foundryUrl;
-    }
+    const startBtn = document.getElementById('foundry-start-btn');
+    const stopBtn = document.getElementById('foundry-stop-btn');
     
     switch (status) {
         case 'running':
-        case 'healthy':
             badge.className = 'badge bg-success';
-            badge.textContent = 'Работает';
-            info.innerHTML = `<small>Foundry работает на ${foundryUrl}</small>`;
+            badge.textContent = 'Running';
+            if (data.port && data.port !== 'Unknown') {
+                portIndicator.className = 'badge bg-info me-2';
+                portIndicator.textContent = `Port: ${data.port}`;
+                info.innerHTML = `<small>Foundry API: ${data.url || `http://localhost:${data.port}/v1/`}</small>`;
+            } else {
+                portIndicator.className = 'badge bg-warning me-2';
+                portIndicator.textContent = 'Port: Detecting...';
+                info.innerHTML = '<small>Foundry is running, detecting port...</small>';
+            }
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
             break;
-        case 'disabled':
-            badge.className = 'badge bg-info';
-            badge.textContent = 'Управляется через start.ps1';
-            info.innerHTML = '<small>Используйте start.ps1 для управления Foundry</small>';
+        case 'stopped':
+            badge.className = 'badge bg-secondary';
+            badge.textContent = 'Stopped';
+            portIndicator.className = 'badge bg-secondary me-2';
+            portIndicator.textContent = 'Port: Unknown';
+            info.innerHTML = '<small>Foundry service is not running</small>';
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
             break;
         default:
-            badge.className = 'badge bg-secondary';
-            badge.textContent = 'Остановлен';
-            info.innerHTML = '<small>Foundry сервис не запущен</small>';
+            badge.className = 'badge bg-danger';
+            badge.textContent = 'Error';
+            portIndicator.className = 'badge bg-secondary me-2';
+            portIndicator.textContent = 'Port: Unknown';
+            info.innerHTML = '<small>Error checking Foundry status</small>';
+            startBtn.disabled = false;
+            stopBtn.disabled = false;
             break;
+    }
+}
+
+async function startFoundryService() {
+    try {
+        showAlert('Starting Foundry service...', 'info');
+        const response = await fetch(`${API_BASE}/foundry/start`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            showAlert(data.message, 'success');
+            setTimeout(checkFoundryStatus, 3000);
+        } else {
+            showAlert(`Error: ${data.detail}`, 'danger');
+        }
+    } catch (error) {
+        showAlert('Error starting Foundry service', 'danger');
+    }
+}
+
+async function stopFoundryService() {
+    try {
+        showAlert('Stopping Foundry service...', 'info');
+        const response = await fetch(`${API_BASE}/foundry/stop`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            showAlert(data.message, 'success');
+            setTimeout(checkFoundryStatus, 2000);
+        } else {
+            showAlert(`Error: ${data.detail}`, 'danger');
+        }
+    } catch (error) {
+        showAlert('Error stopping Foundry service', 'danger');
     }
 }
 
@@ -865,6 +956,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (modelsTab) {
         modelsTab.addEventListener('click', function() {
             setTimeout(loadConnectedModels, 100); // Небольшая задержка
+        });
+    }
+    
+    // При переключении на вкладку Foundry
+    const foundryTab = document.getElementById('foundry-tab');
+    if (foundryTab) {
+        foundryTab.addEventListener('click', function() {
+            setTimeout(() => {
+                checkFoundryStatus();
+                listFoundryModels();
+            }, 100);
         });
     }
     

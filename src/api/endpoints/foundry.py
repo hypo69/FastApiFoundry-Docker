@@ -23,14 +23,29 @@ async def foundry_status():
     """Получить статус сервиса Foundry"""
     try:
         health = await foundry_client.health_check()
+        
+        # Определяем статус работы
+        is_running = health.get("status") == "healthy"
+        port = health.get("port")
+        url = health.get("url")
+        
         return {
             "success": True,
+            "running": is_running,
             "status": health.get("status", "unknown"),
-            "port": health.get("port", 50477),
-            "url": health.get("url", "http://localhost:50477/v1")
+            "port": port if port and port != "Unknown" else None,
+            "url": url if url else None,
+            "error": health.get("error") if not is_running else None
         }
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return {
+            "success": False, 
+            "running": False,
+            "status": "error",
+            "port": None,
+            "url": None,
+            "error": str(e)
+        }
 
 @router.get("/foundry/models/list")
 async def list_foundry_models():

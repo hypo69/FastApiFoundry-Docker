@@ -36,15 +36,15 @@ class FoundryClient:
         foundry_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
         if foundry_port and not base_url:
             base_url = f"http://localhost:{foundry_port}/v1/"
-            print(f"Foundry client: using port from environment {foundry_port}")
+            logger.info(f"Foundry client: using port from environment {foundry_port}")
         
         self.base_url = base_url
         self.timeout = aiohttp.ClientTimeout(total=30)
         self.session = None
         if self.base_url:
-            print(f"Foundry client: {self.base_url}")
+            logger.info(f"Foundry client: {self.base_url}")
         else:
-            print("Foundry client: waiting for URL...")
+            logger.info("Foundry client: waiting for URL...")
     
     async def _get_session(self):
         """Получить HTTP сессию"""
@@ -57,27 +57,29 @@ class FoundryClient:
         if self.session and not self.session.closed:
             await self.session.close()
     
-    def _find_foundry_port(self) -> int | None:
+    async def _find_foundry_port(self) -> int | None:
         """Найти порт запущенного Foundry"""
         test_ports = [62171, 50477, 58130]
         logger.info(f"🔍 Поиск Foundry на портах: {test_ports}")
         
+        session = await self._get_session()
+        
         for port in test_ports:
             try:
                 logger.debug(f"Проверка порта {port}...")
-                response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=2)
-                if response.status_code == 200:
-                    logger.info(f"✅ Foundry найден на порту: {port}")
-                    return port
-                else:
-                    logger.debug(f"❌ Порт {port}: HTTP {response.status_code}")
-            except Exception as e:
+                async with session.get(f'http://127.0.0.1:{port}/v1/models', timeout=aiohttp.ClientTimeout(total=2)) as response:
+                    if response.status == 200:
+                        logger.info(f"✅ Foundry найден на порту: {port}")
+                        return port
+                    else:
+                        logger.debug(f"❌ Порт {port}: HTTP {response.status}")
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 logger.debug(f"❌ Порт {port}: {e}")
         
         logger.warning("❌ Foundry не найден на известных портах")
         return None
     
-    def _update_base_url(self):
+    async def _update_base_url(self):
         """Обновить base_url из переменной окружения или Config"""
         # Сначала проверяем переменную окружения
         foundry_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
@@ -98,7 +100,7 @@ class FoundryClient:
         
         # Если нет в Config - ищем сами
         logger.info("🔍 URL не найден в Config, ищем Foundry...")
-        foundry_port = self._find_foundry_port()
+        foundry_port = await self._find_foundry_port()
         if foundry_port:
             self.base_url = f'http://localhost:{foundry_port}/v1/'
             # Устанавливаем в Config для других компонентов
@@ -113,7 +115,7 @@ class FoundryClient:
         
         try:
             # Обновляем URL перед каждым запросом
-            self._update_base_url()
+            await self._update_base_url()
             
             if not self.base_url:
                 logger.error("❌ Foundry не найден")
@@ -132,7 +134,12 @@ class FoundryClient:
             async with session.get(url) as response:
                 if response.status == 200:
                     data = await response.json()
-                    port = int(self.base_url.split(':')[2].split('/')[0])
+                    try:
+                        from urllib.parse import urlparse
+                        parsed = urlparse(self.base_url)
+                        port = parsed.port or 50477
+                    except (ValueError, AttributeError, IndexError):
+                        port = 50477
                     logger.info(f"✅ Foundry онлайн: {self.base_url}")
                     return {
                         "status": "healthy",
@@ -151,8 +158,10 @@ class FoundryClient:
                     }
         except Exception as e:
             try:
-                port = int(self.base_url.split(':')[2].split('/')[0]) if self.base_url else 50477
-            except:
+                from urllib.parse import urlparse
+                parsed = urlparse(self.base_url) if self.base_url else None
+                port = parsed.port if parsed and parsed.port else 50477
+            except (ValueError, AttributeError, IndexError):
                 port = 50477
             
             logger.error(f"❌ Ошибка подключения к Foundry: {e}")
@@ -282,7 +291,7 @@ class FoundryClient:
         logger.info("📋 Получение списка моделей...")
         
         try:
-            self._update_base_url()
+            await self._update_base_url()
             
             if not self.base_url:
                 logger.error("❌ Foundry не найден")
@@ -326,7 +335,7 @@ class FoundryClient:
         logger.info(f"📥 Загрузка модели: {model_id}")
         
         try:
-            self._update_base_url()
+            await self._update_base_url()
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/models/{model_id}/load"
             
@@ -347,7 +356,7 @@ class FoundryClient:
         logger.info(f"📤 Выгрузка модели: {model_id}")
         
         try:
-            self._update_base_url()
+            await self._update_base_url()
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/models/{model_id}/unload"
             
