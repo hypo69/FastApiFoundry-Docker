@@ -137,37 +137,28 @@ function Get-FoundryPort {
 # -----------------------------------------------------------------------------
 Write-Host '🔍 Checking Local Foundry...' -ForegroundColor Cyan
 
-# ИСПРАВЛЕНО: Сначала проверяем фиксированный порт 50477
-try {
-    $response = Invoke-WebRequest -Uri "http://localhost:50477/v1/models" -TimeoutSec 3 -UseBasicParsing -ErrorAction Stop
-    if ($response.StatusCode -eq 200) {
-        Write-Host "✅ Foundry already running on fixed port 50477" -ForegroundColor Green
-        $env:FOUNDRY_DYNAMIC_PORT = 50477
-        $foundryPort = 50477
-    }
-} catch {
-    Write-Host "🔍 Fixed port 50477 not available, checking processes..." -ForegroundColor Gray
-    
-    $foundryProcess = Find-FoundryProcess
-    $foundryPort = Get-FoundryPort $foundryProcess
-    
-    if ($foundryPort) {
-        Write-Host "✅ Foundry running on port $foundryPort" -ForegroundColor Green
-        $env:FOUNDRY_DYNAMIC_PORT = $foundryPort
+# Проверяем запущен ли Foundry
+$foundryPort = Get-FoundryPort
+
+if ($foundryPort) {
+    Write-Host "✅ Foundry already running on port $foundryPort" -ForegroundColor Green
+    $env:FOUNDRY_DYNAMIC_PORT = $foundryPort
+} else {
+    if (-not (Test-FoundryCli)) {
+        Write-Host '⚠️ Foundry CLI not found. Skipping AI startup.' -ForegroundColor Yellow
+        Write-Host 'Install Foundry from Microsoft' -ForegroundColor Gray
     } else {
-        if (-not (Test-FoundryCli)) {
-            Write-Host '⚠️ Foundry CLI not found. Skipping AI startup.' -ForegroundColor Yellow
-            Write-Host 'Install Foundry from Microsoft' -ForegroundColor Gray
-        } else {
-            Write-Host '🚀 Foundry not running, starting service...' -ForegroundColor Yellow
+        Write-Host '🚀 Starting Foundry service...' -ForegroundColor Yellow
+        
+        try {
+            & foundry service start | Out-Null
+            Write-Host "Foundry service start command executed" -ForegroundColor Gray
             
-            try {
-                $output = & foundry service start 2>&1
-                Write-Host "📋 Foundry output: $output" -ForegroundColor Gray
-                
-                # ИСПРАВЛЕНО: Упрощено регулярное выражение для парсинга порта
-                if ($output -match 'http://127\.0\.0\.1:([0-9]+)/') {
-                    $foundryPort = $matches[1]
+            # Ждем запуска и ищем порт
+            for ($i = 1; $i -le 10; $i++) {
+                Start-Sleep 2
+                $foundryPort = Get-FoundryPort
+                if ($foundryPort) {
                     Write-Host "✅ Foundry started on port $foundryPort" -ForegroundColor Green
                     $env:FOUNDRY_DYNAMIC_PORT = $foundryPort
                     break

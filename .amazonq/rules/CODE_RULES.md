@@ -1506,8 +1506,119 @@ function plugin_user_can( string $capability ): bool {
 
 
 
+
+Изучи код.
+
+Всегда делай подробные комментарии в коде, чтобы я понимал почему ты выбрал именно текое решение, а не другое. Это касается и всех последующих действий с кодом. 
+
+
+В коментариях:
+Используй существительные а не глагольные формы в комментариях.
+Плохо:
+Отправляет, Суммаризирует, Объединяет, ...
+Хорошо:
+Отправка, Суммаризация, Объединение, ..
+
+Пример кода с комментариами:
+
+```javascript/typescript
+// connectors/openai-compat.js
+// Универсальный коннектор для провайдеров с OpenAI-совместимым API.
+//
+// ПОЧЕМУ ОДИН ФАЙЛ ДЛЯ ВСЕХ, А НЕ ОТДЕЛЬНЫЙ ДЛЯ КАЖДОГО:
+//   OpenAI, Mistral, Groq, DeepSeek, xAI, NVIDIA, Cohere, Anthropic (через прокси),
+//   OpenRouter и custom self-hosted (Ollama, vLLM) — все используют один и тот же
+//   формат: POST /v1/chat/completions с { model, messages }.
+//   Дублировать один и тот же fetch-код в 8 местах — плохая практика.
+//   Разница между провайдерами только в base URL и заголовках — это параметры.
+//
+// ПОЧЕМУ ОСТАЛСЯ ОТДЕЛЬНЫЙ gemini.js:
+//   Gemini использует принципиально другой формат запроса (contents/parts),
+//   другой endpoint и ключ в query-параметре. Его нельзя унифицировать.
+//
+// ПОЧЕМУ ОСТАЛСЯ ОТДЕЛЬНЫЙ openrouter.js:
+//   OpenRouter поддерживает поле reasoning: { enabled: true }, которого нет
+//   в стандартном OpenAI API. Это специфичная фича, требующая отдельной обработки.
+
+// Base URL для каждого провайдера.
+// Вынесено в константу чтобы не хардкодить в каждом вызове и легко менять.
+export const PROVIDER_URLS = {
+    openai:    'https://api.openai.com/v1/chat/completions',
+    mistral:   'https://api.mistral.ai/v1/chat/completions',
+    groq:      'https://api.groq.com/openai/v1/chat/completions',
+    cohere:    'https://api.cohere.com/v2/chat',           // Cohere v2 chat endpoint
+    deepseek:  'https://api.deepseek.com/chat/completions',
+    xai:       'https://api.x.ai/v1/chat/completions',
+    nvidia:    'https://integrate.api.nvidia.com/v1/chat/completions',
+    anthropic: 'https://api.anthropic.com/v1/messages',   // Anthropic отличается форматом ответа
+};
+
+/**
+ * Формирование заголовков запроса для конкретного провайдера.
+ *
+ * ПОЧЕМУ ОТДЕЛЬНАЯ ФУНКЦИЯ:
+ *   Anthropic использует x-api-key вместо Authorization и требует
+ *   дополнительный заголовок anthropic-version. Остальные — стандартный Bearer.
+ *
+ * @param {string} provider
+ * @param {string} apiKey
+ * @returns {object}
+ */
+function buildHeaders(provider, apiKey) {
+    if (provider === 'anthropic') {
+        return {
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01', // обязательный заголовок версии API Anthropic
+            'Content-Type': 'application/json'
+        };
+    }
+    return {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+    };
+}
+
+/**
+ * Формирование тела запроса для конкретного провайдера.
+ *
+ * ПОЧЕМУ ОТДЕЛЬНАЯ ФУНКЦИЯ:
+ *   Anthropic использует формат { model, messages, max_tokens } с обязательным max_tokens.
+ *   NVIDIA требует stream: false явно (иначе может стримить).
+ *   Остальные — минимальный { model, messages }.
+ *
+ * @param {string} provider
+ * @param {string} model
+ * @param {string} prompt
+ * @returns {object}
+ */
+function buildBody(provider, model, prompt) {
+    const messages = [{ role: 'user', content: prompt }];
+
+    if (provider === 'anthropic') {
+        return { model, messages, max_tokens: 8192 }; // Anthropic требует явный max_tokens
+    }
+    if (provider === 'nvidia') {
+        return { model, messages, temperature: 0.15, top_p: 0.95, max_tokens: 8192, stream: false };
+    }
+    return { model, messages };
+}
+```
+
+Не оставляй мертвый код. Удаляй ненужные файлы
+
+В каждой директории должен находиться файл README.md, в котором описано назначение директории и обзор содержащихся файлов в директории
+
+
+
+
+
 **Последнее обновление:** 2025
 
 **Версия:** 0.3.1 (FastApi Foundry Edition)
 
 **Статус:** ✅ Production Ready (некоммерческое использование, с атрибуцией)
+
+
+
+
+

@@ -1,211 +1,188 @@
-# FastAPI Foundry - Complete Installer
+# -*- coding: utf-8 -*-
 # =============================================================================
-# Устанавливает все необходимое: Python venv, Foundry, символические ссылки
+# Название процесса: FastAPI Foundry - Главный установщик
+# =============================================================================
+# Описание:
+#   Устанавливает Python venv, зависимости, создаёт .env и папку logs.
+#   Foundry / llama.cpp / Ollama устанавливаются отдельно (см. INSTALL.md).
+#
+# Использование:
+#   .\install.ps1              # стандартная установка
+#   .\install.ps1 -Force       # переустановка venv
+#   .\install.ps1 -SkipRag     # без RAG зависимостей
+#
+# File: install.ps1
+# Project: FastApiFoundry (Docker)
+# Version: 0.3.4
+# Author: hypo69
+# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# Copyright: © 2025 AiStros
 # =============================================================================
 
 param(
-    [switch]$SkipFoundry,
-    [switch]$Force
+    [switch]$Force,
+    [switch]$SkipRag
 )
 
 $ErrorActionPreference = "Stop"
+$Root = $PSScriptRoot
 
-Write-Host "🚀 FastAPI Foundry - Complete Installer" -ForegroundColor Green
-Write-Host "=" * 50
+Write-Host "FastAPI Foundry - Installer" -ForegroundColor Green
+Write-Host ("=" * 50)
 
-# Переменные
-$projectRoot = $PSScriptRoot
-$venvPath = Join-Path $projectRoot "venv"
-$embeddedPython = Join-Path $projectRoot "python-3.11.0-embed-amd64\python.exe"
-$foundryPath = Join-Path $env:USERPROFILE ".foundry\bin\foundry.exe"
+# --- 1. Python ---
+Write-Host "`nПроверка Python..." -ForegroundColor Yellow
 
-# 1. Создание venv
-Write-Host "📦 Создание виртуального окружения..." -ForegroundColor Yellow
-if (Test-Path $venvPath) {
-    if ($Force) {
-        Remove-Item $venvPath -Recurse -Force
-    } else {
-        Write-Host "✅ venv уже существует"
-    }
+$pythonCmd = $null
+foreach ($cmd in @("python", "python3", "python311")) {
+    try {
+        $ver = & $cmd --version 2>&1
+        if ($ver -match "Python 3\.(1[1-9]|[2-9]\d)") {
+            $pythonCmd = $cmd
+            Write-Host "  Python найден: $ver ($cmd)" -ForegroundColor Green
+            break
+        }
+    } catch { }
+}
+
+if (-not $pythonCmd) {
+    Write-Host "  Python 3.11+ не найден." -ForegroundColor Red
+    Write-Host "  Скачайте с https://www.python.org/downloads/" -ForegroundColor Cyan
+    exit 1
+}
+
+# --- 2. venv ---
+Write-Host "`nВиртуальное окружение..." -ForegroundColor Yellow
+$venvPath = Join-Path $Root "venv"
+
+if ((Test-Path $venvPath) -and $Force) {
+    Remove-Item $venvPath -Recurse -Force
+    Write-Host "  Старый venv удалён" -ForegroundColor Gray
 }
 
 if (-not (Test-Path $venvPath)) {
-    python311 -m venv $venvPath
-    Write-Host "✅ venv создан"
-}
-
-# 2. Активация и установка зависимостей
-Write-Host "📚 Установка Python зависимостей..." -ForegroundColor Yellow
-& "$venvPath\Scripts\Activate.ps1"
-pip install --upgrade pip
-pip install -r requirements.txt
-
-# Установка RAG зависимостей
-Write-Host "🔍 Установка RAG зависимостей..." -ForegroundColor Yellow
-try {
-    pip install sentence-transformers faiss-cpu torch transformers
-    Write-Host "✅ RAG зависимости установлены"
-} catch {
-    Write-Warning "Не удалось установить RAG зависимости: $_"
-    Write-Host "Попробуйте позже: python311 install_rag_deps.py" -ForegroundColor Yellow
-}
-
-Write-Host "✅ Python зависимости установлены"
-
-# 3. Установка Foundry
-if (-not $SkipFoundry) {
-    Write-Host "🔧 Установка Foundry..." -ForegroundColor Yellow
-    
-    if (Test-Path $foundryPath) {
-        Write-Host "✅ Foundry уже установлен: $foundryPath"
-    } else {
-        try {
-            # Скачиваем и устанавливаем Foundry
-            $foundryInstaller = "https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup"
-            $tempScript = Join-Path $env:TEMP "foundryup.ps1"
-            
-            # Создаем PowerShell версию установщика
-            @"
-# Foundry installer for Windows
-`$foundryDir = Join-Path `$env:USERPROFILE ".foundry"
-`$binDir = Join-Path `$foundryDir "bin"
-New-Item -ItemType Directory -Path `$binDir -Force | Out-Null
-
-# Скачиваем последний релиз
-`$releases = Invoke-RestMethod "https://api.github.com/repos/foundry-rs/foundry/releases/latest"
-`$asset = `$releases.assets | Where-Object { `$_.name -like "*x86_64-pc-windows-msvc.zip" }
-
-if (`$asset) {
-    `$zipPath = Join-Path `$env:TEMP "foundry.zip"
-    Invoke-WebRequest `$asset.browser_download_url -OutFile `$zipPath
-    Expand-Archive `$zipPath -DestinationPath `$binDir -Force
-    Remove-Item `$zipPath
-    Write-Host "✅ Foundry установлен в `$binDir"
+    & $pythonCmd -m venv $venvPath
+    Write-Host "  venv создан: $venvPath" -ForegroundColor Green
 } else {
-    throw "Не найден релиз для Windows"
+    Write-Host "  venv уже существует (используйте -Force для пересоздания)" -ForegroundColor Gray
 }
-"@ | Out-File $tempScript -Encoding UTF8
-            
-            & $tempScript
-            Remove-Item $tempScript
-            
-            # Добавляем в PATH
-            $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-            $foundryBinDir = Join-Path $env:USERPROFILE ".foundry\bin"
-            if ($currentPath -notlike "*$foundryBinDir*") {
-                [Environment]::SetEnvironmentVariable("PATH", "$currentPath;$foundryBinDir", "User")
-                $env:PATH += ";$foundryBinDir"
-                Write-Host "✅ Foundry добавлен в PATH"
+
+$pip = Join-Path $venvPath "Scripts\pip.exe"
+$python = Join-Path $venvPath "Scripts\python.exe"
+
+# --- 3. Зависимости ---
+Write-Host "`nУстановка зависимостей..." -ForegroundColor Yellow
+& $pip install --upgrade pip --quiet
+& $pip install -r (Join-Path $Root "requirements.txt")
+Write-Host "  Основные зависимости установлены" -ForegroundColor Green
+
+# --- 4. RAG зависимости ---
+if (-not $SkipRag) {
+    Write-Host "`nRAG зависимости (sentence-transformers, faiss-cpu)..." -ForegroundColor Yellow
+    Write-Host "  Это может занять несколько минут..." -ForegroundColor Gray
+    try {
+        & $pip install sentence-transformers faiss-cpu --quiet
+        Write-Host "  RAG зависимости установлены" -ForegroundColor Green
+    } catch {
+        Write-Host "  Не удалось установить RAG зависимости: $_" -ForegroundColor Yellow
+        Write-Host "  Запустите позже: python install_rag_deps.py" -ForegroundColor Cyan
+    }
+} else {
+    Write-Host "`nRAG зависимости пропущены (-SkipRag)" -ForegroundColor Gray
+}
+
+# --- 5. .env ---
+Write-Host "`nКонфигурация .env..." -ForegroundColor Yellow
+$envFile = Join-Path $Root ".env"
+$envExample = Join-Path $Root ".env.example"
+
+if (-not (Test-Path $envFile)) {
+    if (Test-Path $envExample) {
+        Copy-Item $envExample $envFile
+        Write-Host "  .env создан из .env.example" -ForegroundColor Green
+    } else {
+        "# FastAPI Foundry`nFOUNDRY_BASE_URL=http://localhost:50477/v1" | Out-File $envFile -Encoding UTF8
+        Write-Host "  .env создан с настройками по умолчанию" -ForegroundColor Green
+    }
+    Write-Host "  Отредактируйте .env при необходимости" -ForegroundColor Cyan
+} else {
+    Write-Host "  .env уже существует" -ForegroundColor Gray
+}
+
+# --- 6. Папка logs ---
+Write-Host "`nПапка logs..." -ForegroundColor Yellow
+$logsDir = Join-Path $Root "logs"
+if (-not (Test-Path $logsDir)) {
+    New-Item -ItemType Directory -Path $logsDir | Out-Null
+    Write-Host "  logs/ создана" -ForegroundColor Green
+} else {
+    Write-Host "  logs/ уже существует" -ForegroundColor Gray
+}
+
+# --- 7. Foundry ---
+Write-Host "`nAI бэкенд (Foundry Local)..." -ForegroundColor Yellow
+
+# Проверка наличия foundry в PATH
+$foundryInstalled = $null -ne (Get-Command foundry -ErrorAction SilentlyContinue)
+
+if ($foundryInstalled) {
+    $ver = & foundry --version 2>&1
+    Write-Host "  Foundry уже установлен: $ver" -ForegroundColor Green
+} else {
+    Write-Host "  Foundry не найден." -ForegroundColor Yellow
+    Write-Host "  Foundry Local — AI бэкенд для запуска моделей (DeepSeek, Qwen и др.)" -ForegroundColor Gray
+    Write-Host ""
+
+    # Проверка наличия winget — без него установка невозможна
+    $wingetAvailable = $null -ne (Get-Command winget -ErrorAction SilentlyContinue)
+
+    if (-not $wingetAvailable) {
+        Write-Host "  winget не найден — установите Foundry вручную:" -ForegroundColor Yellow
+        Write-Host "  https://aka.ms/foundry-local" -ForegroundColor Cyan
+    } else {
+        $answer = Read-Host "  Установить Microsoft Foundry Local сейчас? (y/N)"
+        if ($answer -eq 'y' -or $answer -eq 'Y') {
+            Write-Host "  Установка Foundry Local..." -ForegroundColor Yellow
+            try {
+                winget install Microsoft.FoundryLocal --accept-source-agreements --accept-package-agreements
+                Write-Host "  Foundry Local установлен" -ForegroundColor Green
+                Write-Host "  Перезапустите PowerShell чтобы foundry появился в PATH" -ForegroundColor Cyan
+            } catch {
+                Write-Host "  Ошибка установки: $_" -ForegroundColor Red
+                Write-Host "  Установите вручную: winget install Microsoft.FoundryLocal" -ForegroundColor Cyan
             }
-            
-        } catch {
-            Write-Warning "Не удалось установить Foundry автоматически: $_"
-            Write-Host "Установите вручную: https://github.com/foundry-rs/foundry" -ForegroundColor Yellow
-        }
-    }
-}
-
-# 4. Создание символических ссылок
-Write-Host "🔗 Создание символических ссылок..." -ForegroundColor Yellow
-if (Test-Path $embeddedPython) {
-    try {
-        $pythonLink = Join-Path $projectRoot "python.exe"
-        $pyLink = Join-Path $projectRoot "py.exe"
-        
-        # Удаляем существующие ссылки если есть
-        if (Test-Path $pythonLink) {
-            Remove-Item $pythonLink -Force
-            Write-Host "🗑️ Удалена старая ссылка python.exe"
-        }
-        
-        if (Test-Path $pyLink) {
-            Remove-Item $pyLink -Force
-            Write-Host "🗑️ Удалена старая ссылка py.exe"
-        }
-        
-        # Создаем новые ссылки
-        New-Item -ItemType SymbolicLink -Path $pythonLink -Target $embeddedPython -Force
-        Write-Host "✅ python.exe -> embedded Python"
-        
-        New-Item -ItemType SymbolicLink -Path $pyLink -Target $embeddedPython -Force
-        Write-Host "✅ py.exe -> embedded Python"
-    } catch {
-        Write-Warning "Не удалось создать символические ссылки. Запустите PowerShell от имени администратора или включите Developer Mode"
-    }
-} else {
-    Write-Warning "Embedded Python не найден: $embeddedPython"
-}
-
-# 5. Создание .env если нет
-Write-Host "⚙️ Настройка конфигурации..." -ForegroundColor Yellow
-if (-not (Test-Path ".env")) {
-    if (Test-Path ".env.example") {
-        Copy-Item ".env.example" ".env"
-        Write-Host "✅ .env создан из .env.example"
-    } else {
-        @"
-# FastAPI Foundry Configuration
-FOUNDRY_BASE_URL=http://localhost:50477/v1/
-FOUNDRY_DEFAULT_MODEL=deepseek-r1:14b
-API_HOST=0.0.0.0
-API_PORT=8000
-RAG_ENABLED=true
-LOG_LEVEL=INFO
-"@ | Out-File ".env" -Encoding UTF8
-        Write-Host "✅ .env создан с настройками по умолчанию"
-    }
-}
-
-# 6. Создание RAG индекса
-Write-Host "🔍 Создание RAG индекса..." -ForegroundColor Yellow
-if (-not (Test-Path "rag_index")) {
-    try {
-        & "$venvPath\Scripts\python.exe" create_rag_index.py
-        Write-Host "✅ RAG индекс создан"
-    } catch {
-        Write-Warning "Не удалось создать RAG индекс: $_"
-        Write-Host "Попробуйте позже: python311 create_rag_index.py" -ForegroundColor Yellow
-    }
-} else {
-    Write-Host "✅ RAG индекс уже существует"
-}
-
-# 7. Проверка установки
-Write-Host "🧪 Проверка установки..." -ForegroundColor Yellow
-
-# Проверяем Python
-try {
-    & "$venvPath\Scripts\python.exe" --version
-    Write-Host "✅ Python в venv работает"
-} catch {
-    Write-Warning "Проблема с Python в venv"
-}
-
-# Проверяем Foundry
-if (-not $SkipFoundry) {
-    try {
-        if (Get-Command foundry -ErrorAction SilentlyContinue) {
-            foundry --version
-            Write-Host "✅ Foundry доступен в PATH"
         } else {
-            Write-Warning "Foundry не найден в PATH"
+            Write-Host "  Пропущено. Установите позже:" -ForegroundColor Gray
+            Write-Host "  winget install Microsoft.FoundryLocal" -ForegroundColor Cyan
+            Write-Host "  Или используйте llama.cpp / Ollama — см. INSTALL.md" -ForegroundColor Cyan
         }
-    } catch {
-        Write-Warning "Проблема с Foundry"
     }
 }
 
+# --- 8. Итог ---
+Write-Host "`n$("=" * 50)" -ForegroundColor Green
+Write-Host "Установка завершена!" -ForegroundColor Green
 Write-Host ""
-Write-Host "🎉 Установка завершена!" -ForegroundColor Green
-Write-Host "=" * 50
-Write-Host "Запуск:"
-Write-Host "  1. Активировать venv: .\venv\Scripts\Activate.ps1"
-Write-Host "  2. Запустить Foundry: foundry"
-Write-Host "  3. Запустить FastAPI: python311 run.py"
-Write-Host ""
-Write-Host "Или использовать embedded Python:"
-Write-Host "  .\python.exe run.py"
-Write-Host ""
-Write-Host "Веб-интерфейс: http://localhost:8000"
-Write-Host "🔍 RAG система: http://localhost:8000/api/v1/rag/status"
-Write-Host "Веб-интерфейс: http://localhost:9696"
+
+# Повторная проверка после возможной установки Foundry в шаге 7
+$foundryReady = $null -ne (Get-Command foundry -ErrorAction SilentlyContinue)
+
+Write-Host "Следующие шаги:" -ForegroundColor Cyan
+if ($foundryReady) {
+    Write-Host "  1. Запустите Foundry сервис:"
+    Write-Host "     foundry service start"
+    Write-Host "  2. Скачайте модель (если ещё не скачана):"
+    Write-Host "     foundry model download qwen2.5-0.5b-instruct-generic-cpu"
+    Write-Host "  3. Запустите сервер:"
+    Write-Host "     venv\Scripts\python.exe run.py"
+    Write-Host "  4. Откройте: http://localhost:9696"
+} else {
+    Write-Host "  1. Установите AI бэкенд (выберите один):"
+    Write-Host "     Foundry Local:  winget install Microsoft.FoundryLocal"
+    Write-Host "     llama.cpp:      https://github.com/ggerganov/llama.cpp/releases"
+    Write-Host "     Ollama:         https://ollama.com/download"
+    Write-Host "     Подробнее:      INSTALL.md"
+    Write-Host "  2. Запустите сервер:"
+    Write-Host "     venv\Scripts\python.exe run.py"
+    Write-Host "  3. Откройте: http://localhost:9696"
+}

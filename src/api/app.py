@@ -96,12 +96,14 @@ def create_app() -> FastAPI:
     from .endpoints import main, models, health, generate, foundry, config, logs, rag
     from .endpoints.chat_endpoints import router as chat_router
     from .endpoints.foundry_management import router as foundry_mgmt_router
-    
+    from .endpoints.foundry_models import router as foundry_models_router
+
     app.include_router(main.router)
     app.include_router(health.router, prefix="/api/v1")
     app.include_router(models.router, prefix="/api/v1")
     app.include_router(foundry.router, prefix="/api/v1")
     app.include_router(foundry_mgmt_router, prefix="/api/v1")
+    app.include_router(foundry_models_router, prefix="/api/v1")
     app.include_router(generate.router, prefix="/api/v1")
     app.include_router(chat_router, prefix="/api/v1")
     app.include_router(rag.router, prefix="/api/v1")

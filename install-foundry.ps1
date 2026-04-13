@@ -1,156 +1,100 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Microsoft Foundry Installer
+# Название процесса: Microsoft Foundry Local - Установщик
 # =============================================================================
 # Описание:
-#   Простой установщик Microsoft Foundry для Windows
-#   Скачивает и устанавливает последнюю версию
+#   Устанавливает Microsoft Foundry Local CLI через winget.
+#   После установки запускает сервис и предлагает скачать модель.
+#
+# Использование:
+#   .\install-foundry.ps1
+#   .\install-foundry.ps1 -Model "qwen2.5-0.5b-instruct-generic-cpu"
 #
 # File: install-foundry.ps1
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.3.4
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
 # =============================================================================
 
 param(
-    [switch]$Force
+    [string]$Model = "qwen2.5-0.5b-instruct-generic-cpu"
 )
 
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = "Stop"
 
-Write-Host "🚀 Microsoft Foundry Installer" -ForegroundColor Cyan
-Write-Host "=" * 50 -ForegroundColor Cyan
+Write-Host "Microsoft Foundry Local - Installer" -ForegroundColor Cyan
+Write-Host ("=" * 50)
 
-# Проверяем права администратора
-$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
-
-if (-not $isAdmin) {
-    Write-Host "⚠️ Для установки Foundry нужны права администратора" -ForegroundColor Yellow
-    Write-Host "💡 Перезапустите PowerShell от имени администратора" -ForegroundColor Cyan
-    
-    $restart = Read-Host "Перезапустить с правами администратора? (y/N)"
-    if ($restart -eq 'y' -or $restart -eq 'Y') {
-        Start-Process powershell -Verb RunAs -ArgumentList "-File `"$PSCommandPath`""
-        exit 0
-    } else {
-        Write-Host "❌ Установка отменена" -ForegroundColor Red
-        exit 1
-    }
-}
-
-# Проверяем существующую установку
-if ((Get-Command foundry -ErrorAction SilentlyContinue) -and -not $Force) {
-    Write-Host "✅ Foundry уже установлен" -ForegroundColor Green
-    & foundry --version
-    
-    $reinstall = Read-Host "Переустановить? (y/N)"
-    if ($reinstall -ne 'y' -and $reinstall -ne 'Y') {
-        Write-Host "✅ Установка пропущена" -ForegroundColor Green
-        exit 0
-    }
-}
-
-try {
-    Write-Host "📥 Скачивание Microsoft Foundry..." -ForegroundColor Yellow
-    
-    # Определяем архитектуру
-    $arch = if ([Environment]::Is64BitOperatingSystem) { "x64" } else { "x86" }
-    Write-Host "🔍 Архитектура: $arch" -ForegroundColor Gray
-    
-    # URL для скачивания (примерный - нужно обновить на актуальный)
-    $downloadUrl = "https://github.com/microsoft/foundry/releases/latest/download/foundry-windows-$arch.zip"
-    $tempDir = "$env:TEMP\foundry-installer"
-    $zipFile = "$tempDir\foundry.zip"
-    $extractDir = "$tempDir\foundry"
-    
-    # Создаем временную директорию
-    if (Test-Path $tempDir) {
-        Remove-Item $tempDir -Recurse -Force
-    }
-    New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
-    
-    Write-Host "🌐 Скачивание с: $downloadUrl" -ForegroundColor Gray
-    
-    # Скачиваем файл
-    try {
-        Invoke-WebRequest -Uri $downloadUrl -OutFile $zipFile -UseBasicParsing
-        Write-Host "✅ Скачивание завершено" -ForegroundColor Green
-    } catch {
-        Write-Host "❌ Ошибка скачивания: $_" -ForegroundColor Red
-        Write-Host "💡 Попробуйте скачать вручную:" -ForegroundColor Cyan
-        Write-Host "   https://github.com/microsoft/foundry/releases" -ForegroundColor Gray
-        exit 1
-    }
-    
-    # Распаковываем архив
-    Write-Host "📦 Распаковка архива..." -ForegroundColor Yellow
-    Expand-Archive -Path $zipFile -DestinationPath $extractDir -Force
-    
-    # Находим исполняемый файл
-    $foundryExe = Get-ChildItem -Path $extractDir -Name "foundry.exe" -Recurse | Select-Object -First 1
-    if (-not $foundryExe) {
-        Write-Host "❌ foundry.exe не найден в архиве" -ForegroundColor Red
-        exit 1
-    }
-    
-    $foundryPath = Join-Path $extractDir $foundryExe
-    Write-Host "✅ Найден: $foundryPath" -ForegroundColor Green
-    
-    # Устанавливаем в Program Files
-    $installDir = "$env:ProgramFiles\Microsoft Foundry"
-    Write-Host "📁 Установка в: $installDir" -ForegroundColor Yellow
-    
-    if (Test-Path $installDir) {
-        Remove-Item $installDir -Recurse -Force
-    }
-    New-Item -ItemType Directory -Path $installDir -Force | Out-Null
-    
-    # Копируем файлы
-    Copy-Item -Path "$extractDir\*" -Destination $installDir -Recurse -Force
-    
-    # Добавляем в PATH
-    Write-Host "🔗 Добавление в PATH..." -ForegroundColor Yellow
-    $currentPath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
-    
-    if ($currentPath -notlike "*$installDir*") {
-        $newPath = "$currentPath;$installDir"
-        [Environment]::SetEnvironmentVariable("PATH", $newPath, "Machine")
-        Write-Host "✅ PATH обновлен" -ForegroundColor Green
-    } else {
-        Write-Host "✅ PATH уже содержит Foundry" -ForegroundColor Green
-    }
-    
-    # Обновляем PATH в текущей сессии
-    $env:PATH = "$env:PATH;$installDir"
-    
-    # Проверяем установку
-    Write-Host "🧪 Проверка установки..." -ForegroundColor Yellow
-    Start-Sleep 2
-    
-    try {
-        $version = & "$installDir\foundry.exe" --version 2>&1
-        Write-Host "✅ Foundry успешно установлен!" -ForegroundColor Green
-        Write-Host "📋 Версия: $version" -ForegroundColor Gray
-    } catch {
-        Write-Host "⚠️ Установка завершена, но проверка не удалась: $_" -ForegroundColor Yellow
-        Write-Host "💡 Перезапустите PowerShell и попробуйте: foundry --version" -ForegroundColor Cyan
-    }
-    
-    # Очистка временных файлов
-    Write-Host "🧹 Очистка временных файлов..." -ForegroundColor Gray
-    Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
-    
-    Write-Host "" -ForegroundColor Green
-    Write-Host "🎉 Установка Microsoft Foundry завершена!" -ForegroundColor Green
-    Write-Host "💡 Перезапустите PowerShell для применения изменений PATH" -ForegroundColor Cyan
-    Write-Host "🚀 Затем запустите: .\start.ps1" -ForegroundColor Cyan
-    
-} catch {
-    Write-Host "❌ Ошибка установки: $_" -ForegroundColor Red
-    Write-Host "💡 Попробуйте установить вручную:" -ForegroundColor Cyan
-    Write-Host "   https://github.com/microsoft/foundry/releases" -ForegroundColor Gray
+# --- Проверка winget ---
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    Write-Host "winget не найден." -ForegroundColor Red
+    Write-Host "Установите App Installer из Microsoft Store:" -ForegroundColor Cyan
+    Write-Host "  https://apps.microsoft.com/detail/9NBLGGH4NNS1" -ForegroundColor Gray
     exit 1
 }
+
+# --- Проверка существующей установки ---
+if (Get-Command foundry -ErrorAction SilentlyContinue) {
+    $ver = & foundry --version 2>&1
+    Write-Host "Foundry уже установлен: $ver" -ForegroundColor Green
+} else {
+    # --- Установка через winget ---
+    Write-Host "`nУстановка Microsoft Foundry Local..." -ForegroundColor Yellow
+    try {
+        winget install Microsoft.FoundryLocal --accept-source-agreements --accept-package-agreements
+        Write-Host "Foundry Local установлен" -ForegroundColor Green
+    } catch {
+        Write-Host "Ошибка установки через winget: $_" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Установите вручную:" -ForegroundColor Cyan
+        Write-Host "  winget install Microsoft.FoundryLocal" -ForegroundColor Gray
+        Write-Host "  или скачайте с: https://aka.ms/foundry-local" -ForegroundColor Gray
+        exit 1
+    }
+
+    # Обновляем PATH в текущей сессии
+    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" +
+                [System.Environment]::GetEnvironmentVariable("PATH", "User")
+}
+
+# --- Запуск сервиса ---
+Write-Host "`nЗапуск Foundry сервиса..." -ForegroundColor Yellow
+try {
+    & foundry service start
+    Start-Sleep 3
+    Write-Host "Сервис запущен" -ForegroundColor Green
+} catch {
+    Write-Host "Не удалось запустить сервис: $_" -ForegroundColor Yellow
+    Write-Host "Запустите вручную: foundry service start" -ForegroundColor Cyan
+}
+
+# --- Скачивание модели ---
+Write-Host "`nСкачивание модели: $Model" -ForegroundColor Yellow
+Write-Host "Это может занять несколько минут..." -ForegroundColor Gray
+try {
+    & foundry model download $Model
+    Write-Host "Модель скачана: $Model" -ForegroundColor Green
+} catch {
+    Write-Host "Не удалось скачать модель: $_" -ForegroundColor Yellow
+    Write-Host "Скачайте вручную: foundry model download $Model" -ForegroundColor Cyan
+}
+
+# --- Проверка ---
+Write-Host "`nПроверка API..." -ForegroundColor Yellow
+Start-Sleep 2
+try {
+    $response = Invoke-RestMethod "http://localhost:50477/v1/models" -TimeoutSec 5
+    Write-Host "Foundry API доступен на порту 50477" -ForegroundColor Green
+    Write-Host "Моделей загружено: $($response.data.Count)" -ForegroundColor Gray
+} catch {
+    Write-Host "API пока недоступен — Foundry может использовать другой порт." -ForegroundColor Yellow
+    Write-Host "Сервер найдёт его автоматически при запуске." -ForegroundColor Cyan
+}
+
+Write-Host "`n$("=" * 50)" -ForegroundColor Green
+Write-Host "Foundry Local готов к работе!" -ForegroundColor Green
+Write-Host ""
+Write-Host "Запустите FastAPI сервер:"
+Write-Host "  venv\Scripts\python.exe run.py"
