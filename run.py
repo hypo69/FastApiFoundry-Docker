@@ -289,6 +289,8 @@ def main() -> bool:
                 reload=reload_enabled,
                 workers=workers,
                 log_level=log_level,
+                timeout_keep_alive=300,
+                timeout_graceful_shutdown=10,
             )
             return True
         except KeyboardInterrupt:

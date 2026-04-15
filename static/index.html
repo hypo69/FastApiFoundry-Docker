@@ -182,7 +182,13 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0">Chat Settings</h6>
-                                <small id="default-model-indicator" class="text-muted"></small>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span id="chat-model-badge" class="badge bg-primary" style="display:none;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+                                    <span id="chat-timer" class="badge bg-secondary" style="display:none"><i class="bi bi-stopwatch"></i> <span id="chat-timer-value">0.0s</span></span>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadModels()" title="Refresh models">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
@@ -521,7 +527,7 @@
                                 <div class="row">
                                     <div class="col-6">
                                         <label class="form-label">Port</label>
-                                        <input type="number" id="llama-port" class="form-control" value="8080">
+                                        <input type="number" id="llama-port" class="form-control" placeholder="9780">
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label">Context</label>
@@ -1503,7 +1509,7 @@
                 body: JSON.stringify({
                     model_path:      modelPath,
                     copy_to_models:  true,
-                    port:            parseInt(document.getElementById('llama-port').value) || 8080,
+                    port:            parseInt(document.getElementById('llama-port').value),
                     ctx_size:        parseInt(document.getElementById('llama-ctx').value)  || 4096,
                     threads:         parseInt(document.getElementById('llama-threads').value) || 0,
                     n_gpu_layers:    parseInt(document.getElementById('llama-ngl').value)  || 0,
@@ -1513,6 +1519,7 @@
                 statusEl.innerHTML = `<div class="alert alert-success p-2">✅ Started (PID: ${d.pid})<br><small>Model: <code>${d.model}</code><br>OpenAI URL: <code>${d.openai_url}</code></small></div>`;
                 document.getElementById('llama-openai-url').textContent = d.openai_url;
                 setTimeout(llamaCheckStatus, 2000);
+                setTimeout(loadModels, 2500);
             } else {
                 statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${d.error}</div>`;
             }

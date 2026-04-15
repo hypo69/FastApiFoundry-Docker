@@ -158,7 +158,43 @@ if (-not (Test-Path $logsDir)) {
     Write-Host "  logs/ уже существует" -ForegroundColor Gray
 }
 
-# --- 7. Foundry ---
+# --- 7. llama.cpp ---
+Write-Host "`nllama.cpp сервер..." -ForegroundColor Yellow
+
+$binDir = Join-Path $Root "bin"
+$llamaZip = if (Test-Path $binDir) {
+    Get-ChildItem -Path $binDir -Filter "llama-*-bin-win-*.zip" -ErrorAction SilentlyContinue | Select-Object -First 1
+}
+
+if (-not $llamaZip) {
+    Write-Host "  llama.cpp архив не найден в bin\ — пропущено" -ForegroundColor Gray
+} else {
+    $llamaDir = Join-Path $binDir $llamaZip.BaseName
+    if (-not (Test-Path $llamaDir)) {
+        Write-Host "  Распаковка $($llamaZip.Name) ..." -ForegroundColor Yellow
+        Expand-Archive -Path $llamaZip.FullName -DestinationPath $llamaDir
+        Write-Host "  Готово: $llamaDir" -ForegroundColor Green
+    } else {
+        Write-Host "  llama.cpp уже распакован" -ForegroundColor Gray
+    }
+
+    $llamaExe = Get-ChildItem -Path $llamaDir -Filter "llama-server.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($llamaExe) {
+        Write-Host "  llama-server.exe: $($llamaExe.FullName)" -ForegroundColor Green
+        $relPath = ".\bin\$($llamaZip.BaseName)\llama-server.exe"
+        $envContent = if (Test-Path $envFile) { Get-Content $envFile -Raw } else { "" }
+        if ($envContent -notmatch "LLAMA_SERVER_PATH") {
+            Add-Content -Path $envFile -Value "`nLLAMA_SERVER_PATH=$relPath"
+            Write-Host "  LLAMA_SERVER_PATH=$relPath → .env" -ForegroundColor Green
+        } else {
+            Write-Host "  LLAMA_SERVER_PATH уже есть в .env" -ForegroundColor Gray
+        }
+    } else {
+        Write-Host "  llama-server.exe не найден внутри архива" -ForegroundColor Yellow
+    }
+}
+
+# --- 8. Foundry ---
 Write-Host "`nAI бэкенд (Foundry Local)..." -ForegroundColor Yellow
 
 # Проверка наличия foundry в PATH

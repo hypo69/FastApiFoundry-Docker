@@ -28,6 +28,13 @@ async function loadConfig() {
             CONFIG.foundry_url = data.foundry_ai.base_url;
             CONFIG.default_model = data.foundry_ai.default_model;
             CONFIG.auto_load_default = data.foundry_ai.auto_load_default || false;
+
+            // Порт llama.cpp из config.json
+            const llamaPort = data.config?.llama_cpp?.port;
+            if (llamaPort) {
+                const el = document.getElementById('llama-port');
+                if (el) el.value = llamaPort;
+            }
             
             console.log('Config loaded from API:', CONFIG);
             
@@ -113,39 +120,21 @@ async function loadDefaultModel() {
     }
 }
 
-// Обновление статуса модели в интерфейсе
-function updateModelStatus(message, type) {
-    // Обновляем индикатор в чате
-    const indicator = document.getElementById('default-model-indicator');
-    if (indicator) {
-        const colorClass = type === 'success' ? 'text-success' : type === 'warning' ? 'text-warning' : 'text-danger';
-        const icon = type === 'success' ? 'bi-check-circle' : type === 'warning' ? 'bi-exclamation-triangle' : 'bi-x-circle';
-        indicator.innerHTML = `<i class="bi ${icon} ${colorClass}"></i> ${message}`;
-        indicator.className = `${colorClass}`;
-    }
-    
-    // Добавляем статус в системную информацию
-    const systemStatus = document.getElementById('system-status');
-    if (systemStatus) {
-        const statusHtml = systemStatus.innerHTML;
-        const modelStatusHtml = `
-            <div class="col-12 mt-2">
-                <strong>Модель по умолчанию:</strong><br>
-                <span class="badge bg-${type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'danger'}">${message}</span>
-            </div>
-        `;
-        
-        // Удаляем предыдущий статус модели если есть
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = statusHtml;
-        const existingModelStatus = tempDiv.querySelector('.col-12:last-child');
-        if (existingModelStatus && existingModelStatus.innerHTML.includes('Модель по умолчанию')) {
-            existingModelStatus.remove();
-        }
-        
-        systemStatus.innerHTML = tempDiv.innerHTML + modelStatusHtml;
+// Обновление бейджа выбранной модели
+function updateChatModelBadge(modelId) {
+    const badge = document.getElementById('chat-model-badge');
+    if (!badge) return;
+    if (modelId) {
+        const label = modelId.startsWith('hf::') ? '🤗 ' + modelId.slice(4) : modelId;
+        badge.textContent = label;
+        badge.style.display = '';
+    } else {
+        badge.style.display = 'none';
     }
 }
+
+// updateModelStatus — заглушка для обратной совместимости
+function updateModelStatus(message, type) {}
 
 // Загрузка конфигурации в отдельные поля
 async function loadConfigFields() {
@@ -624,24 +613,30 @@ async function testModel(modelId) {
 // Обновление списка моделей
 function updateModelSelect(models) {
     const select = document.getElementById('chat-model');
-    if (select) {
-        select.innerHTML = '<option value="">Auto-select</option>';
-        models.forEach(model => {
-            const option = document.createElement('option');
-            option.value = model.id;
-            option.textContent = model.id;
-            select.appendChild(option);
-        });
-        
-        // Автоматически выбираем модель по умолчанию если она доступна
-        if (CONFIG.default_model) {
-            const availableModels = models.map(m => m.id);
-            if (availableModels.includes(CONFIG.default_model)) {
-                select.value = CONFIG.default_model;
-                console.log(`Default model "${CONFIG.default_model}" selected automatically`);
-            } else {
-                console.warn(`Default model "${CONFIG.default_model}" not available in current models`);
-            }
+    if (!select) return;
+
+    // Сохраняем HF-опции (optgroup и отдельные опции с data-hf)
+    const hfGroups = [...select.querySelectorAll('optgroup')];
+    const hfOptions = [...select.options].filter(o => o.dataset.hf);
+
+    select.innerHTML = '<option value="">Auto-select</option>';
+    models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.textContent = model.id;
+        select.appendChild(option);
+    });
+
+    // Восстанавливаем HF-опции
+    hfGroups.forEach(g => select.appendChild(g));
+    hfOptions.filter(o => !o.closest('optgroup')).forEach(o => select.appendChild(o));
+
+    // Автоматически выбираем модель по умолчанию если она доступна
+    if (CONFIG.default_model) {
+        const availableModels = models.map(m => m.id);
+        if (availableModels.includes(CONFIG.default_model)) {
+            select.value = CONFIG.default_model;
+            updateChatModelBadge(CONFIG.default_model);
         }
     }
 }
@@ -656,6 +651,13 @@ async function sendMessage() {
     input.value = '';
 
     const typingId = addMessageToChat('assistant', '<i class="bi bi-three-dots"></i> Typing...');
+    const _chatStart = Date.now();
+    const _timerEl = document.getElementById('chat-timer');
+    const _timerVal = document.getElementById('chat-timer-value');
+    if (_timerEl) _timerEl.style.display = '';
+    const _timerInterval = setInterval(() => {
+        if (_timerVal) _timerVal.textContent = ((Date.now() - _chatStart) / 1000).toFixed(1) + 's';
+    }, 100);
 
     try {
         const selectedModel = document.getElementById('chat-model').value || '';
@@ -663,33 +665,35 @@ async function sendMessage() {
         const maxTokens     = parseInt(document.getElementById('max-tokens').value);
 
         let data;
-        if (selectedModel.startsWith('hf::')) {
-            // HuggingFace локальная модель
-            const modelId = selectedModel.slice(4);
-            const res = await fetch(`${API_BASE}/hf/generate`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    model_id: modelId,
-                    prompt: message,
-                    max_new_tokens: maxTokens,
-                    temperature
-                })
-            });
-            data = await res.json();
-        } else {
-            // Foundry / default
-            const res = await fetch(`${API_BASE}/generate`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    prompt: message,
-                    model: selectedModel || undefined,
-                    temperature,
-                    max_tokens: maxTokens
-                })
-            });
-            data = await res.json();
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 300000);
+        try {
+            if (selectedModel.startsWith('hf::')) {
+                const modelId = selectedModel.slice(4);
+                const res = await fetch(`${API_BASE}/hf/generate`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ model_id: modelId, prompt: message, max_new_tokens: maxTokens, temperature }),
+                    signal: ctrl.signal
+                });
+                data = await res.json();
+            } else {
+                const res = await fetch(`${API_BASE}/generate`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ prompt: message, model: selectedModel || undefined, temperature, max_tokens: maxTokens }),
+                    signal: ctrl.signal
+                });
+                data = await res.json();
+            }
+        } finally {
+            clearTimeout(timer);
+            clearInterval(_timerInterval);
+            if (_timerEl) {
+                const elapsed = ((Date.now() - _chatStart) / 1000).toFixed(1) + 's';
+                _timerVal.textContent = elapsed;
+                _timerEl.style.display = '';
+            }
         }
 
         document.getElementById(typingId).remove();
@@ -699,6 +703,8 @@ async function sendMessage() {
             addMessageToChat('assistant', `❌ Error: ${data.error || 'Failed to generate response'}`);
         }
     } catch (error) {
+        clearInterval(_timerInterval);
+        if (_timerEl) _timerEl.style.display = 'none';
         document.getElementById(typingId).remove();
         addMessageToChat('assistant', '❌ Connection error');
     }
@@ -1021,11 +1027,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Обработчик изменения модели в чате
+    // Автообновление моделей при открытии вкладки Chat
+    document.getElementById('chat-tab')?.addEventListener('shown.bs.tab', loadModels);
     const chatModelSelect = document.getElementById('chat-model');
     if (chatModelSelect) {
         chatModelSelect.addEventListener('change', function() {
             const selectedModel = this.value;
+            updateChatModelBadge(selectedModel);
             if (selectedModel && selectedModel !== CONFIG.default_model) {
                 saveDefaultModel(selectedModel);
             }

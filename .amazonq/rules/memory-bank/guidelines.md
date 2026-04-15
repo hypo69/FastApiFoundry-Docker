@@ -1,7 +1,7 @@
 # FastAPI Foundry — Development Guidelines
 
 ## File Header Standard
-Every Python file MUST begin with this header (observed in 100% of source files):
+Every Python file MUST start with this header (all fields required):
 
 ```python
 # -*- coding: utf-8 -*-
@@ -9,7 +9,7 @@ Every Python file MUST begin with this header (observed in 100% of source files)
 # Название процесса: <Functional description>
 # =============================================================================
 # Описание:
-#   <Detailed description of module purpose>
+#   <Detailed description of what this module does>
 #
 # Примеры:
 #   >>> from src.module import ClassName
@@ -24,89 +24,46 @@ Every Python file MUST begin with this header (observed in 100% of source files)
 # =============================================================================
 ```
 
-- Header comments starting with `#` are NEVER modified
-- Version field must be updated on every file change (current: `0.4.1`)
-- Project field: always `FastApiFoundry (Docker)`
+JavaScript files use `// filename.js` comment at top, then ES module exports.
 
-## Singleton Pattern
-Used for all shared service clients and configuration:
+---
 
+## Python Code Patterns
+
+### Singleton Pattern (used in Config and FoundryClient)
 ```python
-# Module-level singleton (foundry_client.py pattern)
-foundry_client = FoundryClient()  # at module bottom
-
-# Class-level singleton (config_manager.py pattern)
 class Config:
     _instance = None
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._load_config()
         return cls._instance
 
-config = Config()  # global instance at module bottom
+# Module-level singleton export
+config = Config()
 ```
 
-## Configuration Access Pattern
-Never access `config.json` directly in endpoint code. Always use the `config` singleton:
-
+### Async HTTP Client Pattern (aiohttp)
 ```python
-from src.core.config import config   # or from config_manager import config
+class FoundryClient:
+    def __init__(self):
+        self.session = None
+        self.timeout = aiohttp.ClientTimeout(total=30)
 
-host = config.api_host
-port = config.api_port
-model = config.foundry_default_model
+    async def _get_session(self):
+        if self.session is None or self.session.closed:
+            self.session = aiohttp.ClientSession(timeout=self.timeout)
+        return self.session
+
+    async def close(self):
+        if self.session and not self.session.closed:
+            await self.session.close()
 ```
 
-Config properties use `.get()` with safe defaults — never raise on missing keys:
-```python
-@property
-def api_port(self) -> int:
-    return self._config_data.get("fastapi_server", {}).get("port", 8000)
-```
-
-## Logging Pattern
-All Python modules use `logging.getLogger(__name__)` — never `print()` in production code (except `run.py` startup messages):
-
-```python
-import logging
-logger = logging.getLogger(__name__)
-
-logger.info("✅ Operation succeeded")
-logger.warning("⚠️ Non-critical issue")
-logger.error(f"❌ Error description: {e}")
-logger.debug(f"Detail: {value}")
-```
-
-Emoji prefixes are used consistently in log messages:
-- `✅` — success
-- `❌` — error/failure
-- `⚠️` — warning
-- `🔍` — search/discovery operation
-- `📋` — list/data retrieval
-- `📥` / `📤` — load/unload
-- `🤖` — AI/model operation
-- `🏥` — health check
-
-## Async HTTP Client Pattern (aiohttp)
-All Foundry API calls use `aiohttp` with lazy session initialization:
-
-```python
-async def _get_session(self):
-    if self.session is None or self.session.closed:
-        self.session = aiohttp.ClientSession(timeout=self.timeout)
-    return self.session
-
-async def close(self):
-    if self.session and not self.session.closed:
-        await self.session.close()
-```
-
-Always call `await self._update_base_url()` before making requests to handle dynamic Foundry port discovery.
-
-## Error Response Pattern
-All API methods return consistent dict responses — never raise exceptions to callers:
-
+### Response Dict Pattern
+All client methods return a consistent dict — never raise exceptions to callers:
 ```python
 # Success
 return {"success": True, "content": result, "model": model_id}
@@ -115,18 +72,49 @@ return {"success": True, "content": result, "model": model_id}
 return {"success": False, "error": "Human-readable message"}
 
 # With extra context
-return {
-    "success": False,
-    "error": f"HTTP {response.status}: {error_text}",
-    "models": []
-}
+return {"success": False, "error": "...", "models": [], "count": 0}
 ```
 
-Health check responses always include `"timestamp": datetime.now().isoformat()`.
+### Error Handling Pattern
+Wrap all external calls in try/except, log with emoji prefix, return error dict:
+```python
+try:
+    async with session.get(url) as response:
+        if response.status == 200:
+            data = await response.json()
+            logger.info(f"✅ Success: {url}")
+            return {"success": True, "data": data}
+        else:
+            logger.warning(f"⚠️ HTTP {response.status}")
+            return {"success": False, "error": f"HTTP {response.status}"}
+except Exception as e:
+    logger.error(f"❌ Exception: {e}")
+    return {"success": False, "error": str(e)}
+```
 
-## FastAPI Router Pattern
-Each endpoint file defines a module-level `router = APIRouter()` and is registered in `app.py`:
+### Logging Pattern
+Use `logging.getLogger(__name__)` — never `print()` in library code:
+```python
+logger = logging.getLogger(__name__)
 
+logger.info("✅ Operation succeeded")
+logger.warning("⚠️ Degraded state")
+logger.error(f"❌ Error: {e}")
+logger.debug(f"Checking port {port}...")
+```
+
+Emoji prefixes used consistently:
+- `✅` — success
+- `❌` — error / not found
+- `⚠️` — warning / degraded
+- `🔍` — searching / scanning
+- `📋` — listing
+- `📥` / `📤` — load / unload
+- `🤖` — AI generation
+- `🏥` — health check
+
+### FastAPI Router Pattern
+One router per endpoint file, prefix applied in `app.py`:
 ```python
 # In endpoint file
 from fastapi import APIRouter
@@ -141,26 +129,7 @@ from .endpoints import health
 app.include_router(health.router, prefix="/api/v1")
 ```
 
-## Exception Handling in Endpoints
-Endpoints catch all exceptions and return structured responses rather than letting FastAPI return 500:
-
-```python
-@router.get("/health")
-async def health_check():
-    try:
-        result = await foundry_client.health_check()
-        return {...}
-    except Exception as e:
-        return {
-            "status": "healthy",   # API itself is still up
-            "foundry_status": "error",
-            "error": str(e)
-        }
-```
-
-## Lifespan Management
-Use `@asynccontextmanager` lifespan (not deprecated `on_event`):
-
+### Lifespan Pattern (startup/shutdown)
 ```python
 from contextlib import asynccontextmanager
 
@@ -174,102 +143,135 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 ```
 
-## Import Order Convention
+### Config Access Pattern
+Always import the singleton, never instantiate Config directly:
 ```python
-# 1. Standard library
-import os, sys, json, logging
-from pathlib import Path
-from datetime import datetime
+from ..core.config import config   # inside src/
+from src.core.config import config  # from root
+# or
+from config_manager import config   # direct
 
-# 2. Third-party
-import aiohttp
-from fastapi import APIRouter
-
-# 3. Internal (relative imports within src/)
-from ..models.foundry_client import foundry_client
-from ..core.config import config
-from ..utils.foundry_finder import find_foundry_port
+port = config.api_port
+url = config.foundry_base_url
 ```
 
-## JavaScript Module Pattern (Browser Extension)
-Prompt files export named constants as ES modules — no default exports:
+Config properties use `.get()` with defaults — never KeyError:
+```python
+@property
+def api_port(self) -> int:
+    return self._config_data.get("fastapi_server", {}).get("port", 8000)
+```
 
+### `__init__.py` Pattern
+Keep `__init__.py` minimal — only re-export public API:
+```python
+from .gguf_to_onnx import GGUFConverter, ConversionResult
+__all__ = ["GGUFConverter", "ConversionResult"]
+```
+
+---
+
+## JavaScript / Browser Extension Patterns
+
+### Prompt Module Pattern
+Each language prompt file exports two named constants:
 ```javascript
-// prompts/es.js pattern (same structure in de.js, fr.js, en.js, etc.)
+// prompts/xx.js
 export const PAGE = `System prompt for single page summarization...`;
 export const MERGE = `System prompt for merging multiple tab summaries...`;
 ```
 
-Each language file exports exactly `PAGE` and `MERGE` constants. New languages follow this exact structure.
+Prompt rules always specify:
+- Output language (native to the locale)
+- Word/length limit
+- Output format: valid HTML only (`<p>`, `<ul>`, `<li>`, `<strong>`)
+- Exclusions: navigation, ads, cookie notices
+- No markdown, no code blocks
 
-## Prompt Design Pattern (Browser Extension)
-All language prompts follow a consistent structure:
-1. Role declaration ("You are a concise summarizer")
-2. Input description
-3. Rules section (word limit, bullet points, HTML output only)
-4. Input placeholder at end
+### Connector Pattern
+Each AI provider connector exports a uniform interface so `summarizer.js` can swap providers:
+```javascript
+// connectors/foundry.js, gemini.js, openai-compat.js, openrouter.js
+export async function sendMessage(messages, options) { ... }
+```
 
-Output format is always: valid HTML only (`<p>`, `<ul>`, `<li>`, `<strong>`) — no Markdown, no code blocks.
+---
 
-## Config.json Variable Substitution
-Secrets are never hardcoded in `config.json`. Use `${VAR_NAME}` syntax:
+## Configuration Patterns
 
+### `config.json` Variable Substitution
+Use `${VAR}` for required env vars, `${VAR:default}` for optional:
 ```json
 {
   "foundry_ai": {
     "base_url": "${FOUNDRY_BASE_URL}",
     "api_key": "${FOUNDRY_API_KEY}"
   },
-  "huggingface": {
-    "models_dir": "${HF_MODELS_DIR:~/.models/hf}"
+  "llama_cpp": {
+    "base_url": "${LLAMA_BASE_URL:http://127.0.0.1:9780/v1}"
   }
 }
 ```
 
-`${VAR:default}` syntax provides fallback values. The `env_processor.py` handles substitution at startup.
+Never store secrets directly in `config.json` — always use `${VAR}`.
 
-## Port Discovery Pattern
-Foundry port is resolved in priority order:
-1. `FOUNDRY_BASE_URL` environment variable (full URL)
-2. `FOUNDRY_DYNAMIC_PORT` environment variable (port number)
-3. Auto-discovery via `tasklist` + `netstat` (Windows)
-4. Probe known ports: `[62171, 50477, 58130]`
+### Port Auto-Discovery
+The server auto-finds a free port in range 9696–9796 if `auto_find_free_port: true`.
+Foundry port is discovered dynamically via process inspection + HTTP probe.
 
-## Windows UTF-8 Handling
-`run.py` sets UTF-8 encoding explicitly at startup for Windows compatibility:
+---
 
+## Naming Conventions
+
+| Item | Convention | Example |
+|---|---|---|
+| Python files | snake_case | `foundry_client.py` |
+| Python classes | PascalCase | `FoundryClient`, `Config` |
+| Python functions/methods | snake_case | `health_check()`, `list_models()` |
+| FastAPI routers | `router` (module-level) | `router = APIRouter()` |
+| Module-level singletons | lowercase noun | `foundry_client`, `config` |
+| JS prompt exports | UPPER_SNAKE | `PAGE`, `MERGE` |
+| JS connector files | provider name | `foundry.js`, `gemini.js` |
+| Config sections | snake_case | `fastapi_server`, `foundry_ai` |
+
+---
+
+## Project-Specific Rules
+
+1. **Never delete files** — rename with `~` suffix to disable (per AGENT_INSTRUCTIONS.md)
+2. **config.json is the single source of truth** for all non-secret settings
+3. **RAG system is currently disabled** (torch DLL issue on Windows) — do not re-enable without testing
+4. **Windows UTF-8**: `run.py` forces `PYTHONIOENCODING=utf-8` and patches stdout/stderr on win32
+5. **Foundry URL is dynamic** — set via `FOUNDRY_BASE_URL` env var or auto-discovered at startup; never hardcode
+6. **Reload mode forces workers=1** — uvicorn limitation, handled in `run.py`
+7. **All API responses include `timestamp`** from `datetime.now().isoformat()`
+8. **Version in file headers** must match project version (currently `0.4.1` in app/client files)
+
+---
+
+## Testing Patterns
+
+Tests live in `tests/` and use pytest + pytest-asyncio:
 ```python
-os.environ['PYTHONIOENCODING'] = 'utf-8'
-if sys.platform == 'win32':
-    import codecs
-    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
-    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
+import pytest
+
+@pytest.mark.asyncio
+async def test_health():
+    response = await client.get("/api/v1/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "healthy"
 ```
 
-## Logging File Structure
-Each component writes to dedicated log files in `logs/`:
-- `{component}.log` — all messages
-- `{component}-errors.log` — errors only
-- `{component}-structured.jsonl` — structured JSON lines
+Run all tests: `python -m pytest tests/ -v`
 
-Components: `fastapi-app`, `fastapi-foundry`, `foundry-client`, `foundry-models`, `models-api`, `logging-api`, `log-analyzer`, `web-logs`, `examples-api`
+---
 
-## Testing Conventions
-- Test files in `tests/` prefixed with `test_`
-- Use `pytest` + `pytest-asyncio` for async tests
-- Test files mirror source structure: `test_foundry_models.py`, `test_rag.py`, `test_config.py`
-- PowerShell tests: `test_port.ps1`
+## Commit Message Format
 
-## Docker / Deployment
-- Never commit `.env` (only `.env.example`)
-- Volumes: `./logs` and `./rag_index` are always mounted
-- Health check target: `GET /api/v1/health`
-- Production mode: set `FASTAPI_FOUNDRY_MODE=production` env var
-
-## What NOT to Do
-- Do NOT use `print()` in endpoint/model/utility code (only `run.py` startup)
-- Do NOT hardcode secrets in `config.json` — use `${VAR}` substitution
-- Do NOT raise exceptions from API methods — return `{"success": False, "error": "..."}` dicts
-- Do NOT use `on_event("startup")` — use `lifespan` context manager
-- Do NOT access `config.json` directly — always use `config` singleton properties
-- Do NOT delete files — rename with `~` suffix to disable
+| Prefix | Use for |
+|---|---|
+| `feat:` | New feature |
+| `fix:` | Bug fix |
+| `config:` | Configuration change |
+| `docs:` | Documentation update |
+| `test:` | Test additions/changes |

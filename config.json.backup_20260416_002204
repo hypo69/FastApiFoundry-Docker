@@ -38,8 +38,8 @@
   },
   "llama_cpp": {
     "model_path": "${LLAMA_MODEL_PATH}",
-    "base_url": "${LLAMA_BASE_URL:http://127.0.0.1:8080/v1}",
-    "port": 8080,
+    "base_url": "${LLAMA_BASE_URL:http://127.0.0.1:9780/v1}",
+    "port": 9780,
     "host": "127.0.0.1",
     "ctx_size": 4096,
     "threads": 0,

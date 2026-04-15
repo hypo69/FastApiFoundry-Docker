@@ -3,148 +3,122 @@
 ## Root Layout
 ```
 FastApiFoundry-Docker/
-├── src/                        # Core application source
-├── static/                     # Web UI (HTML/JS/CSS)
-├── extentions/                 # Browser extension
-├── mcp-powershell-servers/     # MCP server implementations
-├── SANDBOX/sdk/                # Experimental SDK
-├── scripts/                    # PowerShell utility scripts
-├── utils/                      # Python utility scripts
-├── tests/                      # Test suite
-├── docs/                       # Documentation (Markdown)
-├── examples/                   # API usage examples
-├── logs/                       # Runtime log files
-├── rag_index/                  # FAISS vector index storage
-├── models/hf/                  # Local HuggingFace model cache
-├── run.py                      # Main entry point
-├── config.json                 # App configuration (GUI/runtime)
-├── config_manager.py           # Unified config loader
-├── requirements.txt            # Python dependencies
-├── docker-compose.yml          # Docker setup
-├── Dockerfile                  # Container definition
-├── launcher.ps1                # Interactive PowerShell launcher
-└── start.ps1                   # Quick start script
+├── src/                    # Core Python application
+├── static/                 # Web UI (HTML/JS)
+├── mcp-powershell-servers/ # PowerShell MCP server suite
+├── extentions/             # Browser extension (summarizer)
+├── SANDBOX/sdk/            # Experimental SDK / client library
+├── examples/               # Usage examples (Python clients)
+├── tests/                  # pytest test suite
+├── scripts/                # PowerShell utility scripts
+├── utils/                  # Standalone Python utilities
+├── docs/                   # Full documentation (Markdown)
+├── logs/                   # Runtime log files
+├── rag_index/              # FAISS index + metadata (runtime)
+├── bin/                    # llama.cpp binaries (Windows x64)
+├── config.json             # Main application configuration
+├── config_manager.py       # Unified config loader (JSON + .env)
+├── run.py                  # Entry point — starts uvicorn
+├── launcher.ps1            # Interactive PowerShell launcher
+├── docker-compose.yml      # Docker deployment
+└── requirements.txt        # Python dependencies
 ```
 
-## Source Code (`src/`)
+## src/ — Application Source
 ```
 src/
 ├── api/
-│   ├── app.py                  # FastAPI application factory (create_app())
-│   ├── main.py                 # ASGI entry point (app instance)
-│   ├── models.py               # Pydantic request/response models
-│   └── endpoints/
-│       ├── main.py             # Root routes (/, /static)
-│       ├── health.py           # GET /api/v1/health
-│       ├── models.py           # GET /api/v1/models
-│       ├── generate.py         # POST /api/v1/generate
-│       ├── chat_endpoints.py   # POST /api/v1/chat
-│       ├── foundry.py          # Foundry status endpoints
+│   ├── app.py              # FastAPI factory (create_app)
+│   ├── main.py             # Uvicorn entry
+│   ├── models.py           # Shared Pydantic request/response models
+│   └── endpoints/          # One file per feature area
+│       ├── health.py       # GET /api/v1/health
+│       ├── generate.py     # POST /api/v1/generate
+│       ├── chat_endpoints.py  # POST /api/v1/chat
+│       ├── models.py       # GET/POST /api/v1/models
+│       ├── foundry.py      # Foundry status/control
 │       ├── foundry_management.py  # Start/stop Foundry service
-│       ├── foundry_models.py   # Foundry model list/load
-│       ├── rag.py              # RAG search endpoints
-│       ├── config.py           # Config read/write endpoints
-│       ├── logs.py             # Log streaming endpoints
-│       ├── hf_models.py        # HuggingFace model endpoints
-│       ├── llama_cpp.py        # llama.cpp endpoints
-│       └── mcp_powershell.py   # MCP PowerShell bridge
+│       ├── foundry_models.py      # Foundry model list/load
+│       ├── rag.py          # RAG search + index management
+│       ├── config.py       # Runtime config read/write
+│       ├── logs.py         # Log streaming
+│       ├── hf_models.py    # HuggingFace model endpoints
+│       ├── llama_cpp.py    # llama.cpp server endpoints
+│       ├── mcp_powershell.py  # PowerShell MCP proxy
+│       ├── agent.py        # Agent endpoints
+│       └── converter.py    # GGUF→ONNX converter endpoint
 ├── core/
-│   └── config.py               # Re-exports config from config_manager
+│   └── config.py           # Re-exports config_manager.config as `settings`
 ├── models/
-│   ├── foundry_client.py       # Foundry HTTP client (singleton)
-│   ├── enhanced_foundry_client.py  # Extended Foundry client
-│   ├── hf_client.py            # HuggingFace inference client
-│   └── model_manager.py        # Multi-backend model manager
+│   ├── foundry_client.py   # Async HTTP client for Foundry Local API
+│   ├── enhanced_foundry_client.py  # Extended client with retry/fallback
+│   ├── hf_client.py        # HuggingFace transformers client
+│   └── model_manager.py    # Unified model switching logic
 ├── rag/
-│   └── rag_system.py           # FAISS RAG pipeline
+│   └── rag_system.py       # FAISS + sentence-transformers RAG
+├── agents/
+│   ├── base.py             # Abstract agent base class
+│   └── powershell_agent.py # PowerShell execution agent
+├── converter/
+│   └── gguf_to_onnx.py     # GGUF→ONNX conversion logic
 ├── logger/
-│   └── __init__.py             # Logger setup
+│   └── __init__.py         # Logger factory
 └── utils/
-    ├── logging_config.py       # Logging configuration
-    ├── logging_system.py       # Structured logging system
-    ├── log_analyzer.py         # Log analysis utilities
-    ├── env_processor.py        # .env loading + config substitution
-    └── foundry_finder.py       # Foundry process/port discovery
+    ├── logging_config.py   # Logging setup (file + console)
+    ├── logging_system.py   # Structured JSON logging
+    ├── log_analyzer.py     # Log parsing utilities
+    ├── env_processor.py    # .env variable substitution in config
+    └── foundry_finder.py   # Auto-detect Foundry installation path
 ```
 
-## Configuration System
-- `config.json` — primary runtime config (ports, modes, RAG settings, Foundry URL)
-- `.env` — secrets (API keys, tokens, GitHub PAT)
-- `config_manager.py` — loads both, substitutes `${VAR}` references from `.env` into `config.json`
-- `src/core/config.py` — thin re-export: `from config_manager import config; settings = config`
+## mcp-powershell-servers/
+```
+mcp-powershell-servers/
+├── src/
+│   ├── servers/            # PowerShell MCP server scripts
+│   │   ├── McpSTDIOServer.ps1      # STDIO MCP server
+│   │   ├── McpHttpsServer.ps1      # HTTPS MCP server
+│   │   ├── McpWPCLIServer.ps1      # WordPress CLI MCP server
+│   │   └── huggingface_mcp.py      # HuggingFace MCP (Python)
+│   ├── clients/
+│   │   ├── python_client.py        # Python MCP client
+│   │   ├── nodejs.js               # Node.js MCP client
+│   │   └── powershell.ps1          # PowerShell MCP client
+│   └── config/                     # Server configuration JSONs
+└── Start-MCPServers.ps1            # Launcher for all MCP servers
+```
 
-## Web Interface (`static/`)
+## extentions/browser-extention-summarizer/
+```
+browser-extention-summarizer/
+├── connectors/             # AI provider connectors
+│   ├── foundry.js          # Foundry Local connector
+│   ├── gemini.js           # Google Gemini connector
+│   ├── openai-compat.js    # OpenAI-compatible connector
+│   └── openrouter.js       # OpenRouter connector
+├── prompts/                # Localized system prompts
+│   ├── en.js, ru.js, de.js, fr.js, es.js, ja.js, zh.js
+│   └── factcheck.js        # Fact-checking prompt
+├── popup.html/js           # Extension popup UI
+├── chat.html/js            # Chat interface
+├── providers.html/js       # Provider configuration UI
+├── summarizer.js           # Core summarization logic
+├── background.js           # Service worker
+└── manifest.json           # Chrome extension manifest
+```
+
+## Configuration Files
 | File | Purpose |
-|------|---------|
-| `index.html` | Main dashboard |
-| `chat.html` | Chat UI with session support |
-| `control.html` | Foundry service start/stop/status |
-| `ai.html` | Direct AI generation UI |
-| `app.js` | Shared frontend logic |
+|---|---|
+| `config.json` | Main config: server, foundry, RAG, llama.cpp, security, docker |
+| `.env` | Secrets: API keys, tokens, URLs (substituted into config.json via `${VAR}`) |
+| `.env.example` | Template for .env |
+| `config_manager.py` | Loads config.json, resolves `${VAR}` and `${VAR:default}` from .env |
 
-## Browser Extension (`extentions/browser-extention-summarizer/`)
-```
-├── manifest.json               # Chrome extension manifest
-├── popup.html / popup.js       # Extension popup
-├── chat.html / chat.js         # In-extension chat
-├── providers.html / providers.js  # Provider configuration UI
-├── connectors/                 # AI provider connectors
-│   ├── foundry.js              # Local Foundry connector
-│   ├── gemini.js               # Google Gemini connector
-│   ├── openai-compat.js        # OpenAI-compatible connector
-│   └── openrouter.js           # OpenRouter connector
-├── prompts/                    # Localized system prompts
-│   └── {en,ru,de,fr,es,ja,zh,factcheck}.js
-├── summarizer.js               # Core summarization logic
-├── background.js               # Service worker
-└── logger.js                   # Extension logging
-```
-
-## MCP Servers (`mcp-powershell-servers/`)
-```
-src/
-├── servers/
-│   ├── McpSTDIOServer.ps1      # STDIO MCP server (main)
-│   ├── McpHttpsServer.ps1      # HTTPS MCP server
-│   ├── McpWPCLIServer.ps1      # WordPress CLI MCP server
-│   ├── McpHuggingFaceServer.ps1
-│   ├── huggingface_mcp.py      # Python HuggingFace MCP
-│   ├── aistros-foundry/        # Foundry MCP server
-│   └── wordpress-cli/          # WP-CLI MCP server
-└── clients/
-    ├── python_client.py        # Python MCP client
-    ├── nodejs.js               # Node.js MCP client
-    └── powershell.ps1          # PowerShell MCP client
-```
-
-## Architectural Patterns
-
-### Request Flow
-```
-Client → FastAPI (port 9696)
-           ↓
-    Endpoint Router
-           ↓
-    foundry_client (HTTP) → Foundry Local (port 50477)
-                                    ↓
-                              AI Model (ONNX)
-```
-
-### Singleton Clients
-- `foundry_client` — module-level singleton in `src/models/foundry_client.py`
-- Shared across all endpoint handlers via import
-
-### Lifespan Management
-- `app.py` uses `@asynccontextmanager` lifespan for startup/shutdown
-- Foundry client closed on shutdown via `await foundry_client.close()`
-
-### Logging Architecture
-- Per-component log files in `logs/` (e.g., `foundry-client.log`, `fastapi-app.log`)
-- Structured JSONL sidecars (`*-structured.jsonl`)
-- Error-only files (`*-errors.log`)
-- Configured via `src/utils/logging_config.py`
-
-### Port Management
-- Default API port: 9696
-- Auto-find free port in range 9696–9796 (configurable)
-- Foundry port: auto-discovered via `tasklist` + `netstat` or `FOUNDRY_BASE_URL` env var
+## Key Architectural Patterns
+- **Factory pattern**: `create_app()` in `src/api/app.py` builds the FastAPI instance
+- **Singleton clients**: `foundry_client` is a module-level singleton
+- **Router-per-feature**: each endpoint file registers its own `APIRouter`
+- **Config via JSON+env**: `config.json` holds structure, `.env` holds secrets
+- **Lifespan context manager**: startup/shutdown hooks via `@asynccontextmanager`
+- **Multi-backend**: same API surface over Foundry, llama.cpp, or HuggingFace

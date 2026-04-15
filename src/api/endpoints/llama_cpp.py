@@ -43,13 +43,18 @@ DEFAULT_THREADS = os.cpu_count() or 4
 
 
 def _get_server_url() -> str:
-    """! Собрать URL llama.cpp сервера из переменных окружения.
+    """! Собрать URL llama.cpp сервера из config.json или переменных окружения.
 
     Returns:
         str: URL вида http://host:port
     """
-    port = os.getenv("LLAMA_PORT", str(DEFAULT_PORT))
-    host = os.getenv("LLAMA_HOST", DEFAULT_HOST)
+    try:
+        from ...core.config import config
+        port = config.get_section("llama_cpp").get("port", DEFAULT_PORT)
+        host = config.get_section("llama_cpp").get("host", DEFAULT_HOST)
+    except Exception:
+        port = int(os.getenv("LLAMA_PORT", str(DEFAULT_PORT)))
+        host = os.getenv("LLAMA_HOST", DEFAULT_HOST)
     return f"http://{host}:{port}"
 
 
@@ -161,11 +166,14 @@ async def llama_start(request: dict) -> dict:
         _server_process.wait(timeout=5)
         logger.info("Предыдущий llama.cpp сервер остановлен")
 
-    port        = int(request.get("port", os.getenv("LLAMA_PORT", DEFAULT_PORT)))
-    host        = request.get("host", os.getenv("LLAMA_HOST", DEFAULT_HOST))
-    ctx_size    = int(request.get("ctx_size", DEFAULT_CTX))
-    threads     = int(request.get("threads", DEFAULT_THREADS))
-    n_gpu_layers = int(request.get("n_gpu_layers", 0))
+    from ...core.config import config as _config
+    _llama_cfg = _config.get_section("llama_cpp")
+
+    port         = int(request.get("port") or _llama_cfg.get("port", DEFAULT_PORT))
+    host         = request.get("host") or _llama_cfg.get("host", DEFAULT_HOST)
+    ctx_size     = int(request.get("ctx_size") or DEFAULT_CTX)
+    threads      = int(request.get("threads") or DEFAULT_THREADS)
+    n_gpu_layers = int(request.get("n_gpu_layers") or 0)
 
     # Ищем llama-server в PATH и стандартных местах
     server_bin = _find_llama_server()
@@ -312,7 +320,18 @@ def _find_llama_server() -> str | None:
             if candidate.exists():
                 return str(candidate)
 
-    # 5. Стандартные места установки на Windows
+    # 5. bin/ рядом с проектом
+    bin_dir = Path(__file__).parents[3] / "bin"
+    if bin_dir.exists():
+        for d in bin_dir.iterdir():
+            if not d.is_dir():
+                continue
+            for name in ("llama-server.exe", "server.exe", "llama-server", "server"):
+                candidate = d / name
+                if candidate.exists():
+                    return str(candidate)
+
+    # 6. Стандартные места установки на Windows
     candidates = [
         Path("C:/llama.cpp/llama-server.exe"),
         Path("C:/llama.cpp/server.exe"),

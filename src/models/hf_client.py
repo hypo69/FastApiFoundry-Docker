@@ -144,27 +144,34 @@ class HFClient:
             import torch
             from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 
-            # Определяем путь: HF кэш → Hub
-            cache_dir = HF_MODELS_DIR / f"models--{model_id.replace('/', '--')}"
-            snapshots_dir = cache_dir / "snapshots"
-            if snapshots_dir.exists():
-                snapshot_dirs = [s for s in snapshots_dir.iterdir() if s.is_dir()]
-                model_path = str(snapshot_dirs[0]) if snapshot_dirs else model_id
-            else:
-                model_path = model_id
+            # Ищем локальный путь: HF_MODELS_DIR → HF_CACHE_DIR → скачать
+            dir_name = f"models--{model_id.replace('/', '--')}"
+            local_path = None
+            for base in (HF_MODELS_DIR, HF_CACHE_DIR):
+                candidate = base / dir_name / "snapshots"
+                if candidate.exists():
+                    dirs = [s for s in candidate.iterdir() if s.is_dir()]
+                    if dirs:
+                        local_path = str(dirs[0])
+                        break
 
-            hf_token = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")
+            model_path = local_path or model_id
+            local_files_only = local_path is not None
+            hf_token = None if local_files_only else (os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN"))
 
-            logger.info(f"Загрузка модели {model_id} из {model_path}...")
+            logger.info(f"Загрузка {model_id} из {'local: ' + model_path if local_files_only else 'HuggingFace Hub'}")
 
             torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
-            tokenizer = AutoTokenizer.from_pretrained(model_path, token=hf_token)
+            tokenizer = AutoTokenizer.from_pretrained(
+                model_path, token=hf_token, local_files_only=local_files_only
+            )
             model = AutoModelForCausalLM.from_pretrained(
                 model_path,
                 torch_dtype=torch_dtype,
                 device_map=device,
-                token=hf_token
+                token=hf_token,
+                local_files_only=local_files_only
             )
 
             pipe = pipeline(

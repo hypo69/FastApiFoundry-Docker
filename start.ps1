@@ -162,7 +162,7 @@ if ($foundryPort) {
         Write-Host '🚀 Starting Foundry service...' -ForegroundColor Yellow
         
         try {
-            & foundry service start | Out-Null
+            Start-Process -FilePath "foundry" -ArgumentList "service", "start" -WindowStyle Minimized -NoNewWindow:$false
             Write-Host "Foundry service start command executed" -ForegroundColor Gray
             
             # Ждем запуска и ищем порт
