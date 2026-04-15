@@ -136,6 +136,76 @@ def _read_text_file(path: str) -> Optional[str]:
         return f.read().strip()
 
 
+class RawContentRequest(BaseModel):
+    content: str
+
+
+@router.get("/config/env-raw")
+async def get_env_raw():
+    """Чтение .env файла как сырой текст для редактора"""
+    content = _read_text_file(".env") or ""
+    return {"success": True, "content": content}
+
+
+@router.post("/config/env-raw")
+async def save_env_raw(request: RawContentRequest):
+    """Запись .env файла из редактора (сырой текст)"""
+    with open(".env", "w", encoding="utf-8") as f:
+        f.write(request.content)
+    return {"success": True}
+
+
+@router.get("/config/raw")
+async def get_config_raw():
+    """Чтение config.json как сырой текст для редактора"""
+    content = _read_text_file("config.json") or ""
+    return {"success": True, "content": content}
+
+
+@router.post("/config/raw")
+async def save_config_raw(request: RawContentRequest):
+    """Запись config.json из редактора (сырой текст).
+    Валидация JSON на стороне клиента, но проверяем и здесь.
+    """
+    try:
+        json.loads(request.content)
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Невалидный JSON: {e}")
+    with open("config.json", "w", encoding="utf-8") as f:
+        f.write(request.content)
+    config.reload_config()
+    return {"success": True}
+
+
+class EnvUpdateRequest(BaseModel):
+    key: str
+    value: str
+
+
+@router.post("/config/env")
+async def save_env_variable(request: EnvUpdateRequest):
+    """Сохранение одной переменной окружения в .env файл.
+
+    Используется для сохранения секретов (токены, ключи) из веб-интерфейса.
+    Переменная обновляется если существует, добавляется если нет.
+    """
+    env_path = ".env"
+    current = _read_env_file(env_path)
+    current[request.key] = request.value
+
+    # Перезапись .env с сохранением всех существующих значений
+    lines = []
+    for k, v in current.items():
+        lines.append(f"{k}={v}")
+    with open(env_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+    # Применяем в текущем процессе сразу
+    os.environ[request.key] = request.value
+
+    return {"success": True, "key": request.key}
+
+
 @router.get("/config/export")
 async def export_config():
     """Экспорт ВСЕХ настроек проекта в один JSON: config.json + .env + MCP конфиги"""
@@ -148,12 +218,15 @@ async def export_config():
                 "exported_at": datetime.now().isoformat(),
                 "project": "FastApiFoundry (Docker)",
                 "version": "0.2.1",
-                "sources": ["config.json", ".env", "mcp-servers/aistros-foundry/claude-desktop-config.json", ".foundry_url"]
+                "sources": ["config.json", ".env", "mcp-servers/aistros-foundry/claude-desktop-config.json", ".foundry_url", "mcp-powershell-servers/settings.json"],
+                "includes": ["foundry_ai", "huggingface", "llama_cpp", "rag_system", "security", "logging", "mcp_powershell_servers"]
             },
             "config_json": config.get_raw_config(),
             "env": _read_env_file(".env"),
             "mcp_claude_desktop": _read_json_file("mcp-servers/aistros-foundry/claude-desktop-config.json"),
+            "mcp_powershell_settings": _read_json_file("mcp-powershell-servers/settings.json"),
             "foundry_url": _read_text_file(".foundry_url"),
+            "llama_url":   _read_text_file(".llama_url"),
         }
 
         return JSONResponse(
@@ -240,6 +313,24 @@ async def import_config(request: ConfigImportRequest):
             with open(".foundry_url", "w", encoding="utf-8") as f:
                 f.write(imported["foundry_url"])
             restored["foundry_url"] = True
+
+        # --- .llama_url ---
+        if "llama_url" in imported and imported["llama_url"]:
+            with open(".llama_url", "w", encoding="utf-8") as f:
+                f.write(imported["llama_url"])
+            restored["llama_url"] = True
+
+        # --- mcp-powershell-servers/settings.json ---
+        if "mcp_powershell_settings" in imported and imported["mcp_powershell_settings"] is not None:
+            mcp_ps_path = "mcp-powershell-servers/settings.json"
+            if os.path.exists(mcp_ps_path):
+                with open(mcp_ps_path, "r", encoding="utf-8") as f:
+                    mcp_ps_backup = f.read()
+                with open(f"{mcp_ps_path}.backup_{timestamp}", "w", encoding="utf-8") as f:
+                    f.write(mcp_ps_backup)
+            with open(mcp_ps_path, "w", encoding="utf-8") as f:
+                json.dump(imported["mcp_powershell_settings"], f, indent=2, ensure_ascii=False)
+            restored["mcp_powershell_settings"] = True
 
         return {
             "success": True,

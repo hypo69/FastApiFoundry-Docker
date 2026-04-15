@@ -97,6 +97,11 @@ def create_app() -> FastAPI:
     from .endpoints.chat_endpoints import router as chat_router
     from .endpoints.foundry_management import router as foundry_mgmt_router
     from .endpoints.foundry_models import router as foundry_models_router
+    from .endpoints.hf_models import router as hf_router
+    from .endpoints.llama_cpp import router as llama_router
+    from .endpoints.mcp_powershell import router as mcp_ps_router
+    from .endpoints.agent import router as agent_router
+    from .endpoints.converter import router as converter_router
 
     app.include_router(main.router)
     app.include_router(health.router, prefix="/api/v1")
@@ -109,5 +114,10 @@ def create_app() -> FastAPI:
     app.include_router(rag.router, prefix="/api/v1")
     app.include_router(config.router, prefix="/api/v1")
     app.include_router(logs.router, prefix="/api/v1")
+    app.include_router(hf_router, prefix="/api/v1")
+    app.include_router(llama_router, prefix="/api/v1")
+    app.include_router(mcp_ps_router, prefix="/api/v1")
+    app.include_router(agent_router, prefix="/api/v1")
+    app.include_router(converter_router, prefix="/api/v1")
     
     return app

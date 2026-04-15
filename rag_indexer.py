@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 class RAGIndexer:
     """Индексатор документов для RAG системы"""
     
-    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = "sentence-transformers/all-mpnet-base-v2"):
         self.model_name = model_name
         self.model = None
         self.chunks = []
@@ -59,7 +59,7 @@ class RAGIndexer:
             logger.warning(f"Не удалось прочитать {file_path}: {e}")
             return ""
     
-    def chunk_text(self, text: str, chunk_size: int = 500, overlap: int = 50) -> List[str]:
+    def chunk_text(self, text: str, chunk_size: int = 1000, overlap: int = 50) -> List[str]:
         """Разбить текст на чанки"""
         if len(text) <= chunk_size:
             return [text]
@@ -86,7 +86,7 @@ class RAGIndexer:
         
         return chunks
     
-    def process_markdown(self, content: str, source: str) -> List[Dict[str, Any]]:
+    def process_markdown(self, content: str, source: str, chunk_size: int = 1000, overlap: int = 50) -> List[Dict[str, Any]]:
         """Обработать Markdown файл"""
         chunks = []
         lines = content.split('\n')
@@ -102,7 +102,7 @@ class RAGIndexer:
                 if current_text:
                     text = '\n'.join(current_text).strip()
                     if text:
-                        for chunk in self.chunk_text(text):
+                        for chunk in self.chunk_text(text, chunk_size=chunk_size, overlap=overlap):
                             chunks.append({
                                 'source': source,
                                 'section': current_section,
@@ -120,7 +120,7 @@ class RAGIndexer:
         if current_text:
             text = '\n'.join(current_text).strip()
             if text:
-                for chunk in self.chunk_text(text):
+                for chunk in self.chunk_text(text, chunk_size=chunk_size, overlap=overlap):
                     chunks.append({
                         'source': source,
                         'section': current_section,
@@ -129,7 +129,7 @@ class RAGIndexer:
         
         return chunks
     
-    def process_file(self, file_path: Path) -> List[Dict[str, Any]]:
+    def process_file(self, file_path: Path, chunk_size: int = 1000, overlap: int = 50) -> List[Dict[str, Any]]:
         """Обработать один файл"""
         content = self.read_file(file_path)
         if not content:
@@ -138,11 +138,11 @@ class RAGIndexer:
         source = file_path.name
         
         if file_path.suffix.lower() == '.md':
-            return self.process_markdown(content, source)
+            return self.process_markdown(content, source, chunk_size=chunk_size, overlap=overlap)
         else:
             # Для других файлов - простое разбиение на чанки
             chunks = []
-            for chunk in self.chunk_text(content):
+            for chunk in self.chunk_text(content, chunk_size=chunk_size, overlap=overlap):
                 chunks.append({
                     'source': source,
                     'section': 'Content',
@@ -150,7 +150,7 @@ class RAGIndexer:
                 })
             return chunks
     
-    def index_directory(self, docs_dir: Path) -> None:
+    def index_directory(self, docs_dir: Path, chunk_size: int = 1000, overlap: int = 50) -> None:
         """Индексировать директорию с документами"""
         logger.info(f"Индексация директории: {docs_dir}")
         
@@ -161,7 +161,7 @@ class RAGIndexer:
         for file_path in docs_dir.rglob('*'):
             if file_path.is_file() and file_path.suffix.lower() in supported_extensions:
                 logger.info(f"Обработка: {file_path}")
-                chunks = self.process_file(file_path)
+                chunks = self.process_file(file_path, chunk_size=chunk_size, overlap=overlap)
                 self.chunks.extend(chunks)
                 files_processed += 1
         
@@ -229,7 +229,7 @@ class RAGIndexer:
             'model': self.model_name,
             'chunks_count': len(self.chunks),
             'dimension': self.embeddings.shape[1],
-            'created_at': str(Path().cwd()),
+            'created_at': __import__('datetime').datetime.now().isoformat(),
             'version': '1.0.0'
         }
         
@@ -259,8 +259,22 @@ def main():
     parser.add_argument(
         '--model',
         type=str,
-        default='sentence-transformers/all-MiniLM-L6-v2',
-        help="Модель для эмбеддингов"
+        default='sentence-transformers/all-mpnet-base-v2',
+        help="Модель для эмбеддингов (должна совпадать с rag_system.model в config.json)"
+    )
+    
+    parser.add_argument(
+        '--chunk-size',
+        type=int,
+        default=1000,
+        help="Размер чанка в символах (должен совпадать с rag_system.chunk_size в config.json)"
+    )
+    
+    parser.add_argument(
+        '--overlap',
+        type=int,
+        default=50,
+        help="Перекрытие между чанками в символах"
     )
     
     args = parser.parse_args()
@@ -281,7 +295,7 @@ def main():
         indexer.load_model()
         
         # Индексировать документы
-        indexer.index_directory(docs_dir)
+        indexer.index_directory(docs_dir, chunk_size=args.chunk_size, overlap=args.overlap)
         
         if not indexer.chunks:
             logger.error("❌ Не найдено документов для индексации")

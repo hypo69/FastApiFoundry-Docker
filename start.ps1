@@ -16,8 +16,19 @@ Write-Host ('=' * 60) -ForegroundColor Cyan
 # -----------------------------------------------------------------------------
 # Проверка и установка зависимостей
 # -----------------------------------------------------------------------------
-# ИСПРАВЛЕНО: Используем правильный путь к python311.exe в venv
-$venvPath = "$Root\venv\Scripts\python311.exe"
+# Активация виртуального окружения
+$ActivateScript = "$Root\venv\Scripts\Activate.ps1"
+if (Test-Path $ActivateScript) {
+    . $ActivateScript
+    Write-Host '✅ venv activated' -ForegroundColor Green
+} else {
+    Write-Host '⚠️ venv/Scripts/Activate.ps1 not found' -ForegroundColor Yellow
+}
+
+$venvPath = "$Root\venv\Scripts\python.exe"
+if (-not (Test-Path $venvPath)) {
+    $venvPath = "$Root\venv\Scripts\python311.exe"
+}
 
 if (-not (Test-Path $venvPath)) {
     Write-Host '📦 Первый запуск - установка зависимостей...' -ForegroundColor Yellow
@@ -183,6 +194,38 @@ if ($foundryPort) {
     Write-Host "🔗 FOUNDRY_BASE_URL = $env:FOUNDRY_BASE_URL" -ForegroundColor Green
 } else {
     Write-Host "⚠️ Foundry not available - AI features disabled" -ForegroundColor Yellow
+}
+
+# -----------------------------------------------------------------------------
+# llama.cpp (опционально — если задан LLAMA_MODEL_PATH в .env)
+# -----------------------------------------------------------------------------
+$llamaModelPath = [System.Environment]::GetEnvironmentVariable('LLAMA_MODEL_PATH')
+$llamaAutoStart = [System.Environment]::GetEnvironmentVariable('LLAMA_AUTO_START')
+
+if ($llamaModelPath -and $llamaAutoStart -eq 'true') {
+    Write-Host '🦙 Starting llama.cpp server...' -ForegroundColor Cyan
+
+    $llamaScript = Join-Path $Root 'scripts\llama-start.ps1'
+    if (Test-Path $llamaScript) {
+        $llamaPort = [System.Environment]::GetEnvironmentVariable('LLAMA_PORT')
+        if (-not $llamaPort) { $llamaPort = 8080 }
+
+        # Запускаем в отдельном окне чтобы не блокировать
+        Start-Process powershell.exe -ArgumentList @(
+            '-NonInteractive', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-File', $llamaScript,
+            '-ModelPath', $llamaModelPath,
+            '-Port', $llamaPort
+        ) -WindowStyle Minimized
+
+        $env:LLAMA_BASE_URL = "http://127.0.0.1:$llamaPort/v1"
+        Write-Host "✅ llama.cpp starting (port $llamaPort)" -ForegroundColor Green
+        Write-Host "🔗 LLAMA_BASE_URL = $env:LLAMA_BASE_URL" -ForegroundColor Green
+    } else {
+        Write-Host '⚠️ scripts\llama-start.ps1 not found, skipping llama.cpp' -ForegroundColor Yellow
+    }
+} elseif ($llamaModelPath) {
+    Write-Host "💡 llama.cpp model configured but LLAMA_AUTO_START != true (skipping)" -ForegroundColor Gray
 }
 
 # -----------------------------------------------------------------------------

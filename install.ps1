@@ -46,9 +46,44 @@ foreach ($cmd in @("python", "python3", "python311")) {
 }
 
 if (-not $pythonCmd) {
-    Write-Host "  Python 3.11+ не найден." -ForegroundColor Red
-    Write-Host "  Скачайте с https://www.python.org/downloads/" -ForegroundColor Cyan
-    exit 1
+    Write-Host "  Python 3.11+ не найден в системе." -ForegroundColor Yellow
+
+    $localZip = Join-Path $Root "bin\Python-3.11.9.zip"
+    if (Test-Path $localZip) {
+        Write-Host "  Найден локальный интерпретатор: $localZip" -ForegroundColor Cyan
+        $answer = Read-Host "  Установить Python из локального архива? (y/N)"
+        if ($answer -eq 'y' -or $answer -eq 'Y') {
+            $localPythonDir = Join-Path $Root "bin\Python-3.11.9"
+            if (-not (Test-Path $localPythonDir)) {
+                Write-Host "  Распаковка $localZip ..." -ForegroundColor Yellow
+                Expand-Archive -Path $localZip -DestinationPath $localPythonDir
+                Write-Host "  Готово" -ForegroundColor Green
+            } else {
+                Write-Host "  Интерпретатор уже распакован" -ForegroundColor Gray
+            }
+
+            # Ищем python.exe внутри распакованной директории
+            $localPythonExe = Get-ChildItem -Path $localPythonDir -Filter "python.exe" -Recurse -ErrorAction SilentlyContinue |
+                              Select-Object -First 1 -ExpandProperty FullName
+
+            if ($localPythonExe) {
+                $ver = & $localPythonExe --version 2>&1
+                Write-Host "  Используется локальный Python: $ver" -ForegroundColor Green
+                Write-Host "  Путь: $localPythonExe" -ForegroundColor Gray
+                $pythonCmd = $localPythonExe
+            } else {
+                Write-Host "  python.exe не найден внутри архива. Проверьте содержимое bin\Python-3.11.9.zip" -ForegroundColor Red
+                exit 1
+            }
+        } else {
+            Write-Host "  Установка отменена. Скачайте Python вручную: https://www.python.org/downloads/" -ForegroundColor Cyan
+            exit 1
+        }
+    } else {
+        Write-Host "  Python 3.11+ не найден и локальный архив bin\Python-3.11.9.zip отсутствует." -ForegroundColor Red
+        Write-Host "  Скачайте Python с https://www.python.org/downloads/" -ForegroundColor Cyan
+        exit 1
+    }
 }
 
 # --- 2. venv ---
@@ -159,7 +194,17 @@ if ($foundryInstalled) {
     }
 }
 
-# --- 8. Итог ---
+# --- 8. Модели по умолчанию ---
+$isFirstInstall = -not (Test-Path (Join-Path $Root "venv\.first_install_done"))
+if ($isFirstInstall) {
+    $answer = Read-Host "`nСкачать модели по умолчанию? (y/N)"
+    if ($answer -eq 'y' -or $answer -eq 'Y') {
+        & (Join-Path $Root "install-models.ps1")
+    }
+    "" | Out-File (Join-Path $Root "venv\.first_install_done") -Encoding UTF8
+}
+
+# --- 9. Итог ---
 Write-Host "`n$("=" * 50)" -ForegroundColor Green
 Write-Host "Установка завершена!" -ForegroundColor Green
 Write-Host ""

@@ -26,6 +26,12 @@ if %errorlevel% neq 0 (
     echo Предупреждение: автозапуск не зарегистрирован. Запустите install-autostart.ps1 от имени администратора вручную.
 )
 
+REM 4. Установка HuggingFace CLI
+powershell -NoProfile -ExecutionPolicy Bypass -File install-huggingface-cli.ps1 -SkipAuth
+if %errorlevel% neq 0 (
+    echo Предупреждение: HuggingFace CLI не установлен. Запустите install-huggingface-cli.ps1 вручную.
+)
+
 echo.
 echo Установка завершена!
 echo Следуйте инструкциям в INSTALL.md

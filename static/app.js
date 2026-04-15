@@ -10,11 +10,10 @@ let CONFIG = {
 // Инициализация
 document.addEventListener('DOMContentLoaded', async function() {
     await loadConfig();
-    // Единый опрос статуса — health уже включает foundry_status,
-    // отдельный checkFoundryStatus дублирует тот же health_check на бэкенде
     await checkSystemStatus();
     await loadModels();
     await loadConnectedModels();
+    if (typeof hfUpdateChatModelSelect === 'function') hfUpdateChatModelSelect();
     setInterval(checkSystemStatus, 30000);
 });
 
@@ -651,29 +650,49 @@ function updateModelSelect(models) {
 async function sendMessage() {
     const input = document.getElementById('chat-input');
     const message = input.value.trim();
-    
     if (!message) return;
-    
+
     addMessageToChat('user', message);
     input.value = '';
-    
+
     const typingId = addMessageToChat('assistant', '<i class="bi bi-three-dots"></i> Typing...');
-    
+
     try {
-        const response = await fetch(`${API_BASE}/generate`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                prompt: message,
-                model: document.getElementById('chat-model').value || undefined,
-                temperature: parseFloat(document.getElementById('temperature').value),
-                max_tokens: parseInt(document.getElementById('max-tokens').value)
-            })
-        });
-        
-        const data = await response.json();
+        const selectedModel = document.getElementById('chat-model').value || '';
+        const temperature   = parseFloat(document.getElementById('temperature').value);
+        const maxTokens     = parseInt(document.getElementById('max-tokens').value);
+
+        let data;
+        if (selectedModel.startsWith('hf::')) {
+            // HuggingFace локальная модель
+            const modelId = selectedModel.slice(4);
+            const res = await fetch(`${API_BASE}/hf/generate`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    model_id: modelId,
+                    prompt: message,
+                    max_new_tokens: maxTokens,
+                    temperature
+                })
+            });
+            data = await res.json();
+        } else {
+            // Foundry / default
+            const res = await fetch(`${API_BASE}/generate`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    prompt: message,
+                    model: selectedModel || undefined,
+                    temperature,
+                    max_tokens: maxTokens
+                })
+            });
+            data = await res.json();
+        }
+
         document.getElementById(typingId).remove();
-        
         if (data.success && data.content) {
             addMessageToChat('assistant', data.content);
         } else {
@@ -843,48 +862,44 @@ function refreshModels() {
 
 // Функции для вкладки Logs
 async function refreshLogs() {
+    const container = document.getElementById('logs-container');
+    const levelFilter = document.getElementById('log-level-filter')?.value || '';
+    container.innerHTML = '<div class="text-center p-4"><div class="spinner-border spinner-border-sm"></div> Loading...</div>';
     try {
-        console.log('Загружаем логи...');
-        const response = await fetch('/logs/recent');
-        console.log('Response status:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+        const res = await fetch(`${API_BASE}/logs?lines=200`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        if (!data.success || !data.logs?.length) {
+            container.innerHTML = '<div class="text-center text-muted p-4"><i class="bi bi-file-text"></i><br>Логи пусты или файл не найден</div>';
+            updateLogsStats([]);
+            return;
         }
-        
-        const data = await response.json();
-        console.log('Logs data:', data);
-        
-        const container = document.getElementById('logs-container');
-        
-        if (data.success && data.data.logs.length > 0) {
-            container.innerHTML = data.data.logs.map(log => `
-                <div class="log-entry log-${log.level}">
-                    <span class="log-timestamp">${log.timestamp}</span>
-                    <span class="log-logger">[${log.logger}]</span>
-                    <span class="log-message">${log.message}</span>
-                </div>
-            `).join('');
-        } else {
-            container.innerHTML = `
-                <div class="text-center text-muted p-4">
-                    <i class="bi bi-file-text"></i><br>
-                    ${data.data?.message || 'Логи не найдены'}
-                </div>
-            `;
-        }
-        
-        // Обновляем статистику
-        updateLogsStats(data.data.logs);
-        
+
+        // Парсим строки логов в объекты {level, timestamp, message}
+        const parsed = data.logs.map(line => {
+            const m = line.match(/^(\S+\s+\S+)\s+\|(\w+)\s+\|.*?\|\s*(.*)$/);
+            if (m) return { timestamp: m[1], level: m[2].toLowerCase(), message: m[3] };
+            // fallback — определяем уровень по ключевым словам
+            const lvl = /ERROR|CRITICAL/i.test(line) ? 'error'
+                      : /WARNING/i.test(line) ? 'warning'
+                      : /DEBUG/i.test(line) ? 'debug' : 'info';
+            return { timestamp: '', level: lvl, message: line };
+        });
+
+        const filtered = levelFilter ? parsed.filter(l => l.level === levelFilter) : parsed;
+
+        container.innerHTML = filtered.map(l => `
+            <div class="log-entry log-${l.level}">
+                ${l.timestamp ? `<span class="log-timestamp">${l.timestamp}</span> ` : ''}
+                <span class="log-message">${l.message}</span>
+            </div>`).join('');
+
+        container.scrollTop = container.scrollHeight;
+        updateLogsStats(parsed);
+
     } catch (error) {
-        console.error('Failed to refresh logs:', error);
-        document.getElementById('logs-container').innerHTML = `
-            <div class="text-center text-danger p-4">
-                <i class="bi bi-exclamation-triangle"></i><br>
-                Ошибка загрузки логов
-            </div>
-        `;
+        container.innerHTML = `<div class="text-center text-danger p-4"><i class="bi bi-exclamation-triangle"></i><br>Ошибка: ${error.message}</div>`;
     }
 }
 

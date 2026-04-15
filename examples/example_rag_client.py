@@ -196,7 +196,7 @@ async def demo_rag_system():
         print("     -d '{\"prompt\": \"How to install?\", \"use_rag\": true}'")
         print()
         print("📊 Проверка статуса RAG:")
-        print("   curl http://localhost:9696/api/v1/health"))
+        print("   curl http://localhost:9696/api/v1/health")
         print()
         print("🔧 Переиндексация:")
         print("   python rag_indexer.py --rebuild")

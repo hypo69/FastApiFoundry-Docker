@@ -44,6 +44,15 @@ Write-Log "=== FastAPI Foundry autostart ==="
 Write-Log "Root: $Root"
 Write-Log "Log:  $LogFile"
 
+# Активация виртуального окружения
+$ActivateScript = Join-Path $Root 'venv\Scripts\Activate.ps1'
+if (Test-Path $ActivateScript) {
+    . $ActivateScript
+    Write-Log "venv activated: $ActivateScript"
+} else {
+    Write-Log "venv/Scripts/Activate.ps1 not found, skipping" 'WARNING'
+}
+
 $StartScript = Join-Path $Root 'start.ps1'
 
 if (-not (Test-Path $StartScript)) {

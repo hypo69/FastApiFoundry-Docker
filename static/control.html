@@ -33,6 +33,16 @@
         .models-list { max-height: 300px; overflow-y: auto; }
         .model-item { padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; display: flex; justify-content: between; align-items: center; }
         .logs { font-family: monospace; font-size: 0.9rem; background: #f8f9fa; padding: 10px; border-radius: 5px; height: 200px; overflow-y: auto; }
+        .catalog-item { display:flex; align-items:center; gap:12px; padding:10px; border:1px solid #ddd; border-radius:5px; margin-bottom:8px; }
+        .catalog-item .info { flex:1; }
+        .catalog-item .info strong { display:block; }
+        .catalog-item .info small { color:#666; }
+        .badge-cached { background:#d4edda; color:#155724; padding:2px 8px; border-radius:10px; font-size:0.8rem; }
+        .badge-loaded { background:#cce5ff; color:#004085; padding:2px 8px; border-radius:10px; font-size:0.8rem; }
+        .badge-none   { background:#f8f9fa; color:#666;    padding:2px 8px; border-radius:10px; font-size:0.8rem; }
+        .progress-wrap { width:120px; height:6px; background:#eee; border-radius:3px; overflow:hidden; display:none; }
+        .progress-bar  { height:100%; background:#667eea; width:0%; transition:width 0.3s; animation: indeterminate 1.2s infinite; }
+        @keyframes indeterminate { 0%{width:0%;margin-left:0} 50%{width:60%;margin-left:20%} 100%{width:0%;margin-left:100%} }
     </style>
 </head>
 <body>
@@ -122,6 +132,26 @@
                 <button onclick="exportLogs()" style="width: 100%;">💾 Export Logs</button>
             </div>
         </div>
+
+        <!-- Model Catalog -->
+        <div class="card" style="margin-top:20px">
+            <h3>📦 Model Catalog
+                <button onclick="loadCatalog()" style="float:right;padding:4px 12px;font-size:0.85rem">🔄 Refresh</button>
+            </h3>
+            <div id="catalog-list" style="margin-top:12px">
+                <div style="color:#666;padding:10px">Click Refresh to load catalog...</div>
+            </div>
+        </div>
+
+        <!-- MCP PowerShell Servers -->
+        <div class="card" style="margin-top:20px">
+            <h3>🔌 MCP PowerShell Servers
+                <button onclick="loadMcpServers()" style="float:right;padding:4px 12px;font-size:0.85rem">🔄 Refresh</button>
+            </h3>
+            <div id="mcp-servers-list" style="margin-top:12px">
+                <div style="color:#666;padding:10px">Click Refresh to load MCP servers...</div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -133,6 +163,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             refreshStatus();
             loadModels();
+            loadCatalog();
+            loadMcpServers();
             
             // Update temperature display
             document.getElementById('temperature').addEventListener('input', function() {
@@ -389,6 +421,207 @@
             if (event.key === 'Enter') {
                 sendMessage();
             }
+        }
+
+        // ── Model Catalog ────────────────────────────────────────────────────
+
+        async function loadCatalog() {
+            const list = document.getElementById('catalog-list');
+            list.innerHTML = '<div style="color:#666;padding:10px">Loading...</div>';
+            try {
+                const [availRes, cachedRes, loadedRes] = await Promise.all([
+                    fetch(`${API_BASE}/foundry/models/available`).then(r => r.json()),
+                    fetch(`${API_BASE}/foundry/models/cached`).then(r => r.json()),
+                    fetch(`${API_BASE}/foundry/models/loaded`).then(r => r.json()),
+                ]);
+
+                const cachedDirs  = new Set(cachedRes.models  || []);
+                const loadedIds   = new Set((loadedRes.models || []).map(m => m.id));
+                const cacheDir    = cachedRes.cache_dir || '';
+
+                list.innerHTML = `<div style="font-size:0.8rem;color:#888;margin-bottom:8px">Cache: ${cacheDir}</div>`;
+
+                for (const m of (availRes.models || [])) {
+                    const dirName  = m.id.replace(':', '-');
+                    const isCached = cachedDirs.has(dirName);
+                    const isLoaded = loadedIds.has(m.id);
+
+                    const item = document.createElement('div');
+                    item.className = 'catalog-item';
+                    item.id = `catalog-${dirName}`;
+                    item.innerHTML = `
+                        <div class="info">
+                            <strong>${m.name}</strong>
+                            <small>${m.id} &nbsp;·&nbsp; ${m.size} &nbsp;·&nbsp; ${m.description}</small>
+                        </div>
+                        <span class="badge-${isLoaded ? 'loaded' : isCached ? 'cached' : 'none'}">
+                            ${isLoaded ? '● Loaded' : isCached ? '✓ Cached' : '○ Not downloaded'}
+                        </span>
+                        <div class="progress-wrap" id="prog-${dirName}"><div class="progress-bar"></div></div>
+                        ${!isCached && !isLoaded
+                            ? `<button onclick="downloadModel('${m.id}')">⬇ Download</button>`
+                            : !isLoaded
+                            ? `<button class="btn-success" onclick="loadModelToService('${m.id}')">▶ Load</button>`
+                            : `<button class="btn-danger" onclick="unloadModel('${m.id}')">⏹ Unload</button>`
+                        }`;
+                    list.appendChild(item);
+                }
+                addLog(`📦 Catalog loaded. Cache: ${cacheDir}`);
+            } catch(e) {
+                list.innerHTML = `<div style="color:red">Error: ${e.message}</div>`;
+                addLog(`❌ Catalog error: ${e.message}`);
+            }
+        }
+
+        async function downloadModel(modelId) {
+            const dirName = modelId.replace(':', '-');
+            const prog = document.getElementById(`prog-${dirName}`);
+            if (prog) prog.style.display = 'block';
+            addLog(`⬇ Starting download: ${modelId}`);
+
+            try {
+                const res  = await fetch(`${API_BASE}/foundry/models/download`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({model_id: modelId})
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    addLog(`❌ Download failed: ${data.error}`);
+                    if (prog) prog.style.display = 'none';
+                    return;
+                }
+
+                if (data.status === 'already_cached') {
+                    addLog(`✓ Already cached: ${modelId}`);
+                    if (prog) prog.style.display = 'none';
+                    loadCatalog();
+                    return;
+                }
+
+                addLog(`⏳ Downloading ${modelId} (PID: ${data.pid})`);
+                pollDownload(modelId, data.pid);
+            } catch(e) {
+                addLog(`❌ Download error: ${e.message}`);
+                if (prog) prog.style.display = 'none';
+            }
+        }
+
+        function pollDownload(modelId, pid) {
+            const dirName = modelId.replace(':', '-');
+            const interval = setInterval(async () => {
+                try {
+                    const res  = await fetch(`${API_BASE}/foundry/models/download/status/${pid}`);
+                    const data = await res.json();
+
+                    if (data.status === 'downloading') return;
+
+                    clearInterval(interval);
+                    const prog = document.getElementById(`prog-${dirName}`);
+                    if (prog) prog.style.display = 'none';
+
+                    if (data.status === 'done') {
+                        addLog(`✅ Downloaded: ${modelId}`);
+                    } else {
+                        addLog(`❌ Download error: ${data.error}`);
+                    }
+                    loadCatalog();
+                } catch(e) {
+                    clearInterval(interval);
+                    addLog(`❌ Poll error: ${e.message}`);
+                }
+            }, 3000);
+        }
+
+        async function loadModelToService(modelId) {
+            addLog(`▶ Loading ${modelId} into service...`);
+            const res  = await fetch(`${API_BASE}/foundry/models/load`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({model_id: modelId})
+            });
+            const data = await res.json();
+            addLog(data.success ? `✅ Load started (PID: ${data.pid})` : `❌ ${data.error}`);
+            setTimeout(loadCatalog, 5000);
+        }
+
+        async function unloadModel(modelId) {
+            addLog(`⏹ Unloading ${modelId}...`);
+            const res  = await fetch(`${API_BASE}/foundry/models/unload`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({model_id: modelId})
+            });
+            const data = await res.json();
+            addLog(data.success ? `✅ Unloaded: ${modelId}` : `❌ ${data.error}`);
+            loadCatalog();
+        }
+
+        // ── MCP PowerShell Servers ────────────────────────────────────────────────────────────────────
+
+        async function loadMcpServers() {
+            const list = document.getElementById('mcp-servers-list');
+            list.innerHTML = '<div style="color:#666;padding:10px">Loading...</div>';
+            try {
+                const res = await fetch(`${API_BASE}/mcp-powershell/servers`);
+                const data = await res.json();
+                if (!data.success) { list.innerHTML = `<div style="color:red">${data.detail || 'Error'}</div>`; return; }
+
+                if (!data.servers.length) {
+                    list.innerHTML = '<div style="color:#666;padding:10px">No MCP servers configured</div>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                for (const srv of data.servers) {
+                    const isRunning = srv.status === 'running';
+                    const item = document.createElement('div');
+                    item.className = 'catalog-item';
+                    item.id = `mcp-${srv.name}`;
+                    item.innerHTML = `
+                        <div class="info">
+                            <strong>${srv.name}</strong>
+                            <small>${srv.description || ''}</small>
+                        </div>
+                        <span class="badge-${isRunning ? 'loaded' : 'none'}">
+                            ${isRunning ? '● Running' : '○ Stopped'}
+                        </span>
+                        ${isRunning
+                            ? `<button class="btn-danger" onclick="stopMcpServer('${srv.name}')">&#9209; Stop</button>`
+                            : `<button class="btn-success" onclick="startMcpServer('${srv.name}')">&#9654; Start</button>`
+                        }`;
+                    list.appendChild(item);
+                }
+                addLog(`🔌 MCP servers loaded: ${data.servers.length}`);
+            } catch(e) {
+                list.innerHTML = `<div style="color:red">Error: ${e.message}</div>`;
+                addLog(`❌ MCP servers error: ${e.message}`);
+            }
+        }
+
+        async function startMcpServer(name) {
+            addLog(`▶ Starting MCP server: ${name}...`);
+            try {
+                const res = await fetch(`${API_BASE}/mcp-powershell/servers/${name}/start`, {method: 'POST'});
+                const data = await res.json();
+                addLog(data.success ? `✅ ${data.message} (PID: ${data.pid || '?'})` : `❌ ${data.detail || data.message}`);
+            } catch(e) {
+                addLog(`❌ Start MCP error: ${e.message}`);
+            }
+            setTimeout(loadMcpServers, 1000);
+        }
+
+        async function stopMcpServer(name) {
+            addLog(`⏹ Stopping MCP server: ${name}...`);
+            try {
+                const res = await fetch(`${API_BASE}/mcp-powershell/servers/${name}/stop`, {method: 'POST'});
+                const data = await res.json();
+                addLog(data.success ? `✅ ${data.message}` : `❌ ${data.detail || data.message}`);
+            } catch(e) {
+                addLog(`❌ Stop MCP error: ${e.message}`);
+            }
+            setTimeout(loadMcpServers, 1000);
         }
     </script>
 </body>

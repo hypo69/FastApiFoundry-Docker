@@ -99,6 +99,16 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link" id="hf-tab" data-bs-toggle="tab" data-bs-target="#hf" type="button">
+                    <i class="bi bi-boxes"></i> HuggingFace
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="llama-tab" data-bs-toggle="tab" data-bs-target="#llama" type="button">
+                    <i class="bi bi-file-earmark-binary"></i> llama.cpp
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="rag-tab" data-bs-toggle="tab" data-bs-target="#rag" type="button">
                     <i class="bi bi-search"></i> RAG
                 </button>
@@ -109,8 +119,23 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link" id="editor-tab" data-bs-toggle="tab" data-bs-target="#editor" type="button">
+                    <i class="bi bi-pencil-square"></i> Editor
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="examples-tab" data-bs-toggle="tab" data-bs-target="#examples" type="button">
                     <i class="bi bi-play-circle"></i> Examples
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="mcp-tab" data-bs-toggle="tab" data-bs-target="#mcp" type="button">
+                    <i class="bi bi-plug"></i> MCP Servers
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="agent-tab" data-bs-toggle="tab" data-bs-target="#agent" type="button">
+                    <i class="bi bi-robot"></i> Agent
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -329,6 +354,232 @@
                                         </small>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HuggingFace Tab -->
+            <div class="tab-pane fade" id="hf" role="tabpanel">
+                <div class="row mt-3">
+                    <!-- Status + Download -->
+                    <div class="col-md-5">
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-info-circle"></i> HuggingFace Status</h6>
+                                <button class="btn btn-sm btn-outline-primary" onclick="hfCheckStatus()"><i class="bi bi-arrow-clockwise"></i></button>
+                            </div>
+                            <div class="card-body" id="hf-status-body">
+                                <div class="text-muted text-center"><small>Click refresh to check</small></div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-cloud-download"></i> Download Model</h6></div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <label class="form-label">Model ID <small class="text-muted">(e.g. google/gemma-2b)</small></label>
+                                    <input type="text" id="hf-download-id" class="form-control" placeholder="google/gemma-2b">
+                                    <div class="form-text">Token берётся автоматически из Settings → HuggingFace</div>
+                                </div>
+                                <div id="hf-token-warning" class="alert alert-warning p-2 mb-2" style="display:none">
+                                    ⚠️ HF Token не задан. Укажите его в 
+                                    <a href="#" onclick="document.getElementById('settings-tab').click()">Settings → HuggingFace</a>
+                                </div>
+                                <button class="btn btn-success w-100" onclick="hfDownload()">
+                                    <i class="bi bi-download"></i> Download
+                                </button>
+                                <div id="hf-download-status" class="mt-2" style="display:none"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Hub + Downloaded + Loaded models -->
+                    <div class="col-md-7">
+                        <!-- Hub Models -->
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-cloud"></i> HuggingFace Hub</h6>
+                                <button class="btn btn-sm btn-outline-primary" onclick="hfLoadHubModels()">
+                                    <i class="bi bi-arrow-clockwise"></i> Load
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <!-- Tabs: My Models / Public -->
+                                <ul class="nav nav-tabs nav-sm px-2 pt-2" id="hfHubTabs">
+                                    <li class="nav-item">
+                                        <button class="nav-link active py-1 px-3" id="hf-my-tab"
+                                            onclick="hfSwitchHubTab('my')">
+                                            <i class="bi bi-person"></i> My Models
+                                        </button>
+                                    </li>
+                                    <li class="nav-item">
+                                        <button class="nav-link py-1 px-3" id="hf-public-tab"
+                                            onclick="hfSwitchHubTab('public')">
+                                            <i class="bi bi-globe"></i> Popular Public
+                                        </button>
+                                    </li>
+                                </ul>
+                                <div id="hf-hub-list" style="max-height:220px;overflow-y:auto">
+                                    <div class="text-muted text-center p-3"><small>Click Load to fetch from Hub</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Downloaded -->
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-hdd"></i> Downloaded Locally</h6>
+                                <button class="btn btn-sm btn-outline-primary" onclick="hfRefreshModels()"><i class="bi bi-arrow-clockwise"></i></button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="hf-downloaded-list" style="max-height:160px;overflow-y:auto">
+                                    <div class="text-muted text-center p-3"><small>Click Refresh to load</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Loaded in memory -->
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-cpu"></i> Loaded in Memory</h6></div>
+                            <div class="card-body p-0">
+                                <div id="hf-loaded-list" style="max-height:100px;overflow-y:auto">
+                                    <div class="text-muted text-center p-3"><small>No models loaded</small></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Generate -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-chat-dots"></i> Generate (HuggingFace)</h6></div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Model ID</label>
+                                        <input type="text" id="hf-gen-model" class="form-control" placeholder="google/gemma-2b">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Max tokens</label>
+                                        <input type="number" id="hf-gen-tokens" class="form-control" value="256">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Temperature</label>
+                                        <input type="number" id="hf-gen-temp" class="form-control" value="0.7" step="0.1">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Device</label>
+                                        <select id="hf-gen-device" class="form-select">
+                                            <option value="auto">Auto</option>
+                                            <option value="cpu">CPU</option>
+                                            <option value="cuda">CUDA (GPU)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <label class="form-label">Prompt</label>
+                                    <textarea id="hf-gen-prompt" class="form-control" rows="3" placeholder="Enter your prompt..."></textarea>
+                                </div>
+                                <button class="btn btn-primary mt-2" onclick="hfGenerate()">
+                                    <i class="bi bi-send"></i> Generate
+                                </button>
+                                <div id="hf-gen-output" class="mt-3 border rounded p-3 bg-light" style="display:none;min-height:60px;white-space:pre-wrap;font-size:0.9rem"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- llama.cpp Tab -->
+            <div class="tab-pane fade" id="llama" role="tabpanel">
+                <div class="row mt-3">
+                    <!-- Status + Controls -->
+                    <div class="col-md-5">
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-activity"></i> Server Status</h6>
+                                <button class="btn btn-sm btn-outline-primary" onclick="llamaCheckStatus()"><i class="bi bi-arrow-clockwise"></i></button>
+                            </div>
+                            <div class="card-body" id="llama-status-body">
+                                <div class="text-muted text-center"><small>Click refresh</small></div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-play-circle"></i> Start Server</h6></div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <label class="form-label">Model Path (.gguf)</label>
+                                    <div class="input-group">
+                                        <input type="text" id="llama-model-path" class="form-control" placeholder="D:\gemma-2-2b-it-Q6_K.gguf">
+                                        <button class="btn btn-outline-secondary" onclick="llamaOpenPicker()" title="Browse models">
+                                            <i class="bi bi-folder2-open"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary" onclick="llamaScanModels()" title="Scan disk">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <label class="form-label">Port</label>
+                                        <input type="number" id="llama-port" class="form-control" value="8080">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Context</label>
+                                        <input type="number" id="llama-ctx" class="form-control" value="4096">
+                                    </div>
+                                    <div class="col-6 mt-2">
+                                        <label class="form-label">Threads</label>
+                                        <input type="number" id="llama-threads" class="form-control" value="0" title="0 = auto">
+                                    </div>
+                                    <div class="col-6 mt-2">
+                                        <label class="form-label">GPU Layers</label>
+                                        <input type="number" id="llama-ngl" class="form-control" value="0" title="0 = CPU only">
+                                    </div>
+                                </div>
+                                <div class="d-grid gap-2 mt-3">
+                                    <button class="btn btn-success" onclick="llamaStart()">
+                                        <i class="bi bi-play-fill"></i> Start
+                                    </button>
+                                    <button class="btn btn-outline-secondary" onclick="llamaCopyToModels()">
+                                        <i class="bi bi-folder-symlink"></i> Copy to ~/models
+                                    </button>
+                                    <button class="btn btn-danger" onclick="llamaStop()">
+                                        <i class="bi bi-stop-fill"></i> Stop
+                                    </button>
+                                </div>
+                                <div id="llama-start-status" class="mt-2" style="display:none"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- GGUF Models on disk -->
+                    <div class="col-md-7">
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-hdd"></i> GGUF Models in ~/.models</h6>
+                                <button class="btn btn-sm btn-outline-primary" onclick="llamaScanModels()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="llama-models-list" style="max-height:300px;overflow-y:auto">
+                                    <div class="text-muted text-center p-3"><small>Click Refresh to load</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-info-circle"></i> Usage</h6></div>
+                            <div class="card-body">
+                                <small class="text-muted">
+                                    <p>llama.cpp запускает OpenAI-совместимый API.</p>
+                                    <p>После запуска добавьте провайдер <strong>Custom (OpenAI-compatible)</strong> в расширении браузера:</p>
+                                    <code id="llama-openai-url">http://127.0.0.1:8080/v1</code>
+                                    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="llamaCopyUrl()">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                    <hr>
+                                    <p class="mb-1">PowerShell:</p>
+                                    <code>.\scripts\llama-start.ps1 -ModelPath "D:\gemma-2-2b-it-Q6_K.gguf"</code>
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -629,6 +880,47 @@
                                     </div>
                                 </div>
 
+                                <!-- HuggingFace -->
+                                <div class="mb-4">
+                                    <h6 class="text-danger"><i class="bi bi-boxes"></i> HuggingFace</h6>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-2">
+                                                <label class="form-label">HF Token <small class="text-muted">(для закрытых моделей)</small></label>
+                                                <div class="input-group">
+                                                    <input type="password" id="config-hf-token" class="form-control" placeholder="hf_...">
+                                                    <button class="btn btn-outline-success" type="button" onclick="saveHFToken()" title="Сохранить токен в .env">
+                                                        <i class="bi bi-floppy"></i> Сохранить
+                                                    </button>
+                                                </div>
+                                                <div class="form-text">Получить токен: <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-2">
+                                                <label class="form-label">Models Directory</label>
+                                                <input type="text" id="config-hf-models-dir" class="form-control" placeholder="./models/hf">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Device</label>
+                                                <select id="config-hf-device" class="form-select">
+                                                    <option value="auto">Auto</option>
+                                                    <option value="cpu">CPU</option>
+                                                    <option value="cuda">CUDA (GPU)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Default Max Tokens</label>
+                                                <input type="number" id="config-hf-max-tokens" class="form-control" placeholder="512">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Development -->
                                 <div class="mb-4">
                                     <h6 class="text-dark"><i class="bi bi-code-slash"></i> Development</h6>
@@ -653,6 +945,50 @@
                                 </div>
 
                                 <div id="config-status" class="alert" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editor Tab -->
+            <div class="tab-pane fade" id="editor" role="tabpanel">
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-shield-lock"></i> .env <small class="text-muted">(секреты)</small></h6>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadEnvEditor()">
+                                        <i class="bi bi-arrow-clockwise"></i> Reload
+                                    </button>
+                                    <button class="btn btn-sm btn-success" onclick="saveEnvEditor()">
+                                        <i class="bi bi-floppy"></i> Сохранить
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-2">
+                                <div id="env-editor-status" class="alert py-1 px-2 mb-2" style="display:none;font-size:.85rem"></div>
+                                <textarea id="env-editor" class="form-control font-monospace" rows="32" style="font-size:0.82rem;resize:vertical"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-braces"></i> config.json</h6>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadConfigEditor()">
+                                        <i class="bi bi-arrow-clockwise"></i> Reload
+                                    </button>
+                                    <button class="btn btn-sm btn-success" onclick="saveConfigEditor()">
+                                        <i class="bi bi-floppy"></i> Сохранить
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-2">
+                                <div id="config-editor-status" class="alert py-1 px-2 mb-2" style="display:none;font-size:.85rem"></div>
+                                <textarea id="config-editor" class="form-control font-monospace" rows="32" style="font-size:0.82rem;resize:vertical"></textarea>
                             </div>
                         </div>
                     </div>
@@ -752,6 +1088,115 @@
                 </div>
             </div>
 
+            <!-- Agent Tab -->
+            <div class="tab-pane fade" id="agent" role="tabpanel">
+                <div class="row mt-3">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-robot"></i> AI Agent — модель вызывает инструменты</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="agent-messages" class="border rounded p-3 mb-3" style="height:420px;overflow-y:auto;background:#fafafa;font-size:.9rem">
+                                    <div class="text-muted text-center mt-5">
+                                        <i class="bi bi-robot" style="font-size:2rem"></i>
+                                        <p class="mt-2">Задайте вопрос — модель сама решит какие инструменты вызвать</p>
+                                        <small>Примеры: «покажи содержимое текущей директории», «сколько файлов .py в проекте»</small>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" id="agent-input" class="form-control"
+                                        placeholder="Например: покажи содержимое текущей директории"
+                                        onkeypress="if(event.key==='Enter') agentRun()">
+                                    <button class="btn btn-primary" onclick="agentRun()" id="agent-btn">
+                                        <i class="bi bi-send"></i> Run
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-header"><h6 class="mb-0">Параметры</h6></div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <label class="form-label">Агент</label>
+                                    <select id="agent-name" class="form-select"></select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Модель</label>
+                                    <input type="text" id="agent-model" class="form-control" placeholder="из config.json">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Max iterations</label>
+                                    <input type="number" id="agent-max-iter" class="form-control" value="5" min="1" max="10">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Temperature</label>
+                                    <input type="number" id="agent-temp" class="form-control" value="0.3" step="0.1" min="0" max="2">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">Доступные инструменты</h6></div>
+                            <div class="card-body p-0">
+                                <div id="agent-tools-list" style="font-size:.85rem">
+                                    <div class="text-muted text-center p-3"><div class="spinner-border spinner-border-sm"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MCP Servers Tab -->
+            <div class="tab-pane fade" id="mcp" role="tabpanel">
+                <div class="row mt-3">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-plug"></i> MCP PowerShell Servers</h5>
+                                <button class="btn btn-sm btn-outline-primary" onclick="mcpLoadServers()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="mcp-servers-list" style="min-height:100px">
+                                    <div class="text-muted text-center p-4"><div class="spinner-border spinner-border-sm"></div> Loading...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-header"><h6 class="mb-0">Settings file</h6></div>
+                            <div class="card-body">
+                                <small class="text-muted d-block mb-2">mcp-powershell-servers/settings.json</small>
+                                <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="mcpOpenSettingsEditor()">
+                                    <i class="bi bi-pencil-square"></i> Edit settings.json
+                                </button>
+                                <div id="mcp-settings-status" class="alert py-1 px-2" style="display:none;font-size:.85rem"></div>
+                                <textarea id="mcp-settings-editor" class="form-control font-monospace mt-2" rows="18" style="font-size:0.78rem;display:none;resize:vertical"></textarea>
+                                <div id="mcp-settings-btns" style="display:none" class="mt-2 d-flex gap-2">
+                                    <button class="btn btn-sm btn-success" onclick="mcpSaveSettings()"><i class="bi bi-floppy"></i> Save</button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="mcpCloseSettingsEditor()">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0">Info</h6></div>
+                            <div class="card-body">
+                                <small class="text-muted">
+                                    <p>Серверы запускаются из корня проекта.<br>Пути в settings.json — относительные.</p>
+                                    <p>Логи: <code>%TEMP%\mcp-*.log</code></p>
+                                    <p>Требуется: <strong>PowerShell 7+</strong></p>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Logs Tab -->
             <div class="tab-pane fade" id="logs" role="tabpanel">
                 <div class="row mt-3">
@@ -844,6 +1289,64 @@
         </div>
     </div>
 
+    <!-- llama.cpp Model Picker Modal -->
+    <div class="modal fade" id="llamaPickerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-folder2-open"></i> Select GGUF Model</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Manual path -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Enter path manually</label>
+                        <div class="input-group">
+                            <input type="text" id="llama-picker-manual" class="form-control font-monospace"
+                                placeholder="~/.models/gemma-2-2b-it-Q6_K.gguf">
+                            <button class="btn btn-primary" onclick="llamaPickerConfirmManual()">
+                                <i class="bi bi-check-lg"></i> Use
+                            </button>
+                        </div>
+                    </div>
+                    <hr>
+                    <!-- ~/.models list -->
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label fw-semibold mb-0">
+                            <i class="bi bi-folder2"></i> ~/.models
+                            <small class="text-muted ms-2">(default storage)</small>
+                        </label>
+                        <button class="btn btn-sm btn-outline-primary" onclick="llamaPickerScan()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div id="llama-picker-list" style="max-height:260px;overflow-y:auto;border:1px solid #dee2e6;border-radius:6px">
+                        <div class="text-muted text-center p-4">
+                            <i class="bi bi-arrow-clockwise" style="font-size:1.5rem"></i>
+                            <div class="mt-2">Click Refresh to load models from ~/.models</div>
+                        </div>
+                    </div>
+                    <hr>
+                    <!-- One-time search in another dir -->
+                    <div class="mb-1">
+                        <label class="form-label fw-semibold mb-1">
+                            <i class="bi bi-search"></i> Search in another directory
+                            <small class="text-muted">(e.g. D:\ to find and copy)</small>
+                        </label>
+                        <div class="input-group">
+                            <input type="text" id="llama-picker-search-dir" class="form-control font-monospace"
+                                placeholder="D:\">
+                            <button class="btn btn-outline-secondary" onclick="llamaPickerScan(true)">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                        <div class="form-text">Найденные модели можно скопировать в ~/.models кнопкой Copy</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Model Modal -->
     <div class="modal fade" id="addModelModal" tabindex="-1">
         <div class="modal-dialog">
@@ -892,5 +1395,765 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="static/app.js"></script>
+    <script>
+    // ── Editor Tab ────────────────────────────────────────────────────────
+    async function loadEnvEditor() {
+        const ta = document.getElementById('env-editor');
+        const st = document.getElementById('env-editor-status');
+        try {
+            const d = await fetch('/api/v1/config/env-raw').then(r => r.json());
+            ta.value = d.content || '';
+            st.style.display = 'none';
+        } catch(e) {
+            st.className = 'alert alert-danger py-1 px-2 mb-2';
+            st.textContent = '❌ ' + e.message;
+            st.style.display = '';
+        }
+    }
+
+    async function saveEnvEditor() {
+        const st = document.getElementById('env-editor-status');
+        try {
+            const d = await fetch('/api/v1/config/env-raw', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({content: document.getElementById('env-editor').value})
+            }).then(r => r.json());
+            st.className = d.success ? 'alert alert-success py-1 px-2 mb-2' : 'alert alert-danger py-1 px-2 mb-2';
+            st.textContent = d.success ? '✅ .env сохранён' : '❌ ' + (d.detail || d.error);
+            st.style.display = '';
+        } catch(e) {
+            st.className = 'alert alert-danger py-1 px-2 mb-2';
+            st.textContent = '❌ ' + e.message;
+            st.style.display = '';
+        }
+    }
+
+    async function loadConfigEditor() {
+        const ta = document.getElementById('config-editor');
+        const st = document.getElementById('config-editor-status');
+        try {
+            const d = await fetch('/api/v1/config/raw').then(r => r.json());
+            ta.value = d.content || '';
+            st.style.display = 'none';
+        } catch(e) {
+            st.className = 'alert alert-danger py-1 px-2 mb-2';
+            st.textContent = '❌ ' + e.message;
+            st.style.display = '';
+        }
+    }
+
+    async function saveConfigEditor() {
+        const st = document.getElementById('config-editor-status');
+        try {
+            // Валидация JSON перед сохранением
+            JSON.parse(document.getElementById('config-editor').value);
+            const d = await fetch('/api/v1/config/raw', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({content: document.getElementById('config-editor').value})
+            }).then(r => r.json());
+            st.className = d.success ? 'alert alert-success py-1 px-2 mb-2' : 'alert alert-danger py-1 px-2 mb-2';
+            st.textContent = d.success ? '✅ config.json сохранён' : '❌ ' + (d.detail || d.error);
+            st.style.display = '';
+        } catch(e) {
+            st.className = 'alert alert-danger py-1 px-2 mb-2';
+            st.textContent = '❌ ' + (e instanceof SyntaxError ? 'Невалидный JSON: ' + e.message : e.message);
+            st.style.display = '';
+        }
+    }
+
+    document.getElementById('editor-tab')?.addEventListener('shown.bs.tab', () => {
+        loadEnvEditor();
+        loadConfigEditor();
+    });
+
+    // ── llama.cpp Tab ─────────────────────────────────────────────────────
+    const LLAMA_API = 'http://localhost:9696/api/v1/llama';
+
+    async function llamaCheckStatus() {
+        const el = document.getElementById('llama-status-body');
+        try {
+            const d = await fetch(`${LLAMA_API}/status`).then(r => r.json());
+            const badge = d.running
+                ? '<span class="badge bg-success">Running</span>'
+                : '<span class="badge bg-secondary">Stopped</span>';
+            el.innerHTML = `
+                <table class="table table-sm mb-0">
+                    <tr><td>Status</td><td>${badge}</td></tr>
+                    <tr><td>PID</td><td>${d.pid || '—'}</td></tr>
+                    <tr><td>URL</td><td><code>${d.url}</code></td></tr>
+                </table>`;
+            document.getElementById('llama-openai-url').textContent = d.openai_url;
+        } catch(e) {
+            el.innerHTML = `<div class="text-danger"><small>${e.message}</small></div>`;
+        }
+    }
+
+    async function llamaStart() {
+        const modelPath = document.getElementById('llama-model-path').value.trim();
+        const statusEl  = document.getElementById('llama-start-status');
+        if (!modelPath) return alert('Select a model first');
+        statusEl.style.display = '';
+        statusEl.innerHTML = '<div class="alert alert-info p-2"><div class="spinner-border spinner-border-sm me-2"></div>Starting (model will be copied to ~/models if needed)...</div>';
+        try {
+            const d = await fetch(`${LLAMA_API}/start`, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    model_path:      modelPath,
+                    copy_to_models:  true,
+                    port:            parseInt(document.getElementById('llama-port').value) || 8080,
+                    ctx_size:        parseInt(document.getElementById('llama-ctx').value)  || 4096,
+                    threads:         parseInt(document.getElementById('llama-threads').value) || 0,
+                    n_gpu_layers:    parseInt(document.getElementById('llama-ngl').value)  || 0,
+                })
+            }).then(r => r.json());
+            if (d.success) {
+                statusEl.innerHTML = `<div class="alert alert-success p-2">✅ Started (PID: ${d.pid})<br><small>Model: <code>${d.model}</code><br>OpenAI URL: <code>${d.openai_url}</code></small></div>`;
+                document.getElementById('llama-openai-url').textContent = d.openai_url;
+                setTimeout(llamaCheckStatus, 2000);
+            } else {
+                statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${d.error}</div>`;
+            }
+        } catch(e) {
+            statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${e.message}</div>`;
+        }
+    }
+
+    async function llamaCopyToModels() {
+        const modelPath = document.getElementById('llama-model-path').value.trim();
+        const statusEl  = document.getElementById('llama-start-status');
+        if (!modelPath) return alert('Select a model first');
+        statusEl.style.display = '';
+        statusEl.innerHTML = '<div class="alert alert-info p-2"><div class="spinner-border spinner-border-sm me-2"></div>Copying to ~/models...</div>';
+        try {
+            const d = await fetch(`${LLAMA_API}/models/copy`, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({model_path: modelPath})
+            }).then(r => r.json());
+            if (d.success) {
+                const msg = d.status === 'already_exists' ? 'Already in ~/models' : `Copied (${d.size_gb} GB)`;
+                statusEl.innerHTML = `<div class="alert alert-success p-2">✅ ${msg}<br><small><code>${d.path}</code></small></div>`;
+                document.getElementById('llama-model-path').value = d.path;
+                llamaScanModels();
+            } else {
+                statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${d.error}</div>`;
+            }
+        } catch(e) {
+            statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${e.message}</div>`;
+        }
+    }
+
+    async function llamaStop() {
+        const d = await fetch(`${LLAMA_API}/stop`, {method:'POST'}).then(r => r.json());
+        alert(d.success ? `✅ ${d.message}` : `❌ ${d.error}`);
+        llamaCheckStatus();
+    }
+
+    async function llamaScanModels() {
+        const listEl = document.getElementById('llama-models-list');
+        listEl.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm"></div> Scanning...</div>';
+        try {
+            const d = await fetch(`${LLAMA_API}/models`).then(r => r.json());
+            if (!d.models?.length) {
+                listEl.innerHTML = '<div class="text-muted text-center p-3"><small>No .gguf files found</small></div>';
+                return;
+            }
+            listEl.innerHTML = d.models.map(m => `
+                <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                    <div>
+                        <strong style="font-size:.85rem">${m.name}</strong>
+                        <small class="text-muted d-block">${m.path} &nbsp;·&nbsp; ${m.size_gb} GB</small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="llamaSelectModel('${m.path.replace(/\\/g,'\\\\')}')">Use</button>
+                </div>`).join('');
+        } catch(e) {
+            listEl.innerHTML = `<div class="text-danger p-3"><small>${e.message}</small></div>`;
+        }
+    }
+
+    function llamaSelectModel(path) {
+        document.getElementById('llama-model-path').value = path;
+    }
+
+    // ── Model Picker ─────────────────────────────────────────────────────
+
+    let _pickerModal = null;
+
+    function llamaOpenPicker() {
+        if (!_pickerModal) {
+            _pickerModal = new bootstrap.Modal(document.getElementById('llamaPickerModal'));
+        }
+        // Предзаполнить текущим значением
+        const cur = document.getElementById('llama-model-path').value;
+        if (cur) document.getElementById('llama-picker-manual').value = cur;
+        _pickerModal.show();
+        // Автоскан при открытии
+        llamaPickerScan();
+    }
+
+    function llamaPickerConfirmManual() {
+        const path = document.getElementById('llama-picker-manual').value.trim();
+        if (!path) return;
+        document.getElementById('llama-model-path').value = path;
+        _pickerModal?.hide();
+    }
+
+    async function llamaPickerScan() {
+        const listEl = document.getElementById('llama-picker-list');
+        const extraDir = document.getElementById('llama-picker-search-dir').value.trim();
+        listEl.innerHTML = '<div class="text-center p-4"><div class="spinner-border"></div><div class="mt-2">Scanning...</div></div>';
+
+        try {
+            const url = extraDir
+                ? `${LLAMA_API}/models?extra_dir=${encodeURIComponent(extraDir)}`
+                : `${LLAMA_API}/models`;
+            const d = await fetch(url).then(r => r.json());
+
+            if (!d.models?.length) {
+                listEl.innerHTML = '<div class="text-muted text-center p-4">No .gguf files found.<br><small>Enter a directory above and click Scan.</small></div>';
+                return;
+            }
+
+            listEl.innerHTML = d.models.map(m => `
+                <div class="d-flex align-items-center gap-3 px-3 py-2 border-bottom llama-picker-row"
+                     style="cursor:pointer" onclick="llamaPickerSelect('${m.path.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"
+                     onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background=''">
+                    <i class="bi bi-file-earmark-binary text-primary fs-5"></i>
+                    <div class="flex-grow-1 overflow-hidden">
+                        <div class="fw-semibold text-truncate" style="font-size:.9rem">${m.name}</div>
+                        <div class="text-muted" style="font-size:.75rem">${m.path}</div>
+                    </div>
+                    <span class="badge bg-secondary">${m.size_gb} GB</span>
+                    <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();llamaPickerSelect('${m.path.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">Select</button>
+                </div>`).join('');
+        } catch(e) {
+            listEl.innerHTML = `<div class="text-danger p-3">${e.message}</div>`;
+        }
+    }
+
+    function llamaPickerSelect(path) {
+        document.getElementById('llama-model-path').value = path;
+        document.getElementById('llama-picker-manual').value = path;
+        _pickerModal?.hide();
+    }
+
+    function llamaCopyUrl() {
+        const url = document.getElementById('llama-openai-url').textContent;
+        navigator.clipboard.writeText(url).then(() => alert('✅ Copied: ' + url));
+    }
+
+    document.getElementById('llama-tab')?.addEventListener('shown.bs.tab', () => {
+        llamaCheckStatus();
+    });
+
+    // ── HuggingFace Tab ──────────────────────────────────────────────────────
+    const HF_API = 'http://localhost:9696/api/v1/hf';
+
+    async function hfCheckStatus() {
+        const el = document.getElementById('hf-status-body');
+        el.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm"></div></div>';
+        try {
+            const d = await fetch(`${HF_API}/status`).then(r => r.json());
+            const ok  = v => v ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-danger">Missing</span>';
+            const warn = document.getElementById('hf-token-warning');
+            if (warn) warn.style.display = d.hf_token_set ? 'none' : '';
+            el.innerHTML = `
+                <table class="table table-sm mb-0">
+                    <tr><td>transformers</td><td>${ok(d.transformers?.available)} ${d.transformers?.version||''}</td></tr>
+                    <tr><td>huggingface_hub</td><td>${ok(d.huggingface_hub?.available)} ${d.huggingface_hub?.version||''}</td></tr>
+                    <tr><td>torch</td><td>${ok(d.torch?.available)} ${d.torch?.version||''}</td></tr>
+                    <tr><td>CUDA</td><td>${d.torch?.cuda ? '<span class="badge bg-success">Available</span>' : '<span class="badge bg-secondary">CPU only</span>'}</td></tr>
+                    <tr><td>HF Token</td><td>${d.hf_token_set
+                        ? '<span class="badge bg-success">Set ✓</span>'
+                        : '<span class="badge bg-warning">Not set — go to Settings</span>'}</td></tr>
+                    <tr><td>Models dir</td><td><small class="text-muted">${d.models_dir}</small></td></tr>
+                </table>
+                ${!d.transformers?.available ? `<div class="alert alert-warning mt-2 mb-0 p-2"><small>Run: <code>${d.install_cmd}</code></small></div>` : ''}`;
+        } catch(e) { el.innerHTML = `<div class="text-danger"><small>${e.message}</small></div>`; }
+    }
+
+    // ── Hub Models ─────────────────────────────────────────────────────
+
+    let _hubData = null;
+    let _hubTab  = 'my';
+
+    async function hfLoadHubModels() {
+        const listEl = document.getElementById('hf-hub-list');
+        listEl.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm"></div> Loading from Hub...</div>';
+        try {
+            _hubData = await fetch(`${HF_API}/hub/models`).then(r => r.json());
+            if (!_hubData.success && _hubData.error === 'HF_TOKEN not set') {
+                listEl.innerHTML = `<div class="alert alert-warning m-2 p-2">
+                    ⚠️ HF Token не задан.<br>
+                    <small>1. Перейдите в <strong>Settings → HuggingFace</strong><br>
+                    2. Введите токен и нажмите Save All<br>
+                    3. Вернитесь сюда и нажмите Load</small>
+                </div>`;
+                // Показываем публичные модели даже без токена
+                hfSwitchHubTab('public');
+                return;
+            }
+            hfSwitchHubTab(_hubTab);
+        } catch(e) {
+            listEl.innerHTML = `<div class="text-danger p-3">${e.message}</div>`;
+        }
+    }
+
+    function hfSwitchHubTab(tab) {
+        _hubTab = tab;
+        document.getElementById('hf-my-tab')?.classList.toggle('active', tab === 'my');
+        document.getElementById('hf-public-tab')?.classList.toggle('active', tab === 'public');
+        if (!_hubData) return;
+        const listEl = document.getElementById('hf-hub-list');
+        const models  = tab === 'my' ? (_hubData.user_models || []) : (_hubData.public_models || []);
+
+        if (!models.length) {
+            listEl.innerHTML = tab === 'my'
+                ? '<div class="text-muted text-center p-3"><small>No models in your account</small></div>'
+                : '<div class="text-muted text-center p-3"><small>No public models</small></div>';
+            return;
+        }
+
+        listEl.innerHTML = models.map(m => {
+            const note    = m.note    ? `<span class="text-muted"> — ${m.note}</span>`    : '';
+            const size    = m.size    ? `<span class="badge bg-light text-dark me-1">${m.size}</span>` : '';
+            const priv    = m.private ? '<span class="badge bg-secondary me-1">private</span>' : '';
+            const pipe    = m.pipeline ? `<span class="badge bg-info me-1">${m.pipeline}</span>` : '';
+            return `
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                <div class="overflow-hidden">
+                    <div style="font-size:.85rem;font-weight:600">${m.id}${note}</div>
+                    <div>${priv}${pipe}${size}</div>
+                </div>
+                <div class="d-flex gap-1 ms-2 flex-shrink-0">
+                    <button class="btn btn-sm btn-outline-secondary" title="Open on HuggingFace"
+                        onclick="window.open('https://huggingface.co/${m.id}','_blank')">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                    </button>
+                    <button class="btn btn-sm btn-success"
+                        onclick="hfSelectAndDownload('${m.id}')">
+                        <i class="bi bi-download"></i>
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+
+        // Показываем инструкцию для публичных моделей
+        if (tab === 'public') {
+            listEl.insertAdjacentHTML('beforeend', `
+                <div class="alert alert-info m-2 p-2" style="font-size:.8rem">
+                    <strong>ℹ️ Как использовать публичные модели:</strong><br>
+                    • <strong>Без лицензии</strong> (Phi, Qwen, TinyLlama, DeepSeek): нажмите ↓ — скачается сразу<br>
+                    • <strong>С лицензией</strong> (Gemma, Llama, Mistral): сначала примите лицензию на 
+                    <a href="https://huggingface.co" target="_blank">huggingface.co</a> → кнопка ↗ откроет страницу модели<br>
+                    • HF Token должен быть задан в Settings для закрытых моделей
+                </div>`);
+        }
+    }
+
+    function hfSelectAndDownload(modelId) {
+        document.getElementById('hf-download-id').value = modelId;
+        hfDownload();
+    }
+
+    async function hfRefreshModels() {
+        try {
+            const d = await fetch(`${HF_API}/models`).then(r => r.json());
+            const dlEl = document.getElementById('hf-downloaded-list');
+            const ldEl = document.getElementById('hf-loaded-list');
+
+            if (!d.downloaded?.length) {
+                dlEl.innerHTML = '<div class="text-muted text-center p-3"><small>No models downloaded yet</small></div>';
+            } else {
+                dlEl.innerHTML = d.downloaded.map(m => `
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                        <div>
+                            <strong style="font-size:.85rem">${m.id}</strong>
+                            <small class="text-muted d-block">${m.size_mb} MB</small>
+                        </div>
+                        <div class="d-flex gap-1">
+                            ${m.loaded
+                                ? `<button class="btn btn-sm btn-outline-danger" onclick="hfUnload('${m.id}')">Unload</button>`
+                                : `<button class="btn btn-sm btn-outline-success" onclick="hfLoad('${m.id}')">Load</button>`
+                            }
+                        </div>
+                    </div>`).join('');
+            }
+
+            if (!d.loaded?.length) {
+                ldEl.innerHTML = '<div class="text-muted text-center p-3"><small>No models in memory</small></div>';
+            } else {
+                ldEl.innerHTML = d.loaded.map(m => `
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                        <span style="font-size:.85rem">${m.id}</span>
+                        <button class="btn btn-sm btn-outline-danger" onclick="hfUnload('${m.id}')">Unload</button>
+                    </div>`).join('');
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    async function hfDownload() {
+        const modelId  = document.getElementById('hf-download-id').value.trim();
+        const statusEl = document.getElementById('hf-download-status');
+        if (!modelId) return alert('Enter model ID');
+        statusEl.style.display = '';
+        statusEl.innerHTML = '<div class="alert alert-info p-2"><div class="spinner-border spinner-border-sm me-2"></div>Downloading... This may take several minutes.</div>';
+        try {
+            const d = await fetch(`${HF_API}/models/download`, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ model_id: modelId })
+            }).then(r => r.json());
+            statusEl.innerHTML = d.success
+                ? `<div class="alert alert-success p-2">✅ Downloaded to: <code>${d.path}</code></div>`
+                : `<div class="alert alert-danger p-2">❌ ${d.error}
+                    ${d.error?.includes('license') || d.error?.includes('401') || d.error?.includes('403')
+                        ? `<br><small>→ <a href="https://huggingface.co/${modelId}" target="_blank">Примите лицензию на huggingface.co</a></small>`
+                        : ''}
+                   </div>`;
+            if (d.success) hfRefreshModels();
+        } catch(e) { statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${e.message}</div>`; }
+    }
+
+    async function hfLoad(modelId) {
+        const device = document.getElementById('hf-gen-device')?.value || 'auto';
+        // Показываем спиннер на кнопке
+        const btn = document.querySelector(`[onclick="hfLoad('${modelId}')"]`);
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; }
+        const d = await fetch(`${HF_API}/models/load`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({model_id: modelId, device})
+        }).then(r => r.json());
+        if (!d.success) alert(`❌ ${d.error}`);
+        hfRefreshModels();
+        hfUpdateChatModelSelect();
+    }
+
+    async function hfUnload(modelId) {
+        const d = await fetch(`${HF_API}/models/unload`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({model_id: modelId})
+        }).then(r => r.json());
+        if (!d.success) alert(`❌ ${d.error}`);
+        hfRefreshModels();
+        hfUpdateChatModelSelect();
+    }
+
+    // Добавляем загруженные HF модели в селект чата
+    async function hfUpdateChatModelSelect() {
+        try {
+            const d = await fetch(`${HF_API}/models`).then(r => r.json());
+            const sel = document.getElementById('chat-model');
+            if (!sel) return;
+            // Удаляем старые HF опции
+            [...sel.options].filter(o => o.dataset.hf).forEach(o => o.remove());
+            if (d.loaded?.length) {
+                const group = document.createElement('optgroup');
+                group.label = '— HuggingFace (loaded) —';
+                d.loaded.forEach(m => {
+                    const opt = new Option(`🤗 ${m.id}`, `hf::${m.id}`);
+                    opt.dataset.hf = '1';
+                    group.appendChild(opt);
+                });
+                sel.appendChild(group);
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    async function hfGenerate() {
+        const modelId = document.getElementById('hf-gen-model').value.trim();
+        const prompt  = document.getElementById('hf-gen-prompt').value.trim();
+        const tokens  = parseInt(document.getElementById('hf-gen-tokens').value) || 256;
+        const temp    = parseFloat(document.getElementById('hf-gen-temp').value) || 0.7;
+        const outEl   = document.getElementById('hf-gen-output');
+        if (!modelId || !prompt) return alert('Fill in Model ID and Prompt');
+        outEl.style.display = '';
+        outEl.textContent = '⏳ Generating...';
+        try {
+            const d = await fetch(`${HF_API}/generate`, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({model_id: modelId, prompt, max_new_tokens: tokens, temperature: temp})
+            }).then(r => r.json());
+            outEl.textContent = d.success ? d.content : `❌ ${d.error}`;
+        } catch(e) { outEl.textContent = `❌ ${e.message}`; }
+    }
+
+    // Сохранение HF токена в .env через отдельный endpoint
+    async function saveHFToken() {
+        const token = document.getElementById('config-hf-token')?.value?.trim();
+        if (!token) { alert('Введите токен'); return; }
+        try {
+            const r = await fetch('/api/v1/config/env', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({key: 'HF_TOKEN', value: token})
+            });
+            // Сохраняем оба варианта названия — разные части кода используют разные имена
+            await fetch('/api/v1/config/env', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({key: 'HUGGING_FACE_TOKEN', value: token})
+            });
+            const d = await r.json();
+            if (d.success) alert('✅ Токен сохранён в .env');
+            else alert('Ошибка: ' + (d.detail || d.error));
+        } catch(e) { alert('Ошибка запроса: ' + e); }
+    }
+
+    // Загрузка HF настроек в Settings
+    function loadHFConfigFields(cfg) {
+        const hf = cfg?.huggingface || {};
+        const el = id => document.getElementById(id);
+        if (el('config-hf-token'))      el('config-hf-token').value      = hf.token      || '';
+        if (el('config-hf-models-dir')) el('config-hf-models-dir').value = hf.models_dir || './models/hf';
+        if (el('config-hf-device'))     el('config-hf-device').value     = hf.device     || 'auto';
+        if (el('config-hf-max-tokens')) el('config-hf-max-tokens').value = hf.default_max_new_tokens || 512;
+    }
+
+    function collectHFConfigFields() {
+        const el = id => document.getElementById(id);
+        return {
+            token:                  el('config-hf-token')?.value      || '',
+            models_dir:             el('config-hf-models-dir')?.value || './models/hf',
+            device:                 el('config-hf-device')?.value     || 'auto',
+            default_max_new_tokens: parseInt(el('config-hf-max-tokens')?.value) || 512,
+            default_temperature:    0.7
+        };
+    }
+
+    // Перехватываем loadConfigFields и saveConfigFields из app.js
+    document.addEventListener('DOMContentLoaded', () => {
+        const origLoad = window.loadConfigFields;
+        if (origLoad) {
+            window.loadConfigFields = async function() {
+                await origLoad();
+                const r = await fetch('/api/v1/config').then(x => x.json()).catch(() => ({}));
+                loadHFConfigFields(r.config);
+            };
+        }
+        const origSave = window.saveConfigFields;
+        if (origSave) {
+            window.saveConfigFields = async function() {
+                const r = await fetch('/api/v1/config').then(x => x.json()).catch(() => ({}));
+                const cfg = r.config || {};
+                cfg.huggingface = collectHFConfigFields();
+                await fetch('/api/v1/config', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({config: cfg})
+                });
+                await origSave();
+            };
+        }
+        // Автозагрузка при открытии вкладки
+        document.getElementById('hf-tab')?.addEventListener('shown.bs.tab', () => {
+            hfCheckStatus();
+            hfRefreshModels();
+            hfLoadHubModels();
+        });
+    });
+    // ── Agent Tab ────────────────────────────────────────────────────────────────────
+    const AGENT_API = 'http://localhost:9696/api/v1/agent';
+
+    async function agentLoadTools() {
+        // Загрузить список агентов
+        try {
+            const dl = await fetch(`${AGENT_API}/list`).then(r => r.json());
+            const sel = document.getElementById('agent-name');
+            if (sel && dl.success) {
+                sel.innerHTML = dl.agents.map(a =>
+                    `<option value="${a.name}" title="${a.description}">${a.name}</option>`
+                ).join('');
+            }
+        } catch(e) { logger.error(e); }
+
+        // Загрузить инструменты текущего агента
+        await agentRefreshTools();
+    }
+
+    async function agentRefreshTools() {
+        const el   = document.getElementById('agent-tools-list');
+        const name = document.getElementById('agent-name')?.value || 'powershell';
+        if (!el) return;
+        try {
+            const d = await fetch(`${AGENT_API}/${name}/tools`).then(r => r.json());
+            if (!d.success) { el.innerHTML = '<div class="text-danger p-2">Error</div>'; return; }
+            el.innerHTML = d.tools.map(t => `
+                <div class="px-3 py-2 border-bottom">
+                    <strong style="font-size:.8rem">${t}</strong>
+                    <div class="text-muted" style="font-size:.75rem">${d.descriptions[t]}</div>
+                </div>`).join('');
+        } catch(e) {
+            el.innerHTML = `<div class="text-danger p-2">${e.message}</div>`;
+        }
+    }
+
+    async function agentRun() {
+        const input   = document.getElementById('agent-input');
+        const btn     = document.getElementById('agent-btn');
+        const msgs    = document.getElementById('agent-messages');
+        const message = input.value.trim();
+        if (!message) return;
+
+        // Добавляем сообщение пользователя
+        if (msgs.querySelector('.text-muted.text-center')) msgs.innerHTML = '';
+        msgs.innerHTML += `<div class="mb-2"><span class="badge bg-primary">You</span> <span>${message}</span></div>`;
+        input.value = '';
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+
+        const thinkingId = 'think-' + Date.now();
+        msgs.innerHTML += `<div id="${thinkingId}" class="mb-2 text-muted"><i class="bi bi-gear-fill"></i> Агент думает...</div>`;
+        msgs.scrollTop = msgs.scrollHeight;
+
+        try {
+            const d = await fetch(`${AGENT_API}/run`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    message,
+                    agent:          document.getElementById('agent-name')?.value || 'powershell',
+                    model:          document.getElementById('agent-model').value.trim() || undefined,
+                    temperature:    parseFloat(document.getElementById('agent-temp').value) || 0.3,
+                    max_iterations: parseInt(document.getElementById('agent-max-iter').value) || 5
+                })
+            }).then(r => r.json());
+
+            document.getElementById(thinkingId)?.remove();
+
+            // Показываем вызовы инструментов
+            if (d.tool_calls?.length) {
+                for (const tc of d.tool_calls) {
+                    msgs.innerHTML += `
+                        <div class="mb-2 p-2 border rounded" style="background:#f0f4ff;font-size:.82rem">
+                            <i class="bi bi-gear"></i> <strong>${tc.tool}</strong>
+                            <code class="d-block mt-1 text-muted">${JSON.stringify(tc.arguments)}</code>
+                            <pre class="mt-1 mb-0" style="font-size:.78rem;max-height:120px;overflow-y:auto;white-space:pre-wrap">${tc.result}</pre>
+                        </div>`;
+                }
+            }
+
+            // Финальный ответ
+            if (d.success) {
+                msgs.innerHTML += `<div class="mb-3"><span class="badge bg-success">Agent</span> <span style="white-space:pre-wrap">${d.answer || ''}</span></div>`;
+                if (d.note) msgs.innerHTML += `<div class="text-muted mb-2" style="font-size:.8rem">⚠️ ${d.note}</div>`;
+            } else {
+                msgs.innerHTML += `<div class="mb-2 text-danger">❌ ${d.error}</div>`;
+            }
+        } catch(e) {
+            document.getElementById(thinkingId)?.remove();
+            msgs.innerHTML += `<div class="mb-2 text-danger">❌ ${e.message}</div>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send"></i> Run';
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+    }
+
+    document.getElementById('agent-tab')?.addEventListener('shown.bs.tab', agentLoadTools);
+
+    // ── MCP PowerShell Servers ────────────────────────────────────────────
+    const MCP_API = 'http://localhost:9696/api/v1/mcp-powershell';
+
+    async function mcpLoadServers() {
+        const list = document.getElementById('mcp-servers-list');
+        if (!list) return;
+        list.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm"></div></div>';
+        try {
+            const d = await fetch(`${MCP_API}/servers`).then(r => r.json());
+            if (!d.success || !d.servers.length) {
+                list.innerHTML = '<div class="text-muted text-center p-4">No MCP servers configured in settings.json</div>';
+                return;
+            }
+            list.innerHTML = d.servers.map(srv => {
+                const running = srv.status === 'running';
+                return `
+                <div class="d-flex align-items-center gap-3 px-3 py-2 border-bottom" id="mcp-row-${srv.name}">
+                    <div class="flex-grow-1">
+                        <strong style="font-size:.9rem">${srv.name}</strong>
+                        <small class="text-muted d-block">${srv.description || ''}</small>
+                    </div>
+                    <span class="badge ${running ? 'bg-success' : 'bg-secondary'}">
+                        ${running ? '&#9679; Running' : '&#9675; Stopped'}
+                    </span>
+                    ${running
+                        ? `<button class="btn btn-sm btn-danger" onclick="mcpStop('${srv.name}')"><i class="bi bi-stop-fill"></i> Stop</button>`
+                        : `<button class="btn btn-sm btn-success" onclick="mcpStart('${srv.name}')"><i class="bi bi-play-fill"></i> Start</button>`
+                    }
+                </div>`;
+            }).join('');
+        } catch(e) {
+            list.innerHTML = `<div class="text-danger p-3">Error: ${e.message}</div>`;
+        }
+    }
+
+    async function mcpStart(name) {
+        try {
+            const d = await fetch(`${MCP_API}/servers/${name}/start`, {method:'POST'}).then(r => r.json());
+            if (!d.success) alert(`❌ ${d.detail || d.message}`);
+        } catch(e) { alert(`❌ ${e.message}`); }
+        setTimeout(mcpLoadServers, 800);
+    }
+
+    async function mcpStop(name) {
+        try {
+            const d = await fetch(`${MCP_API}/servers/${name}/stop`, {method:'POST'}).then(r => r.json());
+            if (!d.success) alert(`❌ ${d.detail || d.message}`);
+        } catch(e) { alert(`❌ ${e.message}`); }
+        setTimeout(mcpLoadServers, 800);
+    }
+
+    async function mcpOpenSettingsEditor() {
+        const ta   = document.getElementById('mcp-settings-editor');
+        const btns = document.getElementById('mcp-settings-btns');
+        const st   = document.getElementById('mcp-settings-status');
+        try {
+            const d = await fetch(`${MCP_API}/settings`).then(r => r.json());
+            ta.value = JSON.stringify(d.settings, null, 2);
+            ta.style.display = '';
+            btns.style.display = '';
+            st.style.display = 'none';
+        } catch(e) {
+            st.className = 'alert alert-danger py-1 px-2';
+            st.textContent = '❌ ' + e.message;
+            st.style.display = '';
+        }
+    }
+
+    async function mcpSaveSettings() {
+        const ta = document.getElementById('mcp-settings-editor');
+        const st = document.getElementById('mcp-settings-status');
+        try {
+            const settings = JSON.parse(ta.value);
+            const d = await fetch(`${MCP_API}/settings`, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({settings})
+            }).then(r => r.json());
+            st.className = d.success ? 'alert alert-success py-1 px-2' : 'alert alert-danger py-1 px-2';
+            st.textContent = d.success ? '✅ Saved' : '❌ ' + (d.detail || d.message);
+            st.style.display = '';
+            if (d.success) mcpLoadServers();
+        } catch(e) {
+            st.className = 'alert alert-danger py-1 px-2';
+            st.textContent = '❌ ' + (e instanceof SyntaxError ? 'Invalid JSON: ' + e.message : e.message);
+            st.style.display = '';
+        }
+    }
+
+    function mcpCloseSettingsEditor() {
+        document.getElementById('mcp-settings-editor').style.display = 'none';
+        document.getElementById('mcp-settings-btns').style.display = 'none';
+    }
+
+    document.getElementById('mcp-tab')?.addEventListener('shown.bs.tab', mcpLoadServers);
+
+    </script>
 </body>
 </html>

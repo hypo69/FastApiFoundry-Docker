@@ -30,6 +30,50 @@
 | Диск | 2 GB | 10 GB+ (с RAG) |
 | ОС | Windows 10+ | Windows 11 |
 
+> Если Python не установлен в системе — `install.ps1` автоматически предложит
+> использовать локальный интерпретатор из `bin\Python-3.11.9.zip`. Подробнее: [Установка Python из локального архива](#установка-python-из-локального-архива).
+
+---
+
+## Установка Python из локального архива
+
+Если Python 3.11+ **не установлен** в системе и нет доступа к интернету,
+`install.ps1` автоматически обнаружит архив `bin\Python-3.11.9.zip` и предложит
+установить интерпретатор из него.
+
+### Как это работает
+
+```
+install.ps1
+  └─ Python 3.11+ найден в PATH?
+       ДА  → используется системный Python
+       НЕТ → найден bin\Python-3.11.9.zip?
+               НЕТ → сообщение + выход
+               ДА  → предложение установить (y/N)
+                       N → выход
+                       Y → Expand-Archive → bin\Python-3.11.9\
+                             → python.exe используется для создания venv
+```
+
+### Расположение файлов
+
+| Путь | Описание |
+|------|----------|
+| `bin\Python-3.11.9.zip` | Архив с интерпретатором (поставляется с проектом) |
+| `bin\Python-3.11.9\` | Создаётся автоматически при распаковке |
+| `venv\` | Виртуальное окружение, создаётся из локального интерпретатора |
+
+### Ручная распаковка (если нужно)
+
+```powershell
+Expand-Archive -Path bin\Python-3.11.9.zip -DestinationPath bin\Python-3.11.9
+bin\Python-3.11.9\python.exe -m venv venv
+venv\Scripts\pip.exe install -r requirements.txt
+```
+
+> После создания `venv` локальный интерпретатор в `bin\Python-3.11.9\` больше
+> не нужен для запуска проекта — `venv` самодостаточен.
+
 ---
 
 ## Установка проекта
@@ -264,8 +308,9 @@ type logs\app.log
 | `install.ps1` | Главный установщик (venv + зависимости + .env + logs) |
 | `install-foundry.ps1` | Установка Microsoft Foundry Local через winget |
 | `install-gui.ps1` | GUI установщик (Windows Forms) |
-| `install_deps.py` | Установка зависимостей через Python |
 | `install_rag_deps.py` | Установка RAG зависимостей (torch, faiss, sentence-transformers) |
+| `install-models.ps1` | Скачивание моделей по умолчанию (Foundry + HuggingFace) |
+| `bin\Python-3.11.9.zip` | Локальный интерпретатор Python для офлайн-установки |
 
 ---
 

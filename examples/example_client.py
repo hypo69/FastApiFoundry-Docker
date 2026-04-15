@@ -257,7 +257,7 @@ async def main():
         print(f"Tunnel active: {tunnel_status['active']}")
         
         print("\n✅ FastAPI Foundry API работает корректно!")
-        print("⚠️  Для полной функциональности убедитесь, что Foundry сервер запущен (порт определяется автоматически)"))
+        print("⚠️  Для полной функциональности убедитесь, что Foundry сервер запущен (порт определяется автоматически)")
 
 if __name__ == "__main__":
     asyncio.run(main())

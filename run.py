@@ -40,6 +40,7 @@ if sys.platform == 'win32':
         except:
             pass  # Используем системную локаль
 
+
 import json
 import socket
 import logging
@@ -68,14 +69,14 @@ try:
     import requests
     REQUESTS_AVAILABLE = True
 except ImportError:
-    print("Warning: requests not available, some features disabled")
+    print("Предупреждение: requests недоступен, часть функций отключена")
     REQUESTS_AVAILABLE = False
 
 try:
     import uvicorn
     UVICORN_AVAILABLE = True
 except ImportError:
-    print("Error: uvicorn not available, cannot start server")
+    print("Ошибка: uvicorn недоступен, запуск сервера невозможен")
     UVICORN_AVAILABLE = False
     sys.exit(1)
 
@@ -178,7 +179,7 @@ def find_foundry_port() -> int | None:
                                         port = int(addr.split(':')[-1])
                                         response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=1)
                                         if response.status_code == 200:
-                                            print(f"Foundry API confirmed on port: {port}")
+                                            print(f"Foundry API подтверждён на порту: {port}")
                                             return port
                                     except Exception:
                                         continue
@@ -193,7 +194,7 @@ def resolve_foundry_base_url() -> str | None:
     # Проверяем переменную окружения FOUNDRY_BASE_URL
     foundry_url = os.getenv('FOUNDRY_BASE_URL')
     if foundry_url:
-        print(f'Found Foundry from env var: {foundry_url}')
+        print(f'Foundry найден через переменную окружения: {foundry_url}')
         return foundry_url
     
     # Проверяем переменную окружения FOUNDRY_DYNAMIC_PORT (старая)
@@ -202,7 +203,7 @@ def resolve_foundry_base_url() -> str | None:
         try:
             port = int(foundry_port)
             foundry_url = f'http://localhost:{port}/v1/'
-            print(f'Found Foundry from legacy env var on port: {foundry_url}')
+            print(f'Foundry найден через устаревшую переменную окружения, порт: {foundry_url}')
             return foundry_url
         except ValueError:
             pass
@@ -211,10 +212,10 @@ def resolve_foundry_base_url() -> str | None:
     foundry_port = find_foundry_port()
     if foundry_port:
         foundry_url = f'http://localhost:{foundry_port}/v1/'
-        print(f'Found Foundry on port: {foundry_url}')
+        print(f'Foundry найден на порту: {foundry_url}')
         return foundry_url
 
-    print('Foundry not found')
+    print('Foundry не найден')
     return None
 
 
@@ -245,15 +246,15 @@ def main() -> bool:
         # -------------------------------------------------------------------------
         # Foundry
         # -------------------------------------------------------------------------
-        logger.info("Poisk Foundry...")
+        logger.info("Поиск Foundry...")
         foundry_base_url = resolve_foundry_base_url()
 
         if foundry_base_url and check_foundry(foundry_base_url):
             # Обновляем свойство Config с найденным URL
             config.foundry_base_url = foundry_base_url
-            logger.info(f'Foundry dostupен: {foundry_base_url}')
+            logger.info(f'Foundry доступен: {foundry_base_url}')
         else:
-            logger.warning('Foundry nedostupен — AI funkcii otklyucheny')
+            logger.warning('Foundry недоступен — AI функции отключены')
 
         # -------------------------------------------------------------------------
         # FastAPI
@@ -268,14 +269,14 @@ def main() -> bool:
 
         port = get_server_port()
 
-        logger.info('\nZapusk FastAPI servera')
-        logger.info(f'   Host: {host}')
-        logger.info(f'   Port: {port}')
-        logger.info(f'   Reload: {reload_enabled}')
-        logger.info(f'   Workers: {workers}')
+        logger.info('\nЗапуск FastAPI сервера')
+        logger.info(f'   Хост: {host}')
+        logger.info(f'   Порт: {port}')
+        logger.info(f'   Перезагрузка: {reload_enabled}')
+        logger.info(f'   Воркеры: {workers}')
         logger.info('-' * 50)
-        logger.info(f'UI:   http://localhost:{port}')
-        logger.info(f'Docs: http://localhost:{port}/docs')
+        logger.info(f'UI:     http://localhost:{port}')
+        logger.info(f'Docs:   http://localhost:{port}/docs')
         logger.info(f'Health: http://localhost:{port}/api/v1/health')
         logger.info('-' * 50)
 
@@ -291,19 +292,19 @@ def main() -> bool:
             )
             return True
         except KeyboardInterrupt:
-            logger.info('\nStopped by user')
+            logger.info('\nОстановлено пользователем')
             return True
         except ImportError as e:
-            logger.error(f'Import error - missing dependencies: {e}')
-            logger.error('Try: venv\\Scripts\\python311.exe -m pip install -r requirements.txt')
+            logger.error(f'Ошибка импорта — отсутствуют зависимости: {e}')
+            logger.error('Попробуйте: venv\\Scripts\\python.exe -m pip install -r requirements.txt')
             return False
         except Exception as exc:
-            logger.error(f'Server startup error: {exc}')
-            logger.error('Check if port is already in use or dependencies are missing')
+            logger.error(f'Ошибка запуска сервера: {exc}')
+            logger.error('Проверьте, не занят ли порт, и установлены ли все зависимости')
             return False
             
     except Exception as e:
-        logger.error(f'Critical error in main function: {e}')
+        logger.error(f'Критическая ошибка в функции main: {e}')
         return False
 
 

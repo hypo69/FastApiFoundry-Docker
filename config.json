@@ -20,26 +20,51 @@
     "top_p": 0.9,
     "top_k": 40,
     "max_tokens": 2048,
-    "timeout": "${FOUNDRY_TIMEOUT:300}"
+    "timeout": 300
   },
   "rag_system": {
     "enabled": true,
     "index_dir": "rag_index",
-    "model": "sentence-transformers/all-mpnet-base-v2",
+    "model": "sentence-transformers/all-MiniLM-L6-v2",
     "chunk_size": 1000,
     "top_k": 5
   },
+  "huggingface": {
+    "token": "${HF_TOKEN}",
+    "models_dir": "${HF_MODELS_DIR:~/.models/hf}",
+    "device": "auto",
+    "default_max_new_tokens": 512,
+    "default_temperature": 0.7
+  },
+  "llama_cpp": {
+    "model_path": "${LLAMA_MODEL_PATH}",
+    "base_url": "${LLAMA_BASE_URL:http://127.0.0.1:8080/v1}",
+    "port": 8080,
+    "host": "127.0.0.1",
+    "ctx_size": 4096,
+    "threads": 0,
+    "n_gpu_layers": 0,
+    "auto_start": false
+  },
   "security": {
-    "api_key": "${API_KEY}",
+    "api_key": "1234",
     "secret_key": "${SECRET_KEY}",
     "https_enabled": false,
-    "cors_origins": "${CORS_ORIGINS:*}",
+    "cors_origins": [
+      "*"
+    ],
     "ssl_cert_file": "~/.ssl/cert.pem",
     "ssl_key_file": "~/.ssl/key.pem"
   },
   "logging": {
-    "level": "${LOG_LEVEL:INFO}",
+    "level": "INFO",
     "file": "logs/fastapi-foundry.log"
+  },
+  "mcp_powershell_servers": {
+    "enabled": true,
+    "settings_file": "./mcp-powershell-servers/settings.json",
+    "auto_start": [],
+    "description": "MCP PowerShell серверы — управление через /api/v1/mcp-powershell"
   },
   "mcp_server": {
     "name": "aistros-foundry",
@@ -113,7 +138,7 @@
     "port_range_end": 9796
   },
   "development": {
-    "debug": "${DEBUG:true}",
+    "debug": true,
     "verbose": true,
     "temp_dir": "./temp",
     "environment": "${ENVIRONMENT:development}"

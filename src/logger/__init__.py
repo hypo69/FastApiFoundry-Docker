@@ -132,6 +132,37 @@ class FastAPIFoundryLogger:
         """Ошибка с трассировкой стека"""
         self.logger.exception(message, *args, **kwargs)
 
+    def export_to_file(self, dest: Optional[str] = None) -> Path:
+        """Скопировать текущий лог-файл в dest или вернуть его путь.
+
+        Args:
+            dest: Путь назначения. Если None — возвращает путь к текущему лог-файлу.
+
+        Returns:
+            Path к файлу с логами.
+
+        Example:
+            >>> path = logger.export_to_file('exported.log')
+            >>> print(path)
+        """
+        import shutil
+        src = Path("logs") / f"{self.name}.log"
+        if not src.exists():
+            raise FileNotFoundError(f"Log file not found: {src}")
+        if dest is None:
+            return src
+        dest_path = Path(dest)
+        shutil.copy2(src, dest_path)
+        return dest_path
+
+    def get_log_path(self) -> Path:
+        """Вернуть путь к текущему лог-файлу."""
+        return Path("logs") / f"{self.name}.log"
+
+    def get_error_log_path(self) -> Path:
+        """Вернуть путь к файлу ошибок."""
+        return Path("logs") / f"{self.name}-errors.log"
+
 # Определить режим из переменной окружения
 MODE = os.getenv("FASTAPI_FOUNDRY_MODE", "dev").lower()
 

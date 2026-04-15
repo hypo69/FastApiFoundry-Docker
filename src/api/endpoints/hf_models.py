@@ -1,0 +1,242 @@
+# -*- coding: utf-8 -*-
+# =============================================================================
+# Название процесса: HuggingFace Models API Endpoints
+# =============================================================================
+# Описание:
+#   API endpoints для управления локальными HuggingFace моделями:
+#   скачивание, загрузка в память, выгрузка, генерация текста.
+#
+# Примеры:
+#   GET  /api/v1/hf/models
+#   POST /api/v1/hf/models/download  {"model_id": "google/gemma-2b"}
+#   POST /api/v1/hf/models/load      {"model_id": "google/gemma-2b"}
+#   POST /api/v1/hf/models/unload    {"model_id": "google/gemma-2b"}
+#   POST /api/v1/hf/generate         {"prompt": "Hello", "model_id": "google/gemma-2b"}
+#
+# File: src/api/endpoints/hf_models.py
+# Project: FastApiFoundry (Docker)
+# Version: 0.4.1
+# Author: hypo69
+# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# Copyright: © 2025 AiStros
+# =============================================================================
+
+import asyncio
+import logging
+from fastapi import APIRouter, HTTPException
+
+from ...models.hf_client import hf_client
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/hf", tags=["huggingface"])
+
+
+@router.get("/hub/models")
+async def list_hub_models() -> dict:
+    """! Список моделей пользователя с HuggingFace Hub.
+
+    Использует HF_TOKEN из .env.
+    Возвращает модели пользователя + популярные открытые text-generation модели.
+    """
+    import os
+    token = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")
+
+    if not token:
+        return {
+            "success": False,
+            "error": "HF_TOKEN not set",
+            "hint": "Set HF_TOKEN in Settings tab",
+            "user_models": [],
+            "public_models": _get_popular_public_models()
+        }
+
+    try:
+        from huggingface_hub import HfApi
+        api = HfApi(token=token)
+
+        # Модели пользователя
+        user_info = api.whoami()
+        username  = user_info.get("name", "")
+
+        user_models_raw = list(api.list_models(author=username, limit=50))
+        user_models = [
+            {
+                "id":       m.id,
+                "private":  m.private,
+                "downloads": getattr(m, "downloads", 0),
+                "pipeline": getattr(m, "pipeline_tag", None),
+            }
+            for m in user_models_raw
+        ]
+
+        return {
+            "success":      True,
+            "username":     username,
+            "user_models":  user_models,
+            "public_models": _get_popular_public_models()
+        }
+
+    except Exception as e:
+        logger.error(f"HF Hub error: {e}")
+        return {
+            "success":      False,
+            "error":        str(e),
+            "user_models":  [],
+            "public_models": _get_popular_public_models()
+        }
+
+
+def _get_popular_public_models() -> list:
+    """! Список популярных публичных text-generation моделей.
+
+    Разделён на две группы:
+    - Без лицензии: Phi, Qwen, TinyLlama, DeepSeek — скачиваются сразу
+    - С лицензией: Gemma, Llama, Mistral — нужно принять на huggingface.co
+
+    Returns:
+        list: [{"id": str, "size": str, "note": str}]
+    """
+    return [
+        {"id": "microsoft/phi-2",                        "size": "~5 GB",  "note": "CPU-friendly, no license"},
+        {"id": "microsoft/Phi-3-mini-4k-instruct",       "size": "~7 GB",  "note": "CPU-friendly, no license"},
+        {"id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",     "size": "~2 GB",  "note": "Very fast on CPU"},
+        {"id": "Qwen/Qwen2.5-0.5B-Instruct",             "size": "~1 GB",  "note": "Tiny, fast"},
+        {"id": "Qwen/Qwen2.5-1.5B-Instruct",             "size": "~3 GB",  "note": "Good quality/speed"},
+        {"id": "Qwen/Qwen2.5-7B-Instruct",               "size": "~15 GB", "note": "High quality"},
+        {"id": "mistralai/Mistral-7B-Instruct-v0.3",     "size": "~14 GB", "note": "Accept license required"},
+        {"id": "meta-llama/Llama-3.2-1B-Instruct",       "size": "~2 GB",  "note": "Accept license required"},
+        {"id": "meta-llama/Llama-3.2-3B-Instruct",       "size": "~6 GB",  "note": "Accept license required"},
+        {"id": "google/gemma-2-2b-it",                   "size": "~5 GB",  "note": "Accept license required"},
+        {"id": "google/gemma-2-9b-it",                   "size": "~18 GB", "note": "Accept license required"},
+        {"id": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B", "size": "~3 GB", "note": "No license"},
+        {"id": "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",   "size": "~14 GB","note": "No license"},
+    ]
+
+
+@router.get("/models")
+async def list_hf_models() -> dict:
+    """! Список скачанных и загруженных HF моделей."""
+    return {
+        "success": True,
+        "downloaded": hf_client.list_downloaded(),
+        "loaded": hf_client.list_loaded(),
+    }
+
+
+@router.post("/models/download")
+async def download_hf_model(request: dict) -> dict:
+    """! Скачать модель с HuggingFace Hub.
+
+    Body: {"model_id": "google/gemma-2b", "token": "hf_..."}
+
+    Для закрытых моделей (Gemma, Llama) нужно:
+    1. Принять лицензию на huggingface.co/<model_id>
+    2. Передать HF токен или установить HF_TOKEN в .env
+    """
+    model_id: str = request.get("model_id", "")
+    token: str = request.get("token", "")
+
+    if not model_id:
+        raise HTTPException(status_code=400, detail="model_id is required")
+
+    logger.info(f"Запрос скачивания HF модели: {model_id}")
+
+    # Запускаем в executor — snapshot_download блокирующий
+    result = await asyncio.get_event_loop().run_in_executor(
+        None, lambda: hf_client.download_model(model_id, token or None)
+    )
+    return result
+
+
+@router.post("/models/load")
+async def load_hf_model(request: dict) -> dict:
+    """! Загрузить скачанную модель в память для inference.
+
+    Body: {"model_id": "google/gemma-2b", "device": "auto"}
+    """
+    model_id: str = request.get("model_id", "")
+    device: str = request.get("device", "auto")
+
+    if not model_id:
+        raise HTTPException(status_code=400, detail="model_id is required")
+
+    result = await asyncio.get_event_loop().run_in_executor(
+        None, lambda: hf_client.load_model(model_id, device)
+    )
+    return result
+
+
+@router.post("/models/unload")
+async def unload_hf_model(request: dict) -> dict:
+    """! Выгрузить модель из памяти (освободить RAM/VRAM)."""
+    model_id: str = request.get("model_id", "")
+    if not model_id:
+        raise HTTPException(status_code=400, detail="model_id is required")
+    return hf_client.unload_model(model_id)
+
+
+@router.post("/generate")
+async def hf_generate(request: dict) -> dict:
+    """! Генерация текста через локальную HF модель.
+
+    Body:
+        model_id:       ID модели (должна быть загружена или скачана)
+        prompt:         Входной текст
+        max_new_tokens: Максимум новых токенов (default: 512)
+        temperature:    Температура (default: 0.7)
+    """
+    model_id: str = request.get("model_id", "")
+    prompt: str = request.get("prompt", "")
+    max_new_tokens: int = request.get("max_new_tokens", 512)
+    temperature: float = request.get("temperature", 0.7)
+
+    if not model_id:
+        raise HTTPException(status_code=400, detail="model_id is required")
+    if not prompt:
+        raise HTTPException(status_code=400, detail="prompt is required")
+
+    return await hf_client.generate(prompt, model_id, max_new_tokens, temperature)
+
+
+@router.get("/status")
+async def hf_status() -> dict:
+    """! Статус HuggingFace интеграции — доступность библиотек."""
+    try:
+        import transformers
+        transformers_ok = True
+        transformers_version = transformers.__version__
+    except ImportError:
+        transformers_ok = False
+        transformers_version = None
+
+    try:
+        import huggingface_hub
+        hub_ok = True
+        hub_version = huggingface_hub.__version__
+    except ImportError:
+        hub_ok = False
+        hub_version = None
+
+    try:
+        import torch
+        torch_ok = True
+        cuda_available = torch.cuda.is_available()
+        torch_version = torch.__version__
+    except ImportError:
+        torch_ok = False
+        cuda_available = False
+        torch_version = None
+
+    import os
+    from ...models.hf_client import _get_models_dir
+    models_dir = _get_models_dir()
+
+    return {
+        "success": True,
+        "transformers": {"available": transformers_ok, "version": transformers_version},
+        "huggingface_hub": {"available": hub_ok, "version": hub_version},
+        "torch": {"available": torch_ok, "version": torch_version, "cuda": cuda_available},
+        "hf_token_set": bool(os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")),
+        "models_dir": str(models_dir),
+        "install_cmd": "pip install transformers accelerate huggingface_hub"
+    }
