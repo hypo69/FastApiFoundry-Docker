@@ -83,7 +83,7 @@ async def llama_status() -> dict:
 
 @router.post("/models/copy")
 async def llama_copy_model(request: dict) -> dict:
-    """! Скопировать .gguf модель в ~/models.
+    """! Скопировать .gguf модель в ~/.models.
 
     Если модель уже там есть — пропускает копирование.
 
@@ -96,7 +96,7 @@ async def llama_copy_model(request: dict) -> dict:
     if not src.exists():
         raise HTTPException(status_code=404, detail=f"File not found: {src}")
 
-    dest_dir = Path.home() / "models"
+    dest_dir = Path.home() / ".models"
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / src.name
 
@@ -141,9 +141,9 @@ async def llama_start(request: dict) -> dict:
     if not src.exists():
         raise HTTPException(status_code=404, detail=f"File not found: {model_path}")
 
-    # Копировать в ~/models если модель не там и запрошено copy_to_models
+    # Копировать в ~/.models если модель не там и запрошено copy_to_models
     copy_to_models = request.get("copy_to_models", True)
-    models_home = Path.home() / "models"
+    models_home = Path.home() / ".models"
     dest = models_home / src.name
 
     if copy_to_models and not dest.exists():
@@ -152,7 +152,7 @@ async def llama_start(request: dict) -> dict:
         logger.info(f"Копирование {src.name} → {dest}")
         shutil.copy2(str(src), str(dest))
 
-    # Используем путь в ~/models если файл там есть
+    # Используем путь в ~/.models если файл там есть
     model_path = str(dest) if dest.exists() else model_path
 
     # Остановить предыдущий если запущен
@@ -270,23 +270,49 @@ def _find_llama_server() -> str | None:
     """! Найти исполняемый файл llama-server в PATH и стандартных местах.
 
     Порядок поиска:
-        1. PATH (shutil.which)
-        2. C:\\llama.cpp\\
-        3. C:\\Program Files\\llama.cpp\\
-        4. %LOCALAPPDATA%\\llama.cpp\\
+        1. LLAMA_SERVER_PATH из .env (явный путь к бинарнику)
+        2. PATH (shutil.which)
+        3. Директория рядом с LLAMA_MODEL_PATH из .env
+        4. Директории из GGUF_SEARCH_DIRS из .env
+        5. Стандартные места установки на Windows
 
     Returns:
         str | None: Полный путь к бинарнику или None если не найден.
     """
     import shutil
 
-    # Сначала ищем в PATH
+    # 1. Явный путь из .env
+    explicit = os.getenv("LLAMA_SERVER_PATH", "")
+    if explicit and Path(explicit).exists():
+        return explicit
+
+    # 2. PATH
     for name in ("llama-server", "llama-server.exe", "server", "server.exe"):
         found = shutil.which(name)
         if found:
             return found
 
-    # Стандартные места установки на Windows
+    # 3. Директория рядом с моделью из LLAMA_MODEL_PATH
+    model_path = os.getenv("LLAMA_MODEL_PATH", "")
+    if model_path:
+        model_dir = Path(model_path).parent
+        for name in ("llama-server.exe", "server.exe", "llama-server", "server"):
+            candidate = model_dir / name
+            if candidate.exists():
+                return str(candidate)
+
+    # 4. Директории из GGUF_SEARCH_DIRS
+    search_dirs = os.getenv("GGUF_SEARCH_DIRS", "")
+    for d in search_dirs.split(","):
+        d = d.strip()
+        if not d:
+            continue
+        for name in ("llama-server.exe", "server.exe", "llama-server", "server"):
+            candidate = Path(d) / name
+            if candidate.exists():
+                return str(candidate)
+
+    # 5. Стандартные места установки на Windows
     candidates = [
         Path("C:/llama.cpp/llama-server.exe"),
         Path("C:/llama.cpp/server.exe"),

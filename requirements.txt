@@ -1,8 +1,8 @@
-# FastAPI Foundry - Core Dependencies (Simplified)
+# FastAPI Foundry - Core Dependencies
 # =============================================================================
-# Minimum Python version: 3.11 (compatible with Docker image)
+# Minimum Python version: 3.11
 
-# FastAPI Framework (без Pydantic)
+# FastAPI Framework
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 
@@ -19,12 +19,12 @@ faiss-cpu>=1.7.0
 numpy>=1.24.0
 torch>=2.0.0
 
-# GGUF → ONNX Converter (optional)
+# GGUF -> ONNX Converter (optional)
 optimum[onnxruntime]>=1.16.0
 onnxruntime>=1.17.0
 onnxruntime-tools>=1.7.0
 
-# HuggingFace (optional — для локальных HF моделей)
+# HuggingFace (optional - local HF models)
 transformers>=4.40.0
 accelerate>=0.30.0
 huggingface_hub>=0.23.0

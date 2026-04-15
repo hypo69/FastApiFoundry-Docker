@@ -290,14 +290,57 @@ python stop.py
 **Ошибки зависимостей:**
 
 ```powershell
+# Обновить pip
+python -m pip install --upgrade pip
+
+# Установка без кэша
 venv\Scripts\pip.exe install -r requirements.txt --no-cache-dir
 ```
 
-**Логи:**
+**Microsoft Visual C++ 14.0 is required** (Windows):
+
+Скачайте [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+
+**Проверка установки:**
 
 ```powershell
-type logs\app.log
+venv\Scripts\python.exe -c "import fastapi; print('OK')"
+venv\Scripts\python.exe -c "import uvicorn; print('OK')"
+venv\Scripts\python.exe -c "import aiohttp; print('OK')"
 ```
+
+**Проверка логов:**
+
+```powershell
+Get-Content logs\fastapi-app.log -Tail 50
+Get-Content logs\fastapi-foundry-errors.log -Tail 20
+```
+
+**Полная переустановка:**
+
+```powershell
+Remove-Item venv -Recurse -Force
+.\install.ps1 -Force
+```
+
+**Ошибка выполнения скриптов PowerShell:**
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+---
+
+## Документация
+
+| Документ | Описание |
+|----------|----------|
+| [docs/configuration.md](docs/configuration.md) | Настройка через .env |
+| [docs/running.md](docs/running.md) | Режимы запуска |
+| [docs/usage.md](docs/usage.md) | Веб-интерфейс и REST API |
+| [docs/docker.md](docs/docker.md) | Docker развёртывание |
+| [docs/development.md](docs/development.md) | Разработка и архитектура |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Подробная диагностика |
 
 ---
 

@@ -34,9 +34,12 @@ def _get_models_dir() -> Path:
     raw = os.environ.get("HF_MODELS_DIR", "")
     if raw and not raw.startswith("${"):
         return Path(raw).expanduser()
-    return Path.home() / ".cache" / "huggingface" / "hub"
+    return Path.home() / ".models"
 
 HF_MODELS_DIR = _get_models_dir()
+
+# Стандартный кэш HuggingFace — сканируется дополнительно в list_downloaded()
+HF_CACHE_DIR = Path.home() / ".cache" / "huggingface" / "hub"
 
 # Загруженные в память модели: {model_id: {"pipeline": Pipeline, "tokenizer": Tokenizer}}
 # Хранится на уровне модуля — один экземпляр на весь процесс FastAPI.
@@ -238,37 +241,52 @@ class HFClient:
             return {"success": False, "error": str(e)}
 
     def list_downloaded(self) -> list:
-        """! Список скачанных моделей из HF кэша (~/.cache/huggingface/hub).
+        """! Список скачанных моделей.
+
+        Сканирует две директории:
+        - HF_MODELS_DIR (~/.models по умолчанию или из .env)
+        - ~/.cache/huggingface/hub (стандартный кэш HuggingFace)
 
         Returns:
-            list: [{"id": str, "path": str, "loaded": bool, "size_mb": float}]
+            list: [{"id": str, "path": str, "loaded": bool, "size_mb": float, "source": str}]
         """
-        if not HF_MODELS_DIR.exists():
-            return []
-
         def _dir_size_mb(d: Path) -> float:
             try:
                 return round(sum(f.stat().st_size for f in d.rglob("*") if f.is_file()) / 1024 / 1024, 1)
             except Exception:
                 return 0.0
 
+        def _scan_dir(base: Path, source: str) -> list:
+            if not base.exists():
+                return []
+            results = []
+            for d in base.iterdir():
+                if not d.is_dir() or not d.name.startswith("models--"):
+                    continue
+                model_id = d.name[len("models--"):].replace("--", "/", 1)
+                snapshots_dir = d / "snapshots"
+                if snapshots_dir.exists():
+                    snapshot_dirs = [s for s in snapshots_dir.iterdir() if s.is_dir()]
+                    path = str(snapshot_dirs[0]) if snapshot_dirs else str(d)
+                else:
+                    path = str(d)
+                results.append({
+                    "id": model_id,
+                    "path": path,
+                    "loaded": model_id in _loaded_models,
+                    "size_mb": _dir_size_mb(d),
+                    "source": source,
+                })
+            return results
+
+        # Сканируем обе директории, дедуплицируем по model_id
+        seen: set = set()
         results = []
-        for d in HF_MODELS_DIR.iterdir():
-            if not d.is_dir() or not d.name.startswith("models--"):
-                continue
-            model_id = d.name[len("models--"):].replace("--", "/", 1)
-            snapshots_dir = d / "snapshots"
-            if snapshots_dir.exists():
-                snapshot_dirs = [s for s in snapshots_dir.iterdir() if s.is_dir()]
-                path = str(snapshot_dirs[0]) if snapshot_dirs else str(d)
-            else:
-                path = str(d)
-            results.append({
-                "id": model_id,
-                "path": path,
-                "loaded": model_id in _loaded_models,
-                "size_mb": _dir_size_mb(d),
-            })
+        for model in _scan_dir(HF_MODELS_DIR, "~/.models") + _scan_dir(HF_CACHE_DIR, "~/.cache/huggingface/hub"):
+            if model["id"] not in seen:
+                seen.add(model["id"])
+                results.append(model)
+
         return sorted(results, key=lambda x: x["id"])
 
     def list_loaded(self) -> list:

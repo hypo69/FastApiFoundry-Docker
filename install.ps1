@@ -105,10 +105,14 @@ if (-not (Test-Path $venvPath)) {
 $pip = Join-Path $venvPath "Scripts\pip.exe"
 $python = Join-Path $venvPath "Scripts\python.exe"
 
+# --- 2.1. Обновление pip ---
+Write-Host "`nОбновление pip..." -ForegroundColor Yellow
+& $python -m pip install --upgrade pip
+Write-Host "  pip обновлён" -ForegroundColor Green
+
 # --- 3. Зависимости ---
 Write-Host "`nУстановка зависимостей..." -ForegroundColor Yellow
-& $pip install --upgrade pip --quiet
-& $pip install -r (Join-Path $Root "requirements.txt")
+& $python -m pip install -r (Join-Path $Root "requirements.txt")
 Write-Host "  Основные зависимости установлены" -ForegroundColor Green
 
 # --- 4. RAG зависимости ---
@@ -116,7 +120,7 @@ if (-not $SkipRag) {
     Write-Host "`nRAG зависимости (sentence-transformers, faiss-cpu)..." -ForegroundColor Yellow
     Write-Host "  Это может занять несколько минут..." -ForegroundColor Gray
     try {
-        & $pip install sentence-transformers faiss-cpu --quiet
+        & $python -m pip install sentence-transformers faiss-cpu --quiet
         Write-Host "  RAG зависимости установлены" -ForegroundColor Green
     } catch {
         Write-Host "  Не удалось установить RAG зависимости: $_" -ForegroundColor Yellow
