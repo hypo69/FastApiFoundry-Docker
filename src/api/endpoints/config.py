@@ -14,8 +14,9 @@
 # =============================================================================
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from ...core.config import config
 import json
 import os
@@ -92,3 +93,160 @@ async def save_config(request: ConfigUpdateRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save configuration: {str(e)}")
+
+
+def _read_env_file(path: str) -> Dict[str, str]:
+    """Читает .env файл и возвращает словарь ключ-значение (без комментариев)"""
+    result = {}
+    if not os.path.exists(path):
+        return result
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                key, _, value = line.partition("=")
+                result[key.strip()] = value.strip()
+    return result
+
+
+def _write_env_file(path: str, data: Dict[str, str]) -> None:
+    """Записывает словарь обратно в .env файл"""
+    lines = []
+    for key, value in data.items():
+        lines.append(f"{key}={value}")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def _read_json_file(path: str) -> Optional[Dict[str, Any]]:
+    """Читает JSON файл, возвращает None если не существует"""
+    if not os.path.exists(path):
+        return None
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _read_text_file(path: str) -> Optional[str]:
+    """Читает текстовый файл, возвращает None если не существует"""
+    if not os.path.exists(path):
+        return None
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read().strip()
+
+
+@router.get("/config/export")
+async def export_config():
+    """Экспорт ВСЕХ настроек проекта в один JSON: config.json + .env + MCP конфиги"""
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"fastapi-foundry-full-backup-{timestamp}.json"
+
+        export_data = {
+            "_meta": {
+                "exported_at": datetime.now().isoformat(),
+                "project": "FastApiFoundry (Docker)",
+                "version": "0.2.1",
+                "sources": ["config.json", ".env", "mcp-servers/aistros-foundry/claude-desktop-config.json", ".foundry_url"]
+            },
+            "config_json": config.get_raw_config(),
+            "env": _read_env_file(".env"),
+            "mcp_claude_desktop": _read_json_file("mcp-servers/aistros-foundry/claude-desktop-config.json"),
+            "foundry_url": _read_text_file(".foundry_url"),
+        }
+
+        return JSONResponse(
+            content=export_data,
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to export configuration: {str(e)}")
+
+
+class ConfigImportRequest(BaseModel):
+    config: Dict[str, Any]
+    merge: Optional[bool] = False
+
+
+@router.post("/config/import")
+async def import_config(request: ConfigImportRequest):
+    """Импорт полного бэкапа настроек. merge=True — слияние, False — полная замена"""
+    try:
+        imported = request.config
+        imported.pop("_meta", None)
+
+        if not imported:
+            raise HTTPException(status_code=400, detail="Empty configuration")
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        restored: Dict[str, Any] = {}
+
+        # --- config.json ---
+        if "config_json" in imported:
+            config_path = "config.json"
+            if os.path.exists(config_path):
+                with open(config_path, "r", encoding="utf-8") as f:
+                    backup_content = f.read()
+                with open(f"config.json.backup_{timestamp}", "w", encoding="utf-8") as f:
+                    f.write(backup_content)
+
+            new_config_json = imported["config_json"]
+            if request.merge:
+                current = config.get_raw_config()
+                for section, values in new_config_json.items():
+                    if section in current and isinstance(current[section], dict) and isinstance(values, dict):
+                        current[section].update(values)
+                    else:
+                        current[section] = values
+                new_config_json = current
+
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(new_config_json, f, indent=2, ensure_ascii=False)
+            config.reload_config()
+            restored["config_json"] = True
+
+        # --- .env ---
+        if "env" in imported and isinstance(imported["env"], dict):
+            env_path = ".env"
+            if os.path.exists(env_path):
+                with open(env_path, "r", encoding="utf-8") as f:
+                    env_backup = f.read()
+                with open(f".env.backup_{timestamp}", "w", encoding="utf-8") as f:
+                    f.write(env_backup)
+
+            if request.merge:
+                current_env = _read_env_file(env_path)
+                current_env.update(imported["env"])
+                _write_env_file(env_path, current_env)
+            else:
+                _write_env_file(env_path, imported["env"])
+            restored["env"] = True
+
+        # --- claude-desktop-config.json ---
+        if "mcp_claude_desktop" in imported and imported["mcp_claude_desktop"] is not None:
+            mcp_path = "mcp-servers/aistros-foundry/claude-desktop-config.json"
+            if os.path.exists(mcp_path):
+                with open(mcp_path, "r", encoding="utf-8") as f:
+                    mcp_backup = f.read()
+                with open(f"{mcp_path}.backup_{timestamp}", "w", encoding="utf-8") as f:
+                    f.write(mcp_backup)
+            with open(mcp_path, "w", encoding="utf-8") as f:
+                json.dump(imported["mcp_claude_desktop"], f, indent=2, ensure_ascii=False)
+            restored["mcp_claude_desktop"] = True
+
+        # --- .foundry_url ---
+        if "foundry_url" in imported and imported["foundry_url"]:
+            with open(".foundry_url", "w", encoding="utf-8") as f:
+                f.write(imported["foundry_url"])
+            restored["foundry_url"] = True
+
+        return {
+            "success": True,
+            "message": f"Configuration {'merged' if request.merge else 'imported'} successfully",
+            "restored": restored
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to import configuration: {str(e)}")

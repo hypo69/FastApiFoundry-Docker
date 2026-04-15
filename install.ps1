@@ -182,7 +182,9 @@ if ($foundryReady) {
     Write-Host "     llama.cpp:      https://github.com/ggerganov/llama.cpp/releases"
     Write-Host "     Ollama:         https://ollama.com/download"
     Write-Host "     Подробнее:      INSTALL.md"
-    Write-Host "  2. Запустите сервер:"
+    Write-Host "  2. (Опционально) Заполните .env через мастер настройки:"
+    Write-Host "     .\setup-env.ps1"
+    Write-Host "  3. Запустите сервер:"
     Write-Host "     venv\Scripts\python.exe run.py"
-    Write-Host "  3. Откройте: http://localhost:9696"
+    Write-Host "  4. Откройте: http://localhost:9696"
 }

@@ -450,6 +450,13 @@
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">Configuration</h5>
                                 <div>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="exportConfig()" title="Export config to JSON">
+                                        <i class="bi bi-download"></i> Export
+                                    </button>
+                                    <label class="btn btn-sm btn-outline-secondary mb-0" title="Import config from JSON">
+                                        <i class="bi bi-upload"></i> Import
+                                        <input type="file" id="import-config-file" accept=".json" style="display:none" onchange="importConfig(event)">
+                                    </label>
                                     <button class="btn btn-sm btn-outline-primary" onclick="loadConfigFields()">
                                         <i class="bi bi-arrow-clockwise"></i> Reload
                                     </button>

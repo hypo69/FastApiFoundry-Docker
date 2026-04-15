@@ -10,12 +10,12 @@ let CONFIG = {
 // Инициализация
 document.addEventListener('DOMContentLoaded', async function() {
     await loadConfig();
-    checkSystemStatus();
-    checkFoundryStatus();
+    // Единый опрос статуса — health уже включает foundry_status,
+    // отдельный checkFoundryStatus дублирует тот же health_check на бэкенде
+    await checkSystemStatus();
     await loadModels();
     await loadConnectedModels();
     setInterval(checkSystemStatus, 30000);
-    setInterval(checkFoundryStatus, 30000);
 });
 
 // Загрузка конфигурации
@@ -364,7 +364,6 @@ async function checkSystemStatus() {
         
         const indicator = document.getElementById('status-indicator');
         
-        // API статус основан на том, что мы получили ответ
         if (response.ok && data.status === 'healthy') {
             if (data.foundry_status === 'healthy') {
                 indicator.innerHTML = '<i class="bi bi-circle-fill text-success"></i> Connected';
@@ -376,6 +375,18 @@ async function checkSystemStatus() {
         }
         
         updateSystemInfo(data);
+
+        // Обновляем UI вкладки Foundry из тех же данных —
+        // без отдельного запроса к /foundry/status
+        if (data.foundry_status === 'healthy' && data.foundry_details) {
+            updateFoundryStatus('running', {
+                port: data.foundry_details.port,
+                url: data.foundry_details.url
+            });
+        } else {
+            updateFoundryStatus('stopped');
+        }
+
     } catch (error) {
         console.error('System status check failed:', error);
         const indicator = document.getElementById('status-indicator');
@@ -383,7 +394,6 @@ async function checkSystemStatus() {
             indicator.innerHTML = '<i class="bi bi-circle-fill text-danger"></i> Offline';
         }
         
-        // Отображаем ошибку в системной информации
         const container = document.getElementById('system-status');
         if (container) {
             container.innerHTML = `
@@ -394,6 +404,8 @@ async function checkSystemStatus() {
                 </div>
             `;
         }
+
+        updateFoundryStatus('error');
     }
 }
 
@@ -1571,6 +1583,70 @@ function handleRAGToggle(checkbox) {
         showAlert('RAG System disabled. Save configuration to apply changes.', 'warning');
     }
 }
+// Экспорт конфигурации в JSON-файл
+async function exportConfig() {
+    try {
+        const response = await fetch(`${API_BASE}/config/export`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const filename = `fastapi-foundry-config-backup-${timestamp}.json`;
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        showAlert(`Конфигурация экспортирована: ${filename}`, 'success');
+    } catch (error) {
+        showAlert(`Ошибка экспорта: ${error.message}`, 'danger');
+    }
+}
+
+// Импорт конфигурации из JSON-файл
+async function importConfig(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Сбрасываем input чтобы можно было загрузить тот же файл повторно
+    event.target.value = '';
+
+    try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+
+        const merge = confirm(
+            `Импорт файла: ${file.name}\n\n` +
+            `Нажмите OK — слияние с текущей конфигурацией\n` +
+            `Нажмите Отмена — полная замена конфигурации`
+        );
+
+        const response = await fetch(`${API_BASE}/config/import`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ config: parsed, merge })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showAlert(
+                `Конфигурация импортирована. Разделы: ${result.sections_imported.join(', ')}`,
+                'success'
+            );
+            loadConfigFields();
+        } else {
+            showAlert(`Ошибка импорта: ${result.detail || result.error}`, 'danger');
+        }
+    } catch (error) {
+        showAlert(`Ошибка чтения файла: ${error.message}`, 'danger');
+    }
+}
+
 // Удаление модели
 async function removeModel(modelId) {
     if (!confirm(`Remove model ${modelId}?\n\nThis will unload the model from memory.`)) {

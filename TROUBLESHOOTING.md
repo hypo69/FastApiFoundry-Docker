@@ -10,22 +10,20 @@
 
 ### 1️⃣ Диагностика проблемы
 ```powershell
-# Запустите диагностику
 python diagnose.py
 ```
 
-### 2️⃣ Упрощенный запуск (РЕКОМЕНДУЕТСЯ)
+### 2️⃣ Рекомендуемый запуск
 ```powershell
-# Используйте новый упрощенный скрипт
-./start_simple.ps1
+.\launcher.ps1 -Mode quick
 ```
 
 ### 3️⃣ Ручной запуск по шагам
 ```powershell
-# Шаг 1: Запуск Foundry
+# Терминал 1: запуск Foundry
 foundry service start
 
-# Шаг 2: Запуск FastAPI (в новом терминале)
+# Терминал 2: запуск FastAPI
 python run.py
 ```
 
@@ -35,14 +33,11 @@ python run.py
 
 ### ❌ Проблема: "Сервер запускается, но нет вывода"
 
-**Причина:** Старый скрипт запускал сервер в фоновом режиме
+**Причина:** Сервер запущен в фоновом режиме
 
 **Решение:**
 ```powershell
-# Используйте новый скрипт
-./start_simple.ps1
-
-# ИЛИ напрямую
+# Запустить напрямую — вывод будет в терминале
 python run.py
 ```
 
@@ -50,10 +45,10 @@ python run.py
 
 **Решение:**
 ```powershell
-# Установка Foundry (если не установлен)
-winget install Microsoft.FoundryLocalCLI
+# Установка Foundry через winget
+winget install Microsoft.FoundryLocal
 
-# Запуск Foundry
+# Запуск сервиса
 foundry service start
 ```
 
@@ -61,10 +56,10 @@ foundry service start
 
 **Решение:**
 ```powershell
-# Остановка всех процессов
+# Остановка процессов проекта
 python stop.py
 
-# Или вручную
+# Или принудительно
 taskkill /F /IM python.exe
 taskkill /F /IM foundry.exe
 ```
@@ -73,11 +68,11 @@ taskkill /F /IM foundry.exe
 
 **Решение:**
 ```powershell
-# Установка зависимостей
+# Если используете venv (рекомендуется)
+venv\Scripts\activate
 pip install -r requirements.txt
 
-# Или для venv
-./venv/Scripts/activate
+# Если без venv
 pip install -r requirements.txt
 ```
 
@@ -85,23 +80,24 @@ pip install -r requirements.txt
 
 ## 📋 ПРАВИЛЬНЫЙ ПОРЯДОК ЗАПУСКА
 
-### 🥇 Способ 1: Упрощенный (ЛУЧШИЙ)
+### 🥇 Способ 1: Лаунчер (РЕКОМЕНДУЕТСЯ)
 ```powershell
-./start_simple.ps1
+.\launcher.ps1 -Mode quick
+```
+Автоматически устанавливает зависимости, запускает Foundry и FastAPI.
+
+### 🥈 Способ 2: Скрипт запуска
+```powershell
+.\start.ps1
 ```
 
-### 🥈 Способ 2: Пошаговый
+### 🥉 Способ 3: Пошаговый (для отладки)
 ```powershell
-# Терминал 1: Foundry
+# Терминал 1
 foundry service start
 
-# Терминал 2: FastAPI
+# Терминал 2
 python run.py
-```
-
-### 🥉 Способ 3: Полный скрипт
-```powershell
-./start.ps1
 ```
 
 ---
@@ -114,10 +110,10 @@ python run.py
 # Health check
 curl http://localhost:9696/api/v1/health
 
-# Веб-интерфейс
+# Открыть веб-интерфейс
 start http://localhost:9696
 
-# API документация
+# Открыть API документацию
 start http://localhost:9696/docs
 ```
 
@@ -137,9 +133,14 @@ start http://localhost:9696/docs
    taskkill /F /IM foundry.exe
    ```
 
-3. **Перезапуск:**
+3. **Переустановка зависимостей:**
    ```powershell
-   ./start_simple.ps1
+   .\install.ps1 -Force
+   ```
+
+4. **Перезапуск:**
+   ```powershell
+   .\launcher.ps1 -Mode quick
    ```
 
 ---
