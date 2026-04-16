@@ -20,6 +20,9 @@
                                     <button class="btn btn-primary" onclick="sendMessage()">
                                         <i class="bi bi-send"></i> Send
                                     </button>
+                                    <button id="chat-stop-btn" class="btn btn-outline-danger" onclick="stopSendingRequest()" disabled title="Cancel current request">
+                                        <i class="bi bi-stop-fill"></i> Stop Sending Request
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -42,7 +45,19 @@
                                     <select id="chat-model" class="form-select">
                                         <option value="">Auto-select</option>
                                     </select>
-                                    <div class="form-text">Selected model will be saved as default</div>
+                                    <div class="alert alert-info mt-2 mb-0 p-2 small">
+                                        <div class="fw-semibold mb-1"><i class="bi bi-info-circle"></i> Как работают модели в чате</div>
+                                        <ul class="mb-2 ps-3">
+                                            <li><strong>Список:</strong> Foundry — из кэша, HuggingFace — скачанные, llama.cpp — <code>.gguf</code> из <code>~/.models</code>.</li>
+                                            <li><strong>Добавить:</strong> используйте вкладки <strong>Foundry</strong>, <strong>HuggingFace</strong> или <strong>llama.cpp</strong>.</li>
+                                        </ul>
+                                        <div class="fw-semibold mb-1"><i class="bi bi-cloud-download"></i> Скачать HuggingFace модель</div>
+                                        <ol class="mb-0 ps-3">
+                                            <li>Вкладка <strong>HuggingFace</strong> → задайте токен в <strong>Settings</strong> (для gated моделей).</li>
+                                            <li>Введите <code>model_id</code> (например <code>google/gemma-2b</code>) → <strong>Download</strong>.</li>
+                                            <li>Нажмите Refresh в <strong>Downloaded Locally</strong> — модель появится в списке.</li>
+                                        </ol>
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Temperature: <span id="temp-value">0.7</span></label>

@@ -7,6 +7,67 @@
 
 import { showAlert, updateModelStatus, updateChatModelBadge } from './ui.js';
 
+function isGpuFoundryModel(model) {
+    const type = String(model?.type || model?.device || '').toLowerCase();
+    const modelId = String(model?.id || '').toLowerCase();
+    const modelName = String(model?.name || '').toLowerCase();
+
+    // Почему: часть моделей приходит с `type`, часть — только с `device`,
+    // а для fallback-описаний надёжнее дополнительно смотреть на `id`/`name`.
+    return type.includes('gpu') || modelId.includes('-gpu') || modelName.includes('(gpu)');
+}
+
+function getFoundryIncludeGpuFlag() {
+    const checkbox = document.getElementById('foundry-include-gpu-models');
+    return Boolean(checkbox?.checked);
+}
+
+async function waitForFoundryModelLoaded(modelId, timeoutMs = 90000) {
+    const startedAt = Date.now();
+
+    // Почему: endpoint `/foundry/models/load` запускает загрузку асинхронно.
+    // Ожидание появления модели в `/foundry/models/loaded` делает "Use" реальным,
+    // а не только визуальным выбором в UI.
+    while (Date.now() - startedAt < timeoutMs) {
+        const response = await fetch(`${window.API_BASE}/foundry/models/loaded`);
+        const data = await response.json();
+        const loadedModels = (data.models || []).map(m => m.id);
+
+        if (data.success && loadedModels.includes(modelId)) {
+            return true;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+
+    return false;
+}
+
+async function ensureFoundryModelLoaded(modelId) {
+    const loadedResponse = await fetch(`${window.API_BASE}/foundry/models/loaded`);
+    const loadedData = await loadedResponse.json();
+    const loadedModels = (loadedData.models || []).map(m => m.id);
+
+    if (loadedData.success && loadedModels.includes(modelId)) {
+        return true;
+    }
+
+    // Почему: выбор модели из вкладки Foundry должен приводить её в рабочее состояние для чата.
+    // Простое сохранение `default_model` недостаточно, если модель ещё не загружена в сервис.
+    const loadResponse = await fetch(`${window.API_BASE}/foundry/models/load`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model_id: modelId })
+    });
+    const loadData = await loadResponse.json();
+
+    if (!loadData.success) {
+        throw new Error(loadData.error || 'Failed to start Foundry model load');
+    }
+
+    return await waitForFoundryModelLoaded(modelId);
+}
+
 // Проверка статуса системы (API и Foundry)
 export async function checkSystemStatus() {
     try {
@@ -131,27 +192,142 @@ export async function listFoundryModels() {
         const data = await response.json();
         
         if (data.success && data.models) {
+            const includeGpuModels = getFoundryIncludeGpuFlag();
+            const models = includeGpuModels
+                ? data.models
+                : data.models.filter(m => !isGpuFoundryModel(m));
             const listEl = document.getElementById('foundry-models-list');
             if (listEl) {
-                listEl.innerHTML = data.models.map(m => `
-                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
-                        <div>
-                            <strong style="font-size:.85rem">${m.name || m.id}</strong>
-                            <small class="text-muted d-block">${m.description || ''}</small>
+                if (!models.length) {
+                    listEl.innerHTML = `
+                        <div class="text-muted text-center p-3">
+                            <i class="bi bi-filter"></i><br>
+                            No CPU models found with current filter
                         </div>
-                        <button class="btn btn-sm btn-outline-success" onclick="selectFoundryModel('${m.id}')">
-                            Use
-                        </button>
-                    </div>
-                `).join('');
+                    `;
+                } else {
+                    const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                    const escapeId = (v) => esc(v).replace(/'/g, '&#39;'); // для onclick в атрибуте
+
+                    let tbody = '';
+                    let prevAlias = null;
+                    models.forEach((m, idx) => {
+                        const alias = m.alias || '';
+                        const showAlias = alias && alias !== prevAlias;
+                        const aliasCell = showAlias ? esc(alias) : '&nbsp;';
+                        const isCached = Boolean(m.cached);
+
+                        // "как в foundry model ls": разделитель между блоками alias
+                        if (idx > 0 && alias && alias !== prevAlias) {
+                            tbody += `
+                                <tr class="text-muted">
+                                    <td colspan="7" class="py-0 small">--------------------------------------------------------------------------------</td>
+                                </tr>
+                            `;
+                        }
+                        prevAlias = alias;
+
+                        tbody += `
+                            <tr>
+                                <td style="white-space:nowrap; font-weight:${showAlias ? '600' : '400'}">${aliasCell}</td>
+                                <td style="white-space:nowrap">${esc(m.device || m.type || '')}</td>
+                                <td>${esc(m.task || '')}</td>
+                                <td style="white-space:nowrap">${esc(m.size || '')}</td>
+                                <td style="white-space:nowrap">${esc(m.license || '')}</td>
+                                <td style="white-space:nowrap"><code style="font-size:.75rem">${escapeId(m.id)}</code></td>
+                                <td style="width:160px">
+                                    ${isCached
+                                        ? `<span class="badge bg-success">Downloaded</span>`
+                                        : `<button class="btn btn-sm btn-outline-primary" onclick="downloadFoundryModel('${escapeId(m.id)}')">Download</button>`
+                                    }
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    listEl.innerHTML = `
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="white-space:nowrap">Alias</th>
+                                        <th style="white-space:nowrap">Device</th>
+                                        <th>Task</th>
+                                        <th style="white-space:nowrap">File Size</th>
+                                        <th style="white-space:nowrap">License</th>
+                                        <th style="white-space:nowrap">Model ID</th>
+                                        <th style="white-space:nowrap">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tbody}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
             }
-            showAlert(`Получено моделей: ${data.models.length}`, 'success');
+            showAlert(`Получено моделей: ${models.length}`, 'success');
         } else {
             showAlert(`Ошибка получения моделей: ${data.error || 'Неизвестная ошибка'}`, 'danger');
         }
     } catch (error) {
         console.error('Сбой при запросе списка моделей Foundry:', error);
         showAlert('Не удалось связаться с API Foundry', 'danger');
+    }
+}
+
+export async function listCachedFoundryModels() {
+    try {
+        const response = await fetch(`${window.API_BASE}/foundry/models/cached`);
+        const data = await response.json();
+        const selectEl = document.getElementById('foundry-downloaded-model-select');
+        const listEl = document.getElementById('foundry-downloaded-models-list');
+
+        if (!data.success) {
+            showAlert(`Ошибка получения скачанных моделей: ${data.error || 'Неизвестная ошибка'}`, 'danger');
+            return;
+        }
+
+        const models = Array.isArray(data.models) ? data.models : [];
+        const items = Array.isArray(data.items) ? data.items : [];
+
+        if (selectEl) {
+            selectEl.innerHTML = '<option value="">Select a downloaded model...</option>';
+            models.forEach(modelId => {
+                const option = document.createElement('option');
+                option.value = modelId;
+                option.textContent = modelId;
+                selectEl.appendChild(option);
+            });
+        }
+
+        if (listEl) {
+            if (!models.length) {
+                listEl.innerHTML = `
+                    <div class="text-muted text-center p-3">
+                        <i class="bi bi-inbox"></i><br>
+                        No downloaded models found in Foundry cache
+                    </div>
+                `;
+            } else {
+                listEl.innerHTML = (items.length ? items : models.map(modelId => ({ id: modelId }))).map(model => `
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                        <div class="me-3">
+                            <strong style="font-size:.85rem">${model.alias || model.name || model.id}</strong>
+                            <small class="text-muted d-block">${model.device || model.type || 'n/a'}${model.size ? ` · ${model.size}` : ''}</small>
+                            <code style="font-size:.75rem">${model.id}</code>
+                        </div>
+                        <button class="btn btn-sm btn-outline-success" onclick="selectFoundryModel('${String(model.id).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')}')">
+                            Load &amp; Use
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load cached Foundry models:', error);
+        showAlert('Не удалось получить список скачанных моделей', 'danger');
     }
 }
 
@@ -200,43 +376,81 @@ export function updateFoundryStatus(status, details = {}) {
 
 // Выбор и активация модели Foundry
 export async function selectFoundryModel(modelId) {
-    // Добавляем в chat-model select
-    const chatModelSelect = document.getElementById('chat-model');
-    if (chatModelSelect) {
-        if (![...chatModelSelect.options].some(o => o.value === modelId)) {
-            const opt = document.createElement('option');
-            opt.value = modelId;
-            opt.textContent = modelId;
-            chatModelSelect.appendChild(opt);
+    try {
+        showAlert(`Подключение модели ${modelId}...`, 'info');
+
+        // Выгружаем все остальные загруженные модели, чтобы в памяти была только одна.
+        const loadedResponse = await fetch(`${window.API_BASE}/foundry/models/loaded`);
+        const loadedData = await loadedResponse.json();
+        const loadedModels = (loadedData.models || []).map(m => m.id);
+
+        for (const loadedModelId of loadedModels) {
+            if (loadedModelId === modelId) continue;
+            const unloadResponse = await fetch(`${window.API_BASE}/foundry/models/unload`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model_id: loadedModelId })
+            });
+            const unloadData = await unloadResponse.json();
+            if (!unloadData.success) {
+                // Не прерываемся полностью — иногда unload может вернуть ошибку, если модель уже выгружена.
+                if (window.addLog) window.addLog(`⚠ Unload failed for ${loadedModelId}: ${unloadData.error || 'unknown error'}`);
+            }
         }
-        chatModelSelect.value = modelId;
-    }
 
-    // Сохраняем как модель по умолчанию
-    if (window.saveDefaultModel) {
-        await window.saveDefaultModel(modelId);
-    }
-    if (window.CONFIG) window.CONFIG.default_model = modelId;
-    updateChatModelBadge(modelId);
-
-    // Визуальный фидбек в списке моделей Foundry
-    const listEl = document.getElementById('foundry-models-list');
-    if (listEl) {
-        listEl.querySelectorAll('button').forEach(btn => {
-            btn.classList.remove('btn-success');
-            btn.classList.add('btn-outline-success');
-            btn.textContent = 'Use';
-        });
-        const activeBtn = [...listEl.querySelectorAll('button')]
-            .find(btn => btn.getAttribute('onclick')?.includes(modelId));
-        if (activeBtn) {
-            activeBtn.classList.remove('btn-outline-success');
-            activeBtn.classList.add('btn-success');
-            activeBtn.textContent = '✓ Active';
+        const isLoaded = await ensureFoundryModelLoaded(modelId);
+        if (!isLoaded) {
+            showAlert(`Модель ${modelId} не появилась в списке loaded за отведённое время`, 'warning');
+            return;
         }
-    }
 
-    showAlert(`Модель ${modelId} выбрана как активная`, 'success');
+        // Добавление модели в chat-model select
+        const chatModelSelect = document.getElementById('chat-model');
+        if (chatModelSelect) {
+            if (![...chatModelSelect.options].some(o => o.value === modelId)) {
+                const opt = document.createElement('option');
+                opt.value = modelId;
+                opt.textContent = modelId;
+                chatModelSelect.appendChild(opt);
+            }
+            chatModelSelect.value = modelId;
+        }
+
+        // Сохранение модели как default_model
+        if (window.saveDefaultModel) {
+            await window.saveDefaultModel(modelId);
+        }
+        if (window.CONFIG) window.CONFIG.default_model = modelId;
+        window._savedChatModel = modelId;
+        updateChatModelBadge(modelId);
+
+        const downloadedSelect = document.getElementById('foundry-downloaded-model-select');
+        if (downloadedSelect) {
+            downloadedSelect.value = modelId;
+        }
+
+        // Визуальный фидбек в списке скачанных моделей
+        const listEl = document.getElementById('foundry-downloaded-models-list');
+        if (listEl) {
+            listEl.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-success');
+                btn.textContent = 'Load & Use';
+            });
+            const activeBtn = [...listEl.querySelectorAll('button')]
+                .find(btn => btn.getAttribute('onclick')?.includes(modelId));
+            if (activeBtn) {
+                activeBtn.classList.remove('btn-outline-success');
+                activeBtn.classList.add('btn-success');
+                activeBtn.textContent = '✓ Loaded & Active';
+            }
+        }
+
+        showAlert(`Модель ${modelId} загружена и выбрана как активная`, 'success');
+    } catch (error) {
+        console.error('Сбой активации модели Foundry:', error);
+        showAlert(`Не удалось активировать модель: ${error.message}`, 'danger');
+    }
 }
 
 // Запуск Foundry сервиса
@@ -318,50 +532,104 @@ export async function checkFoundryStatus() {
     await checkSystemStatus();
 }
 
-// Загрузка и запуск модели через Foundry
-export async function downloadAndRunModel() {
-    const modelSelect = document.getElementById('model-select');
-    const modelId = modelSelect?.value;
+async function pollFoundryDownloadStatus(pid, modelId, progressBarEl, progressTextEl) {
+    const startedAt = Date.now();
+    const timeoutMs = 30 * 60 * 1000;
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const response = await fetch(`${window.API_BASE}/foundry/models/download/status/${pid}`);
+        const data = await response.json();
+
+        if (data.success && data.status === 'downloading') {
+            if (progressTextEl) progressTextEl.textContent = `Downloading ${modelId}...`;
+            if (progressBarEl) progressBarEl.style.width = '50%';
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            continue;
+        }
+
+        if (data.success && data.status === 'done') {
+            if (progressTextEl) progressTextEl.textContent = `Download completed for ${modelId}.`;
+            if (progressBarEl) progressBarEl.style.width = '100%';
+            return;
+        }
+
+        throw new Error(data.error || `Download failed for ${modelId}`);
+    }
+
+    throw new Error(`Timed out waiting for ${modelId} download to finish`);
+}
+
+async function pollFoundryModelReady(modelId, progressBarEl, progressTextEl) {
+    const startedAt = Date.now();
+    const timeoutMs = 90 * 1000;
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const response = await fetch(`${window.API_BASE}/foundry/models/loaded`);
+        const data = await response.json();
+        const loadedModels = (data.models || []).map(model => model.id);
+
+        if (data.success && loadedModels.includes(modelId)) {
+            if (progressTextEl) progressTextEl.textContent = `Model ${modelId} is ready in Foundry.`;
+            if (progressBarEl) progressBarEl.style.width = '100%';
+            return true;
+        }
+
+        if (progressTextEl) progressTextEl.textContent = `Waiting for ${modelId} to become ready...`;
+        if (progressBarEl) progressBarEl.style.width = '90%';
+        await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+
+    return false;
+}
+
+export async function downloadFoundryModel(modelId) {
     if (!modelId) {
-        showAlert('Please select a model to download and run.', 'warning');
+        showAlert('Выберите модель для скачивания.', 'warning');
         return;
     }
 
-    const downloadProgressEl = document.getElementById('download-progress');
-    const progressBarEl = document.getElementById('progress-bar');
-    const progressTextEl = document.getElementById('progress-text');
-
-    if (downloadProgressEl) downloadProgressEl.style.display = 'block';
-    if (progressBarEl) progressBarEl.style.width = '0%';
-    if (progressTextEl) progressTextEl.textContent = 'Starting download...';
-
-    if (window.addLog) window.addLog(`⬇ Downloading and running model: ${modelId}`);
+    if (window.addLog) window.addLog(`⬇ Downloading model via Foundry: ${modelId}`);
+    showAlert(`Скачивание модели ${modelId} запущено...`, 'info');
 
     try {
-        const response = await fetch(`${window.API_BASE}/foundry/models/load`, {
+        const downloadResponse = await fetch(`${window.API_BASE}/foundry/models/download`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ model_id: modelId })
         });
-        const data = await response.json();
+        const downloadData = await downloadResponse.json();
 
-        if (data.success) {
-            if (window.addLog) window.addLog(`✅ Model ${modelId} download/load initiated.`);
-            showAlert(`Model ${modelId} download/load initiated. Check Foundry logs for progress.`, 'info');
-            // In a real scenario, you'd poll for progress here.
-            if (progressTextEl) progressTextEl.textContent = 'Download/Load initiated. Check logs.';
-            if (progressBarEl) progressBarEl.style.width = '100%'; // Simulate completion
-            if (window.loadModels) setTimeout(window.loadModels, 5000); // Refresh models after some time
-        } else {
-            if (window.addLog) window.addLog(`❌ Failed to download/run model: ${data.error}`);
-            showAlert(`Failed to download/run model: ${data.error}`, 'danger');
-            if (progressTextEl) progressTextEl.textContent = `Error: ${data.error}`;
+        if (!downloadData.success) {
+            throw new Error(downloadData.error || 'Failed to start download');
         }
+
+        if (downloadData.status === 'already_cached') {
+            if (window.addLog) window.addLog(`ℹ Model ${modelId} already exists in cache.`);
+            showAlert(`Модель ${modelId} уже скачана.`, 'info');
+        } else {
+            await pollFoundryDownloadStatus(downloadData.pid, modelId);
+            if (window.addLog) window.addLog(`✅ Model ${modelId} downloaded.`);
+            showAlert(`Модель ${modelId} успешно скачана.`, 'success');
+        }
+
+        await listCachedFoundryModels();
+        await listFoundryModels();
     } catch (error) {
-        if (window.addLog) window.addLog(`❌ Download/run request failed: ${error.message}`);
-        showAlert(`Download/run request failed: ${error.message}`, 'danger');
-        if (progressTextEl) progressTextEl.textContent = `Connection error: ${error.message}`;
+        if (window.addLog) window.addLog(`❌ Download request failed: ${error.message}`);
+        showAlert(`Не удалось скачать модель: ${error.message}`, 'danger');
     }
+}
+
+export async function loadSelectedFoundryModel() {
+    const selectEl = document.getElementById('foundry-downloaded-model-select');
+    const modelId = selectEl?.value;
+
+    if (!modelId) {
+        showAlert('Выберите уже скачанную модель для подключения.', 'warning');
+        return;
+    }
+
+    await selectFoundryModel(modelId);
 }
 
 export function showModelInfo() {
@@ -378,4 +646,14 @@ document.addEventListener('DOMContentLoaded', () => {
     checkSystemStatus();
     // Set interval for periodic checks
     setInterval(checkSystemStatus, 30000);
+
+    const gpuCheckbox = document.getElementById('foundry-include-gpu-models');
+    if (gpuCheckbox) {
+        gpuCheckbox.checked = false;
+        gpuCheckbox.addEventListener('change', () => {
+            listFoundryModels();
+        });
+    }
+
+    listCachedFoundryModels();
 });

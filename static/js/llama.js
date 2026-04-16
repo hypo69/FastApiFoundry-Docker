@@ -250,4 +250,35 @@ export function llamaCopyUrl() {
     const url = urlEl.textContent;
     navigator.clipboard.writeText(url).then(() => showAlert('✅ Copied: ' + url, 'success'));
 }
+
+// Переключение llama.cpp модели из чата/селектов:
+// выгружаем старый llama.cpp сервер (он заменяется при новом start)
+// и ждём, пока /llama/status станет running.
+export async function llamaSwitchChatModel(modelPath) {
+    if (!modelPath) throw new Error('llama modelPath is required');
+
+    const startResp = await fetch(`${LLAMA_API}/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            model_path: modelPath,
+            copy_to_models: true
+        })
+    }).then(r => r.json());
+
+    if (!startResp.success) {
+        throw new Error(startResp.error || 'Failed to start llama.cpp');
+    }
+
+    const startedAt = Date.now();
+    const timeoutMs = 120_000;
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const st = await fetch(`${LLAMA_API}/status`).then(r => r.json());
+        if (st.success && st.running) return true;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    throw new Error('Timed out waiting for llama.cpp to become running');
+}
 // ... остальные функции llama извлеченные из HTML

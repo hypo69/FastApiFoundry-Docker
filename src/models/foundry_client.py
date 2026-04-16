@@ -242,6 +242,8 @@ class FoundryClient:
     async def generate_stream(self, prompt: str, **kwargs):
         """Генерация текста с потоковой передачей"""
         try:
+            # Переменные решения о модели
+            model = kwargs.get('model') or ""
             health = await self.health_check()
             if health["status"] != "healthy":
                 yield {
@@ -251,11 +253,23 @@ class FoundryClient:
                 }
                 return
             
+            # Выбор модели при отсутствии значения model (model=None, model="")
+            if not model:
+                models_resp = await self.list_available_models()
+                loaded = models_resp.get('models', [])
+                if loaded:
+                    model = loaded[0].get('id', '')
+                    logger.info(f"🤖 Модель не указана, используем: {model}")
+                if not model:
+                    yield {"success": False, "error": "Нет загруженных моделей в Foundry"}
+                    return
+
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/chat/completions"
             
             payload = {
-                "model": kwargs.get('model', "deepseek-r1:14b"),
+                # Модель фиксируется после fallback-выбора
+                "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": kwargs.get('temperature', 0.7),
                 "max_tokens": kwargs.get('max_tokens', 2048),

@@ -7,6 +7,65 @@
 import { showAlert, updateChatModelBadge } from './ui.js';
 
 let _timerInterval = null;
+let _activeAbortController = null;
+let _isSending = false;
+
+// Локальная история сообщений (сохраняется на сервер по кнопке Stop/после завершения)
+let _chatHistoryMessages = [];
+let _historySessionId = null;
+
+function _getOrCreateHistorySessionId() {
+    if (_historySessionId) return _historySessionId;
+    try {
+        _historySessionId = localStorage.getItem('aiAssistantChatHistorySessionId');
+    } catch {}
+    if (!_historySessionId) {
+        try {
+            _historySessionId = crypto.randomUUID();
+        } catch {
+            _historySessionId = `sess_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        }
+        try {
+            localStorage.setItem('aiAssistantChatHistorySessionId', _historySessionId);
+        } catch {}
+    }
+    return _historySessionId;
+}
+
+function setStopButtonEnabled(enabled) {
+    const btn = document.getElementById('chat-stop-btn');
+    if (btn) btn.disabled = !enabled;
+}
+
+async function saveChatHistory({ aborted = false, error = null, model = '' } = {}) {
+    // Сохраняем только если есть история
+    if (!_chatHistoryMessages.length) return;
+
+    try {
+        const session_id = _getOrCreateHistorySessionId();
+        const payload = {
+            session_id,
+            model,
+            aborted,
+            messages: _chatHistoryMessages
+        };
+
+        const resp = await fetch(`${window.API_BASE}/chat/history/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await resp.json();
+        if (data.success) {
+            if (error) showAlert(`History saved (${data.file})`, 'warning');
+            else showAlert(`History saved (${data.file})`, 'success');
+        } else {
+            showAlert(`History save failed: ${data.error || 'unknown error'}`, 'danger');
+        }
+    } catch (e) {
+        console.error('Save chat history failed:', e);
+    }
+}
 
 // ── Settings → config.json ────────────────────────────────────────────────────
 
@@ -102,12 +161,23 @@ export async function sendMessage() {
     if (!model) { showAlert('Выберите модель в Chat Settings', 'warning'); return; }
 
     const message = input.value.trim();
+    if (_isSending) {
+        showAlert('Request is already running. Stop it first.', 'warning');
+        return;
+    }
+
     input.value = '';
     input.disabled = true;
+    _isSending = true;
+    setStopButtonEnabled(true);
+    _activeAbortController = new AbortController();
 
     appendMessage('user', message);
+    _chatHistoryMessages.push({ role: 'user', content: message });
     setThinking(true);
     startTimer();
+    let aborted = false;
+    let responseError = null;
 
     try {
         const r = await fetch(`${window.API_BASE}/generate`, {
@@ -119,7 +189,8 @@ export async function sendMessage() {
                 temperature: parseFloat(document.getElementById('temperature')?.value || '0.7'),
                 max_tokens:  parseInt(document.getElementById('max-tokens')?.value    || '2048'),
                 use_rag:     document.getElementById('use-rag')?.checked || false,
-            })
+            }),
+            signal: _activeAbortController.signal,
         });
 
         const data = await r.json();
@@ -129,18 +200,48 @@ export async function sendMessage() {
         if (data.success) {
             appendMessage('assistant', data.content);
             updateChatModelBadge(model);
+            _chatHistoryMessages.push({ role: 'assistant', content: data.content });
             // Сохраняем модель как default в config.json
             patchConfig({ 'foundry_ai.default_model': model });
         } else {
-            appendMessage('assistant', `❌ ${data.error || 'Ошибка генерации'}`);
+            const errText = `❌ ${data.error || 'Ошибка генерации'}`;
+            appendMessage('assistant', errText);
+            _chatHistoryMessages.push({ role: 'assistant', content: errText });
+            responseError = errText;
         }
     } catch (err) {
         setThinking(false);
         stopTimer();
-        appendMessage('assistant', `❌ Ошибка сети: ${err.message}`);
+        if (err?.name === 'AbortError') {
+            aborted = true;
+            const cancelText = '⏹ Request canceled';
+            appendMessage('assistant', cancelText);
+            _chatHistoryMessages.push({ role: 'assistant', content: cancelText });
+        } else {
+            const netErr = `❌ Ошибка сети: ${err.message}`;
+            appendMessage('assistant', netErr);
+            _chatHistoryMessages.push({ role: 'assistant', content: netErr });
+            responseError = netErr;
+        }
     } finally {
+        // В любом исходе сохраняем историю
+        await saveChatHistory({
+            aborted,
+            error: responseError,
+            model
+        });
+
         input.disabled = false;
+        _activeAbortController = null;
+        _isSending = false;
+        setStopButtonEnabled(false);
         input.focus();
+    }
+}
+
+export function stopSendingRequest() {
+    if (_activeAbortController) {
+        _activeAbortController.abort();
     }
 }
 
@@ -150,6 +251,12 @@ export function clearChat() {
         <i class="bi bi-chat-square-dots"></i><br>Start a conversation with AI</div>`;
     const badge = document.getElementById('chat-timer');
     if (badge) badge.style.display = 'none';
+
+    // Сбрасываем локальную историю
+    _chatHistoryMessages = [];
+    _activeAbortController = null;
+    _isSending = false;
+    setStopButtonEnabled(false);
 }
 
 export function handleChatKeyPress(e) {

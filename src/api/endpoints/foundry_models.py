@@ -26,6 +26,7 @@
 import subprocess
 import logging
 import os
+import re
 import aiohttp
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
@@ -76,6 +77,13 @@ FOUNDRY_CACHE_DIR = Path(os.getenv(
 _download_processes: dict = {}
 
 
+SUBPROCESS_TEXT_KWARGS = {
+    "text": True,
+    "encoding": "utf-8",
+    "errors": "replace",
+}
+
+
 def _get_foundry_base_url() -> str:
     """! Получить base URL Foundry сервиса.
 
@@ -104,7 +112,7 @@ def _run_foundry(args: list, timeout: int = 30) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["foundry"] + args,
         capture_output=True,
-        text=True,
+        **SUBPROCESS_TEXT_KWARGS,
         timeout=timeout
     )
 
@@ -125,7 +133,9 @@ async def auto_load_default_model() -> dict:
     try:
         process = subprocess.Popen(
             ["foundry", "model", "load", model_id],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            **SUBPROCESS_TEXT_KWARGS,
         )
         logger.info(f"Загрузка модели по умолчанию {model_id} (PID: {process.pid})")
         return {"success": True, "model_id": model_id, "message": f"Загрузка {model_id} запущена", "pid": process.pid}
@@ -168,7 +178,7 @@ async def list_available_models() -> dict:
 async def list_cached_models() -> dict:
     """! Список моделей скачанных в кэш Foundry на диске.
 
-    Сканирует FOUNDRY_CACHE_DIR и возвращает найденные директории моделей.
+    Возвращает model_id моделей, которые присутствуют в локальном кэше Foundry.
     """
     if not FOUNDRY_CACHE_DIR.exists():
         return {
@@ -178,12 +188,16 @@ async def list_cached_models() -> dict:
             "message": "Директория кэша не найдена"
         }
 
-    dirs = [d.name for d in FOUNDRY_CACHE_DIR.iterdir() if d.is_dir()]
-    logger.info(f"Найдено {len(dirs)} моделей в кэше: {FOUNDRY_CACHE_DIR}")
+    available = await list_available_models()
+    all_models = available.get("models", []) if available.get("success") else []
+    cached_models = [m for m in all_models if _is_model_cached(m["id"])]
+
+    logger.info(f"Найдено {len(cached_models)} моделей в кэше: {FOUNDRY_CACHE_DIR}")
     return {
         "success": True,
-        "models": dirs,
-        "count": len(dirs),
+        "models": [m["id"] for m in cached_models],
+        "items": cached_models,
+        "count": len(cached_models),
         "cache_dir": str(FOUNDRY_CACHE_DIR)
     }
 
@@ -229,7 +243,7 @@ async def download_model(request: dict) -> dict:
             ["foundry", "model", "download", model_id],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            **SUBPROCESS_TEXT_KWARGS,
         )
         _download_processes[process.pid] = {"model_id": model_id, "process": process}
         logger.info(f"Скачивание модели {model_id} запущено (PID: {process.pid})")
@@ -257,6 +271,8 @@ async def get_download_status(pid: int) -> dict:
 
     # Процесс завершён
     stdout, stderr = process.communicate() if retcode is not None else ("", "")
+    stdout = stdout or ""
+    stderr = stderr or ""
     del _download_processes[pid]
 
     cached = _is_model_cached(model_id)
@@ -265,7 +281,13 @@ async def get_download_status(pid: int) -> dict:
         return {"success": True, "pid": pid, "model_id": model_id, "status": "done", "cached": cached}
     else:
         logger.error(f"Скачивание {model_id} завершено с ошибкой: {stderr}")
-        return {"success": False, "pid": pid, "model_id": model_id, "status": "error", "error": stderr.strip()}
+        return {
+            "success": False,
+            "pid": pid,
+            "model_id": model_id,
+            "status": "error",
+            "error": stderr.strip() or stdout.strip() or "Foundry download failed",
+        }
 
 
 @router.post("/load")
@@ -280,7 +302,7 @@ async def load_model(request: dict) -> dict:
             ["foundry", "model", "load", model_id],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            **SUBPROCESS_TEXT_KWARGS,
         )
         logger.info(f"Загрузка модели {model_id} в сервис запущена (PID: {process.pid})")
         return {"success": True, "model_id": model_id, "status": "loading", "pid": process.pid}
@@ -347,24 +369,34 @@ def _parse_foundry_ls(output: str) -> list:
         if not stripped or stripped.startswith("-") or stripped.startswith("Alias"):
             continue
 
-        # Колонки разделены двумя и более пробелами
-        parts = [p for p in line.split("  ") if p.strip()]
-        if len(parts) < 4:
+        # Колонки разделены двумя и более пробелами.
+        # Важно: когда Alias в CLI пустой, строка начинается с "GPU"/"CPU".
+        parts = [p for p in re.split(r"\s{2,}", line.strip()) if p.strip()]
+        if not parts:
             continue
 
-        # Если первая колонка не пустая — это новый alias
-        if parts[0].strip():
+        is_device_first = parts[0] in {"CPU", "GPU"}
+
+        if is_device_first:
+            # Формат: Device | Task | File Size | License | Model ID
+            if len(parts) < 5:
+                continue
+            device = parts[0].strip()
+            task = parts[1].strip()
+            size = parts[2].strip()
+            license_ = parts[3].strip()
+            model_id = parts[4].strip()
+            # Alias остаётся как был (current_alias).
+        else:
+            # Формат: Alias | Device | Task | File Size | License | Model ID
+            if len(parts) < 6:
+                continue
             current_alias = parts[0].strip()
-            parts = parts[1:]  # сдвигаемся на один элемент
-
-        if len(parts) < 4:
-            continue
-
-        device  = parts[0].strip()
-        task    = parts[1].strip()
-        size    = parts[2].strip()
-        license_ = parts[3].strip()
-        model_id = parts[4].strip() if len(parts) > 4 else ""
+            device = parts[1].strip()
+            task = parts[2].strip()
+            size = parts[3].strip()
+            license_ = parts[4].strip()
+            model_id = parts[5].strip()
 
         if not model_id:
             continue

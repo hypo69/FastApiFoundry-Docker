@@ -153,8 +153,13 @@ class BaseAgent(ABC):
             finish_reason = choice.get("finish_reason", "")
             messages.append(message)
 
-            # Финальный ответ — нет tool_calls
-            if finish_reason == "stop" or not message.get("tool_calls"):
+            # Почему: `finish_reason` может быть `"stop"` даже при наличии `tool_calls`
+            # (часть провайдеров/моделей использует `"stop"` как общий маркер конца шага).
+            # Логика должна опираться на факт `tool_calls`, а не на `finish_reason`.
+            tool_calls = message.get("tool_calls") or []
+
+            # Финальный ответ — отсутствующие tool_calls
+            if not tool_calls:
                 return AgentResult(
                     success=True,
                     answer=message.get("content", ""),
@@ -163,7 +168,7 @@ class BaseAgent(ABC):
                 )
 
             # Выполняем tool_calls
-            for tc in message["tool_calls"]:
+            for tc in tool_calls:
                 fn_name = tc["function"]["name"]
                 try:
                     fn_args = json.loads(tc["function"]["arguments"])

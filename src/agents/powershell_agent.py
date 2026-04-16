@@ -37,23 +37,45 @@ def _find_server_script(name: str) -> Optional[str]:
 def _call_mcp_stdio(script_path: str, method: str, params: Dict) -> Dict:
     """Отправить один JSON-RPC запрос в STDIO сервер"""
     request = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params})
+    # Почему: MCP-STDIO часто читает запрос построчно. Перевод строки нужен для `ReadLine`.
+    request_input = request + "\n"
     try:
         proc = subprocess.run(
             ["pwsh", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script_path],
-            input=request,
+            input=request_input,
             capture_output=True,
+            # Почему: Windows-потоковая декодировка по умолчанию CP1252 может падать,
+            # что делает `proc.stdout`/`proc.stderr` пустыми и ломает парсинг JSON.
+            # Принудительная UTF-8 декодировка с `replace` сохраняет полезный вывод.
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=30,
             cwd=str(Path.cwd()),
         )
-        for line in proc.stdout.splitlines():
+        # Почему: `CompletedProcess.stdout` иногда приходит как `None`
+        # (ошибка выполнения PWSh, нет стандартного вывода, несовместимый формат вывода).
+        # Обработка `None` гарантирует корректный маршрут в ветку ошибок вместо падения инструмента.
+        stdout = proc.stdout or ""
+        stderr = proc.stderr or ""
+
+        for line in stdout.splitlines():
             line = line.strip()
             if line.startswith("{"):
                 try:
                     return json.loads(line)
                 except json.JSONDecodeError:
                     continue
-        return {"error": f"No JSON in stdout. stderr: {proc.stderr[:300]}"}
+
+        # Почему: диагностика вывода MCP — через stderr при отсутствии JSON в stdout.
+        # Сообщение расширено `stdout`/`stderr`, чтобы локализовать формат/ошибку запуска.
+        return {
+            "error": (
+                "No JSON in stdout. "
+                f"stdout_prefix={stdout[:300]!r}; "
+                f"stderr_prefix={stderr[:300]!r}"
+            )
+        }
     except subprocess.TimeoutExpired:
         return {"error": "MCP server timeout (30s)"}
     except FileNotFoundError:
@@ -143,6 +165,18 @@ class PowerShellAgent(BaseAgent):
         script_path = _find_server_script("McpSTDIOServer")
         if not script_path:
             return "❌ McpSTDIOServer.ps1 не найден"
+
+        # Почему: модель может сформировать `working_directory`, которого нет на диске.
+        # Привязка к текущей директории обеспечивает устойчивость tool-call.
+        working_directory_raw = args.get("working_directory")
+        working_directory = str(Path.cwd())
+        if working_directory_raw:
+            wd = Path(str(working_directory_raw))
+            if wd.exists() and wd.is_dir():
+                working_directory = str(wd)
+            else:
+                logger.warning(f"⚠️ Invalid working_directory: {working_directory_raw}. Fallback: {working_directory}")
+
         _call_mcp_stdio(script_path, "initialize", {
             "protocolVersion": "2024-11-05",
             "clientInfo": {"name": "FastApiFoundry", "version": "0.4.1"}
@@ -151,7 +185,7 @@ class PowerShellAgent(BaseAgent):
             "name": "run-script",
             "arguments": {
                 "script": args["script"],
-                "workingDirectory": args.get("working_directory", str(Path.cwd())),
+                "workingDirectory": working_directory,
                 "timeoutSeconds": 30
             }
         })
@@ -161,6 +195,17 @@ class PowerShellAgent(BaseAgent):
         script_path = _find_server_script("McpWPCLIServer")
         if not script_path:
             return "❌ McpWPCLIServer.ps1 не найден"
+
+        # Почему: модель может сформировать `working_directory`, которого нет.
+        working_directory_raw = args.get("working_directory")
+        working_directory = str(Path.cwd())
+        if working_directory_raw:
+            wd = Path(str(working_directory_raw))
+            if wd.exists() and wd.is_dir():
+                working_directory = str(wd)
+            else:
+                logger.warning(f"⚠️ Invalid working_directory: {working_directory_raw}. Fallback: {working_directory}")
+
         _call_mcp_stdio(script_path, "initialize", {
             "protocolVersion": "2024-11-05",
             "clientInfo": {"name": "FastApiFoundry", "version": "0.4.1"}
@@ -169,7 +214,7 @@ class PowerShellAgent(BaseAgent):
             "name": "run-wp-cli",
             "arguments": {
                 "commandArguments": args["command"],
-                "workingDirectory": args.get("working_directory", str(Path.cwd()))
+                "workingDirectory": working_directory
             }
         })
         return _extract_content(response)

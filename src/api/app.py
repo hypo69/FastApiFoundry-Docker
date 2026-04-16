@@ -15,6 +15,7 @@
 
 import time
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,34 +25,40 @@ from fastapi.staticfiles import StaticFiles
 from ..models.foundry_client import foundry_client
 from ..rag.rag_system import rag_system
 
+logger = logging.getLogger(__name__)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifecycle"""
-    print("Starting FastAPI Foundry...")
+    logger.info("Starting FastAPI Foundry...")
     
     rag_initialized = await rag_system.initialize()
     if rag_initialized:
-        print("✅ RAG system initialized")
+        logger.info("✅ RAG system initialized")
     else:
-        print("⚠️ RAG system not initialized")
+        logger.warning("⚠️ RAG system not initialized")
 
     # Автозагрузка модели по умолчанию
     from ..core.config import config as app_config
     if app_config.foundry_auto_load_default and app_config.foundry_default_model:
         import asyncio, subprocess
         model_id = app_config.foundry_default_model
-        try:
-            subprocess.Popen(
-                ["foundry", "model", "load", model_id],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-            )
-            print(f"✅ Auto-loading default model: {model_id}")
-        except Exception as e:
-            print(f"⚠️ Could not auto-load model {model_id}: {e}")
+        # Модели в UI/чате имеют префиксы `hf::...` и `llama::...`, их нельзя пытаться загрузить в Foundry.
+        if str(model_id).startswith("hf::") or str(model_id).startswith("llama::"):
+            logger.info(f"Skip auto-loading non-Foundry default model in Foundry: {model_id}")
+        else:
+            try:
+                subprocess.Popen(
+                    ["foundry", "model", "load", model_id],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+                logger.info(f"✅ Auto-loading default model: {model_id}")
+            except Exception as e:
+                logger.warning(f"⚠️ Could not auto-load model {model_id}: {e}")
     
     yield
     
-    print("Stopping FastAPI Foundry...")
+    logger.info("Stopping FastAPI Foundry...")
     await foundry_client.close()
 
 def create_app() -> FastAPI:
@@ -99,7 +106,7 @@ def create_app() -> FastAPI:
     # Global exception handler
     @app.exception_handler(Exception)
     async def global_exception_handler(request, exc):
-        print(f"Error: {exc}")
+        logger.error(f"Error: {exc}")
         return JSONResponse(
             status_code=500,
             content={
@@ -109,7 +116,7 @@ def create_app() -> FastAPI:
         )
     
     # Connect main routers
-    from .endpoints import main, models, health, generate, foundry, config, logs, rag
+    from .endpoints import main, models, health, generate, foundry, config, logs, rag, ai_endpoints
     from .endpoints.chat_endpoints import router as chat_router
     from .endpoints.foundry_management import router as foundry_mgmt_router
     from .endpoints.foundry_models import router as foundry_models_router
@@ -119,6 +126,7 @@ def create_app() -> FastAPI:
     from .endpoints.agent import router as agent_router
     from .endpoints.converter import router as converter_router
     from .endpoints.translation import router as translation_router
+    from .endpoints.ai_endpoints import router as ai_router
 
     app.include_router(main.router)
     app.include_router(health.router, prefix="/api/v1")
@@ -127,6 +135,7 @@ def create_app() -> FastAPI:
     app.include_router(foundry_mgmt_router, prefix="/api/v1")
     app.include_router(foundry_models_router, prefix="/api/v1")
     app.include_router(generate.router, prefix="/api/v1")
+    app.include_router(ai_router, prefix="/api/v1")
     app.include_router(chat_router, prefix="/api/v1")
     app.include_router(rag.router, prefix="/api/v1")
     app.include_router(config.router, prefix="/api/v1")

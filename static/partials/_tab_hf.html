@@ -23,6 +23,11 @@
                                     ⚠️ HF Token не задан. Укажите его в 
                                     <a href="#" onclick="document.getElementById('settings-tab').click()">Settings → HuggingFace</a>
                                 </div>
+                                <div class="alert alert-info p-2 mb-2" style="font-size:.85rem">
+                                    <div class="fw-semibold mb-1">Как это появится в чате</div>
+                                    Если модель gated (нужна лицензия), сначала задайте токен в <strong>Settings → HuggingFace</strong> и примите лицензию на странице модели.
+                                    После успешного <strong>Download</strong> модель появится в <strong>Downloaded Locally</strong>. Нажмите <strong>refresh</strong>, и локальные HF модели станут доступны в выпадающем списке чата.
+                                </div>
                                 <button class="btn btn-success w-100" onclick="hfDownload()">
                                     <i class="bi bi-download"></i> Download
                                 </button>
@@ -68,6 +73,14 @@
                                 <button class="btn btn-sm btn-outline-primary" onclick="hfRefreshModels()"><i class="bi bi-arrow-clockwise"></i></button>
                             </div>
                             <div class="card-body p-0">
+                                <div class="p-3 pb-0">
+                                    <label class="form-label mb-2">Select downloaded model (auto switch)</label>
+                                    <select id="hf-downloaded-model-select" class="form-select"
+                                            onchange="hfSwitchLocalModel(this.value)">
+                                        <option value="">Select a downloaded model...</option>
+                                    </select>
+                                    <div class="form-text mb-2">При выборе выгружаются другие загруженные HF модели и загружается выбранная.</div>
+                                </div>
                                 <div id="hf-downloaded-list" style="max-height:160px;overflow-y:auto">
                                     <div class="text-muted text-center p-3"><small>Click Refresh to load</small></div>
                                 </div>

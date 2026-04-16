@@ -15,6 +15,115 @@
 
 import { showAlert, updateChatModelBadge } from './ui.js';
 
+async function waitForFoundryModelLoaded(modelId, timeoutMs = 90000) {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const data = await fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json());
+        const loadedModels = (data.models || []).map(m => m.id);
+        if (data.success && loadedModels.includes(modelId)) {
+            return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+
+    return false;
+}
+
+async function switchFoundryChatModel(modelId) {
+    const currentLoaded = await fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json());
+    const loadedModels = (currentLoaded.models || []).map(m => m.id);
+
+    // Останавливаем llama.cpp сервер, чтобы в памяти была только одна активная подсистема
+    try {
+        await fetch(`${window.API_BASE}/llama/stop`, { method: 'POST' }).then(r => r.json());
+    } catch (e) {
+        // Не критично
+    }
+
+    // Если в памяти уже загружены HF-модели — выгружаем их, чтобы в памяти была только одна активная подсистема.
+    try {
+        const hfData = await fetch(`${window.API_BASE}/hf/models`).then(r => r.json());
+        const loadedHf = (hfData.loaded || []).map(m => m.id);
+        for (const hfId of loadedHf) {
+            const unloadRes = await fetch(`${window.API_BASE}/hf/models/unload`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model_id: hfId })
+            }).then(r => r.json());
+
+            if (!unloadRes.success) {
+                if (window.addLog) window.addLog(`⚠ HF unload failed for ${hfId}: ${unloadRes.error || 'unknown error'}`);
+            }
+        }
+    } catch (e) {
+        // Не критично для Foundry-свитча.
+    }
+
+    for (const loadedModelId of loadedModels) {
+        if (loadedModelId === modelId) continue;
+
+        const unloadResult = await fetch(`${window.API_BASE}/foundry/models/unload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model_id: loadedModelId })
+        }).then(r => r.json());
+
+        if (!unloadResult.success) {
+            if (window.addLog) window.addLog(`⚠ Unload failed for ${loadedModelId}: ${unloadResult.error || 'unknown error'}`);
+        }
+    }
+
+    if (!loadedModels.includes(modelId)) {
+        const loadResult = await fetch(`${window.API_BASE}/foundry/models/load`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model_id: modelId })
+        }).then(r => r.json());
+
+        if (!loadResult.success) {
+            throw new Error(loadResult.error || `Failed to load ${modelId}`);
+        }
+    }
+
+    const ready = await waitForFoundryModelLoaded(modelId);
+    if (!ready) {
+        throw new Error(`Model ${modelId} did not become ready in time`);
+    }
+}
+
+async function switchLlamaChatModel(modelPath) {
+    // Выгружаем Foundry из памяти
+    const foundryLoaded = await fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json());
+    const loadedFoundryIds = (foundryLoaded.models || []).map(m => m.id);
+    for (const foundryId of loadedFoundryIds) {
+        const u = await fetch(`${window.API_BASE}/foundry/models/unload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model_id: foundryId })
+        }).then(r => r.json());
+        if (!u.success && window.addLog) window.addLog(`⚠ Foundry unload failed for ${foundryId}: ${u.error || 'unknown error'}`);
+    }
+
+    // Выгружаем HF из памяти
+    const hfData = await fetch(`${window.API_BASE}/hf/models`).then(r => r.json());
+    const loadedHfIds = (hfData.loaded || []).map(m => m.id);
+    for (const hfId of loadedHfIds) {
+        const u = await fetch(`${window.API_BASE}/hf/models/unload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model_id: hfId })
+        }).then(r => r.json());
+        if (!u.success && window.addLog) window.addLog(`⚠ HF unload failed for ${hfId}: ${u.error || 'unknown error'}`);
+    }
+
+    // Запускаем llama.cpp сервер с выбранной GGUF моделью
+    if (!window.llamaSwitchChatModel) {
+        throw new Error('llamaSwitchChatModel is not available');
+    }
+    await window.llamaSwitchChatModel(modelPath);
+}
+
 // ── Загрузка моделей ──────────────────────────────────────────────────────────
 
 /**
@@ -23,10 +132,28 @@ import { showAlert, updateChatModelBadge } from './ui.js';
  */
 export async function loadModels() {
     try {
-        const data = await fetch(`${window.API_BASE}/models`).then(r => r.json());
-        if (data.success && data.models) {
-            updateModelSelect(data.models);
-            updateModelsList(data.models);
+        const [foundryData, llamaData] = await Promise.all([
+            fetch(`${window.API_BASE}/foundry/models/cached`).then(r => r.json()),
+            fetch(`${window.API_BASE}/llama/models`).then(r => r.json()),
+        ]);
+
+        const foundryModels = (foundryData?.items || []).map(item => ({
+            id: item.id,
+            name: item.alias || item.name || item.id,
+        }));
+
+        const llamaModels = (llamaData?.models || []).map(m => ({
+            id: `llama::${m.path}`,
+            name: m.name || m.path,
+        }));
+
+        const models = [...foundryModels, ...llamaModels];
+        updateModelSelect(models);
+        updateModelsList(models);
+
+        // Добавляем локальные HF-модели в тот же select.
+        if (window.hfUpdateChatModelSelect) {
+            await window.hfUpdateChatModelSelect();
         }
     } catch (e) {
         console.error('Failed to load models:', e);
@@ -35,7 +162,7 @@ export async function loadModels() {
 
 /**
  * Заполняет select #chat-model списком моделей.
- * Добавляет эмодзи-префиксы для hf:: и llama:: моделей.
+ * Показывает локальные Foundry модели из кэша.
  * @param {Array} models
  */
 export function updateModelSelect(models) {
@@ -49,9 +176,7 @@ export function updateModelSelect(models) {
     models.forEach(({ id, name }) => {
         const opt = document.createElement('option');
         opt.value = id;
-        if (id.startsWith('hf::'))    { opt.textContent = `🤗 ${name || id.slice(4)}`; opt.dataset.hf = '1'; }
-        else if (id.startsWith('llama::')) { opt.textContent = `🦙 ${name || id.slice(7)}`; opt.dataset.llama = '1'; }
-        else                          { opt.textContent = name || id; }
+        opt.textContent = name || id;
         select.appendChild(opt);
     });
 
@@ -113,13 +238,17 @@ export async function loadConnectedModels() {
 // ── Выбор и сохранение ────────────────────────────────────────────────────────
 
 /**
- * Выбирает модель для чата и сохраняет как default.
+ * Выбирает модель для чата, выгружает предыдущие и сохраняет как default.
  * @param {string} modelId
  */
-export function selectModelForChat(modelId) {
+export async function selectModelForChat(modelId) {
     const select = document.getElementById('chat-model');
-    if (select) select.value = modelId;
-    saveDefaultModel(modelId);
+    if (select) {
+        select.value = modelId;
+        select.dispatchEvent(new Event('change'));
+        return;
+    }
+    await saveDefaultModel(modelId);
     updateChatModelBadge(modelId);
     showAlert(`Model ${modelId} selected`, 'success');
 }
@@ -349,4 +478,56 @@ document.addEventListener('DOMContentLoaded', () => {
     loadModels();
     loadConnectedModels();
     loadCatalog();
+
+    const select = document.getElementById('chat-model');
+    if (select) {
+        select.addEventListener('change', async () => {
+            const modelId = select.value;
+
+            if (!modelId) {
+                return;
+            }
+
+            const previousValue = window._savedChatModel || window.CONFIG?.default_model || '';
+            try {
+                if (String(modelId).startsWith('hf::')) {
+                    const hfModelId = String(modelId).slice(4);
+                    showAlert(`Switching chat model to HF: ${hfModelId}...`, 'info');
+                    await window.hfSwitchLocalModel?.(hfModelId);
+
+                    await saveDefaultModel(modelId);
+                    window._savedChatModel = modelId;
+                    updateChatModelBadge(modelId);
+                    showAlert(`Chat model switched to HF: ${hfModelId}`, 'success');
+                    return;
+                }
+
+                if (String(modelId).startsWith('llama::')) {
+                    const llamaPath = String(modelId).slice('llama::'.length);
+                    showAlert(`Switching chat model to llama.cpp...`, 'info');
+                    await switchLlamaChatModel(llamaPath);
+
+                    await saveDefaultModel(modelId);
+                    window._savedChatModel = modelId;
+                    updateChatModelBadge(modelId);
+                    showAlert(`Chat model switched to llama.cpp`, 'success');
+                    return;
+                }
+
+                showAlert(`Switching chat model to ${modelId}...`, 'info');
+                await switchFoundryChatModel(modelId);
+                await saveDefaultModel(modelId);
+                if (window.CONFIG) window.CONFIG.default_model = modelId;
+                window._savedChatModel = modelId;
+                updateChatModelBadge(modelId);
+                showAlert(`Chat model switched to ${modelId}`, 'success');
+                loadConnectedModels();
+                loadCatalog();
+            } catch (e) {
+                console.error('Failed to switch chat model:', e);
+                select.value = previousValue;
+                showAlert(`Failed to switch model: ${e.message}`, 'danger');
+            }
+        });
+    }
 });

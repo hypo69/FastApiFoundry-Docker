@@ -15,9 +15,12 @@
 
 import json
 import uuid
+import time
+import os
 from typing import Dict, List
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
+from pathlib import Path
 
 from ...models.foundry_client import foundry_client
 
@@ -150,6 +153,44 @@ async def delete_chat_session(session_id: str):
         return {"success": True, "message": "Сессия удалена"}
     else:
         raise HTTPException(status_code=404, detail="Сессия не найдена")
+
+
+@router.post("/chat/history/save")
+async def save_chat_history(request: dict) -> dict:
+    """! Сохраняет историю чата на диск.
+
+    Содержимое сохраняется в: ~/.ai-assistant-chat-history/
+    """
+    messages: List[Dict] = request.get("messages") or []
+    if not messages:
+        raise HTTPException(status_code=400, detail="messages is required")
+
+    session_id: str = request.get("session_id") or str(uuid.uuid4())
+    model: str = request.get("model") or ""
+    title: str = request.get("title") or ""
+    aborted: bool = bool(request.get("aborted", False))
+
+    history_dir = Path.home() / ".ai-assistant-chat-history"
+    history_dir.mkdir(parents=True, exist_ok=True)
+
+    ts = int(time.time())
+    file_path = history_dir / f"{session_id}_{ts}.json"
+
+    payload = {
+        "session_id": session_id,
+        "title": title,
+        "model": model,
+        "aborted": aborted,
+        "created_at": ts,
+        "messages": messages,
+    }
+    file_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    return {
+        "success": True,
+        "file": str(file_path),
+        "session_id": session_id
+    }
 
 @router.get("/chat/models")
 async def get_available_models():

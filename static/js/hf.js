@@ -128,6 +128,7 @@ export async function hfRefreshModels() {
         const d = await fetch(`${HF_API}/models`).then(r => r.json());
         const dlEl = document.getElementById('hf-downloaded-list');
         const ldEl = document.getElementById('hf-loaded-list');
+        const selEl = document.getElementById('hf-downloaded-model-select');
 
         if (!dlEl || !ldEl) return;
 
@@ -158,7 +159,111 @@ export async function hfRefreshModels() {
                     <button class="btn btn-sm btn-outline-danger" onclick="hfUnload('${m.id}')">Unload</button>
                 </div>`).join('');
         }
+
+        // Заполняем dropdown только скачанными локально моделями
+        if (selEl) {
+            selEl.innerHTML = '<option value="">Select a downloaded model...</option>';
+            const downloaded = Array.isArray(d.downloaded) ? d.downloaded : [];
+            downloaded.forEach(m => {
+                const opt = new Option(m.id, m.id);
+                opt.textContent = m.id + (m.size_mb ? ` (${m.size_mb} MB)` : '');
+                selEl.appendChild(opt);
+            });
+        }
     } catch(e) { console.error('HuggingFace refresh models failed:', e); }
+}
+
+async function hfWaitForModelLoaded(modelId, timeoutMs = 120000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+        const d = await fetch(`${HF_API}/models`).then(r => r.json());
+        const loadedIds = (d.loaded || []).map(m => m.id);
+        if (d.success !== false && loadedIds.includes(modelId)) return true;
+        await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+    return false;
+}
+
+// Аналог логики переключения в Foundry: выгрузить предыдущие HF модели и загрузить выбранную
+export async function hfSwitchLocalModel(modelId) {
+    if (!modelId) return;
+
+    const device = document.getElementById('hf-gen-device')?.value || 'auto';
+
+    try {
+        showAlert(`HF switch: unloading previous models...`, 'info');
+
+        // Останавливаем llama.cpp сервер, чтобы не держать несколько подсистем одновременно
+        try {
+            await fetch(`${window.API_BASE}/llama/stop`, { method: 'POST' }).then(r => r.json());
+        } catch (e) {
+            // Не критично
+        }
+
+        // Сначала выгружаем все загруженные Foundry модели, чтобы в памяти была только одна активная подсистема.
+        try {
+            const foundryLoaded = await fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json());
+            const loadedFoundryIds = (foundryLoaded.models || []).map(m => m.id);
+            for (const foundryId of loadedFoundryIds) {
+                const u = await fetch(`${window.API_BASE}/foundry/models/unload`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model_id: foundryId })
+                }).then(r => r.json());
+                if (!u.success) {
+                    console.warn(`Foundry unload failed for ${foundryId}:`, u.error);
+                }
+            }
+        } catch (e) {
+            console.warn('Foundry unload before HF switch failed:', e);
+        }
+
+        const d = await fetch(`${HF_API}/models`).then(r => r.json());
+        const loadedIds = (d.loaded || []).map(m => m.id);
+
+        for (const loadedId of loadedIds) {
+            if (loadedId === modelId) continue;
+            const u = await fetch(`${HF_API}/models/unload`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model_id: loadedId })
+            }).then(r => r.json());
+
+            if (!u.success) {
+                console.warn(`HF unload failed for ${loadedId}:`, u.error);
+                showAlert(`Unload failed for ${loadedId}: ${u.error || 'unknown'}`, 'warning');
+            }
+        }
+
+        // Загружаем выбранную (если еще не в памяти)
+        if (!loadedIds.includes(modelId)) {
+            const l = await fetch(`${HF_API}/models/load`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model_id: modelId, device })
+            }).then(r => r.json());
+
+            if (!l.success) {
+                throw new Error(l.error || `Failed to load ${modelId}`);
+            }
+        }
+
+        const ready = await hfWaitForModelLoaded(modelId);
+        if (!ready) {
+            showAlert(`HF model ${modelId} did not become ready in time. Check logs.`, 'warning');
+        } else {
+            showAlert(`HF model switched to: ${modelId}`, 'success');
+        }
+
+        await hfRefreshModels();
+        await hfUpdateChatModelSelect();
+
+        const sel = document.getElementById('hf-downloaded-model-select');
+        if (sel) sel.value = modelId;
+    } catch (e) {
+        console.error('HF switch failed:', e);
+        showAlert(`HF switch failed: ${e.message}`, 'danger');
+    }
 }
 
 export async function hfDownload() {
@@ -242,17 +347,27 @@ export async function hfUpdateChatModelSelect() {
         const d = await fetch(`${HF_API}/models`).then(r => r.json());
         const sel = document.getElementById('chat-model');
         if (!sel) return;
+
+        const current = sel.value;
         // Удаляем старые HF опции
         [...sel.options].filter(o => o.dataset.hf).forEach(o => o.remove());
-        if (d.loaded?.length) {
+        const downloaded = Array.isArray(d.downloaded) ? d.downloaded : [];
+        if (downloaded.length) {
             const group = document.createElement('optgroup');
-            group.label = '— HuggingFace (loaded) —';
-            d.loaded.forEach(m => {
-                const opt = new Option(`🤗 ${m.id}`, `hf::${m.id}`);
+            group.label = '— HuggingFace (local) —';
+            downloaded.forEach(m => {
+                const loadedLabel = m.loaded ? ' (loaded)' : '';
+                const opt = new Option(`🤗 ${m.id}${loadedLabel}`, `hf::${m.id}`);
                 opt.dataset.hf = '1';
                 group.appendChild(opt);
             });
             sel.appendChild(group);
+        }
+
+        // Восстанавливаем выбор, если он всё ещё доступен
+        if (current) {
+            const exists = [...sel.options].some(o => o.value === current);
+            if (exists) sel.value = current;
         }
     } catch(e) { console.error('HuggingFace update chat model select failed:', e); }
 }

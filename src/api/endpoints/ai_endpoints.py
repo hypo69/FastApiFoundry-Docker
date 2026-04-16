@@ -18,14 +18,16 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from ...models.foundry_client import foundry_client
-# from ...rag.rag_system import rag_system
+try:
+    from ...rag.rag_system import rag_system
+except Exception:
+    # Почему: RAG-зависимости могут отсутствовать либо падать при импорте на части окружений.
+    # Fallback гарантирует работоспособность AI endpoints без контекста.
+    class DummyRAGSystem:
+        async def search(self, query, top_k=3):
+            return []
 
-# Заглушка для RAG системы
-class DummyRAGSystem:
-    async def search(self, query, top_k=3):
-        return []
-
-rag_system = DummyRAGSystem()
+    rag_system = DummyRAGSystem()
 import json
 import asyncio
 
@@ -55,7 +57,11 @@ async def generate_text(request: dict):
         try:
             rag_results = await rag_system.search(prompt, top_k=3)
             if rag_results:
-                context = "\\n".join([r.get("text", "") for r in rag_results])
+                # Почему: единый формат контекста через `format_context()` при наличии, иначе простой join.
+                if hasattr(rag_system, "format_context"):
+                    context = rag_system.format_context(rag_results)
+                else:
+                    context = "\\n".join([r.get("text", "") for r in rag_results])
                 prompt = f"Context:\\n{context}\\n\\nQuestion: {prompt}"
         except Exception as e:
             # Продолжаем без RAG если ошибка
@@ -81,19 +87,19 @@ async def generate_text_stream(request: dict):
         async for chunk in foundry_client.generate_stream(prompt, **params):
             yield f"data: {json.dumps(chunk)}\\n\\n"
     
-    return StreamingResponse(generate(), media_type="text/plain")
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 @router.get("/ai/models")
 async def list_models():
     """Получить список доступных моделей с детальной информацией"""
-    foundry_client.update_base_url()
+    await foundry_client._update_base_url()
     result = await foundry_client.list_models()
     return result
 
 @router.get("/ai/models/recommended")
 async def get_recommended_models():
     """Получить рекомендуемые модели для разных задач"""
-    foundry_client.update_base_url()
+    await foundry_client._update_base_url()
     models_result = await foundry_client.list_models()
     
     if not models_result["success"]:
@@ -134,21 +140,21 @@ async def get_recommended_models():
 async def load_model(model_id: str):
     """Загрузить модель в память"""
     # Принудительно обновляем URL перед запросом
-    foundry_client.update_base_url()
+    await foundry_client._update_base_url()
     result = await foundry_client.load_model(model_id)
     return result
 
 @router.post("/ai/models/{model_id}/unload")
 async def unload_model(model_id: str):
     """Выгрузить модель из памяти"""
-    foundry_client.update_base_url()
+    await foundry_client._update_base_url()
     result = await foundry_client.unload_model(model_id)
     return result
 
 @router.get("/ai/health")
 async def health_check():
     """Проверка здоровья AI сервиса"""
-    foundry_client.update_base_url()
+    await foundry_client._update_base_url()
     result = await foundry_client.health_check()
     return result
 
@@ -179,7 +185,7 @@ async def chat_completion(request: dict):
         "max_tokens": request.get("max_tokens", 2048)
     }
     
-    foundry_client.update_base_url()
+    await foundry_client._update_base_url()
     result = await foundry_client.generate_text(prompt, **params)
     
     if result["success"]:
@@ -209,7 +215,7 @@ async def optimize_generation(request: dict):
     model_preference = request.get("model_preference", "balanced")  # fast, balanced, quality
     
     # Получаем список моделей
-    foundry_client.update_base_url()
+    await foundry_client._update_base_url()
     models_result = await foundry_client.list_models()
     if not models_result["success"]:
         return models_result
