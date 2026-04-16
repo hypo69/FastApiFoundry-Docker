@@ -1,19 +1,42 @@
-# Настройки сервера
-$Url = "https://localhost:8443/execute"
+# -*- coding: utf-8 -*-
+# =============================================================================
+# Process Name: MCP HTTPS Server - PowerShell Test Client
+# =============================================================================
+# Description:
+#   Sends a test PowerShell command to the MCP HTTPS server and prints the result.
+#   Bypasses SSL certificate validation so it works with self-signed certs
+#   used during local development.
+#
+# Examples:
+#   powershell -ExecutionPolicy Bypass -File .\powershell.ps1
+#
+# File: mcp-powershell-servers/src/clients/powershell.ps1
+# Project: FastApiFoundry (Docker)
+# Version: 0.4.1
+# Author: hypo69
+# Copyright: © 2026 hypo69
+# =============================================================================
+
+# MCP server endpoint — change host/port to match your McpHttpsServer config
+$Url   = "https://localhost:8443/execute"
+# Bearer token must match the token configured in the server
 $Token = "SuperSecretToken123"
 
-# Заголовки авторизации
+# Authorization header required by the MCP HTTPS server
 $Headers = @{
     "Authorization" = "Bearer $Token"
     "Content-Type"  = "application/json"
 }
 
-# Команда PowerShell для выполнения на сервере
+# The PowerShell command to execute on the server side
 $Payload = @{
     command = "Get-Process | Select-Object -First 5 | ConvertTo-Json -Depth 3"
 } | ConvertTo-Json -Depth 3
 
-# Игнорируем self-signed сертификат (для теста)
+# -----------------------------------------------------------------------------
+# Trust all certificates — required for self-signed certs in local dev
+# In production, replace this with a proper certificate or use -SkipCertificateCheck
+# -----------------------------------------------------------------------------
 add-type @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
@@ -27,11 +50,12 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 "@
 [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
 
-# Отправляем запрос
+# --- main ---
+
 try {
     $Response = Invoke-RestMethod -Uri $Url -Method Post -Headers $Headers -Body $Payload
-    Write-Host "Ответ от MCP PowerShell Server:" -ForegroundColor Green
+    Write-Host "Response from MCP PowerShell Server:" -ForegroundColor Green
     $Response | ConvertTo-Json -Depth 5 | Out-String
 } catch {
-    Write-Host "Ошибка запроса: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Request error: $($_.Exception.Message)" -ForegroundColor Red
 }

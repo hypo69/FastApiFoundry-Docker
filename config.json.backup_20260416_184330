@@ -1,0 +1,56 @@
+{
+  "fastapi_server": {
+    "host": "0.0.0.0",
+    "port": 9696,
+    "auto_find_free_port": false,
+    "mode": "dev",
+    "workers": null
+  },
+  "foundry_ai": {
+    "base_url": "",
+    "default_model": "hf::TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    "temperature": null,
+    "max_tokens": null,
+    "auto_load_default": false
+  },
+  "rag_system": {
+    "enabled": false,
+    "index_dir": "~/.rag",
+    "chunk_size": null
+  },
+  "security": {
+    "api_key": "",
+    "https_enabled": false
+  },
+  "logging": {
+    "level": "DEBUG",
+    "file": ""
+  },
+  "development": {
+    "debug": false,
+    "verbose": false
+  },
+  "app": {
+    "language": ""
+  },
+  "docs_server": {
+    "enabled": false,
+    "port": 9697
+  },
+  "llama_cpp": {
+    "port": 9780,
+    "host": "127.0.0.1"
+  },
+  "directories": {
+    "models": "~/.models",
+    "rag": "~/.rag",
+    "hf_models": "~/.hf_models"
+  },
+  "huggingface": {
+    "token": "",
+    "models_dir": "./models/hf",
+    "device": "auto",
+    "default_max_new_tokens": 512,
+    "default_temperature": 0.7
+  }
+}

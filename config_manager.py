@@ -132,6 +132,25 @@ class Config:
     def rag_top_k(self) -> int:
         return self._config_data.get("rag_system", {}).get("top_k", 5)
     
+    # Directories
+    @property
+    def dir_models(self) -> str:
+        """~/.models — директория GGUF моделей llama.cpp"""
+        raw = self._config_data.get("directories", {}).get("models") or "~/.models"
+        return str(Path(raw).expanduser())
+
+    @property
+    def dir_rag(self) -> str:
+        """~/.rag — директория RAG баз"""
+        raw = self._config_data.get("directories", {}).get("rag") or "~/.rag"
+        return str(Path(raw).expanduser())
+
+    @property
+    def dir_hf_models(self) -> str:
+        """~/.hf_models — директория HuggingFace моделей"""
+        raw = self._config_data.get("directories", {}).get("hf_models") or "~/.hf_models"
+        return str(Path(raw).expanduser())
+
     # Methods for working with configuration
     def get_section(self, section: str) -> Dict[str, Any]:
         """Get an entire configuration section"""

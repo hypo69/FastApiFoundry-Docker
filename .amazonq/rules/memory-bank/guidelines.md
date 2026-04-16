@@ -1,19 +1,14 @@
 # FastAPI Foundry — Development Guidelines
 
 ## File Header Standard
-Every Python file MUST start with this header (all fields required):
-
+Every Python file MUST start with this header:
 ```python
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: <Functional description>
+# Process Name: <Descriptive name of the module's function>
 # =============================================================================
-# Описание:
-#   <Detailed description of what this module does>
-#
-# Примеры:
-#   >>> from src.module import ClassName
-#   >>> ClassName().method()
+# Description:
+#   <What this module does, what APIs it uses>
 #
 # File: <filename.py>
 # Project: FastApiFoundry (Docker)
@@ -23,14 +18,11 @@ Every Python file MUST start with this header (all fields required):
 # Copyright: © 2026 hypo69
 # =============================================================================
 ```
-
-JavaScript files use `// filename.js` comment at top, then ES module exports.
-
----
+JavaScript files use JSDoc block comment at top. HTML files use `<!-- ... -->` block.
 
 ## Python Code Patterns
 
-### Singleton Pattern (used in Config and FoundryClient)
+### Singleton Pattern (used in Config, FoundryClient, RAGSystem)
 ```python
 class Config:
     _instance = None
@@ -41,13 +33,13 @@ class Config:
             cls._instance._load_config()
         return cls._instance
 
-# Module-level singleton export
+# Module-level global instance
 config = Config()
 ```
 
-### Async HTTP Client Pattern (aiohttp)
+### Async HTTP Client (aiohttp pattern)
 ```python
-class FoundryClient:
+class SomeClient:
     def __init__(self):
         self.session = None
         self.timeout = aiohttp.ClientTimeout(total=30)
@@ -62,80 +54,87 @@ class FoundryClient:
             await self.session.close()
 ```
 
-### Response Dict Pattern
-All client methods return a consistent dict — never raise exceptions to callers:
+### Error Return Pattern (no exceptions for expected failures)
 ```python
-# Success
-return {"success": True, "content": result, "model": model_id}
-
-# Failure
-return {"success": False, "error": "Human-readable message"}
-
-# With extra context
-return {"success": False, "error": "...", "models": [], "count": 0}
+async def some_operation(self) -> dict:
+    try:
+        # ... operation
+        return {"success": True, "data": result}
+    except Exception as e:
+        logger.error(f"❌ Operation failed: {e}")
+        return {"success": False, "error": str(e)}
 ```
+All API-facing methods return `{"success": bool, ...}` dicts, never raise to callers.
 
-### Error Handling Pattern
-Wrap all external calls in try/except, log with emoji prefix, return error dict:
-```python
-try:
-    async with session.get(url) as response:
-        if response.status == 200:
-            data = await response.json()
-            logger.info(f"✅ Success: {url}")
-            return {"success": True, "data": data}
-        else:
-            logger.warning(f"⚠️ HTTP {response.status}")
-            return {"success": False, "error": f"HTTP {response.status}"}
-except Exception as e:
-    logger.error(f"❌ Exception: {e}")
-    return {"success": False, "error": str(e)}
-```
-
-### Logging Pattern
-Use `logging.getLogger(__name__)` — never `print()` in library code:
+### Logging Convention
 ```python
 logger = logging.getLogger(__name__)
 
-logger.info("✅ Operation succeeded")
-logger.warning("⚠️ Degraded state")
-logger.error(f"❌ Error: {e}")
-logger.debug(f"Checking port {port}...")
+# Emoji prefixes for log levels:
+logger.info("✅ Success message")
+logger.info("📋 List/info message")
+logger.info("🔍 Search/discovery message")
+logger.info("📥 Load/download message")
+logger.warning("⚠️ Warning message")
+logger.error("❌ Error message")
+logger.debug("Detailed debug info")
+```
+Never use `print()` in production code (except `config_manager.py` startup prints).
+
+### Async CPU-bound Operations (run_in_executor pattern)
+```python
+loop = asyncio.get_event_loop()
+result = await loop.run_in_executor(None, blocking_function, arg1, arg2)
+```
+Used for FAISS operations, SentenceTransformer encoding, file I/O in async context.
+
+### Async Lock for Shared State
+```python
+self._lock = asyncio.Lock()
+
+async def initialize(self):
+    async with self._lock:
+        return await self._load_index()
 ```
 
-Emoji prefixes used consistently:
-- `✅` — success
-- `❌` — error / not found
-- `⚠️` — warning / degraded
-- `🔍` — searching / scanning
-- `📋` — listing
-- `📥` / `📤` — load / unload
-- `🤖` — AI generation
-- `🏥` — health check
-
-### FastAPI Router Pattern
-One router per endpoint file, prefix applied in `app.py`:
+### Config Access Pattern
 ```python
-# In endpoint file
-from fastapi import APIRouter
-router = APIRouter()
+from ..core.config import config  # within src/
+from config_manager import config  # at root level
 
-@router.get("/health")
-async def health_check():
-    ...
+# Access via properties:
+port = config.api_port
+model = config.foundry_default_model
+```
+Never read `config.json` directly — always use the `Config` singleton.
 
-# In app.py
-from .endpoints import health
+### Optional Dependency Guard
+```python
+FEATURE_AVAILABLE = False
+try:
+    import some_optional_lib
+    FEATURE_AVAILABLE = True
+except ImportError:
+    logger.warning("Feature not available. Install: pip install some_optional_lib")
+
+# Then guard usage:
+if not FEATURE_AVAILABLE:
+    return False
+```
+
+### FastAPI Router Registration
+```python
+# In app.py — all routers use /api/v1 prefix
 app.include_router(health.router, prefix="/api/v1")
+app.include_router(models.router, prefix="/api/v1")
 ```
 
-### Lifespan Pattern (startup/shutdown)
+### Lifespan for Startup/Shutdown
 ```python
-from contextlib import asynccontextmanager
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup
+    await rag_system.initialize()
     yield
     # shutdown
     await foundry_client.close()
@@ -143,135 +142,162 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 ```
 
-### Config Access Pattern
-Always import the singleton, never instantiate Config directly:
-```python
-from ..core.config import config   # inside src/
-from src.core.config import config  # from root
-# or
-from config_manager import config   # direct
+## JavaScript Patterns
 
-port = config.api_port
-url = config.foundry_base_url
-```
-
-Config properties use `.get()` with defaults — never KeyError:
-```python
-@property
-def api_port(self) -> int:
-    return self._config_data.get("fastapi_server", {}).get("port", 8000)
-```
-
-### `__init__.py` Pattern
-Keep `__init__.py` minimal — only re-export public API:
-```python
-from .gguf_to_onnx import GGUFConverter, ConversionResult
-__all__ = ["GGUFConverter", "ConversionResult"]
-```
-
----
-
-## JavaScript / Browser Extension Patterns
-
-### Prompt Module Pattern
-Each language prompt file exports two named constants:
+### Module Exports (ES6 modules)
 ```javascript
-// prompts/xx.js
-export const PAGE = `System prompt for single page summarization...`;
-export const MERGE = `System prompt for merging multiple tab summaries...`;
+// Named exports only — no default exports
+export async function loadModels() { ... }
+export function showAlert(message, type = 'info') { ... }
+
+// Import from sibling modules
+import { showAlert, updateChatModelBadge } from './ui.js';
 ```
 
-Prompt rules always specify:
-- Output language (native to the locale)
-- Word/length limit
-- Output format: valid HTML only (`<p>`, `<ul>`, `<li>`, `<strong>`)
-- Exclusions: navigation, ads, cookie notices
-- No markdown, no code blocks
-
-### Connector Pattern
-Each AI provider connector exports a uniform interface so `summarizer.js` can swap providers:
+### API Call Pattern
 ```javascript
-// connectors/foundry.js, gemini.js, openai-compat.js, openrouter.js
-export async function sendMessage(messages, options) { ... }
-```
+// Always use window.API_BASE for base URL
+const data = await fetch(`${window.API_BASE}/endpoint`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: value })
+}).then(r => r.json());
 
----
-
-## Configuration Patterns
-
-### `config.json` Variable Substitution
-Use `${VAR}` for required env vars, `${VAR:default}` for optional:
-```json
-{
-  "foundry_ai": {
-    "base_url": "${FOUNDRY_BASE_URL}",
-    "api_key": "${FOUNDRY_API_KEY}"
-  },
-  "llama_cpp": {
-    "base_url": "${LLAMA_BASE_URL:http://127.0.0.1:9780/v1}"
-  }
+if (data.success) {
+    showAlert('Success message', 'success');
+} else {
+    showAlert(`Failed: ${data.error}`, 'danger');
 }
 ```
 
-Never store secrets directly in `config.json` — always use `${VAR}`.
+### DOM Safety Pattern
+```javascript
+// Always null-check before DOM access
+const el = document.getElementById('some-id');
+if (!el) return;
+```
 
-### Port Auto-Discovery
-The server auto-finds a free port in range 9696–9796 if `auto_find_free_port: true`.
-Foundry port is discovered dynamically via process inspection + HTTP probe.
+### Parallel API Requests
+```javascript
+const [res1, res2, res3] = await Promise.all([
+    fetch(`${window.API_BASE}/endpoint1`).then(r => r.json()),
+    fetch(`${window.API_BASE}/endpoint2`).then(r => r.json()),
+    fetch(`${window.API_BASE}/endpoint3`).then(r => r.json()),
+]);
+```
 
----
+### Model Prefix Routing (frontend)
+```javascript
+if (modelId.startsWith('hf::')) {
+    // HuggingFace model
+} else if (modelId.startsWith('llama::')) {
+    // llama.cpp model
+} else {
+    // Foundry model
+}
+```
+
+### Bootstrap Alert Helper
+```javascript
+export function showAlert(message, type = 'info') {
+    const container = document.getElementById('alert-container');
+    if (!container) return;
+    const el = document.createElement('div');
+    el.className = `alert alert-${type} alert-dismissible fade show`;
+    el.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    container.appendChild(el);
+    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 150); }, 5000);
+}
+```
+
+### DOMContentLoaded Initialization
+```javascript
+document.addEventListener('DOMContentLoaded', () => {
+    loadModels();
+    loadConnectedModels();
+    // attach event listeners
+});
+```
+
+### Polling Pattern (wait for async operation)
+```javascript
+async function waitForModelLoaded(modelId, timeoutMs = 90000) {
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < timeoutMs) {
+        const data = await fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json());
+        if (data.success && data.models.some(m => m.id === modelId)) return true;
+        await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+    return false;
+}
+```
 
 ## Naming Conventions
 
-| Item | Convention | Example |
-|---|---|---|
-| Python files | snake_case | `foundry_client.py` |
-| Python classes | PascalCase | `FoundryClient`, `Config` |
-| Python functions/methods | snake_case | `health_check()`, `list_models()` |
-| FastAPI routers | `router` (module-level) | `router = APIRouter()` |
-| Module-level singletons | lowercase noun | `foundry_client`, `config` |
-| JS prompt exports | UPPER_SNAKE | `PAGE`, `MERGE` |
-| JS connector files | provider name | `foundry.js`, `gemini.js` |
-| Config sections | snake_case | `fastapi_server`, `foundry_ai` |
+### Python
+- Classes: `PascalCase` — `FoundryClient`, `RAGSystem`, `Config`
+- Functions/methods: `snake_case` — `generate_text`, `list_available_models`
+- Module-level singletons: `snake_case` — `foundry_client`, `rag_system`, `config`
+- Private methods: `_leading_underscore` — `_get_session`, `_load_index`, `_update_base_url`
+- Constants: `UPPER_SNAKE_CASE` — `RAG_AVAILABLE`, `REQUESTS_AVAILABLE`
 
----
+### JavaScript
+- Functions: `camelCase` — `loadModels`, `showAlert`, `updateModelSelect`
+- DOM IDs referenced: `kebab-case` — `chat-model`, `models-list`, `log-output`
+- Global state: `window._savedChatModel`, `window.API_BASE`, `window.CONFIG`
 
-## Project-Specific Rules
+## API Response Contract
+All API endpoints return JSON with consistent structure:
+```json
+// Success
+{"success": true, "data": ..., "count": N}
 
-1. **Never delete files** — rename with `~` suffix to disable (per AGENT_INSTRUCTIONS.md)
-2. **config.json is the single source of truth** for all non-secret settings
-3. **RAG system is currently disabled** (torch DLL issue on Windows) — do not re-enable without testing
-4. **Windows UTF-8**: `run.py` forces `PYTHONIOENCODING=utf-8` and patches stdout/stderr on win32
-5. **Foundry URL is dynamic** — set via `FOUNDRY_BASE_URL` env var or auto-discovered at startup; never hardcode
-6. **Reload mode forces workers=1** — uvicorn limitation, handled in `run.py`
-7. **All API responses include `timestamp`** from `datetime.now().isoformat()`
-8. **Version in file headers** must match project version (currently `0.4.1` in app/client files)
+// Error
+{"success": false, "error": "Human-readable message"}
 
----
-
-## Testing Patterns
-
-Tests live in `tests/` and use pytest + pytest-asyncio:
-```python
-import pytest
-
-@pytest.mark.asyncio
-async def test_health():
-    response = await client.get("/api/v1/health")
-    assert response.status_code == 200
-    assert response.json()["status"] == "healthy"
+// Health check
+{"status": "healthy|unhealthy|disconnected", "timestamp": "ISO8601"}
 ```
 
-Run all tests: `python -m pytest tests/ -v`
+## Configuration Rules
+- Public settings → `config.json` (port, host, model names, RAG params)
+- Secrets → `.env` only (`API_KEY`, `SECRET_KEY`, `HF_TOKEN`, `GITHUB_PAT`)
+- Never hardcode ports — use `config.api_port` or `FOUNDRY_DYNAMIC_PORT` env var
+- Config sections: `fastapi_server`, `foundry_ai`, `rag_system`, `port_management`, `directories`
 
----
+## Windows / UTF-8 Handling
+```python
+# Always set at top of entry point scripts
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+if sys.platform == 'win32':
+    import codecs
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
+```
+All file operations use `encoding='utf-8'` explicitly.
 
-## Commit Message Format
+## Foundry Port Discovery Order
+1. `FOUNDRY_BASE_URL` env var
+2. `FOUNDRY_DYNAMIC_PORT` env var (legacy)
+3. Auto-scan ports `[62171, 50477, 58130]` via HTTP GET `/v1/models`
+4. Windows process scan via `tasklist` + `netstat`
 
-| Prefix | Use for |
-|---|---|
-| `feat:` | New feature |
-| `fix:` | Bug fix |
-| `config:` | Configuration change |
-| `docs:` | Documentation update |
-| `test:` | Test additions/changes |
+## RAG System Usage
+```python
+# Initialize (called in lifespan)
+await rag_system.initialize()
+
+# Search
+results = await rag_system.search(query, top_k=5)
+context = rag_system.format_context(results)
+
+# Status
+status = await rag_system.get_status()
+# Returns: {available, enabled, loaded, chunks_count, vectors_count}
+```
+
+## Logging Files
+- `logs/app.log` — main application log
+- `logs/<module>-errors.log` — error-only log per module
+- `logs/<module>-structured.jsonl` — structured JSON log per module
+- Suppress noisy libraries: `logging.getLogger('watchfiles').setLevel(logging.WARNING)`

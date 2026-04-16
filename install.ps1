@@ -244,7 +244,21 @@ if ($isFirstInstall) {
     "" | Out-File (Join-Path $Root "venv\.first_install_done") -Encoding UTF8
 }
 
-# --- 9. Summary ---
+# --- 9. Desktop shortcuts ---
+Write-Host "`nDesktop shortcuts..." -ForegroundColor Yellow
+$shortcutsScript = Join-Path $Root "install\install-shortcuts.ps1"
+if (Test-Path $shortcutsScript) {
+    try {
+        & $shortcutsScript
+        Write-Host "  Shortcuts created" -ForegroundColor Green
+    } catch {
+        Write-Host "  Failed to create shortcuts: $_" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "  install-shortcuts.ps1 not found — skipping" -ForegroundColor Gray
+}
+
+# --- 10. Summary ---
 Write-Host "`n$("=" * 50)" -ForegroundColor Green
 Write-Host "Installation complete!" -ForegroundColor Green
 Write-Host ""

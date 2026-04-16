@@ -1,4 +1,23 @@
+# -*- coding: utf-8 -*-
+# =============================================================================
+# Process Name: Foundry Model Load
+# =============================================================================
+# Description:
+#   Loads a previously downloaded Foundry model into the inference service memory.
+#   The model must already be present in the local cache (use download-model.ps1 first).
+#
+# Examples:
+#   .\load-model.ps1 -ModelId "qwen2.5-0.5b-instruct-generic-cpu"
+#
+# File: scripts/load-model.ps1
+# Project: FastApiFoundry (Docker)
+# Version: 0.4.1
+# Author: hypo69
+# Copyright: © 2026 hypo69
+# =============================================================================
+
 param(
+    # Foundry model identifier — must match a cached model name
     [Parameter(Mandatory=$true)]
     [string]$ModelId
 )
@@ -6,7 +25,9 @@ param(
 Write-Host "Loading model: $ModelId" -ForegroundColor Green
 
 try {
+    # Ask the Foundry service to load the model into memory
     foundry model load $ModelId
+
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Model $ModelId loaded successfully" -ForegroundColor Green
         exit 0

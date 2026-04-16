@@ -119,110 +119,82 @@ export async function ragDeleteProfile(name) {
     }
 }
 
-// ── Браузер файловой системы ──────────────────────────────────────────────────
+// ── Выбор директории (серверный браузер) ─────────────────────────────────────
 
-/**
- * Открывает браузер с домашней директории пользователя.
- */
-export async function ragBrowseHome() {
-    await ragBrowse('~');
+let _ragBrowserModal = null;
+let _ragBrowserCurrentPath = '';
+
+/** Открывает модальный браузер директорий, стартуя с CWD сервера. */
+export async function ragOpenBrowser() {
+    const modalEl = document.getElementById('ragBrowserModal');
+    if (!modalEl) return;
+    _ragBrowserModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    _ragBrowserModal.show();
+    const cwdData = await fetch(`${RAG_API}/cwd`).then(r => r.json()).catch(() => ({}));
+    await ragBrowseTo(cwdData.cwd || '');
 }
 
-/**
- * Загружает содержимое директории и отрисовывает в #rag-browser.
- * @param {string} path — абсолютный путь или ~
- */
-export async function ragBrowse(path) {
-    const browser = document.getElementById('rag-browser');
-    if (!browser) return;
-    browser.innerHTML = '<div class="text-center p-2"><div class="spinner-border spinner-border-sm"></div></div>';
-
+/** Навигация в директорию path. */
+export async function ragBrowseTo(path) {
+    const list  = document.getElementById('rag-browser-list');
+    const pathEl = document.getElementById('rag-browser-path');
+    const upBtn  = document.getElementById('rag-browser-up');
+    if (!list) return;
+    list.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm"></div></div>';
     try {
         const data = await fetch(`${RAG_API}/browse?path=${encodeURIComponent(path)}`).then(r => r.json());
-        if (!data.success) { browser.innerHTML = `<div class="text-danger p-2 small">${data.error}</div>`; return; }
-
-        let html = '';
-
-        // Кнопка "вверх"
-        if (data.parent) {
-            html += `<div class="px-3 py-1 border-bottom" style="cursor:pointer;background:#f8f9fa"
-                         onclick="ragBrowse('${data.parent.replace(/\\/g, '\\\\')}')">
-                        <i class="bi bi-arrow-up text-muted"></i>
-                        <small class="text-muted ms-1">..</small>
-                     </div>`;
-        }
-
-        // Текущий путь
-        html += `<div class="px-3 py-1 border-bottom bg-light">
-                    <small class="text-muted font-monospace">${data.current}</small>
-                    <button class="btn btn-sm btn-success float-end py-0" style="font-size:.75rem"
-                            onclick="ragSelectDir('${data.current.replace(/\\/g, '\\\\')}')">
-                        Select this
-                    </button>
-                 </div>`;
-
+        if (!data.success) { list.innerHTML = `<div class="text-danger p-3 small">${data.error}</div>`; return; }
+        _ragBrowserCurrentPath = data.current;
+        if (pathEl) pathEl.textContent = data.current;
+        if (upBtn)  upBtn.disabled = !data.parent;
+        const label = document.getElementById('rag-browser-selected-label');
+        if (label) label.textContent = data.current;
         if (!data.dirs.length) {
-            html += '<div class="text-muted text-center p-2 small">No subdirectories</div>';
-        } else {
-            html += data.dirs.map(d => `
-                <div class="d-flex align-items-center px-3 py-1 border-bottom"
-                     style="cursor:pointer" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background=''">
-                    <i class="bi bi-folder text-warning me-2"></i>
-                    <span class="flex-grow-1 text-truncate" style="font-size:.85rem"
-                          onclick="ragBrowse('${d.path.replace(/\\/g, '\\\\')}')">
-                        ${d.name}
-                    </span>
-                    <button class="btn btn-sm btn-outline-success py-0" style="font-size:.75rem"
-                            onclick="ragSelectDir('${d.path.replace(/\\/g, '\\\\')}')">
-                        Select
-                    </button>
-                </div>`).join('');
+            list.innerHTML = '<div class="text-muted text-center p-3 small">No subdirectories</div>';
+            return;
         }
-
-        browser.innerHTML = html;
+        list.innerHTML = data.dirs.map(d =>
+            `<div class="d-flex align-items-center px-3 py-2 border-bottom rag-dir-item"
+                 style="cursor:pointer" data-path="${d.path.replace(/"/g, '&quot;')}">
+                <i class="bi bi-folder-fill text-warning me-2"></i>
+                <span class="small">${d.name}</span>
+            </div>`
+        ).join('');
+        list.querySelectorAll('.rag-dir-item').forEach(el =>
+            el.addEventListener('click', () => ragBrowseTo(el.dataset.path))
+        );
     } catch (e) {
-        browser.innerHTML = `<div class="text-danger p-2 small">${e.message}</div>`;
-        console.error('ragBrowse failed:', e);
+        list.innerHTML = `<div class="text-danger p-3 small">${e.message}</div>`;
     }
 }
 
-/**
- * Выбирает директорию и проверяет — есть ли уже индекс для неё.
- * @param {string} path
- */
-export async function ragSelectDir(path) {
-    const input  = document.getElementById('rag-selected-dir');
-    const status = document.getElementById('rag-dir-status');
-    if (input) input.value = path;
+/** Переход на уровень выше. */
+export async function ragBrowserUp() {
+    const data = await fetch(`${RAG_API}/browse?path=${encodeURIComponent(_ragBrowserCurrentPath)}`).then(r => r.json()).catch(() => ({}));
+    if (data.parent) await ragBrowseTo(data.parent);
+}
 
+/** Подтверждает выбор текущей директории и закрывает модаль. */
+export async function ragBrowserConfirm() {
+    const selected = _ragBrowserCurrentPath;
+    if (!selected) return;
+    const dirInput = document.getElementById('rag-selected-dir');
+    if (dirInput) dirInput.value = selected;
+    if (_ragBrowserModal) _ragBrowserModal.hide();
+    // Проверяем существующий индекс
+    const status = document.getElementById('rag-dir-status');
     if (!status) return;
     status.style.display = '';
     status.innerHTML = '<div class="spinner-border spinner-border-sm me-1"></div><small>Checking...</small>';
-
     try {
-        // Проверяем через /build с force=false — если already_indexed вернёт true
         const data = await fetch(`${RAG_API}/build`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                docs_dir: path,
-                output_dir: '',   // игнорируется на сервере
-                model: document.getElementById('rag-build-model')?.value || 'sentence-transformers/all-mpnet-base-v2',
-                chunk_size: 1,    // минимум — только для проверки
-                overlap: 0,
-            })
+            body: JSON.stringify({ docs_dir: selected, output_dir: '', model: 'x', chunk_size: 1, overlap: 0 })
         }).then(r => r.json());
-
-        if (data.already_indexed) {
-            status.innerHTML = `<div class="alert alert-warning p-2 mb-0 small">
-                ⚠️ Index already exists for this directory (<strong>${data.name}</strong>).
-                Use <strong>Rebuild (force)</strong> to re-index, or <strong>Load</strong> it from the list.
-            </div>`;
-        } else {
-            status.innerHTML = `<div class="alert alert-success p-2 mb-0 small">
-                ✅ No index yet — ready to build.
-            </div>`;
-        }
+        status.innerHTML = data.already_indexed
+            ? `<div class="alert alert-warning p-2 mb-0 small">⚠️ Index already exists for <strong>${data.name}</strong>. Use <strong>Rebuild (force)</strong> to re-index.</div>`
+            : `<div class="alert alert-success p-2 mb-0 small">✅ Ready to build index for <strong>${selected}</strong>.</div>`;
     } catch (e) {
         status.innerHTML = `<div class="text-danger small">${e.message}</div>`;
     }
@@ -328,6 +300,25 @@ export async function clearRAGChunks() {
         if (data.success) refreshRAGStatus();
     } catch (e) {
         showAlert(`❌ ${e.message}`, 'danger');
+    }
+}
+
+/**
+ * Handles native directory picker input — extracts the directory path
+ * from the first selected file and populates #rag-selected-dir.
+ * @param {HTMLInputElement} input
+ */
+export function ragOnDirSelected(input) {
+    if (!input.files?.length) return;
+    // webkitRelativePath is "dirName/file.ext" — take the root folder name
+    const relativePath = input.files[0].webkitRelativePath || '';
+    const dirName = relativePath.split('/')[0];
+    const dirInput = document.getElementById('rag-selected-dir');
+    if (dirInput) dirInput.value = dirName;
+    const status = document.getElementById('rag-dir-status');
+    if (status) {
+        status.style.display = '';
+        status.innerHTML = `<div class="alert alert-success p-2 mb-0 small">✅ Selected: <strong>${dirName}</strong> (${input.files.length} files)</div>`;
     }
 }
 

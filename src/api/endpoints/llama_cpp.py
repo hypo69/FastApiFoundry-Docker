@@ -148,7 +148,8 @@ async def llama_start(request: dict) -> dict:
 
     # Копировать в ~/.models если модель не там и запрошено copy_to_models
     copy_to_models = request.get("copy_to_models", True)
-    models_home = Path.home() / ".models"
+    from ...core.config import config as _cfg
+    models_home = Path(_cfg.dir_models)
     dest = models_home / src.name
 
     if copy_to_models and not dest.exists():
@@ -238,7 +239,8 @@ async def llama_scan_models(extra_dir: str = "") -> dict:
     Основная директория: ~/.models
     Дополнительная: extra_dir из query-параметра (например D:\ если модель ещё не скопирована)
     """
-    models_home = Path.home() / ".models"
+    from ...core.config import config as _cfg
+    models_home = Path(_cfg.dir_models)
     search_dirs = [models_home]
 
     if extra_dir:

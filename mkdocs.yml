@@ -31,6 +31,16 @@ theme:
 
 plugins:
   - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+            members_order: source
   - i18n:
       docs_structure: folder
       languages:
@@ -55,6 +65,16 @@ nav:
     - API Reference: dev/api_reference.md
     - Система RAG: dev/rag_system.md
     - Агенты: dev/agents.md
+    - CI/CD документации: dev/cicd_docs.md
+    - Code Reference (Python):
+      - Foundry Client: dev/code/foundry_client.md
+      - Config: dev/code/config.md
+      - RAG System: dev/code/rag_system.md
+      - App Factory: dev/code/app.md
+    - Browser Extension (JS):
+      - Overview: dev/js/index.md
+    - PowerShell MCP Servers:
+      - Overview: dev/powershell/index.md
 
 markdown_extensions:
   - admonition

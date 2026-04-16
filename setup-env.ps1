@@ -1,10 +1,30 @@
-# setup-env.ps1 — Environment Variables Setup
+# -*- coding: utf-8 -*-
 # =============================================================================
-# Interactive environment variables setup for FastAPI Foundry
+# Process Name: Environment Variables Interactive Setup
+# =============================================================================
+# Description:
+#   Interactive wizard that creates or overwrites the .env file.
+#   Copies .env.example as a base, then prompts for GitHub credentials,
+#   API keys, Foundry URL and environment name.
+#   Optionally generates cryptographically secure random keys automatically.
+#   Runs check_env.py at the end to validate the resulting configuration.
+#
+# Examples:
+#   .\setup-env.ps1                   # interactive setup
+#   .\setup-env.ps1 -Force            # overwrite existing .env without asking
+#   .\setup-env.ps1 -GenerateKeys     # auto-generate API_KEY and SECRET_KEY
+#
+# File: setup-env.ps1
+# Project: FastApiFoundry (Docker)
+# Version: 0.4.1
+# Author: hypo69
+# Copyright: © 2026 hypo69
 # =============================================================================
 
 param(
+    # Overwrite an existing .env without asking for confirmation
     [switch]$Force,
+    # Auto-generate API_KEY and SECRET_KEY instead of prompting
     [switch]$GenerateKeys
 )
 
@@ -15,9 +35,9 @@ Write-Host '🔐 FastAPI Foundry - Environment Setup' -ForegroundColor Cyan
 Write-Host ('=' * 60) -ForegroundColor Cyan
 
 # -----------------------------------------------------------------------------
-# Check existing .env file
+# Step 1: Check whether .env already exists
 # -----------------------------------------------------------------------------
-$envPath = "$Root\.env"
+$envPath        = "$Root\.env"
 $envExamplePath = "$Root\.env.example"
 
 if ((Test-Path $envPath) -and -not $Force) {
@@ -30,7 +50,7 @@ if ((Test-Path $envPath) -and -not $Force) {
 }
 
 # -----------------------------------------------------------------------------
-# Copy example
+# Step 2: Copy .env.example as the starting template
 # -----------------------------------------------------------------------------
 if (Test-Path $envExamplePath) {
     Copy-Item $envExamplePath $envPath -Force
@@ -41,39 +61,51 @@ if (Test-Path $envExamplePath) {
 }
 
 # -----------------------------------------------------------------------------
-# Generate secure keys
+# Helper: Generate a URL-safe random key of the given byte length
 # -----------------------------------------------------------------------------
 function Generate-SecureKey {
+    <#
+    .SYNOPSIS
+        Generates a cryptographically secure random string.
+    .PARAMETER Length
+        Number of random bytes to generate (output will be longer due to Base64).
+    .OUTPUTS
+        string — URL-safe Base64 string with '+', '/' and '=' removed.
+    #>
     param([int]$Length = 32)
-    
+
     $bytes = New-Object byte[] $Length
     [System.Security.Cryptography.RNGCryptoServiceProvider]::Create().GetBytes($bytes)
+    # Strip non-URL-safe characters so the key can be used directly in .env
     return [Convert]::ToBase64String($bytes) -replace '[+/=]', ''
 }
 
+# -----------------------------------------------------------------------------
+# Step 3: Auto-generate keys if -GenerateKeys flag is set
+# -----------------------------------------------------------------------------
 if ($GenerateKeys) {
     Write-Host '🔑 Generating secure keys...' -ForegroundColor Yellow
-    
-    $apiKey = Generate-SecureKey 32
+
+    $apiKey    = Generate-SecureKey 32
     $secretKey = Generate-SecureKey 64
-    
-    # Update .env file
+
+    # Replace the placeholder values in the copied .env
     $content = Get-Content $envPath
-    $content = $content -replace '^API_KEY=.*', "API_KEY=$apiKey"
+    $content = $content -replace '^API_KEY=.*',    "API_KEY=$apiKey"
     $content = $content -replace '^SECRET_KEY=.*', "SECRET_KEY=$secretKey"
     $content | Set-Content $envPath
-    
+
     Write-Host "✅ Generated API_KEY: $($apiKey.Substring(0,8))..." -ForegroundColor Green
     Write-Host "✅ Generated SECRET_KEY: $($secretKey.Substring(0,8))..." -ForegroundColor Green
 }
 
 # -----------------------------------------------------------------------------
-# Interactive Setup
+# Step 4: Interactive prompts — press Enter to skip any field
 # -----------------------------------------------------------------------------
 Write-Host "`n🛠️ Interactive Setup" -ForegroundColor Cyan
 Write-Host "Press Enter to skip any field`n" -ForegroundColor Gray
 
-# GitHub settings
+# GitHub credentials (used for private repo access and RAG indexing)
 Write-Host '🐙 GitHub Configuration:' -ForegroundColor Yellow
 $githubUser = Read-Host 'GitHub Username'
 if ($githubUser) {
@@ -89,7 +121,7 @@ if ($githubPat) {
     $content | Set-Content $envPath
 }
 
-# API settings
+# API security keys (skip if already generated above)
 Write-Host "`n🔑 API Configuration:" -ForegroundColor Yellow
 if (-not $GenerateKeys) {
     $apiKey = Read-Host 'API Key (leave empty to generate)'
@@ -97,20 +129,20 @@ if (-not $GenerateKeys) {
         $apiKey = Generate-SecureKey 32
         Write-Host "Generated API Key: $($apiKey.Substring(0,8))..." -ForegroundColor Green
     }
-    
+
     $secretKey = Read-Host 'Secret Key (leave empty to generate)'
     if (-not $secretKey) {
         $secretKey = Generate-SecureKey 64
         Write-Host "Generated Secret Key: $($secretKey.Substring(0,8))..." -ForegroundColor Green
     }
-    
+
     $content = Get-Content $envPath
-    $content = $content -replace '^API_KEY=.*', "API_KEY=$apiKey"
+    $content = $content -replace '^API_KEY=.*',    "API_KEY=$apiKey"
     $content = $content -replace '^SECRET_KEY=.*', "SECRET_KEY=$secretKey"
     $content | Set-Content $envPath
 }
 
-# Foundry settings
+# Foundry base URL (leave blank to keep the default from .env.example)
 Write-Host "`n🤖 Foundry Configuration:" -ForegroundColor Yellow
 $foundryUrl = Read-Host 'Foundry Base URL (default: http://localhost:50477/v1)'
 if ($foundryUrl) {
@@ -119,7 +151,7 @@ if ($foundryUrl) {
     $content | Set-Content $envPath
 }
 
-# Environment settings
+# Runtime environment tag (affects logging verbosity and debug features)
 Write-Host "`n🌍 Environment Configuration:" -ForegroundColor Yellow
 $environment = Read-Host 'Environment (development/production)'
 if ($environment) {
@@ -129,7 +161,7 @@ if ($environment) {
 }
 
 # -----------------------------------------------------------------------------
-# Check results
+# Step 5: Validate the resulting .env with the Python checker
 # -----------------------------------------------------------------------------
 Write-Host "`n✅ Setup completed!" -ForegroundColor Green
 Write-Host "📁 Configuration saved to: $envPath" -ForegroundColor Gray
@@ -137,6 +169,7 @@ Write-Host "📁 Configuration saved to: $envPath" -ForegroundColor Gray
 Write-Host "`n🔍 Checking configuration..." -ForegroundColor Cyan
 if (Test-Path "$Root\check_env.py") {
     try {
+        # Use the venv Python if available, otherwise fall back to system Python
         $pythonPath = "$Root\venv\Scripts\python.exe"
         if (Test-Path $pythonPath) {
             & $pythonPath "$Root\check_env.py"

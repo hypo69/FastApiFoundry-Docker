@@ -3,10 +3,10 @@
                     <div class="col-md-8">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0"><i class="bi bi-plug"></i> MCP PowerShell Servers</h5>
+                                <h5 class="mb-0"><i class="bi bi-plug"></i> <span data-i18n="tabs.mcp">MCP Servers</span></h5>
                                 <div>
                                     <button class="btn btn-sm btn-outline-primary" onclick="refreshMCPServers()">
-                                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                                        <i class="bi bi-arrow-clockwise"></i> <span data-i18n="common.refresh">Refresh</span>
                                     </button>
                                     <button class="btn btn-sm btn-success" onclick="startAllMCPServers()">
                                         <i class="bi bi-play-fill"></i> Start All
@@ -28,12 +28,9 @@
                     </div>
                     <div class="col-md-4">
                         <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0">Notes</h5>
-                            </div>
+                            <div class="card-header"><h5 class="mb-0" data-i18n="common.notes">Notes</h5></div>
                             <div class="card-body">
-                                <p class="card-text">Управление микро-сервисами PowerShell (MCP).</p>
-                                <p class="card-text">Каждый MCP-сервер запускается как отдельный процесс и может предоставлять специфичную функциональность.</p>
+                                <p class="card-text">Manage PowerShell MCP micro-services. Each server runs as a separate process.</p>
                             </div>
                         </div>
                     </div>

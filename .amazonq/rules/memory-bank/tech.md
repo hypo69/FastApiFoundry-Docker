@@ -1,141 +1,139 @@
 # FastAPI Foundry — Technology Stack
 
 ## Languages & Runtimes
-| Language | Version | Usage |
-|---|---|---|
-| Python | 3.11+ | Core application, MCP servers, utilities |
-| JavaScript | ES2020+ | Browser extension, web UI |
-| PowerShell | 5.1+ | MCP servers, launcher scripts, Windows automation |
-| HTML/CSS | — | Static web interface |
+- **Python 3.11+** — primary backend language (path: `C:/python311`)
+- **JavaScript (ES6+)** — frontend SPA (no build step, vanilla JS)
+- **PowerShell 5+** — Windows scripts, MCP servers, launchers
+- **HTML5 / CSS3** — web UI templates (partials system)
 
-## Core Python Framework
-| Package | Version | Role |
-|---|---|---|
-| fastapi | >=0.104.0 | Web framework |
-| uvicorn[standard] | >=0.24.0 | ASGI server |
-| aiohttp | >=3.9.0 | Async HTTP client (Foundry API calls) |
-| requests | >=2.31.0 | Sync HTTP client (startup checks) |
-| python-dotenv | >=1.0.0 | .env loading |
+## Core Framework
+- **FastAPI** `>=0.104.0` — async REST API framework
+- **Uvicorn** `>=0.24.0` with `[standard]` extras — ASGI server
+  - `timeout_keep_alive=300`, `timeout_graceful_shutdown=10`
+  - Reload mode enabled by default (dev); workers=1 when reload=True
 
-## AI / ML Dependencies
-| Package | Version | Role |
-|---|---|---|
-| sentence-transformers | >=2.2.0 | RAG embeddings |
-| faiss-cpu | >=1.7.0 | Vector similarity search |
-| torch | >=2.0.0 | Required by sentence-transformers |
-| numpy | >=1.24.0 | Numerical operations |
-| transformers | >=4.40.0 | HuggingFace model inference |
-| accelerate | >=0.30.0 | HF model acceleration |
-| huggingface_hub | >=0.23.0 | HF model download |
-| optimum[onnxruntime] | >=1.16.0 | GGUF→ONNX conversion |
-| onnxruntime | >=1.17.0 | ONNX model inference |
+## HTTP & Async
+- **aiohttp** `>=3.9.0` — async HTTP client for Foundry API calls
+- **requests** `>=2.31.0` — sync HTTP for startup checks
+- **websockets** `>=11.0.0` — WebSocket support
+- **watchfiles** `>=0.20.0` — file watching for hot reload
 
-## Utilities
-| Package | Version | Role |
-|---|---|---|
-| PyYAML | >=6.0 | YAML config parsing |
-| psutil | >=5.9.0 | Process/port management |
-| websockets | >=11.0.0 | WebSocket support |
-| watchfiles | >=0.20.0 | Hot reload (dev mode) |
+## AI / ML Stack
+- **sentence-transformers** `>=2.2.0` — embeddings for RAG
+- **faiss-cpu** `>=1.7.0` — vector similarity search
+- **torch** `>=2.0.0` — PyTorch (required by sentence-transformers)
+- **numpy** `>=1.24.0` — numerical operations
+- **transformers** `>=4.40.0` — HuggingFace model inference
+- **accelerate** `>=0.30.0` — HuggingFace acceleration
+- **huggingface_hub** `>=0.23.0` — model downloads
+- **optimum[onnxruntime]** `>=1.16.0` — GGUF→ONNX conversion
+- **onnxruntime** `>=1.17.0` — ONNX model inference
+
+## Configuration & Environment
+- **python-dotenv** `>=1.0.0` — `.env` file loading
+- **PyYAML** `>=6.0` — YAML config support
+- `config.json` — primary config file (JSON, loaded by `Config` singleton)
+- `config_manager.py` — `Config` class with `@property` accessors
+
+## Logging & Monitoring
+- **psutil** `>=5.9.0` — system resource monitoring
+- Python `logging` module — structured + plain text logs
+- Log files in `logs/` directory: `*.log`, `*-errors.log`, `*-structured.jsonl`
+- Log format: `%(asctime)s - %(name)s - %(levelname)s - %(message)s`
 
 ## Testing
-| Package | Version | Role |
-|---|---|---|
-| pytest | >=7.4.0 | Test runner |
-| pytest-asyncio | >=0.21.0 | Async test support |
+- **pytest** `>=7.4.0`
+- **pytest-asyncio** `>=0.21.0`
+- Smoke tests: `check_engine/smoke_all_endpoints.py`
+- Diagnostic scripts: `check_engine/check_*.py`
 
-## External Services / Binaries
-| Component | Port | Notes |
-|---|---|---|
-| Microsoft Foundry Local | 50477 (dynamic) | AI model inference backend |
-| llama.cpp server | 9780 | Alternative GGUF inference |
-| FastAPI app | 9696 (default) | Main API, auto-finds free port |
-| llama.cpp binaries | — | Bundled in `bin/llama-b8802-bin-win-cpu-x64/` |
+## Docker
+- `Dockerfile` — container image
+- `docker-compose.yml` — service definition
+  - Port: `${PORT:-8000}:8000`
+  - Volumes: `./logs`, `./rag_index`, `./.env`
+  - Health check: `GET /api/v1/health` every 30s
 
-## Configuration System
-- `config.json` — structured JSON config with `${VAR}` and `${VAR:default}` substitution
-- `.env` — secrets and environment-specific overrides
-- `config_manager.py` — singleton `Config` class, loads `config.json`, exposes typed properties
-- `src/core/config.py` — re-exports `config` as `settings` for backward compatibility
-- `src/utils/env_processor.py` — resolves `${VAR}` placeholders at startup
+## External Dependencies
+- **Microsoft Foundry Local CLI** — `foundry` command, runs AI models on port 50477 (dynamic)
+- **llama.cpp** — bundled binaries in `bin/llama-b8802-bin-win-cpu-x64/`
+  - `llama-server.exe` — local inference server
+- **HuggingFace Hub** — model downloads via `huggingface-cli` / `hf` CLI
 
 ## Development Commands
 
-### Start server (Foundry already running)
+### Start server
 ```bash
 python run.py
 # or with venv
 venv\Scripts\python.exe run.py
 ```
 
-### Interactive launcher (recommended)
+### PowerShell launcher (interactive menu)
 ```powershell
-.\launcher.ps1           # interactive menu
-.\launcher.ps1 -Mode quick   # auto-install + Foundry + FastAPI
-.\launcher.ps1 -Mode diag    # diagnostics
-.\launcher.ps1 -Mode setup   # configure .env
+.\launcher.ps1
+.\launcher.ps1 -Mode quick    # Quick start
+.\launcher.ps1 -Mode diag     # Diagnostics
+.\launcher.ps1 -Mode setup    # Configure .env
 ```
 
 ### Docker
 ```bash
-docker-compose up --build
+docker-compose up -d
+docker-compose logs -f
+docker-compose down
 ```
 
-### Run tests
+### Install dependencies
 ```bash
-python -m pytest tests/ -v
-python -m pytest tests/test_api.py -v
-```
-
-### Syntax check
-```bash
-python -m py_compile src/api/app.py
-python -m flake8 src/ --max-line-length=120
+pip install -r requirements.txt
+# or
+.\install.ps1
 ```
 
 ### Check environment
 ```bash
 python check_env.py
+python diagnose.py
 ```
 
-### Create RAG index
-```bash
-python create_rag_index.py
-python rag_indexer.py
-```
-
-### Health check
+### Verify API
 ```bash
 curl http://localhost:9696/api/v1/health
+curl http://localhost:9696/api/v1/models
 curl http://localhost:9696/docs
 ```
 
-## Key API Endpoints
-| Method | Path | Description |
+### Run tests
+```bash
+python -m pytest tests/ -v
+python check_engine/smoke_all_endpoints.py
+```
+
+## Key Environment Variables
+| Variable | Purpose | Default |
 |---|---|---|
-| GET | /api/v1/health | Service health + model status |
-| GET | /api/v1/models | List available models |
-| POST | /api/v1/generate | Single text generation |
-| POST | /api/v1/chat | Chat with session history |
-| GET | /api/v1/foundry/status | Foundry service status |
-| POST | /api/v1/foundry/start | Start Foundry service |
-| POST | /api/v1/foundry/stop | Stop Foundry service |
-| GET | /api/v1/foundry/models | List Foundry models |
-| POST | /api/v1/rag/search | RAG context search |
-| DELETE | /api/v1/rag/index | Clear RAG index |
-| GET | /api/v1/config | Read config.json |
-| PUT | /api/v1/config | Update config.json |
-| GET | /api/v1/logs | Stream log files |
-| GET | /docs | Swagger UI |
+| `API_KEY` | API authentication key | — |
+| `SECRET_KEY` | JWT secret | — |
+| `FOUNDRY_BASE_URL` | Foundry API URL | auto-detected |
+| `FOUNDRY_DYNAMIC_PORT` | Foundry port (legacy) | auto-detected |
+| `HF_TOKEN` / `HUGGING_FACE_TOKEN` | HuggingFace token | — |
+| `GITHUB_PAT` | GitHub personal access token | — |
+| `RAG_INDEX_PATH` | RAG index directory | `rag_index/` |
+| `LOG_LEVEL` | Logging level | `INFO` |
+| `ENVIRONMENT` | `development` / `production` | — |
 
-## Docker Configuration
-- Image: `fastapi-foundry:0.2.1`
-- Container: `fastapi-foundry-docker`
-- Volumes: `./logs:/app/logs`, `./rag_index:/app/rag_index`
-- Healthcheck: interval 30s, timeout 10s, 3 retries
-
-## Browser Extension
-- Type: Chrome/Chromium Manifest V3
-- Providers: Foundry Local, Gemini, OpenAI-compatible, OpenRouter
-- Languages: en, ru, de, fr, es, ja, zh
-- Entry: `extentions/browser-extention-summarizer/manifest.json`
+## API Endpoints Summary
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/v1/health` | GET | Service health check |
+| `/api/v1/models` | GET | List available models |
+| `/api/v1/generate` | POST | Text generation |
+| `/api/v1/chat` | POST | Chat with history |
+| `/api/v1/rag/search` | POST | RAG vector search |
+| `/api/v1/foundry/*` | GET/POST | Foundry management |
+| `/api/v1/hf/*` | GET/POST | HuggingFace models |
+| `/api/v1/llama/*` | GET/POST | llama.cpp inference |
+| `/api/v1/config` | GET/POST | Config read/write |
+| `/api/v1/logs` | GET | Log viewer |
+| `/docs` | GET | Swagger UI |

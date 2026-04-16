@@ -38,7 +38,7 @@ class RAGSystem:
     """Система поиска и извлечения контекста (RAG)"""
     
     def __init__(self):
-        self.index_dir = Path(config.rag_index_dir)
+        self.index_dir = Path(config.dir_rag)
         # Создаём директорию если не существует
         self.index_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"RAG index directory: {self.index_dir}")

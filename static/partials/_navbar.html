@@ -3,9 +3,19 @@
             <a class="navbar-brand" href="#">
                 <i class="bi bi-robot"></i> FastAPI Foundry
             </a>
-            <div class="navbar-nav ms-auto">
+            <div class="navbar-nav ms-auto d-flex align-items-center gap-3">
+                <!-- Language selector -->
+                <select id="lang-selector" class="form-select form-select-sm"
+                        style="width:auto;background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);"
+                        onchange="switchLang(this.value)">
+                    <option value="en">EN</option>
+                    <option value="ru">RU</option>
+                    <option value="he">HE</option>
+                </select>
+                <!-- Connection status -->
                 <span class="navbar-text" id="status-indicator">
-                    <i class="bi bi-circle-fill text-warning"></i> Connecting...
+                    <i class="bi bi-circle-fill text-warning"></i>
+                    <span data-i18n="nav.connecting">Connecting...</span>
                 </span>
             </div>
         </div>

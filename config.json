@@ -4,19 +4,19 @@
     "port": 9696,
     "auto_find_free_port": false,
     "mode": "dev",
-    "workers": null
+    "workers": 1
   },
   "foundry_ai": {
     "base_url": "",
-    "default_model": "llama::C:\\Users\\onela\\.models\\gemma-2-2b-it-Q6_K.gguf",
-    "temperature": null,
-    "max_tokens": null,
+    "default_model": "qwen2.5-0.5b-instruct-generic-cpu:4",
+    "temperature": 0.7,
+    "max_tokens": 2048,
     "auto_load_default": false
   },
   "rag_system": {
-    "enabled": false,
+    "enabled": true,
     "index_dir": "~/.rag",
-    "chunk_size": null
+    "chunk_size": 1000
   },
   "security": {
     "api_key": "",
@@ -38,11 +38,19 @@
     "port": 9780,
     "host": "127.0.0.1"
   },
+  "directories": {
+    "models": "~/.models",
+    "rag": "~/.rag",
+    "hf_models": "~/.hf_models"
+  },
   "huggingface": {
     "token": "",
     "models_dir": "./models/hf",
     "device": "auto",
     "default_max_new_tokens": 512,
     "default_temperature": 0.7
+  },
+  "app": {
+    "language": "en"
   }
 }

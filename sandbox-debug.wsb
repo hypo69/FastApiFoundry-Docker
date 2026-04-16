@@ -1,0 +1,15 @@
+<Configuration>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>D:\repos\public_repositories\FastApiFoundry-Docker</HostFolder>
+      <ReadOnly>false</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+
+  <LogonCommand>
+    <Command>powershell.exe -NoExit -ExecutionPolicy Bypass -Command "cd C:\Users\WDAGUtilityAccount\Desktop\FastApiFoundry-Docker; ./start.ps1"</Command>
+  </LogonCommand>
+
+  <Networking>Enable</Networking>
+  <ClipboardRedirection>Enable</ClipboardRedirection>
+</Configuration>

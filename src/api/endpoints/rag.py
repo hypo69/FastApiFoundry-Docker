@@ -219,6 +219,12 @@ def _safe(name: str) -> str:
 
 # ── Браузер файловой системы ──────────────────────────────────────────────────
 
+@router.get("/cwd")
+async def get_cwd():
+    """Return server working directory for path resolution."""
+    return {"success": True, "cwd": str(Path.cwd())}
+
+
 @router.get("/browse")
 async def browse_filesystem(path: str = ""):
     """Возвращает содержимое директории для браузера выбора папки.
@@ -322,6 +328,10 @@ async def build_rag_index(request: RAGBuildRequest):
     (если не передан force=true).
     """
     docs_dir = Path(request.docs_dir).expanduser()
+    # If relative, resolve against CWD (project root)
+    if not docs_dir.is_absolute():
+        docs_dir = Path.cwd() / docs_dir
+    docs_dir = docs_dir.resolve()
     if not docs_dir.exists():
         return {"success": False, "error": f"Directory not found: {docs_dir}"}
 
