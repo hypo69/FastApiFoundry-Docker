@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Logs API Endpoints
+# Process Name: Logs API Endpoints
 # =============================================================================
-# Описание:
-#   API endpoints для получения логов приложения
-#   Отображает логи на вкладке Logs в веб-интерфейсе
+# Description:
+#   API endpoints for retrieving application logs
+#   Displays logs on the Logs tab in the web interface
 #
 # File: logs.py
 # Project: FastApiFoundry (Docker)
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 @router.get("/logs")
 async def get_logs(lines: int = 100) -> Dict[str, Any]:
-    """Получить последние строки логов из всех основных лог-файлов"""
+    """Get the last log lines from all main log files"""
     try:
         log_candidates = [
             Path("logs/fastapi-app.log"),
@@ -53,47 +53,47 @@ async def get_logs(lines: int = 100) -> Dict[str, Any]:
             "file": str(log_file),
         }
     except Exception as e:
-        logger.error(f"Ошибка чтения логов: {e}")
+        logger.error(f"Error reading logs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/logs/clear")
 async def clear_logs() -> Dict[str, Any]:
-    """Очистить файл логов"""
+    """Clear log file"""
     try:
         log_file = Path("logs/app.log")
         
         if log_file.exists():
-            # Очищаем файл
+            # Clear file
             with open(log_file, 'w', encoding='utf-8') as f:
                 f.write("")
             
-            logger.info("Файл логов очищен")
+            logger.info("Log file cleared")
             return {
                 "success": True,
-                "message": "Логи очищены"
+                "message": "Logs cleared"
             }
         else:
             return {
                 "success": True,
-                "message": "Файл логов не существует"
+                "message": "Log file does not exist"
             }
             
     except Exception as e:
-        logger.error(f"Ошибка очистки логов: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка очистки логов: {str(e)}")
+        logger.error(f"Error clearing logs: {e}")
+        raise HTTPException(status_code=500, detail=f"Error clearing logs: {str(e)}")
 
 @router.get("/logs/download")
 async def download_logs():
-    """Скачать файл логов"""
+    """Download log file"""
     try:
         log_file = Path("logs/app.log")
         
         if not log_file.exists():
-            raise HTTPException(status_code=404, detail="Файл логов не найден")
+            raise HTTPException(status_code=404, detail="Log file not found")
         
         from fastapi.responses import FileResponse
         
-        logger.info("Скачивание файла логов")
+        logger.info("Downloading log file")
         return FileResponse(
             path=str(log_file),
             filename="app.log",
@@ -101,15 +101,15 @@ async def download_logs():
         )
         
     except Exception as e:
-        logger.error(f"Ошибка скачивания логов: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка скачивания логов: {str(e)}")
+        logger.error(f"Error downloading logs: {e}")
+        raise HTTPException(status_code=500, detail=f"Error downloading logs: {str(e)}")
 
 
 @router.get("/logs/export")
-async def export_log(name: str = Query(default="fastapi-foundry", description="Имя логгера"), errors_only: bool = Query(default=False)):
-    """Скачать лог-файл через export_to_file.
+async def export_log(name: str = Query(default="fastapi-foundry", description="Logger name"), errors_only: bool = Query(default=False)):
+    """Download log file via export_to_file.
 
-    Примеры:
+    Examples:
         GET /api/v1/logs/export
         GET /api/v1/logs/export?name=foundry-client
         GET /api/v1/logs/export?errors_only=true
@@ -119,7 +119,7 @@ async def export_log(name: str = Query(default="fastapi-foundry", description="�
         named_logger = app_logger if name == app_logger.name else __import__('src.logger', fromlist=['get_logger']).get_logger(name)
         log_path = named_logger.get_error_log_path() if errors_only else named_logger.get_log_path()
         if not log_path.exists():
-            raise HTTPException(status_code=404, detail=f"Файл не найден: {log_path}")
+            raise HTTPException(status_code=404, detail=f"File not found: {log_path}")
         return FileResponse(
             path=str(log_path),
             filename=log_path.name,

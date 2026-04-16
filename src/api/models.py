@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Простые модели данных FastAPI Foundry
+# Process Name: Simple Data Models for FastAPI Foundry
 # =============================================================================
-# Описание:
-#   Простые функции для создания стандартных ответов API
-#   Без Pydantic - только словари
+# Description:
+#   Simple functions for creating standard API responses
+#   No Pydantic - only dictionaries
 #
 # File: models.py
 # Project: FastApiFoundry (Docker)
@@ -13,13 +13,13 @@
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
+# Date: December 9, 2025
 # =============================================================================
 
 from datetime import datetime
 
 def create_generate_response(success: bool, content: str = None, model: str = None, error: str = None) -> dict:
-    """Создать ответ на генерацию текста"""
+    """Create a text generation response"""
     return {
         "success": success,
         "content": content,
@@ -28,7 +28,7 @@ def create_generate_response(success: bool, content: str = None, model: str = No
     }
 
 def create_health_response(status: str, foundry_status: str, rag_available: bool) -> dict:
-    """Создать ответ проверки здоровья"""
+    """Create a health check response"""
     return {
         "status": status,
         "foundry_status": foundry_status,
@@ -37,14 +37,14 @@ def create_health_response(status: str, foundry_status: str, rag_available: bool
     }
 
 def create_error_response(error: str, detail: str = None) -> dict:
-    """Создать ответ с ошибкой"""
+    """Create an error response"""
     return {
         "error": error,
         "detail": detail
     }
 
 def create_models_response(success: bool, models: list = None, error: str = None) -> dict:
-    """Создать ответ со списком моделей"""
+    """Create a models list response"""
     return {
         "success": success,
         "models": models or [],

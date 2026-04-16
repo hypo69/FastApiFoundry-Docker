@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: MCP PowerShell Servers Management Endpoints
+# Process Name: MCP PowerShell Servers Management Endpoints
 # =============================================================================
-# Описание:
-#   REST API для управления MCP PowerShell серверами.
-#   Запуск, остановка, статус серверов из mcp-powershell-servers/settings.json
+# Description:
+#   REST API for managing MCP PowerShell servers.
+#   Starting, stopping, and status of servers from mcp-powershell-servers/settings.json
 #
 # File: mcp_powershell.py
 # Project: FastApiFoundry (Docker)
@@ -30,7 +30,7 @@ router = APIRouter()
 MCP_SETTINGS_PATH = Path("mcp-powershell-servers/settings.json")
 MCP_PIDS_PATH = Path("mcp-powershell-servers/.mcp-pids.json")
 
-# Хранилище запущенных процессов (в памяти)
+# In-memory storage for running processes
 _running_processes: Dict[str, subprocess.Popen] = {}
 
 
@@ -84,7 +84,7 @@ def _get_server_status(name: str) -> str:
 
 @router.get("/mcp-powershell/servers")
 async def list_mcp_servers():
-    """Список всех MCP серверов из settings.json с их статусом"""
+    """List all MCP servers from settings.json with their status"""
     try:
         settings = _load_settings()
         servers = settings.get("mcpServers", {})
@@ -107,7 +107,7 @@ async def list_mcp_servers():
 
 @router.post("/mcp-powershell/servers/{name}/start")
 async def start_mcp_server(name: str):
-    """Запустить MCP сервер по имени"""
+    """Start an MCP server by name"""
     try:
         settings = _load_settings()
         servers = settings.get("mcpServers", {})
@@ -126,7 +126,7 @@ async def start_mcp_server(name: str):
         if not command:
             raise HTTPException(status_code=400, detail="No command specified")
 
-        # Загружаем env из envFile если указан
+        # Load env from envFile if specified
         env = os.environ.copy()
         if env_file and Path(env_file).exists():
             with open(env_file, "r", encoding="utf-8") as f:
@@ -136,7 +136,7 @@ async def start_mcp_server(name: str):
                         k, _, v = line.partition("=")
                         env[k.strip()] = v.strip()
 
-        # Добавляем env из cfg.env если есть
+        # Add env from cfg.env if present
         for k, v in cfg.get("env", {}).items():
             resolved = v
             if v.startswith("${") and v.endswith("}"):
@@ -173,7 +173,7 @@ async def start_mcp_server(name: str):
 
 @router.post("/mcp-powershell/servers/{name}/stop")
 async def stop_mcp_server(name: str):
-    """Остановить MCP сервер по имени"""
+    """Stop an MCP server by name"""
     try:
         stopped = False
 
@@ -210,7 +210,7 @@ async def stop_mcp_server(name: str):
 
 @router.get("/mcp-powershell/servers/{name}/status")
 async def get_mcp_server_status(name: str):
-    """Статус конкретного MCP сервера"""
+    """Status of a specific MCP server"""
     settings = _load_settings()
     if name not in settings.get("mcpServers", {}):
         raise HTTPException(status_code=404, detail=f"Server '{name}' not found")
@@ -223,7 +223,7 @@ async def get_mcp_server_status(name: str):
 
 @router.get("/mcp-powershell/settings")
 async def get_mcp_settings():
-    """Получить содержимое mcp-powershell-servers/settings.json"""
+    """Get the contents of mcp-powershell-servers/settings.json"""
     try:
         return {"success": True, "settings": _load_settings()}
     except Exception as e:
@@ -238,7 +238,7 @@ class McpSettingsRequest(BaseModel):
 
 @router.post("/mcp-powershell/settings")
 async def save_mcp_settings(request: McpSettingsRequest):
-    """Сохранить mcp-powershell-servers/settings.json"""
+    """Save mcp-powershell-servers/settings.json"""
     try:
         _save_settings(request.settings)
         return {"success": True, "message": "MCP settings saved"}

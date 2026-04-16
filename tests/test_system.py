@@ -157,8 +157,7 @@ class SystemTester:
             print(f"  Details: {details}")
 
     async def run_all_tests(self):
-        """Запуск всех тестов"""
-        print("🚀 Запуск комплексного тестирования FastAPI Foundry")
+        print("🚀 Running comprehensive FastAPI Foundry testing")
         print("=" * 60)
         
         tests = [
@@ -179,14 +178,14 @@ class SystemTester:
                 passed += 1
             print("-" * 40)
         
-        print(f"\n📊 Результаты тестирования:")
-        print(f"✅ Пройдено: {passed}/{total}")
-        print(f"❌ Провалено: {total - passed}/{total}")
+        print(f"\n📊 Test Results:")
+        print(f"✅ Passed: {passed}/{total}")
+        print(f"❌ Failed: {total - passed}/{total}")
         
         if passed == total:
-            print("🎉 Все тесты пройдены успешно!")
+            print("🎉 All tests passed successfully!")
         else:
-            print("⚠️  Некоторые тесты провалились")
+            print("⚠️ Some tests failed")
         
         return self.results
 
@@ -198,7 +197,12 @@ async def main():
     with open("test_results.json", "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
     
-    print(f"\n📄 Результаты сохранены в test_results.json")
+    print(f"\n📄 Results saved to test_results.json")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main())ain())(main())))n())))_ascii=False, indent=2)
+    
+    print(f"\n📄 Results saved to test_results.json")
+
+if __name__ == "__main__":
+    asyncio.run(main())ain())(main())))n())))())(main())))n()))))))

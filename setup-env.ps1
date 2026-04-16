@@ -1,6 +1,6 @@
 # setup-env.ps1 — Environment Variables Setup
 # =============================================================================
-# Интерактивная настройка переменных окружения для FastAPI Foundry
+# Interactive environment variables setup for FastAPI Foundry
 # =============================================================================
 
 param(
@@ -15,7 +15,7 @@ Write-Host '🔐 FastAPI Foundry - Environment Setup' -ForegroundColor Cyan
 Write-Host ('=' * 60) -ForegroundColor Cyan
 
 # -----------------------------------------------------------------------------
-# Проверка существующего .env файла
+# Check existing .env file
 # -----------------------------------------------------------------------------
 $envPath = "$Root\.env"
 $envExamplePath = "$Root\.env.example"
@@ -30,7 +30,7 @@ if ((Test-Path $envPath) -and -not $Force) {
 }
 
 # -----------------------------------------------------------------------------
-# Копирование примера
+# Copy example
 # -----------------------------------------------------------------------------
 if (Test-Path $envExamplePath) {
     Copy-Item $envExamplePath $envPath -Force
@@ -41,7 +41,7 @@ if (Test-Path $envExamplePath) {
 }
 
 # -----------------------------------------------------------------------------
-# Генерация безопасных ключей
+# Generate secure keys
 # -----------------------------------------------------------------------------
 function Generate-SecureKey {
     param([int]$Length = 32)
@@ -57,7 +57,7 @@ if ($GenerateKeys) {
     $apiKey = Generate-SecureKey 32
     $secretKey = Generate-SecureKey 64
     
-    # Обновляем .env файл
+    # Update .env file
     $content = Get-Content $envPath
     $content = $content -replace '^API_KEY=.*', "API_KEY=$apiKey"
     $content = $content -replace '^SECRET_KEY=.*', "SECRET_KEY=$secretKey"
@@ -68,12 +68,12 @@ if ($GenerateKeys) {
 }
 
 # -----------------------------------------------------------------------------
-# Интерактивная настройка
+# Interactive Setup
 # -----------------------------------------------------------------------------
 Write-Host "`n🛠️ Interactive Setup" -ForegroundColor Cyan
 Write-Host "Press Enter to skip any field`n" -ForegroundColor Gray
 
-# GitHub настройки
+# GitHub settings
 Write-Host '🐙 GitHub Configuration:' -ForegroundColor Yellow
 $githubUser = Read-Host 'GitHub Username'
 if ($githubUser) {
@@ -89,7 +89,7 @@ if ($githubPat) {
     $content | Set-Content $envPath
 }
 
-# API настройки
+# API settings
 Write-Host "`n🔑 API Configuration:" -ForegroundColor Yellow
 if (-not $GenerateKeys) {
     $apiKey = Read-Host 'API Key (leave empty to generate)'
@@ -110,7 +110,7 @@ if (-not $GenerateKeys) {
     $content | Set-Content $envPath
 }
 
-# Foundry настройки
+# Foundry settings
 Write-Host "`n🤖 Foundry Configuration:" -ForegroundColor Yellow
 $foundryUrl = Read-Host 'Foundry Base URL (default: http://localhost:50477/v1)'
 if ($foundryUrl) {
@@ -119,7 +119,7 @@ if ($foundryUrl) {
     $content | Set-Content $envPath
 }
 
-# Environment настройки
+# Environment settings
 Write-Host "`n🌍 Environment Configuration:" -ForegroundColor Yellow
 $environment = Read-Host 'Environment (development/production)'
 if ($environment) {
@@ -129,7 +129,7 @@ if ($environment) {
 }
 
 # -----------------------------------------------------------------------------
-# Проверка результата
+# Check results
 # -----------------------------------------------------------------------------
 Write-Host "`n✅ Setup completed!" -ForegroundColor Green
 Write-Host "📁 Configuration saved to: $envPath" -ForegroundColor Gray

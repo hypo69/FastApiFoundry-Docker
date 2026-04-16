@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Model Manager for FastAPI Foundry
+# Process Name: Model Manager for FastAPI Foundry
 # =============================================================================
-# Описание:
-#   Менеджер для управления подключением и конфигурацией AI моделей
-#   Поддерживает различные провайдеры: Foundry, Ollama, OpenAI, Anthropic
+# Description:
+#   Manager for controlling AI model connections and configuration
+#   Supports various providers: Foundry, Ollama, OpenAI, Anthropic
 #
 # File: model_manager.py
 # Project: AiStros
@@ -26,18 +26,18 @@ from pathlib import Path
 from config import settings
 from ..utils.logging_system import get_logger
 
-# Создать логгер для менеджера моделей
+# Create logger for the model manager
 logger = get_logger("model-manager")
 
 class ModelManager:
-    """Менеджер для управления подключенными AI моделями"""
+    """Manager for controlling connected AI models"""
     
     def __init__(self):
         self.connected_models: Dict[str, Dict[str, Any]] = {}
         self.providers_config = {
             "foundry": {
                 "name": "Foundry AI",
-                "description": "Локальный AI сервер Foundry",
+                "description": "Local Foundry AI server",
                 "supported_features": ["text_generation", "chat", "embeddings"],
                 "requires_api_key": False,
                 "default_endpoint": settings.foundry_base_url,
@@ -45,7 +45,7 @@ class ModelManager:
             },
             "ollama": {
                 "name": "Ollama",
-                "description": "Локальный AI сервер Ollama",
+                "description": "Local Ollama AI server",
                 "supported_features": ["text_generation", "chat", "embeddings"],
                 "requires_api_key": False,
                 "default_endpoint": "http://localhost:11434/api/",
@@ -69,7 +69,7 @@ class ModelManager:
             },
             "custom": {
                 "name": "Custom Provider",
-                "description": "Кастомный провайдер с настраиваемым endpoint",
+                "description": "Custom provider with configurable endpoint",
                 "supported_features": ["text_generation"],
                 "requires_api_key": False,
                 "default_endpoint": None,
@@ -80,28 +80,28 @@ class ModelManager:
         self.load_config()
     
     def load_config(self):
-        """Загрузить конфигурацию моделей из файла"""
-        logger.debug("Загрузка конфигурации моделей", config_file=str(self.config_file))
+        """Load model configuration from file"""
+        logger.debug("Loading model configuration", config_file=str(self.config_file))
         
         if self.config_file.exists():
             try:
                 with open(self.config_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     self.connected_models = data.get('connected_models', {})
-                logger.info("Конфигурация моделей загружена", 
+                logger.info("Model configuration loaded", 
                            models_count=len(self.connected_models),
                            models=list(self.connected_models.keys()))
             except Exception as e:
-                logger.exception("Критическая ошибка загрузки конфигурации", 
+                logger.exception("Critical error loading configuration", 
                                config_file=str(self.config_file), error=str(e))
                 self.connected_models = {}
         else:
-            logger.info("Конфигурация не найдена, создание модели по умолчанию")
-            # Добавляем Foundry модель по умолчанию
+            logger.info("Configuration not found, creating default model")
+            # Add default Foundry model
             self.add_default_foundry_model()
     
     def save_config(self):
-        """Сохранить конфигурацию моделей в файл"""
+        """Save model configuration to file"""
         try:
             config_data = {
                 'connected_models': self.connected_models,
@@ -109,12 +109,12 @@ class ModelManager:
             }
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump(config_data, f, indent=2, ensure_ascii=False, default=str)
-            logger.info("Конфигурация моделей сохранена")
+            logger.info("Model configuration saved")
         except Exception as e:
-            logger.error(f"Ошибка сохранения конфигурации: {e}")
+            logger.error(f"Error saving configuration: {e}")
     
     def add_default_foundry_model(self):
-        """Добавить модель Foundry по умолчанию"""
+        """Add default Foundry model"""
         default_model = {
             "model_id": settings.foundry_default_model,
             "model_name": "Foundry Default Model",
@@ -140,24 +140,24 @@ class ModelManager:
         self.save_config()
     
     async def connect_model(self, model_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Подключить новую модель"""
+        """Connect a new model"""
         model_id = model_data["model_id"]
-        logger.info("Попытка подключения модели", 
+        logger.info("Attempting to connect model", 
                    model_id=model_id, 
                    provider=model_data.get("provider", "unknown"))
         
         try:
-            # Проверяем, не подключена ли уже модель
+            # Check if model is already connected
             if model_id in self.connected_models:
-                logger.warning("Модель уже подключена", model_id=model_id)
+                logger.warning("Model already connected", model_id=model_id)
                 return {
                     "success": False,
                     "model_id": model_id,
-                    "message": f"Модель {model_id} уже подключена",
+                    "message": f"Model {model_id} already connected",
                     "error": "Model already connected"
                 }
             
-            # Создаем конфигурацию модели
+            # Create model configuration
             model_config = {
                 "model_id": model_id,
                 "model_name": model_data.get("model_name", model_id),
@@ -175,20 +175,20 @@ class ModelManager:
                 "created_at": datetime.now()
             }
             
-            logger.debug("Конфигурация модели создана", 
+            logger.debug("Model configuration created", 
                         model_id=model_id, 
                         endpoint=model_config["endpoint_url"])
             
-            # Тестируем подключение к модели
+            # Test model connection
             with logger.timer("model_connection_test", model_id=model_id):
                 test_result = await self.test_model_connection(model_config)
                 model_config["status"] = "online" if test_result["success"] else "offline"
             
-            # Сохраняем модель
+            # Save model
             self.connected_models[model_id] = model_config
             self.save_config()
             
-            logger.info("Модель успешно подключена", 
+            logger.info("Model successfully connected", 
                        model_id=model_id, 
                        status=model_config["status"],
                        response_time=test_result.get("response_time"))
@@ -196,27 +196,27 @@ class ModelManager:
             return {
                 "success": True,
                 "model_id": model_id,
-                "message": f"Модель {model_id} успешно подключена",
+                "message": f"Model {model_id} successfully connected",
                 "status": model_config["status"]
             }
             
         except Exception as e:
-            logger.exception("Критическая ошибка подключения модели", 
+            logger.exception("Critical error connecting model", 
                            model_id=model_id, error=str(e))
             return {
                 "success": False,
                 "model_id": model_id,
-                "message": "Ошибка подключения модели",
+                "message": "Error connecting model",
                 "error": str(e)
             }
     
     async def disconnect_model(self, model_id: str) -> Dict[str, Any]:
-        """Отключить модель"""
+        """Disconnect model"""
         if model_id not in self.connected_models:
             return {
                 "success": False,
                 "model_id": model_id,
-                "message": f"Модель {model_id} не найдена",
+                "message": f"Model {model_id} not found",
                 "error": "Model not found"
             }
         
@@ -227,32 +227,32 @@ class ModelManager:
             return {
                 "success": True,
                 "model_id": model_id,
-                "message": f"Модель {model_id} отключена"
+                "message": f"Model {model_id} disconnected"
             }
             
         except Exception as e:
-            logger.error(f"Ошибка отключения модели {model_id}: {e}")
+            logger.error(f"Error disconnecting model {model_id}: {e}")
             return {
                 "success": False,
                 "model_id": model_id,
-                "message": "Ошибка отключения модели",
+                "message": "Error disconnecting model",
                 "error": str(e)
             }
     
     async def update_model(self, model_id: str, update_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Обновить настройки модели"""
+        """Update model settings"""
         if model_id not in self.connected_models:
             return {
                 "success": False,
                 "model_id": model_id,
-                "message": f"Модель {model_id} не найдена",
+                "message": f"Model {model_id} not found",
                 "error": "Model not found"
             }
         
         try:
             model_config = self.connected_models[model_id]
             
-            # Обновляем поля
+            # Update fields
             if "model_name" in update_data:
                 model_config["model_name"] = update_data["model_name"]
             if "enabled" in update_data:
@@ -268,7 +268,7 @@ class ModelManager:
             
             model_config["updated_at"] = datetime.now()
             
-            # Тестируем подключение после обновления
+            # Test connection after update
             if model_config["enabled"]:
                 test_result = await self.test_model_connection(model_config)
                 model_config["status"] = "online" if test_result["success"] else "offline"
@@ -280,21 +280,21 @@ class ModelManager:
             return {
                 "success": True,
                 "model_id": model_id,
-                "message": f"Модель {model_id} обновлена",
+                "message": f"Model {model_id} updated",
                 "status": model_config["status"]
             }
             
         except Exception as e:
-            logger.error(f"Ошибка обновления модели {model_id}: {e}")
+            logger.error(f"Error updating model {model_id}: {e}")
             return {
                 "success": False,
                 "model_id": model_id,
-                "message": "Ошибка обновления модели",
+                "message": "Error updating model",
                 "error": str(e)
             }
     
     async def test_model_connection(self, model_config: Dict[str, Any], test_prompt: str = "Hello") -> Dict[str, Any]:
-        """Тестировать подключение к модели"""
+        """Test model connection"""
         start_time = time.time()
         
         try:
@@ -314,7 +314,7 @@ class ModelManager:
             response_time = time.time() - start_time
             
             if result["success"]:
-                # Обновляем статистику
+                # Update statistics
                 model_config["last_check"] = datetime.now()
                 if model_config["avg_response_time"] is None:
                     model_config["avg_response_time"] = response_time
@@ -325,7 +325,7 @@ class ModelManager:
             return result
             
         except Exception as e:
-            logger.error(f"Ошибка тестирования модели {model_config['model_id']}: {e}")
+            logger.error(f"Error testing model {model_config['model_id']}: {e}")
             return {
                 "success": False,
                 "model_id": model_config["model_id"],
@@ -334,13 +334,13 @@ class ModelManager:
             }
     
     async def _test_foundry_model(self, model_config: Dict[str, Any], test_prompt: str) -> Dict[str, Any]:
-        """Тестировать Foundry модель"""
-        # Используем актуальный endpoint URL из конфигурации, даже если в модели устаревший
+        """Test Foundry model"""
+        # Use current endpoint URL from configuration, even if model's is outdated
         endpoint_url = model_config.get('endpoint_url') or settings.foundry_base_url
-        # Если endpoint использует старый порт 5272, замен на текущий от settings
+        # If endpoint uses old port 5272, replace with current from settings
         if endpoint_url.endswith(':5272/v1/') or ':5272' in endpoint_url:
             endpoint_url = settings.foundry_base_url
-            logger.info(f"Обновлен endpoint для модели {model_config['model_id']}: {endpoint_url}")
+            logger.info(f"Updated endpoint for model {model_config['model_id']}: {endpoint_url}")
 
         async with aiohttp.ClientSession() as session:
             url = f"{endpoint_url.rstrip('/')}/chat/completions"
@@ -369,7 +369,7 @@ class ModelManager:
                     }
     
     async def _test_ollama_model(self, model_config: Dict[str, Any], test_prompt: str) -> Dict[str, Any]:
-        """Тестировать Ollama модель"""
+        """Test Ollama model"""
         async with aiohttp.ClientSession() as session:
             url = f"{model_config['endpoint_url'].rstrip('/')}/generate"
             
@@ -396,7 +396,7 @@ class ModelManager:
                     }
     
     async def _test_openai_model(self, model_config: Dict[str, Any], test_prompt: str) -> Dict[str, Any]:
-        """Тестировать OpenAI модель"""
+        """Test OpenAI model"""
         if not model_config.get("api_key"):
             return {
                 "success": False,
@@ -436,7 +436,7 @@ class ModelManager:
                     }
     
     async def _test_anthropic_model(self, model_config: Dict[str, Any], test_prompt: str) -> Dict[str, Any]:
-        """Тестировать Anthropic модель"""
+        """Test Anthropic model"""
         if not model_config.get("api_key"):
             return {
                 "success": False,
@@ -476,7 +476,7 @@ class ModelManager:
                     }
     
     async def _test_custom_model(self, model_config: Dict[str, Any], test_prompt: str) -> Dict[str, Any]:
-        """Тестировать кастомную модель"""
+        """Test custom model"""
         async with aiohttp.ClientSession() as session:
             url = model_config["endpoint_url"]
             
@@ -507,7 +507,7 @@ class ModelManager:
                     }
     
     async def check_all_models_health(self):
-        """Проверить здоровье всех подключенных моделей"""
+        """Check the health of all connected models"""
         for model_id, model_config in self.connected_models.items():
             if model_config["enabled"]:
                 test_result = await self.test_model_connection(model_config, "ping")
@@ -517,7 +517,7 @@ class ModelManager:
         self.save_config()
     
     def get_connected_models(self) -> Dict[str, Any]:
-        """Получить список подключенных моделей"""
+        """Get a list of connected models"""
         models_list = []
         online_count = 0
         
@@ -549,7 +549,7 @@ class ModelManager:
         }
     
     def get_providers(self) -> Dict[str, Any]:
-        """Получить список доступных провайдеров"""
+        """Get a list of available providers"""
         providers_list = []
         
         for provider_id, config in self.providers_config.items():
@@ -571,11 +571,11 @@ class ModelManager:
         }
     
     def get_model_config(self, model_id: str) -> Optional[Dict[str, Any]]:
-        """Получить конфигурацию модели"""
+        """Get model configuration"""
         return self.connected_models.get(model_id)
     
     def increment_usage(self, model_id: str, response_time: float = None):
-        """Увеличить счетчик использования модели"""
+        """Increment model usage counter"""
         if model_id in self.connected_models:
             self.connected_models[model_id]["usage_count"] += 1
             
@@ -585,5 +585,5 @@ class ModelManager:
             elif response_time:
                 self.connected_models[model_id]["avg_response_time"] = response_time
 
-# Глобальный экземпляр менеджера моделей
+# Global model manager instance
 model_manager = ModelManager()

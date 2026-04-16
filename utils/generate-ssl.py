@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Простой генератор SSL сертификатов
+# Process Name: Simple SSL Certificate Generator
 # =============================================================================
-# Описание:
-#   Создает самоподписанные SSL сертификаты для HTTPS
+# Description:
+#   Creates self-signed SSL certificates for HTTPS
 #
 # File: generate-ssl.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.4.0
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
+# Date: December 9, 2025
 # =============================================================================
 
 import os
@@ -20,7 +20,7 @@ import subprocess
 from pathlib import Path
 
 def generate_ssl_certificates():
-    """Генерация SSL сертификатов через openssl"""
+    """Generates SSL certificates using openssl"""
     
     ssl_dir = Path.home() / ".ssl"
     ssl_dir.mkdir(exist_ok=True)
@@ -28,9 +28,9 @@ def generate_ssl_certificates():
     cert_file = ssl_dir / "cert.pem"
     key_file = ssl_dir / "key.pem"
     
-    print(f"🔐 Создание SSL сертификатов в {ssl_dir}")
+    print(f"🔐 Creating SSL certificates in {ssl_dir}")
     
-    # Команда openssl
+    # openssl command
     cmd = [
         "openssl", "req", "-x509", "-newkey", "rsa:4096",
         "-keyout", str(key_file),
@@ -43,28 +43,28 @@ def generate_ssl_certificates():
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         
         if result.returncode == 0:
-            print(f"✅ SSL сертификаты созданы:")
-            print(f"   Сертификат: {cert_file}")
-            print(f"   Ключ: {key_file}")
-            print(f"   Срок действия: 365 дней")
+            print(f"✅ SSL certificates created:")
+            print(f"   Certificate: {cert_file}")
+            print(f"   Key: {key_file}")
+            print(f"   Validity: 365 days")
             print()
-            print("🚀 Теперь можете запустить сервер с HTTPS поддержкой")
+            print("🚀 Now you can run the server with HTTPS support")
             return True
         else:
-            print(f"❌ Ошибка openssl: {result.stderr}")
+            print(f"❌ OpenSSL error: {result.stderr}")
             return False
             
     except FileNotFoundError:
-        print("❌ OpenSSL не найден!")
-        print("💡 Установите OpenSSL:")
+        print("❌ OpenSSL not found!")
+        print("💡 Install OpenSSL:")
         print("   Windows: https://slproweb.com/products/Win32OpenSSL.html")
-        print("   или используйте: winget install OpenSSL.Light")
+        print("   or use: winget install OpenSSL.Light")
         return False
     except Exception as e:
-        print(f"❌ Ошибка: {e}")
+        print(f"❌ Error: {e}")
         return False
 
 if __name__ == "__main__":
-    print("🔐 SSL Certificate Generator для FastAPI Foundry")
+    print("🔐 SSL Certificate Generator for FastAPI Foundry")
     print("=" * 50)
     generate_ssl_certificates()

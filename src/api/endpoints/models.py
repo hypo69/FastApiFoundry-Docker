@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Models Management Endpoints (Refactored)
+# Process Name: Models Management Endpoints (Refactored)
 # =============================================================================
-# Описание:
-#   API endpoints для управления моделями AI
-#   Получение списка доступных и подключенных моделей через Foundry
+# Description:
+#   API endpoints for managing AI models
+#   Getting the list of available and connected models via Foundry
 #
-# Примеры:
+# Examples:
 #   >>> import requests
 #   >>> response = requests.get('http://localhost:9696/api/v1/models')
 #   >>> models = response.json()['models']
@@ -18,7 +18,7 @@
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
+# Date: December 9, 2025
 # =============================================================================
 
 from fastapi import APIRouter
@@ -29,12 +29,12 @@ router = APIRouter()
 
 
 async def _get_llama_models() -> list:
-    """Получить модели из запущенного llama.cpp сервера."""
+    """Get models from a running llama.cpp server."""
     try:
         import aiohttp
         url = _get_server_url()
         async with aiohttp.ClientSession() as s:
-            async with s.get(f"{url}/v1/models", timeout=aiohttp.ClientTimeout(total=2)) as r:
+            async with s.get(f"{url}/v1/models", timeout=aiohttp.ClientTimeout(total=0.5)) as r:
                 if r.status == 200:
                     data = await r.json()
                     return data.get("data", [])
@@ -45,16 +45,16 @@ async def _get_llama_models() -> list:
 
 @router.get("/models")
 async def get_models():
-    """Получить список всех доступных моделей (Foundry + llama.cpp)"""
+    """Get a list of all available models (Foundry + llama.cpp)"""
     try:
         models = []
 
-        # Foundry модели
+        # Foundry models
         result = await foundry_client.list_available_models()
         if result["success"]:
             models.extend(result["models"])
 
-        # llama.cpp модели
+        # llama.cpp models
         for m in await _get_llama_models():
             models.append({"id": m.get("id", "llama"), "object": "model", "provider": "llama.cpp"})
 
@@ -65,11 +65,11 @@ async def get_models():
 
 @router.get("/models/connected")
 async def get_connected_models():
-    """Получить список подключенных моделей (Foundry + llama.cpp)"""
+    """Get a list of connected models (Foundry + llama.cpp)"""
     try:
         models = []
 
-        # Foundry модели
+        # Foundry models
         result = await foundry_client.list_available_models()
         if result["success"]:
             for m in result["models"]:
@@ -81,7 +81,7 @@ async def get_connected_models():
                     "max_tokens": m.get("maxOutputTokens", 2048)
                 })
 
-        # llama.cpp модели
+        # llama.cpp models
         for m in await _get_llama_models():
             models.append({
                 "id": m.get("id", "llama"),

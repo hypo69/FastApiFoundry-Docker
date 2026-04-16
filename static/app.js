@@ -1,3 +1,19 @@
+﻿// =============================================================================
+// Название процесса: Веб-интерфейс FastAPI Foundry
+// =============================================================================
+// Описание:
+//   Управление конфигурацией, моделями и чатом через веб-панель.
+//   Взаимодействие с API Foundry и HuggingFace.
+//
+// File: static/app.js
+// Project: FastApiFoundry (Docker)
+// Version: 0.2.1
+// Author: hypo69
+// License: CC BY-NC-SA 4.0
+// Copyright: © 2025 AiStros
+// Date: 9 декабря 2025
+// =============================================================================
+
 // FastAPI Foundry Web Interface
 const API_BASE = window.location.origin + '/api/v1';
 
@@ -24,7 +40,7 @@ async function loadConfig() {
         const data = await response.json();
         
         if (data.success) {
-            // Обновляем CONFIG с данными из API
+            // // Обновление CONFIG с данными из API
             CONFIG.foundry_url = data.foundry_ai.base_url;
             CONFIG.default_model = data.foundry_ai.default_model;
             CONFIG.auto_load_default = data.foundry_ai.auto_load_default || false;
@@ -125,6 +141,7 @@ function updateChatModelBadge(modelId) {
     const badge = document.getElementById('chat-model-badge');
     if (!badge) return;
     if (modelId) {
+        // Замена поврежденной кодировки на корректный emoji HuggingFace
         const label = modelId.startsWith('hf::') ? '🤗 ' + modelId.slice(4) : modelId;
         badge.textContent = label;
         badge.style.display = '';
@@ -610,665 +627,6 @@ async function testModel(modelId) {
     }
 }
 
-// Обновление списка моделей
-function updateModelSelect(models) {
-    const select = document.getElementById('chat-model');
-    if (!select) return;
-
-    // Сохраняем HF-опции (optgroup и отдельные опции с data-hf)
-    const hfGroups = [...select.querySelectorAll('optgroup')];
-    const hfOptions = [...select.options].filter(o => o.dataset.hf);
-
-    select.innerHTML = '<option value="">Auto-select</option>';
-    models.forEach(model => {
-        const option = document.createElement('option');
-        option.value = model.id;
-        option.textContent = model.id;
-        select.appendChild(option);
-    });
-
-    // Восстанавливаем HF-опции
-    hfGroups.forEach(g => select.appendChild(g));
-    hfOptions.filter(o => !o.closest('optgroup')).forEach(o => select.appendChild(o));
-
-    // Автоматически выбираем модель по умолчанию если она доступна
-    if (CONFIG.default_model) {
-        const availableModels = models.map(m => m.id);
-        if (availableModels.includes(CONFIG.default_model)) {
-            select.value = CONFIG.default_model;
-            updateChatModelBadge(CONFIG.default_model);
-        }
-    }
-}
-
-// Отправка сообщения
-async function sendMessage() {
-    const input = document.getElementById('chat-input');
-    const message = input.value.trim();
-    if (!message) return;
-
-    addMessageToChat('user', message);
-    input.value = '';
-
-    const typingId = addMessageToChat('assistant', '<i class="bi bi-three-dots"></i> Typing...');
-    const _chatStart = Date.now();
-    const _timerEl = document.getElementById('chat-timer');
-    const _timerVal = document.getElementById('chat-timer-value');
-    if (_timerEl) _timerEl.style.display = '';
-    const _timerInterval = setInterval(() => {
-        if (_timerVal) _timerVal.textContent = ((Date.now() - _chatStart) / 1000).toFixed(1) + 's';
-    }, 100);
-
-    try {
-        const selectedModel = document.getElementById('chat-model').value || '';
-        const temperature   = parseFloat(document.getElementById('temperature').value);
-        const maxTokens     = parseInt(document.getElementById('max-tokens').value);
-
-        let data;
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 300000);
-        try {
-            if (selectedModel.startsWith('hf::')) {
-                const modelId = selectedModel.slice(4);
-                const res = await fetch(`${API_BASE}/hf/generate`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ model_id: modelId, prompt: message, max_new_tokens: maxTokens, temperature }),
-                    signal: ctrl.signal
-                });
-                data = await res.json();
-            } else {
-                const res = await fetch(`${API_BASE}/generate`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ prompt: message, model: selectedModel || undefined, temperature, max_tokens: maxTokens }),
-                    signal: ctrl.signal
-                });
-                data = await res.json();
-            }
-        } finally {
-            clearTimeout(timer);
-            clearInterval(_timerInterval);
-            if (_timerEl) {
-                const elapsed = ((Date.now() - _chatStart) / 1000).toFixed(1) + 's';
-                _timerVal.textContent = elapsed;
-                _timerEl.style.display = '';
-            }
-        }
-
-        document.getElementById(typingId).remove();
-        if (data.success && data.content) {
-            addMessageToChat('assistant', data.content);
-        } else {
-            addMessageToChat('assistant', `❌ Error: ${data.error || 'Failed to generate response'}`);
-        }
-    } catch (error) {
-        clearInterval(_timerInterval);
-        if (_timerEl) _timerEl.style.display = 'none';
-        document.getElementById(typingId).remove();
-        addMessageToChat('assistant', '❌ Connection error');
-    }
-}
-
-// Добавление сообщения в чат
-function addMessageToChat(role, content) {
-    const container = document.getElementById('chat-messages');
-    const messageId = 'msg-' + Date.now();
-    
-    if (container.children.length === 1 && container.children[0].classList.contains('text-muted')) {
-        container.innerHTML = '';
-    }
-    
-    const messageDiv = document.createElement('div');
-    messageDiv.id = messageId;
-    messageDiv.className = `message ${role}`;
-    messageDiv.innerHTML = `<div class="content">${content}</div>`;
-    
-    container.appendChild(messageDiv);
-    container.scrollTop = container.scrollHeight;
-    
-    return messageId;
-}
-
-// Foundry Status Check
-async function checkFoundryStatus() {
-    try {
-        const response = await fetch(`${API_BASE}/foundry/status`);
-        const data = await response.json();
-        
-        if (data.running) {
-            updateFoundryStatus('running', data);
-        } else {
-            updateFoundryStatus('stopped');
-        }
-    } catch (error) {
-        updateFoundryStatus('error');
-    }
-}
-
-function updateFoundryStatus(status, data = {}) {
-    const badge = document.getElementById('foundry-service-status');
-    const portIndicator = document.getElementById('foundry-port-indicator');
-    const info = document.getElementById('foundry-service-info');
-    const startBtn = document.getElementById('foundry-start-btn');
-    const stopBtn = document.getElementById('foundry-stop-btn');
-    
-    switch (status) {
-        case 'running':
-            badge.className = 'badge bg-success';
-            badge.textContent = 'Running';
-            if (data.port && data.port !== 'Unknown') {
-                portIndicator.className = 'badge bg-info me-2';
-                portIndicator.textContent = `Port: ${data.port}`;
-                info.innerHTML = `<small>Foundry API: ${data.url || `http://localhost:${data.port}/v1/`}</small>`;
-            } else {
-                portIndicator.className = 'badge bg-warning me-2';
-                portIndicator.textContent = 'Port: Detecting...';
-                info.innerHTML = '<small>Foundry is running, detecting port...</small>';
-            }
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-            break;
-        case 'stopped':
-            badge.className = 'badge bg-secondary';
-            badge.textContent = 'Stopped';
-            portIndicator.className = 'badge bg-secondary me-2';
-            portIndicator.textContent = 'Port: Unknown';
-            info.innerHTML = '<small>Foundry service is not running</small>';
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            break;
-        default:
-            badge.className = 'badge bg-danger';
-            badge.textContent = 'Error';
-            portIndicator.className = 'badge bg-secondary me-2';
-            portIndicator.textContent = 'Port: Unknown';
-            info.innerHTML = '<small>Error checking Foundry status</small>';
-            startBtn.disabled = false;
-            stopBtn.disabled = false;
-            break;
-    }
-}
-
-async function startFoundryService() {
-    try {
-        showAlert('Starting Foundry service...', 'info');
-        const response = await fetch(`${API_BASE}/foundry/start`, {
-            method: 'POST'
-        });
-        const data = await response.json();
-        
-        if (response.ok) {
-            showAlert(data.message, 'success');
-            setTimeout(checkFoundryStatus, 3000);
-        } else {
-            showAlert(`Error: ${data.detail}`, 'danger');
-        }
-    } catch (error) {
-        showAlert('Error starting Foundry service', 'danger');
-    }
-}
-
-async function stopFoundryService() {
-    try {
-        showAlert('Stopping Foundry service...', 'info');
-        const response = await fetch(`${API_BASE}/foundry/stop`, {
-            method: 'POST'
-        });
-        const data = await response.json();
-        
-        if (response.ok) {
-            showAlert(data.message, 'success');
-            setTimeout(checkFoundryStatus, 2000);
-        } else {
-            showAlert(`Error: ${data.detail}`, 'danger');
-        }
-    } catch (error) {
-        showAlert('Error stopping Foundry service', 'danger');
-    }
-}
-
-// Утилиты
-function showAlert(message, type = 'info') {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(alertDiv);
-    setTimeout(() => alertDiv.remove(), 5000);
-}
-
-function handleChatKeyPress(event) {
-    if (event.key === 'Enter') {
-        sendMessage();
-    }
-}
-
-function updateTempValue(value) {
-    document.getElementById('temp-value').textContent = value;
-}
-
-function clearChat() {
-    document.getElementById('chat-messages').innerHTML = `
-        <div class="text-muted text-center">
-            <i class="bi bi-chat-square-dots"></i><br>
-            Start a conversation with AI
-        </div>
-    `;
-}
-
-function refreshModels() {
-    loadModels();
-    loadConnectedModels(); // Добавляем загрузку подключенных моделей
-}
-
-// Функции для вкладки Logs
-async function refreshLogs() {
-    const container = document.getElementById('logs-container');
-    const levelFilter = document.getElementById('log-level-filter')?.value || '';
-    container.innerHTML = '<div class="text-center p-4"><div class="spinner-border spinner-border-sm"></div> Loading...</div>';
-    try {
-        const res = await fetch(`${API_BASE}/logs?lines=200`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        if (!data.success || !data.logs?.length) {
-            container.innerHTML = '<div class="text-center text-muted p-4"><i class="bi bi-file-text"></i><br>Логи пусты или файл не найден</div>';
-            updateLogsStats([]);
-            return;
-        }
-
-        // Парсим строки логов в объекты {level, timestamp, message}
-        const parsed = data.logs.map(line => {
-            const m = line.match(/^(\S+\s+\S+)\s+\|(\w+)\s+\|.*?\|\s*(.*)$/);
-            if (m) return { timestamp: m[1], level: m[2].toLowerCase(), message: m[3] };
-            // fallback — определяем уровень по ключевым словам
-            const lvl = /ERROR|CRITICAL/i.test(line) ? 'error'
-                      : /WARNING/i.test(line) ? 'warning'
-                      : /DEBUG/i.test(line) ? 'debug' : 'info';
-            return { timestamp: '', level: lvl, message: line };
-        });
-
-        const filtered = levelFilter ? parsed.filter(l => l.level === levelFilter) : parsed;
-
-        container.innerHTML = filtered.map(l => `
-            <div class="log-entry log-${l.level}">
-                ${l.timestamp ? `<span class="log-timestamp">${l.timestamp}</span> ` : ''}
-                <span class="log-message">${l.message}</span>
-            </div>`).join('');
-
-        container.scrollTop = container.scrollHeight;
-        updateLogsStats(parsed);
-
-    } catch (error) {
-        container.innerHTML = `<div class="text-center text-danger p-4"><i class="bi bi-exclamation-triangle"></i><br>Ошибка: ${error.message}</div>`;
-    }
-}
-
-function updateLogsStats(logs) {
-    const healthContainer = document.getElementById('logs-health-status');
-    const errorContainer = document.getElementById('error-summary');
-    const perfContainer = document.getElementById('performance-metrics');
-    
-    // Подсчет по уровням
-    const stats = {
-        error: logs.filter(l => l.level === 'error').length,
-        warning: logs.filter(l => l.level === 'warning').length,
-        info: logs.filter(l => l.level === 'info').length,
-        debug: logs.filter(l => l.level === 'debug').length
-    };
-    
-    // Статус системы
-    const healthStatus = stats.error > 0 ? 'critical' : (stats.warning > 0 ? 'warning' : 'healthy');
-    const healthColor = healthStatus === 'critical' ? 'danger' : (healthStatus === 'warning' ? 'warning' : 'success');
-    
-    healthContainer.innerHTML = `
-        <div class="text-center">
-            <i class="bi bi-heart-fill text-${healthColor}" style="font-size: 2rem;"></i><br>
-            <strong class="text-${healthColor}">${healthStatus.toUpperCase()}</strong><br>
-            <small>Всего записей: ${logs.length}</small>
-        </div>
-    `;
-    
-    // Ошибки
-    errorContainer.innerHTML = `
-        <div class="mb-2">
-            <span class="badge bg-danger">${stats.error}</span> Ошибок
-        </div>
-        <div class="mb-2">
-            <span class="badge bg-warning">${stats.warning}</span> Предупреждений
-        </div>
-        <div>
-            <span class="badge bg-info">${stats.info}</span> Информационных
-        </div>
-    `;
-    
-    // Производительность
-    perfContainer.innerHTML = `
-        <div class="mb-2">
-            <small>Последние записи:</small><br>
-            <strong>${logs.length}</strong>
-        </div>
-        <div>
-            <small>Статус:</small><br>
-            <span class="badge bg-${healthColor}">${healthStatus}</span>
-        </div>
-    `;
-}
-
-function filterLogs() {
-    const filter = document.getElementById('log-level-filter').value;
-    const entries = document.querySelectorAll('.log-entry');
-    
-    entries.forEach(entry => {
-        if (!filter || entry.classList.contains(`log-${filter}`)) {
-            entry.style.display = 'block';
-        } else {
-            entry.style.display = 'none';
-        }
-    });
-}
-
-function clearLogsView() {
-    document.getElementById('logs-container').innerHTML = `
-        <div class="text-muted text-center p-4">
-            <i class="bi bi-file-text"></i><br>
-            Логи очищены. Нажмите "Обновить" для загрузки.
-        </div>
-    `;
-}
-
-// Автообновление логов каждые 30 секунд
-document.addEventListener('DOMContentLoaded', function() {
-    // При переключении на вкладку Models
-    const modelsTab = document.getElementById('models-tab');
-    if (modelsTab) {
-        modelsTab.addEventListener('click', function() {
-            setTimeout(loadConnectedModels, 100); // Небольшая задержка
-        });
-    }
-    
-    // При переключении на вкладку Foundry
-    const foundryTab = document.getElementById('foundry-tab');
-    if (foundryTab) {
-        foundryTab.addEventListener('click', function() {
-            setTimeout(() => {
-                checkFoundryStatus();
-                listFoundryModels();
-            }, 100);
-        });
-    }
-    
-    // При переключении на вкладку Logs
-    const logsTab = document.getElementById('logs-tab');
-    if (logsTab) {
-        logsTab.addEventListener('click', function() {
-            setTimeout(refreshLogs, 100); // Небольшая задержка
-        });
-    }
-    
-    // При переключении на вкладку RAG
-    const ragTab = document.getElementById('rag-tab');
-    if (ragTab) {
-        ragTab.addEventListener('click', function() {
-            setTimeout(refreshRAGStatus, 100);
-        });
-    }
-    
-    // При переключении на вкладку Settings
-    const settingsTab = document.getElementById('settings-tab');
-    if (settingsTab) {
-        settingsTab.addEventListener('click', function() {
-            setTimeout(loadConfigFields, 100); // Загружаем конфигурацию в поля
-        });
-    }
-    
-    // Автообновление моделей при открытии вкладки Chat
-    document.getElementById('chat-tab')?.addEventListener('shown.bs.tab', loadModels);
-    const chatModelSelect = document.getElementById('chat-model');
-    if (chatModelSelect) {
-        chatModelSelect.addEventListener('change', function() {
-            const selectedModel = this.value;
-            updateChatModelBadge(selectedModel);
-            if (selectedModel && selectedModel !== CONFIG.default_model) {
-                saveDefaultModel(selectedModel);
-            }
-        });
-    }
-});
-
-// Управление моделями Foundry
-async function listFoundryModels() {
-    try {
-        const response = await fetch(`${API_BASE}/foundry/models/loaded`);
-        const data = await response.json();
-        
-        const container = document.getElementById('foundry-models-list');
-        
-        if (data.success && data.models.length > 0) {
-            container.innerHTML = data.models.map(model => `
-                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-                    <div>
-                        <strong>${model.id}</strong><br>
-                        <small class="text-muted">Статус: ${model.status}</small>
-                    </div>
-                    <div>
-                        <button class="btn btn-sm btn-primary me-2" onclick="selectFoundryModel('${model.id}')">
-                            <i class="bi bi-check-circle"></i> Использовать
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="removeFoundryModel('${model.id}')">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            container.innerHTML = `
-                <div class="text-center text-muted py-3">
-                    <i class="bi bi-inbox"></i><br>
-                    Модели не загружены<br>
-                    <small>Используйте "Загрузить модель" ниже</small>
-                </div>
-            `;
-        }
-    } catch (error) {
-        console.error('Failed to list Foundry models:', error);
-        showAlert('Ошибка получения списка моделей', 'danger');
-    }
-}
-
-async function downloadAndRunModel() {
-    const select = document.getElementById('model-select');
-    const modelId = select.value;
-    
-    if (!modelId) {
-        showAlert('Выберите модель для загрузки', 'warning');
-        return;
-    }
-    
-    const progressDiv = document.getElementById('download-progress');
-    const progressBar = document.getElementById('progress-bar');
-    const progressText = document.getElementById('progress-text');
-    
-    try {
-        // Показываем прогресс
-        progressDiv.style.display = 'block';
-        progressBar.style.width = '10%';
-        progressText.textContent = `Начинаем загрузку ${modelId}...`;
-        
-        showAlert(`Началась загрузка модели ${modelId}...`, 'info');
-        
-        const response = await fetch(`${API_BASE}/foundry/models/load`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({model_id: modelId})
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            progressBar.style.width = '30%';
-            progressText.textContent = `Загрузка ${modelId} в процессе...`;
-            
-            showAlert(data.message, 'success');
-            
-            // Начинаем отслеживание прогресса
-            monitorModelDownload(modelId, progressBar, progressText, progressDiv);
-        } else {
-            progressDiv.style.display = 'none';
-            showAlert(`Ошибка: ${data.error}`, 'danger');
-        }
-    } catch (error) {
-        progressDiv.style.display = 'none';
-        showAlert('Ошибка загрузки модели', 'danger');
-        console.error('Download error:', error);
-    }
-}
-
-// Отслеживание прогресса загрузки модели
-async function monitorModelDownload(modelId, progressBar, progressText, progressDiv) {
-    let attempts = 0;
-    const maxAttempts = 60; // 5 минут (по 5 секунд)
-    let currentProgress = 30;
-    
-    const checkInterval = setInterval(async () => {
-        attempts++;
-        
-        try {
-            // Проверяем статус модели
-            const response = await fetch(`${API_BASE}/foundry/models/status/${modelId}`);
-            const data = await response.json();
-            
-            if (data.success) {
-                if (data.status === 'loaded') {
-                    // Модель загружена!
-                    clearInterval(checkInterval);
-                    progressBar.style.width = '100%';
-                    progressText.textContent = `Модель ${modelId} успешно загружена!`;
-                    
-                    setTimeout(() => {
-                        progressDiv.style.display = 'none';
-                        showAlert(`Модель ${modelId} готова к использованию!`, 'success');
-                        
-                        // Обновляем списки
-                        listFoundryModels();
-                        loadModels();
-                    }, 2000);
-                    
-                    return;
-                } else {
-                    // Модель еще загружается
-                    currentProgress = Math.min(currentProgress + 2, 90);
-                    progressBar.style.width = currentProgress + '%';
-                    progressText.textContent = `Загрузка ${modelId}... (${attempts}/${maxAttempts})`;
-                }
-            }
-            
-            // Проверяем таймаут
-            if (attempts >= maxAttempts) {
-                clearInterval(checkInterval);
-                progressBar.classList.add('bg-warning');
-                progressText.textContent = `Загрузка ${modelId} занимает больше времени чем ожидалось...`;
-                
-                showAlert(`Загрузка ${modelId} продолжается в фоне. Проверьте логи Foundry.`, 'warning');
-                
-                setTimeout(() => {
-                    progressDiv.style.display = 'none';
-                }, 5000);
-            }
-            
-        } catch (error) {
-            console.error('Error checking model status:', error);
-            // Продолжаем проверку несмотря на ошибку
-        }
-    }, 5000); // Проверяем каждые 5 секунд
-}
-
-async function removeFoundryModel(modelId) {
-    if (!confirm(`Удалить модель ${modelId}?`)) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`${API_BASE}/foundry/models/unload`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({model_id: modelId})
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showAlert(data.message, 'success');
-            listFoundryModels();
-            loadModels();
-        } else {
-            showAlert(`Ошибка: ${data.error}`, 'danger');
-        }
-    } catch (error) {
-        showAlert('Ошибка удаления модели', 'danger');
-    }
-}
-
-function selectFoundryModel(modelId) {
-    // Устанавливаем модель в чате
-    const chatModelSelect = document.getElementById('chat-model');
-    if (chatModelSelect) {
-        // Проверяем есть ли такая опция
-        let optionExists = false;
-        for (let option of chatModelSelect.options) {
-            if (option.value === modelId) {
-                optionExists = true;
-                break;
-            }
-        }
-        
-        // Если опции нет, добавляем
-        if (!optionExists) {
-            const option = document.createElement('option');
-            option.value = modelId;
-            option.textContent = modelId;
-            chatModelSelect.appendChild(option);
-        }
-        
-        // Выбираем модель
-        chatModelSelect.value = modelId;
-        
-        // Сохраняем как модель по умолчанию
-        saveDefaultModel(modelId);
-        
-        showAlert(`Модель ${modelId} выбрана как модель по умолчанию`, 'success');
-        
-        // Переключаемся на вкладку чата
-        const chatTab = document.getElementById('chat-tab');
-        if (chatTab) {
-            chatTab.click();
-        }
-    }
-}
-
-// Установка модели по умолчанию через radio кнопку
-function setDefaultModel(modelId) {
-    saveDefaultModel(modelId);
-    showAlert(`Модель ${modelId} установлена как модель по умолчанию`, 'success');
-    
-    // Обновляем глобальную конфигурацию
-    CONFIG.default_model = modelId;
-    
-    // Обновляем селектор в чате
-    const chatModelSelect = document.getElementById('chat-model');
-    if (chatModelSelect) {
-        chatModelSelect.value = modelId;
-    }
-    
-    // Обновляем статус модели
-    updateModelStatus(`Модель по умолчанию: ${modelId}`, 'success');
-}
-
 // Сохранение модели по умолчанию в config.json
 async function saveDefaultModel(modelId) {
     try {
@@ -1623,10 +981,12 @@ async function exportConfig() {
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
-
-        showAlert(`Конфигурация экспортирована: ${filename}`, 'success');
+        // Уведомление об успешном экспорте
+        showAlert('Конфигурация экспортирована успешно', 'success');
     } catch (error) {
-        showAlert(`Ошибка экспорта: ${error.message}`, 'danger');
+        // Обработка ошибок экспорта
+        console.error('Ошибка экспорта конфигурации:', error);
+        showAlert('Ошибка при экспорте файла', 'danger');
     }
 }
 
@@ -1663,13 +1023,6 @@ async function importConfig(event) {
             );
             loadConfigFields();
         } else {
-            showAlert(`Ошибка импорта: ${result.detail || result.error}`, 'danger');
-        }
-    } catch (error) {
-        showAlert(`Ошибка чтения файла: ${error.message}`, 'danger');
-    }
-}
-
 // Удаление модели
 async function removeModel(modelId) {
     if (!confirm(`Remove model ${modelId}?\n\nThis will unload the model from memory.`)) {
@@ -1697,3 +1050,286 @@ async function removeModel(modelId) {
         showAlert(`Error removing model: ${error.message}`, 'danger');
     }
 }
+
+
+// ── Translation Tab — backed by /api/v1/translation/* ────────────────────────
+
+const TRANS_CACHE = new Map();
+
+const TRANS_PROVIDER_INFO = {
+    llm: {
+        hint: 'Uses the currently loaded AI model',
+        info: '<strong>🤖 LLM Translation</strong><br><small>Sends text to the active AI model. No API key needed.</small><br><br><span class="badge bg-success">Free</span> <span class="badge bg-secondary">Local</span>'
+    },
+    deepl: {
+        hint: 'Requires DeepL API key (free tier: 500K chars/month)',
+        info: '<strong>🔵 DeepL API</strong><br><small>High-quality neural translation. Best for European languages.</small><br><br><a href="https://www.deepl.com/pro-api" target="_blank">Get free API key</a><br><br><span class="badge bg-primary">Best quality</span> <span class="badge bg-warning text-dark">API key required</span>'
+    },
+    google: {
+        hint: 'Requires Google Cloud Translation API key',
+        info: '<strong>🔴 Google Translate</strong><br><small>Fast, supports 100+ languages.</small><br><br><a href="https://cloud.google.com/translate" target="_blank">Google Cloud Console</a><br><br><span class="badge bg-info">100+ languages</span> <span class="badge bg-warning text-dark">API key required</span>'
+    },
+    helsinki: {
+        hint: 'Helsinki-NLP local model — no API key, runs on CPU',
+        info: '<strong>🟢 Helsinki-NLP (local)</strong><br><small>Open-source NMT via HuggingFace transformers. Load model in HuggingFace tab first.</small><br><br><span class="badge bg-success">Free</span> <span class="badge bg-secondary">Local</span>'
+    }
+};
+
+function transOnProviderChange() {
+    const provider = document.getElementById('trans-provider').value;
+    const info = TRANS_PROVIDER_INFO[provider];
+    document.getElementById('trans-provider-hint').textContent = info.hint;
+    document.getElementById('trans-provider-info').innerHTML = info.info;
+    document.getElementById('trans-api-key-row').style.display =
+        (provider === 'deepl' || provider === 'google') ? '' : 'none';
+}
+
+function transSwapLangs() {
+    const src = document.getElementById('trans-source-lang');
+    const tgt = document.getElementById('trans-target-lang');
+    const srcVal = src.value === 'auto' ? 'en' : src.value;
+    const tgtVal = tgt.value;
+    src.value = tgtVal;
+    tgt.value = srcVal;
+    const inp = document.getElementById('trans-input');
+    const out = document.getElementById('trans-output');
+    const tmp = inp.value;
+    inp.value = out.value;
+    out.value = tmp;
+    transUpdateCharCount();
+}
+
+function transClear() {
+    document.getElementById('trans-input').value = '';
+    document.getElementById('trans-output').value = '';
+    document.getElementById('trans-detected-lang').textContent = '';
+    document.getElementById('trans-time').textContent = '';
+    document.getElementById('trans-char-count').textContent = '0 chars';
+    document.getElementById('trans-status').style.display = 'none';
+}
+
+function transUpdateCharCount() {
+    const len = (document.getElementById('trans-input')?.value || '').length;
+    const el = document.getElementById('trans-char-count');
+    if (el) el.textContent = `${len} chars`;
+}
+
+function transCopyOutput() {
+    const text = document.getElementById('trans-output').value;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => showAlert('Copied to clipboard', 'success'));
+}
+
+function transUseinChat() {
+    const text = document.getElementById('trans-output').value.trim();
+    if (!text) { showAlert('No translation to use', 'warning'); return; }
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+        chatInput.value = text;
+        document.getElementById('chat-tab')?.click();
+        showAlert('Translation sent to Chat input', 'success');
+    }
+}
+
+async function transDetectLang() {
+    const text = document.getElementById('trans-input').value.trim();
+    if (!text) { showAlert('Enter text first', 'warning'); return; }
+
+    const cacheKey = 'detect:' + text.slice(0, 100);
+    if (TRANS_CACHE.has(cacheKey)) {
+        document.getElementById('trans-detected-lang').textContent = 'Detected: ' + TRANS_CACHE.get(cacheKey);
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/translation/detect`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+        const data = await res.json();
+        if (data.success) {
+            const label = `${data.language_name} (${data.language})`;
+            TRANS_CACHE.set(cacheKey, label);
+            document.getElementById('trans-detected-lang').textContent = 'Detected: ' + label;
+        } else {
+            showAlert('Detection failed: ' + data.error, 'warning');
+        }
+    } catch (e) {
+        showAlert('Detection failed: ' + e.message, 'danger');
+    }
+}
+
+async function transTranslate() {
+    const text = document.getElementById('trans-input').value.trim();
+    if (!text) { showAlert('Enter text to translate', 'warning'); return; }
+
+    const provider = document.getElementById('trans-provider').value;
+    const srcLang  = document.getElementById('trans-source-lang').value;
+    const tgtLang  = document.getElementById('trans-target-lang').value;
+    const apiKey   = document.getElementById('trans-api-key')?.value?.trim() || '';
+    const useCache = document.getElementById('trans-cache-enabled').checked;
+
+    const cacheKey = `${provider}:${srcLang}:${tgtLang}:${text}`;
+    if (useCache && TRANS_CACHE.has(cacheKey)) {
+        document.getElementById('trans-output').value = TRANS_CACHE.get(cacheKey);
+        document.getElementById('trans-time').textContent = 'cached';
+        return;
+    }
+
+    const btn = document.getElementById('trans-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Translating...';
+    document.getElementById('trans-status').style.display = 'none';
+
+    try {
+        const res = await fetch(`${API_BASE}/translation/translate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, provider, source_lang: srcLang, target_lang: tgtLang, api_key: apiKey })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            document.getElementById('trans-output').value = data.translated;
+            document.getElementById('trans-time').textContent = (data.elapsed_ms / 1000).toFixed(2) + 's';
+            if (useCache) TRANS_CACHE.set(cacheKey, data.translated);
+        } else {
+            const st = document.getElementById('trans-status');
+            st.className = 'alert alert-danger p-2 mt-2';
+            st.textContent = data.error;
+            st.style.display = '';
+        }
+    } catch (e) {
+        const st = document.getElementById('trans-status');
+        st.className = 'alert alert-danger p-2 mt-2';
+        st.textContent = e.message;
+        st.style.display = '';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-translate"></i> Translate';
+    }
+}
+
+async function transSaveApiKey() {
+    const provider = document.getElementById('trans-provider').value;
+    const key = document.getElementById('trans-api-key').value.trim();
+    if (!key) { showAlert('Enter API key first', 'warning'); return; }
+    const envKey = provider === 'deepl' ? 'DEEPL_API_KEY' : 'GOOGLE_TRANSLATE_API_KEY';
+    try {
+        const res = await fetch('/api/v1/config/env', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: envKey, value: key })
+        });
+        const data = await res.json();
+        showAlert(data.success ? `${envKey} saved to .env` : data.error, data.success ? 'success' : 'danger');
+    } catch (e) {
+        showAlert('Error saving key: ' + e.message, 'danger');
+    }
+}
+
+async function transBatch() {
+    const lines = document.getElementById('trans-batch-input').value
+        .split('\n').map(l => l.trim()).filter(Boolean);
+    if (!lines.length) { showAlert('Enter lines to translate', 'warning'); return; }
+
+    const btn = document.getElementById('trans-batch-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Translating...';
+
+    try {
+        const res = await fetch(`${API_BASE}/translation/batch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                texts:       lines,
+                provider:    document.getElementById('trans-provider').value,
+                source_lang: document.getElementById('trans-source-lang').value,
+                target_lang: document.getElementById('trans-target-lang').value,
+                api_key:     document.getElementById('trans-api-key')?.value?.trim() || '',
+            })
+        });
+        const data = await res.json();
+
+        const resDiv = document.getElementById('trans-batch-results');
+        resDiv.innerHTML = (data.results || []).map((r, i) =>
+            `<div class="mb-2 pb-2 border-bottom">
+                <div class="text-muted" style="font-size:.8rem">${lines[i] || ''}</div>
+                <div class="${r.success ? '' : 'text-danger'}">${r.success ? r.translated : r.error}</div>
+            </div>`
+        ).join('');
+        document.getElementById('trans-batch-output').style.display = '';
+
+        const msg = data.failed > 0
+            ? `Batch done: ${data.total - data.failed}/${data.total} succeeded`
+            : `Batch done: ${data.total} translated in ${(data.elapsed_ms / 1000).toFixed(1)}s`;
+        showAlert(msg, data.failed > 0 ? 'warning' : 'success');
+
+    } catch (e) {
+        showAlert('Batch error: ' + e.message, 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-layers"></i> Translate All';
+    }
+}
+
+function transClearBatch() {
+    document.getElementById('trans-batch-input').value = '';
+    document.getElementById('trans-batch-output').style.display = 'none';
+}
+
+// Init Translation tab + chat injection
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('trans-input')?.addEventListener('input', transUpdateCharCount);
+
+    document.getElementById('translation-tab')?.addEventListener('shown.bs.tab', async () => {
+        transOnProviderChange();
+        // Загружаем статус провайдеров с бэкенда
+        try {
+            const d = await fetch(`${API_BASE}/translation/providers`).then(r => r.json());
+            if (d.success) {
+                const sel = document.getElementById('trans-provider');
+                d.providers.forEach(p => {
+                    const opt = sel.querySelector(`option[value="${p.id}"]`);
+                    if (!opt) return;
+                    // Убираем старые маркеры
+                    opt.textContent = opt.textContent.replace(' (key missing)', '').replace(' \u2713', '');
+                    if (p.requires_key && !p.available)
+                        opt.textContent += ' (key missing)';
+                    else if (p.available && !p.requires_key)
+                        opt.textContent += ' \u2713';
+                });
+            }
+        } catch (_) {}
+    });
+
+    // Patch sendMessage: translate chat input to EN via backend before sending
+    const origSend = window.sendMessage;
+    if (origSend) {
+        window.sendMessage = async function() {
+            const inject = document.getElementById('trans-chat-inject')?.checked;
+            if (!inject) return origSend();
+            const input = document.getElementById('chat-input');
+            const text = input?.value?.trim();
+            if (!text) return origSend();
+            try {
+                const res = await fetch(`${API_BASE}/translation/translate-for-model`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text,
+                        provider:    document.getElementById('trans-provider')?.value || 'llm',
+                        source_lang: 'auto',
+                    })
+                });
+                const data = await res.json();
+                if (data.success && data.was_translated && input)
+                    input.value = data.translated;
+            } catch (e) {
+                console.warn('Translation injection failed:', e.message);
+            }
+            return origSend();
+        };
+    }
+});

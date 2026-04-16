@@ -1,28 +1,28 @@
 #!/usr/bin/env python311
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Запуск FastApiFoundry сервера
+# Process Name: Launching FastApiFoundry server
 # =============================================================================
-# Описание:
-#   Простой запуск FastAPI сервера.
-#   Если Foundry уже запущен — AI будет доступен.
-#   Для полного запуска (Foundry + env) используйте start.ps1
+# Description:
+#   Simple launch of the FastAPI server.
+#   If Foundry is already running, AI will be available.
+#   For a full launch (Foundry + env), use start.ps1
 #
 # File: run.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.4.0
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
 # Date: 9 декабря 2025
 # =============================================================================
 
-# ПРИНУДИТЕЛЬНАЯ УСТАНОВКА UTF-8 КОДИРОВКИ
+# FORCED UTF-8 ENCODING SETUP
 import os
 import sys
 import locale
 
-# Устанавливаем UTF-8 для всего Python процесса
+# Set UTF-8 for the entire Python process
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 if sys.platform == 'win32':
     import codecs
@@ -30,15 +30,15 @@ if sys.platform == 'win32':
         sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
         sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
     except:
-        pass  # Если уже установлено
-    # Попытка установить локаль UTF-8
+        pass  # If already set
+    # Attempt to set UTF-8 locale
     try:
         locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
     except:
         try:
             locale.setlocale(locale.LC_ALL, 'C.UTF-8')
         except:
-            pass  # Используем системную локаль
+            pass  # Use system locale
 
 
 import json
@@ -46,15 +46,15 @@ import socket
 import logging
 from pathlib import Path
 
-# Добавляем текущую директорию в sys.path для импорта модулей
+# Add current directory to sys.path for importing modules
 current_dir = Path(__file__).parent
 if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
-# Добавляем site-packages для python311
+# Add site-packages for python311
 sys.path.append('C:/python311/Lib/site-packages')
 
-# Загружаем переменные окружения перед импортом конфигурации
+# Load environment variables before importing configuration
 try:
     from src.utils.env_processor import load_env_variables, process_config
     load_env_variables()
@@ -64,23 +64,23 @@ except ImportError:
 
 from src.core.config import config
 
-# Импортируем requests только если он доступен
+# Import requests only if available
 try:
     import requests
     REQUESTS_AVAILABLE = True
 except ImportError:
-    print("Предупреждение: requests недоступен, часть функций отключена")
+    print("Warning: requests is unavailable, some features are disabled")
     REQUESTS_AVAILABLE = False
 
 try:
     import uvicorn
     UVICORN_AVAILABLE = True
 except ImportError:
-    print("Ошибка: uvicorn недоступен, запуск сервера невозможен")
+    print("Error: uvicorn is unavailable, server cannot be started")
     UVICORN_AVAILABLE = False
     sys.exit(1)
 
-# Настройка логирования с подавлением watchfiles
+# Logging configuration with watchfiles suppression
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -90,7 +90,7 @@ logging.basicConfig(
     ]
 )
 
-# Подавляем INFO логи от watchfiles
+# Suppress INFO logs from watchfiles
 logging.getLogger('watchfiles.main').setLevel(logging.WARNING)
 logging.getLogger('watchfiles').setLevel(logging.WARNING)
 
@@ -101,20 +101,20 @@ logger = logging.getLogger(__name__)
 # Utils
 # =============================================================================
 def find_free_port(start_port: int = 9696, end_port: int = 9796) -> int | None:
-    """Найти свободный порт в диапазоне"""
-    logger.debug(f"Поиск свободного порта в диапазоне {start_port}-{end_port}")
+    """Find a free port in range"""
+    logger.debug(f"Searching for a free port in range {start_port}-{end_port}")
     
     for port in range(start_port, end_port + 1):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             try:
                 sock.bind(('localhost', port))
-                logger.info(f"Найден свободный порт: {port}")
+                logger.info(f"Free port found: {port}")
                 return port
             except OSError:
-                logger.debug(f"Порт {port} занят")
+                logger.debug(f"Port {port} is occupied")
                 continue
     
-    logger.warning(f"Не найден свободный порт в диапазоне {start_port}-{end_port}")
+    logger.warning(f"No free port found in range {start_port}-{end_port}")
     return None
 
 
@@ -122,16 +122,16 @@ def find_free_port(start_port: int = 9696, end_port: int = 9796) -> int | None:
 # Port management
 # =============================================================================
 def get_server_port() -> int:
-    """Определяется порт FastAPI сервера"""
+    """FastAPI server port is being determined"""
     default_port = config.api_port
     auto_find = config.port_auto_find_free
     
-    logger.info(f"Определение порта FastAPI сервера...")
-    logger.debug(f"Порт по умолчанию: {default_port}")
-    logger.debug(f"Автопоиск свободного порта: {auto_find}")
+    logger.info(f"Determining FastAPI server port...")
+    logger.debug(f"Default port: {default_port}")
+    logger.debug(f"Auto-find free port: {auto_find}")
 
     if not auto_find:
-        logger.info(f'Используется фиксированный порт: {default_port}')
+        logger.info(f'Using fixed port: {default_port}')
         return default_port
 
     start_port = config.port_range_start
@@ -139,10 +139,10 @@ def get_server_port() -> int:
 
     free_port = find_free_port(start_port, end_port)
     if free_port:
-        logger.info(f'Найден свободный порт: {free_port}')
+        logger.info(f'Found free port: {free_port}')
         return free_port
 
-    logger.warning(f'Свободный порт не найден, используется порт {default_port}')
+    logger.warning(f'Free port not found, using port {default_port}')
     return default_port
 
 
@@ -179,7 +179,7 @@ def find_foundry_port() -> int | None:
                                         port = int(addr.split(':')[-1])
                                         response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=1)
                                         if response.status_code == 200:
-                                            print(f"Foundry API подтверждён на порту: {port}")
+                                            print(f"Foundry API confirmed on port: {port}")
                                             return port
                                     except Exception:
                                         continue
@@ -190,37 +190,37 @@ def find_foundry_port() -> int | None:
 
 
 def resolve_foundry_base_url() -> str | None:
-    """Определяется base_url Foundry (динамически)"""
-    # Проверяем переменную окружения FOUNDRY_BASE_URL
+    """Foundry base_url is being determined (dynamically)"""
+    # Check FOUNDRY_BASE_URL environment variable
     foundry_url = os.getenv('FOUNDRY_BASE_URL')
     if foundry_url:
-        print(f'Foundry найден через переменную окружения: {foundry_url}')
+        print(f'Foundry found via environment variable: {foundry_url}')
         return foundry_url
     
-    # Проверяем переменную окружения FOUNDRY_DYNAMIC_PORT (старая)
+    # Check FOUNDRY_DYNAMIC_PORT environment variable (legacy)
     foundry_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
     if foundry_port:
         try:
             port = int(foundry_port)
             foundry_url = f'http://localhost:{port}/v1/'
-            print(f'Foundry найден через устаревшую переменную окружения, порт: {foundry_url}')
+            print(f'Foundry found via legacy environment variable, port: {foundry_url}')
             return foundry_url
         except ValueError:
             pass
     
-    # Автоматическое определение порта
+    # Automatic port detection
     foundry_port = find_foundry_port()
     if foundry_port:
         foundry_url = f'http://localhost:{foundry_port}/v1/'
-        print(f'Foundry найден на порту: {foundry_url}')
+        print(f'Foundry found on port: {foundry_url}')
         return foundry_url
 
-    print('Foundry не найден')
+    print('Foundry not found')
     return None
 
 
 def check_foundry(foundry_base_url: str | None) -> bool:
-    """Проверяется доступность Foundry"""
+    """Checking Foundry availability"""
     if not foundry_base_url or not REQUESTS_AVAILABLE:
         return False
 
@@ -238,7 +238,7 @@ def check_foundry(foundry_base_url: str | None) -> bool:
 # Main
 # =============================================================================
 def main() -> bool:
-    """Основная функция запуска сервера"""
+    """Main server launch function"""
     try:
         logger.info('FastAPI Foundry')
         logger.info('=' * 50)
@@ -246,15 +246,15 @@ def main() -> bool:
         # -------------------------------------------------------------------------
         # Foundry
         # -------------------------------------------------------------------------
-        logger.info("Поиск Foundry...")
+        logger.info("Searching for Foundry...")
         foundry_base_url = resolve_foundry_base_url()
 
         if foundry_base_url and check_foundry(foundry_base_url):
-            # Обновляем свойство Config с найденным URL
+            # Update Config property with found URL
             config.foundry_base_url = foundry_base_url
-            logger.info(f'Foundry доступен: {foundry_base_url}')
+            logger.info(f'Foundry is available: {foundry_base_url}')
         else:
-            logger.warning('Foundry недоступен — AI функции отключены')
+            logger.warning('Foundry is unavailable - AI features are disabled')
 
         # -------------------------------------------------------------------------
         # FastAPI
@@ -269,18 +269,18 @@ def main() -> bool:
 
         port = get_server_port()
 
-        logger.info('\nЗапуск FastAPI сервера')
-        logger.info(f'   Хост: {host}')
-        logger.info(f'   Порт: {port}')
-        logger.info(f'   Перезагрузка: {reload_enabled}')
-        logger.info(f'   Воркеры: {workers}')
+        logger.info('\nLaunching FastAPI server')
+        logger.info(f'   Host: {host}')
+        logger.info(f'   Port: {port}')
+        logger.info(f'   Reload: {reload_enabled}')
+        logger.info(f'   Workers: {workers}')
         logger.info('-' * 50)
         logger.info(f'UI:     http://localhost:{port}')
         logger.info(f'Docs:   http://localhost:{port}/docs')
         logger.info(f'Health: http://localhost:{port}/api/v1/health')
         logger.info('-' * 50)
 
-        # ИСПРАВЛЕНО: Добавлен полный контроль ошибок для запуска uvicorn
+        # FIXED: Added full error control for uvicorn launch
         try:
             uvicorn.run(
                 'src.api.main:app',
@@ -294,19 +294,19 @@ def main() -> bool:
             )
             return True
         except KeyboardInterrupt:
-            logger.info('\nОстановлено пользователем')
+            logger.info('\nStopped by user')
             return True
         except ImportError as e:
-            logger.error(f'Ошибка импорта — отсутствуют зависимости: {e}')
-            logger.error('Попробуйте: venv\\Scripts\\python.exe -m pip install -r requirements.txt')
+            logger.error(f'Import error - missing dependencies: {e}')
+            logger.error('Try: venv\\Scripts\\python.exe -m pip install -r requirements.txt')
             return False
         except Exception as exc:
-            logger.error(f'Ошибка запуска сервера: {exc}')
-            logger.error('Проверьте, не занят ли порт, и установлены ли все зависимости')
+            logger.error(f'Server launch error: {exc}')
+            logger.error('Check if the port is occupied and if all dependencies are installed')
             return False
             
     except Exception as e:
-        logger.error(f'Критическая ошибка в функции main: {e}')
+        logger.error(f'Critical error in main function: {e}')
         return False
 
 

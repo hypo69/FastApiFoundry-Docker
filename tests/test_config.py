@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Тест системы конфигурации FastAPI Foundry
+# Process Name: FastAPI Foundry Configuration System Test
 # =============================================================================
-# Описание:
-#   Простой скрипт для проверки загрузки конфигурации из разных источников
-#   Показывает приоритет: аргументы > .env > config.json > defaults
+# Description:
+#   A simple script to test configuration loading from various sources.
+#   Demonstrates the priority: arguments > .env > config.json > defaults.
 #
-# Примеры:
+# Examples:
 #   python test_config.py
 #
 # File: test_config.py
@@ -16,18 +16,18 @@
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
+# Date: December 9, 2025
 # =============================================================================
 
 import json
 from config import config
 
 def main():
-    """Тест системы конфигурации"""
+    """Tests the configuration system."""
     print("🔧 FastAPI Foundry Configuration Test")
     print("=" * 50)
     
-    # Показать основные настройки
+    # Display core settings
     print("\n📋 Current Configuration:")
     print(f"  FastAPI Host: {config.get('fastapi_server.host')}")
     print(f"  FastAPI Port: {config.get('fastapi_server.port')}")
@@ -49,7 +49,7 @@ def main():
     print(f"  API Key: {'***' if config.get('security.api_key') else 'Not set'}")
     print(f"  HTTPS: {config.get('security.https_enabled')}")
     
-    # Тест обновления из аргументов
+    # Test update from arguments
     print(f"\n🧪 Testing argument override:")
     print(f"  Original port: {config.get('fastapi_server.port')}")
     
@@ -58,7 +58,7 @@ def main():
     print(f"    Host: {config.get('fastapi_server.host')}")
     print(f"    Port: {config.get('fastapi_server.port')}")
     
-    # Показать полную конфигурацию
+    # Display full configuration
     print(f"\n📄 Full Configuration (JSON):")
     print(json.dumps(config.to_dict(), indent=2, ensure_ascii=False))
     

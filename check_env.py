@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Environment Variables Checker
+# Process Name: Environment Variables Checker
 # =============================================================================
-# Описание:
-#   Утилита для проверки и валидации переменных окружения
-#   Проверяет наличие обязательных переменных и их корректность
+# Description:
+#   Utility for checking and validating environment variables
+#   Checks for the presence of required variables and their correctness
 #
-# Примеры:
+# Examples:
 #   python311 check_env.py
 #   python311 check_env.py --show-secrets
 #
 # File: check_env.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.4.0
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 import re
 
 def load_env_file():
-    """Загрузка переменных из .env файла"""
+    """Loading variables from .env file"""
     env_path = Path('.env')
     
     if not env_path.exists():
@@ -40,7 +40,7 @@ def load_env_file():
     return True
 
 def check_github_config(show_secrets=False):
-    """Проверка GitHub конфигурации"""
+    """Checking GitHub configuration"""
     print("\n🐙 GitHub Configuration:")
     
     user = os.getenv('GITHUB_USER')
@@ -62,11 +62,11 @@ def check_github_config(show_secrets=False):
         if show_secrets:
             print(f"  ✅ GITHUB_PAT: {pat}")
         else:
-            # Показываем только первые и последние символы
+            # Show only the first and last characters
             masked = pat[:8] + "..." + pat[-4:] if len(pat) > 12 else "***"
             print(f"  ✅ GITHUB_PAT: {masked}")
         
-        # Проверяем формат PAT
+        # Checking PAT format
         if pat.startswith('ghp_'):
             print("  ✅ PAT format: valid (classic)")
         elif pat.startswith('github_pat_'):
@@ -77,7 +77,7 @@ def check_github_config(show_secrets=False):
         print("  ❌ GITHUB_PAT: not set (required for API access)")
 
 def check_api_config(show_secrets=False):
-    """Проверка API конфигурации"""
+    """Checking API configuration"""
     print("\n🔑 API Configuration:")
     
     api_key = os.getenv('API_KEY')
@@ -108,7 +108,7 @@ def check_api_config(show_secrets=False):
         print("  ⚠️  CORS_ORIGINS: not set (using defaults)")
 
 def check_foundry_config():
-    """Проверка Foundry конфигурации"""
+    """Checking Foundry configuration"""
     print("\n🤖 Foundry AI Configuration:")
     
     base_url = os.getenv('FOUNDRY_BASE_URL', 'http://localhost:50477/v1')
@@ -117,7 +117,7 @@ def check_foundry_config():
     
     print(f"  ✅ FOUNDRY_BASE_URL: {base_url}")
     
-    # Проверяем формат URL
+    # Checking URL format
     if not re.match(r'https?://.*', base_url):
         print("  ⚠️  Invalid URL format")
     
@@ -135,13 +135,13 @@ def check_foundry_config():
         print(f"  ❌ FOUNDRY_TIMEOUT: invalid value '{timeout}'")
 
 def check_database_config():
-    """Проверка Database конфигурации"""
+    """Checking Database configuration"""
     print("\n💾 Database Configuration:")
     
     db_url = os.getenv('DATABASE_URL')
     
     if db_url:
-        # Маскируем пароль в URL
+        # Masking password in URL
         masked_url = re.sub(r'://([^:]+):([^@]+)@', r'://\1:***@', db_url)
         print(f"  ✅ DATABASE_URL: {masked_url}")
         
@@ -157,7 +157,7 @@ def check_database_config():
         print("  ⚠️  DATABASE_URL: not set (using defaults)")
 
 def check_external_apis(show_secrets=False):
-    """Проверка внешних API"""
+    """Checking external APIs"""
     print("\n🌍 External APIs:")
     
     apis = {
@@ -178,7 +178,7 @@ def check_external_apis(show_secrets=False):
             print(f"  ⚠️  {key}: not set")
 
 def check_environment():
-    """Проверка режима окружения"""
+    """Checking environment mode"""
     print("\n🌍 Environment Mode:")
     
     env = os.getenv('ENVIRONMENT', 'development')
@@ -196,7 +196,7 @@ def check_environment():
         print("  ⚠️  LOG_LEVEL=ERROR in development (consider INFO or DEBUG)")
 
 def generate_secure_keys():
-    """Генерация безопасных ключей"""
+    """Generating secure keys"""
     print("\n🔐 Generate Secure Keys:")
     print("Run these commands to generate secure keys:")
     print()
@@ -218,7 +218,7 @@ def main():
     if not load_env_file():
         sys.exit(1)
     
-    # Проверяем все секции
+    # Checking all sections
     check_github_config(args.show_secrets)
     check_api_config(args.show_secrets)
     check_foundry_config()

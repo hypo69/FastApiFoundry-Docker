@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: FastAPI Application Factory (Refactored)
+# Process Name: FastAPI Application Factory (Refactored)
 # =============================================================================
-# Описание:
-#   Упрощенная фабрика для создания FastAPI приложения
+# Description:
+#   Simplified factory for creating the FastAPI application
 #
 # File: app.py
 # Project: FastApiFoundry (Docker)
@@ -22,37 +22,35 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from ..models.foundry_client import foundry_client
-# from ..rag.rag_system import rag_system
+from ..rag.rag_system import rag_system
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Управление жизненным циклом приложения"""
-    print("Zapusk FastAPI Foundry...")
+    """Manage application lifecycle"""
+    print("Starting FastAPI Foundry...")
     
-    # RAG система временно отключена из-за проблем с torch DLL
-    print("RAG system disabled (torch DLL issue)")
-    # rag_initialized = await rag_system.initialize()
-    # if rag_initialized:
-    #     print("✅ RAG система инициализирована")
-    # else:
-    #     print("⚠️ RAG система не инициализирована")
+    rag_initialized = await rag_system.initialize()
+    if rag_initialized:
+        print("✅ RAG system initialized")
+    else:
+        print("⚠️ RAG system not initialized")
     
     yield
     
-    print("Ostanovka FastAPI Foundry...")
+    print("Stopping FastAPI Foundry...")
     await foundry_client.close()
 
 def create_app() -> FastAPI:
-    """Создание и настройка FastAPI приложения"""
+    """Create and configure the FastAPI application"""
     
     app = FastAPI(
         title="FastAPI Foundry",
-        description="REST API для локальных AI моделей через Foundry",
+        description="REST API for local AI models via Foundry",
         version="0.4.1",
         lifespan=lifespan
     )
     
-    # Статические файлы
+    # Static files
     app.mount("/static", StaticFiles(directory="static"), name="static")
     
     # CORS middleware
@@ -64,35 +62,39 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
-    # Middleware для логирования запросов
+    # Middleware for request logging
     @app.middleware("http")
     async def log_requests(request: Request, call_next):
+        import asyncio
         import logging
         logger = logging.getLogger(__name__)
-        
+
         start_time = time.time()
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            logger.error(f"Middleware error: {exc}")
+            raise
         process_time = time.time() - start_time
-        
         log_message = f"{request.method} {request.url.path} -> {response.status_code} ({process_time:.3f}s)"
         logger.info(log_message)
-        print(log_message)
-        
         return response
     
-    # Глобальный обработчик исключений
+    # Global exception handler
     @app.exception_handler(Exception)
     async def global_exception_handler(request, exc):
         print(f"Error: {exc}")
         return JSONResponse(
             status_code=500,
             content={
-                "error": "Внутренняя ошибка сервера",
+                "error": "Internal Server Error",
                 "detail": str(exc)
             }
         )
     
-    # Подключение основных роутеров
+    # Connect main routers
     from .endpoints import main, models, health, generate, foundry, config, logs, rag
     from .endpoints.chat_endpoints import router as chat_router
     from .endpoints.foundry_management import router as foundry_mgmt_router
@@ -102,6 +104,7 @@ def create_app() -> FastAPI:
     from .endpoints.mcp_powershell import router as mcp_ps_router
     from .endpoints.agent import router as agent_router
     from .endpoints.converter import router as converter_router
+    from .endpoints.translation import router as translation_router
 
     app.include_router(main.router)
     app.include_router(health.router, prefix="/api/v1")
@@ -119,5 +122,6 @@ def create_app() -> FastAPI:
     app.include_router(mcp_ps_router, prefix="/api/v1")
     app.include_router(agent_router, prefix="/api/v1")
     app.include_router(converter_router, prefix="/api/v1")
+    app.include_router(translation_router, prefix="/api/v1")
     
     return app

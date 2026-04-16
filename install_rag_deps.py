@@ -1,27 +1,27 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Установка RAG зависимостей
+# Process name: RAG Dependency Installation
 # =============================================================================
-# Описание:
-#   Установка тяжёлых RAG зависимостей: torch, sentence-transformers, faiss-cpu.
+# Description:
+#   Installing heavy RAG dependencies: torch, sentence-transformers, faiss-cpu.
 #
-#   ПОЧЕМУ ОТДЕЛЬНО ОТ requirements.txt:
-#     torch (~2 GB) и sentence-transformers тянут за собой большой граф
-#     зависимостей. Включение их в requirements.txt делает базовую установку
-#     проекта неоправданно долгой для пользователей, которым RAG не нужен.
-#     Разделение позволяет установить только core-зависимости через install.ps1,
-#     а RAG — отдельно по желанию.
+#   WHY SEPARATE FROM requirements.txt:
+#     torch (~2 GB) and sentence-transformers pull in a large dependency
+#     graph. Including them in requirements.txt makes the base installation
+#     of the project unjustifiably long for users who do not need RAG.
+#     Separation allows installing only core dependencies via install.ps1,
+#     and RAG separately as desired.
 #
-#   ПОЧЕМУ НЕ pip install -r rag_requirements.txt:
-#     Отдельный файл требований создаёт путаницу с версиями при обновлении.
-#     Список из трёх пакетов проще держать прямо в скрипте.
+#   WHY NOT pip install -r rag_requirements.txt:
+#     A separate requirements file creates version confusion during updates.
+#     It's easier to keep the list of three packages directly in the script.
 #
-# Примеры:
+# Examples:
 #   >>> python install_rag_deps.py
 #
 # File: install_rag_deps.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.3.4
+# Version: 0.4.0
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
@@ -34,11 +34,11 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
-# Соответствие pip-имени → import-имени.
-# ПОЧЕМУ СЛОВАРЬ, А НЕ СПИСОК:
-#   pip-имя и import-имя часто не совпадают (faiss-cpu → faiss,
-#   sentence-transformers → sentence_transformers). Словарь делает
-#   проверку установки явной без хрупких замен дефисов на подчёркивания.
+# Mapping pip name → import name.
+# WHY A DICTIONARY, NOT A LIST:
+#   pip names and import names often don't match (faiss-cpu → faiss,
+#   sentence-transformers → sentence_transformers). A dictionary makes the
+#   installation check explicit without fragile hyphen-to-underscore replacements.
 RAG_PACKAGES: dict = {
     "torch": "torch",
     "sentence-transformers": "sentence_transformers",
@@ -47,18 +47,18 @@ RAG_PACKAGES: dict = {
 
 
 def is_installed(import_name: str) -> bool:
-    """! Проверка наличия пакета в текущем окружении через импорт.
+    """! Checking for a package in the current environment via import.
 
-    ПОЧЕМУ ЧЕРЕЗ ИМПОРТ, А НЕ pip show:
-      pip show — отдельный subprocess с парсингом stdout.
-      __import__ быстрее и точнее: проверяет именно то окружение,
-      в котором будет работать приложение.
+    WHY VIA IMPORT, NOT pip show:
+      pip show is a separate subprocess with stdout parsing.
+      __import__ is faster and more accurate: it checks the exact environment
+      in which the application will run.
 
     Args:
-        import_name (str): Имя модуля для импорта.
+        import_name (str): Module name for import.
 
     Returns:
-        bool: True если пакет доступен.
+        bool: True if the package is available.
 
     Example:
         >>> is_installed("torch")
@@ -72,37 +72,37 @@ def is_installed(import_name: str) -> bool:
 
 
 def install_package(package: str) -> bool:
-    """! Установка одного пакета через pip.
+    """! Installing a single package via pip.
 
     Args:
-        package (str): Имя пакета для установки.
+        package (str): Name of the package to install.
 
     Returns:
-        bool: True при успешной установке.
+        bool: True if installation is successful.
 
     Example:
         >>> install_package("faiss-cpu")
         True
     """
-    # Вызов через sys.executable — гарантия установки в текущий venv
+    # Calling via sys.executable guarantees installation in the current venv
     result = subprocess.run(
         [sys.executable, "-m", "pip", "install", package],
         capture_output=True, text=True
     )
 
     if not result.returncode == 0:
-        logger.error(f"Ошибка установки {package}: {result.stderr.strip()}")
+        logger.error(f"Error installing {package}: {result.stderr.strip()}")
         return False
 
     return True
 
 
 def main() -> None:
-    """! Точка входа: проверка и установка RAG зависимостей."""
+    """! Entry point: checking and installing RAG dependencies."""
     already: list = []
     to_install: list = []
 
-    # Разделение на уже установленные и требующие установки
+    # Separating into already installed and requiring installation
     for pkg, imp in RAG_PACKAGES.items():
         if is_installed(imp):
             already.append(pkg)
@@ -110,31 +110,31 @@ def main() -> None:
             to_install.append(pkg)
 
     if already:
-        logger.info(f"Уже установлено: {', '.join(already)}")
+        logger.info(f"Already installed: {', '.join(already)}")
 
     if not to_install:
-        logger.info("Все RAG зависимости уже установлены")
-        logger.info("Следующий шаг: python create_rag_index.py")
+        logger.info("All RAG dependencies are already installed")
+        logger.info("Next step: python create_rag_index.py")
         return
 
-    logger.info(f"Установка ({len(to_install)} пакетов, ~2 GB): {', '.join(to_install)}")
+    logger.info(f"Installing ({len(to_install)} packages, ~2 GB): {', '.join(to_install)}")
 
     failed: list = []
     for pkg in to_install:
-        logger.info(f"  Установка {pkg}...")
+        logger.info(f"  Installing {pkg}...")
         if install_package(pkg):
             logger.info(f"  OK: {pkg}")
         else:
             failed.append(pkg)
 
     if failed:
-        logger.error(f"Не удалось установить: {', '.join(failed)}")
+        logger.error(f"Failed to install: {', '.join(failed)}")
         for pkg in failed:
             logger.error(f"  pip install {pkg}")
         sys.exit(1)
 
-    logger.info("RAG зависимости установлены")
-    logger.info("Следующий шаг: python create_rag_index.py")
+    logger.info("RAG dependencies installed")
+    logger.info("Next step: python create_rag_index.py")
 
 
 if __name__ == "__main__":

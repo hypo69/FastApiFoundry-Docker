@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: FastAPI Foundry Main Entry Point
+# Process Name: FastAPI Foundry Main Entry Point
 # =============================================================================
-# Описание:
-#   Точка входа для FastAPI Foundry приложения
+# Description:
+#   Entry point for the FastAPI Foundry application
 #
 # File: main.py
 # Project: AiStros
@@ -15,7 +15,7 @@
 
 from .app import create_app
 
-# Создание приложения
+# Application creation
 app = create_app()
 
 if __name__ == "__main__":

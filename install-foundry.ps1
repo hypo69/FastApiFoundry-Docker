@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Microsoft Foundry Local - Установщик
+# Process name: Microsoft Foundry Local - Installer
 # =============================================================================
-# Описание:
-#   Устанавливает Microsoft Foundry Local CLI через winget.
-#   После установки запускает сервис и предлагает скачать модель.
+# Description:
+#   Installs Microsoft Foundry Local CLI via winget.
+#   After installation, starts the service and suggests downloading a model.
 #
-# Использование:
+# Usage:
 #   .\install-foundry.ps1
 #   .\install-foundry.ps1 -Model "qwen2.5-0.5b-instruct-generic-cpu"
 #
@@ -16,6 +16,7 @@
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
+# Date: December 9, 2025
 # =============================================================================
 
 param(
@@ -27,74 +28,74 @@ $ErrorActionPreference = "Stop"
 Write-Host "Microsoft Foundry Local - Installer" -ForegroundColor Cyan
 Write-Host ("=" * 50)
 
-# --- Проверка winget ---
+# --- winget Check ---
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    Write-Host "winget не найден." -ForegroundColor Red
-    Write-Host "Установите App Installer из Microsoft Store:" -ForegroundColor Cyan
+    Write-Host "winget not found." -ForegroundColor Red
+    Write-Host "Install App Installer from the Microsoft Store:" -ForegroundColor Cyan
     Write-Host "  https://apps.microsoft.com/detail/9NBLGGH4NNS1" -ForegroundColor Gray
     exit 1
 }
 
-# --- Проверка существующей установки ---
+# --- Checking existing installation ---
 if (Get-Command foundry -ErrorAction SilentlyContinue) {
     $ver = & foundry --version 2>&1
-    Write-Host "Foundry уже установлен: $ver" -ForegroundColor Green
+    Write-Host "Foundry is already installed: $ver" -ForegroundColor Green
 } else {
-    # --- Установка через winget ---
-    Write-Host "`nУстановка Microsoft Foundry Local..." -ForegroundColor Yellow
+    # --- Installation via winget ---
+    Write-Host "`nInstalling Microsoft Foundry Local..." -ForegroundColor Yellow
     try {
         winget install Microsoft.FoundryLocal --accept-source-agreements --accept-package-agreements
-        Write-Host "Foundry Local установлен" -ForegroundColor Green
+        Write-Host "Foundry Local installed" -ForegroundColor Green
     } catch {
-        Write-Host "Ошибка установки через winget: $_" -ForegroundColor Red
+        Write-Host "Error installing via winget: $_" -ForegroundColor Red
         Write-Host ""
-        Write-Host "Установите вручную:" -ForegroundColor Cyan
+        Write-Host "Install manually:" -ForegroundColor Cyan
         Write-Host "  winget install Microsoft.FoundryLocal" -ForegroundColor Gray
-        Write-Host "  или скачайте с: https://aka.ms/foundry-local" -ForegroundColor Gray
+        Write-Host "  or download from: https://aka.ms/foundry-local" -ForegroundColor Gray
         exit 1
     }
 
-    # Обновляем PATH в текущей сессии
+    # Update PATH in the current session
     $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" +
                 [System.Environment]::GetEnvironmentVariable("PATH", "User")
 }
 
-# --- Запуск сервиса ---
-Write-Host "`nЗапуск Foundry сервиса..." -ForegroundColor Yellow
+# --- Service Startup ---
+Write-Host "`nStarting Foundry service..." -ForegroundColor Yellow
 try {
     & foundry service start
     Start-Sleep 3
-    Write-Host "Сервис запущен" -ForegroundColor Green
+    Write-Host "Service started" -ForegroundColor Green
 } catch {
-    Write-Host "Не удалось запустить сервис: $_" -ForegroundColor Yellow
-    Write-Host "Запустите вручную: foundry service start" -ForegroundColor Cyan
+    Write-Host "Failed to start service: $_" -ForegroundColor Yellow
+    Write-Host "Start manually: foundry service start" -ForegroundColor Cyan
 }
 
-# --- Скачивание модели ---
-Write-Host "`nСкачивание модели: $Model" -ForegroundColor Yellow
-Write-Host "Это может занять несколько минут..." -ForegroundColor Gray
+# --- Downloading Model ---
+Write-Host "`nDownloading model: $Model" -ForegroundColor Yellow
+Write-Host "This may take a few minutes..." -ForegroundColor Gray
 try {
     & foundry model download $Model
-    Write-Host "Модель скачана: $Model" -ForegroundColor Green
+    Write-Host "Model downloaded: $Model" -ForegroundColor Green
 } catch {
-    Write-Host "Не удалось скачать модель: $_" -ForegroundColor Yellow
-    Write-Host "Скачайте вручную: foundry model download $Model" -ForegroundColor Cyan
+    Write-Host "Failed to download model: $_" -ForegroundColor Yellow
+    Write-Host "Download manually: foundry model download $Model" -ForegroundColor Cyan
 }
 
-# --- Проверка ---
-Write-Host "`nПроверка API..." -ForegroundColor Yellow
+# --- Check ---
+Write-Host "`nChecking API..." -ForegroundColor Yellow
 Start-Sleep 2
 try {
     $response = Invoke-RestMethod "http://localhost:50477/v1/models" -TimeoutSec 5
-    Write-Host "Foundry API доступен на порту 50477" -ForegroundColor Green
-    Write-Host "Моделей загружено: $($response.data.Count)" -ForegroundColor Gray
+    Write-Host "Foundry API available on port 50477" -ForegroundColor Green
+    Write-Host "Models loaded: $($response.data.Count)" -ForegroundColor Gray
 } catch {
-    Write-Host "API пока недоступен — Foundry может использовать другой порт." -ForegroundColor Yellow
-    Write-Host "Сервер найдёт его автоматически при запуске." -ForegroundColor Cyan
+    Write-Host "API not yet available — Foundry may be using a different port." -ForegroundColor Yellow
+    Write-Host "The server will find it automatically upon startup." -ForegroundColor Cyan
 }
 
 Write-Host "`n$("=" * 50)" -ForegroundColor Green
-Write-Host "Foundry Local готов к работе!" -ForegroundColor Green
+Write-Host "Foundry Local is ready to use!" -ForegroundColor Green
 Write-Host ""
-Write-Host "Запустите FastAPI сервер:"
+Write-Host "Start the FastAPI server:"
 Write-Host "  venv\Scripts\python.exe run.py"

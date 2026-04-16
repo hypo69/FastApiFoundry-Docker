@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Поиск всех AI моделей в системе
+# Process Name: Search for all AI Models in the System
 # =============================================================================
-# Описание:
-#   Поиск моделей Foundry, Ollama, HuggingFace и других AI фреймворков
+# Description:
+#   Searching for Foundry, Ollama, HuggingFace, and other AI framework models
 #
 # File: ai_model_scanner.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.4.0
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
+# License: MIT
+# Copyright: © 2026 hypo69
+# Date: December 9, 2025
 # =============================================================================
 
 import os
@@ -21,7 +21,7 @@ from typing import List, Dict, Any
 import json
 
 def scan_all_ai_models() -> Dict[str, Any]:
-    """Сканирование всех AI моделей в системе"""
+    """Scanning all AI models in the system"""
     
     results = {
         "foundry": {"directories": [], "models": []},
@@ -30,7 +30,7 @@ def scan_all_ai_models() -> Dict[str, Any]:
         "other": {"directories": [], "models": []}
     }
     
-    # Пути для поиска
+    # Paths for searching
     search_locations = {
         "foundry": [
             Path.home() / ".foundry",
@@ -49,30 +49,30 @@ def scan_all_ai_models() -> Dict[str, Any]:
         ]
     }
     
-    print("🔍 Сканирование AI моделей в системе...")
+    print("🔍 Scanning for AI models in the system...")
     print()
     
     for framework, paths in search_locations.items():
-        print(f"🔍 Поиск {framework.upper()} моделей...")
+        print(f"🔍 Searching for {framework.upper()} models...")
         
         for path in paths:
             if path and path.exists():
-                print(f"  ✅ Найдена директория: {path}")
+                print(f"  ✅ Directory found: {path}")
                 results[framework]["directories"].append(str(path))
                 
-                # Сканирование файлов
+                # Scanning files
                 try:
                     for item in path.rglob("*"):
                         if item.is_file():
                             size_mb = item.stat().st_size / (1024 * 1024)
                             
-                            # Определяем тип файла модели
+                            # Determine model file type
                             if any(ext in item.name.lower() for ext in [
                                 '.bin', '.safetensors', '.gguf', '.ggml', 
                                 'pytorch_model', 'model.json', 'config.json',
                                 '.pt', '.pth', '.onnx'
                             ]):
-                                if size_mb > 5:  # Файлы больше 5MB
+                                if size_mb > 5:  # Files larger than 5MB
                                     results[framework]["models"].append({
                                         "name": item.name,
                                         "path": str(item),
@@ -80,13 +80,13 @@ def scan_all_ai_models() -> Dict[str, Any]:
                                         "parent": item.parent.name
                                     })
                 except PermissionError:
-                    print(f"  ⚠️  Нет доступа к {path}")
+                    print(f"  ⚠️  No access to {path}")
             else:
-                print(f"  ❌ Не найдена: {path}")
+                print(f"  ❌ Not found: {path}")
         print()
     
-    # Дополнительный поиск в общих местах
-    print("🔍 Поиск в общих директориях...")
+    # Additional search in common locations
+    print("🔍 Searching in common directories...")
     common_paths = [
         Path.home() / "models",
         Path.home() / "Downloads",
@@ -96,7 +96,7 @@ def scan_all_ai_models() -> Dict[str, Any]:
     
     for path in common_paths:
         if path.exists():
-            print(f"  ✅ Сканирование: {path}")
+            print(f"  ✅ Scanning: {path}")
             try:
                 for item in path.rglob("*"):
                     if item.is_file():
@@ -111,16 +111,16 @@ def scan_all_ai_models() -> Dict[str, Any]:
                                 "parent": item.parent.name
                             })
             except PermissionError:
-                print(f"  ⚠️  Нет доступа к {path}")
+                print(f"  ⚠️  No access to {path}")
     
     return results
 
 def check_ai_installations() -> Dict[str, bool]:
-    """Проверка установленных AI фреймворков"""
+    """Checking installed AI frameworks"""
     
     installations = {}
     
-    # Проверка через команды
+    # Check via commands
     commands = {
         "foundry": ["foundry", "foundry-server"],
         "ollama": ["ollama"],
@@ -140,7 +140,7 @@ def check_ai_installations() -> Dict[str, bool]:
         if not found:
             installations[framework] = False
     
-    # Проверка Python пакетов
+    # Check Python packages
     try:
         import transformers
         installations["transformers_lib"] = True
@@ -156,27 +156,27 @@ def check_ai_installations() -> Dict[str, bool]:
     return installations
 
 def main():
-    """Главная функция"""
+    """Main function"""
     print("=" * 70)
-    print("🤖 СКАНЕР AI МОДЕЛЕЙ В СИСТЕМЕ")
+    print("🤖 AI MODEL SCANNER IN THE SYSTEM")
     print("=" * 70)
     print()
     
-    # Проверка установок
+    # Check installations
     installations = check_ai_installations()
     
-    print("🔧 УСТАНОВЛЕННЫЕ ФРЕЙМВОРКИ:")
+    print("🔧 INSTALLED FRAMEWORKS:")
     for framework, installed in installations.items():
-        status = "✅ Установлен" if installed else "❌ Не найден"
+        status = "✅ Installed" if installed else "❌ Not found"
         print(f"  {framework}: {status}")
     print()
     
-    # Сканирование моделей
+    # Scanning models
     results = scan_all_ai_models()
     
-    # Вывод результатов
+    # Output results
     print("=" * 70)
-    print("📊 РЕЗУЛЬТАТЫ СКАНИРОВАНИЯ")
+    print("📊 SCAN RESULTS")
     print("=" * 70)
     
     total_models = 0
@@ -185,24 +185,24 @@ def main():
         total_models += model_count
         
         if model_count > 0:
-            print(f"\n🤖 {framework.upper()}: {model_count} моделей")
+            print(f"\n🤖 {framework.upper()}: {model_count} models")
             
-            # Показываем первые 5 моделей
+            # Show first 5 models
             for model in data["models"][:5]:
                 print(f"  📄 {model['name']} ({model['size_mb']} MB)")
                 print(f"     📁 {model['parent']}")
             
             if model_count > 5:
-                print(f"     ... и еще {model_count - 5} моделей")
+                print(f"     ... and {model_count - 5} more models")
     
-    print(f"\n📊 ВСЕГО НАЙДЕНО МОДЕЛЕЙ: {total_models}")
+    print(f"\n📊 TOTAL MODELS FOUND: {total_models}")
     
     if total_models == 0:
-        print("\n💡 РЕКОМЕНДАЦИИ:")
-        print("  1. Установите Ollama: https://ollama.ai/")
-        print("  2. Скачайте модели: ollama pull llama2")
-        print("  3. Или установите Foundry с моделями")
-        print("  4. Проверьте директории Downloads на наличие .gguf файлов")
+        print("\n💡 RECOMMENDATIONS:")
+        print("  1. Install Ollama: https://ollama.ai/")
+        print("  2. Download models: ollama pull llama2")
+        print("  3. Or install Foundry with models")
+        print("  4. Check Downloads directories for .gguf files")
 
 if __name__ == "__main__":
     main()

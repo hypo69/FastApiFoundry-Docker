@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Остановка FastAPI Foundry серверов
+# Process Name: Stopping FastAPI Foundry servers
 # =============================================================================
-# Описание:
-#   Простой скрипт для завершения процессов FastAPI Foundry
-#   Упрощенная версия без избыточного логирования
+# Description:
+#   Simple script to terminate FastAPI Foundry processes
+#   Simplified version without excessive logging
 #
 # File: stop.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.4.0
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
+# Date: December 9, 2025
 # =============================================================================
 
 import subprocess
@@ -21,11 +21,11 @@ import platform
 import sys
 
 def kill_processes_on_ports(ports):
-    """Завершить процессы на указанных портах"""
+    """Terminate processes on specified ports"""
     print(f"Checking ports: {ports}")
     system = platform.system().lower()
     killed_count = 0
-    found_pids = set()  # Используем set чтобы избежать дубликатов
+    found_pids = set()  # Use set to avoid duplicates
     
     for port in ports:
         print(f"Checking port {port}...")
@@ -47,7 +47,7 @@ def kill_processes_on_ports(ports):
                                 pid = parts[-1]
                                 if pid.isdigit() and pid != '0' and pid not in found_pids:
                                     found_pids.add(pid)
-                                    print(f"🛑 Киллинг процесса PID: {pid}")
+                                    print(f"🛑 Killing process PID: {pid}")
                                     
                                     kill_result = subprocess.run(
                                         ["taskkill", "/PID", pid, "/F"], 
@@ -79,7 +79,7 @@ def kill_processes_on_ports(ports):
                     for pid in pids:
                         if pid and pid not in found_pids:
                             found_pids.add(pid)
-                            print(f"🛑 Киллинг процесса PID: {pid}")
+                            print(f"🛑 Killing process PID: {pid}")
                             subprocess.run(["kill", "-9", pid], capture_output=True, timeout=5)
                             print(f"✅ Killed process PID {pid}")
                             killed_count += 1
@@ -94,7 +94,7 @@ def main():
     print("🛑 FastAPI Foundry Stop Script")
     print("=" * 40)
     
-    # Порты по умолчанию - только основной порт
+    # Default ports - main port only
     ports = [8000]
     
     if len(sys.argv) > 1:

@@ -14,7 +14,7 @@
   "foundry_ai": {
     "base_url": "${FOUNDRY_BASE_URL}",
     "api_key": "${FOUNDRY_API_KEY}",
-    "default_model": "hf::microsoft/phi-2",
+    "default_model": "qwen2.5-0.5b-instruct-generic-cpu:4",
     "auto_load_default": false,
     "temperature": 0.7,
     "top_p": 0.9,
@@ -24,7 +24,7 @@
   },
   "rag_system": {
     "enabled": true,
-    "index_dir": "rag_index",
+    "index_dir": "./rag_index",
     "model": "sentence-transformers/all-MiniLM-L6-v2",
     "chunk_size": 1000,
     "top_k": 5

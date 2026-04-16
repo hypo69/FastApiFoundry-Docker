@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Регистрация автозапуска FastAPI Foundry в Task Scheduler
+# Process name: Registering FastAPI Foundry autostart in Task Scheduler
 # =============================================================================
-# Описание:
-#   Создаёт задачу Windows Task Scheduler, которая запускает autostart.ps1
-#   при входе пользователя в систему (скрытое окно, вывод в лог).
-#   Требует запуска от имени администратора.
+# Description:
+#   Creates a Windows Task Scheduler task that launches autostart.ps1
+#   upon user login (hidden window, output to log).
+#   Requires running as administrator.
 #
-# Примеры:
-#   # Установить автозапуск:
+# Examples:
+#   # Install autostart:
 #   .\install-autostart.ps1
 #
-#   # Удалить автозапуск:
+#   # Remove autostart:
 #   .\install-autostart.ps1 -Uninstall
 #
 # File: install-autostart.ps1
@@ -20,7 +20,7 @@
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
+# Date: December 9, 2025
 # =============================================================================
 
 param(
@@ -35,27 +35,27 @@ $Script     = Join-Path $Root 'autostart.ps1'
 $LogDir     = Join-Path $Root 'logs'
 $LogFile    = Join-Path $LogDir 'autostart.log'
 
-# Проверка прав администратора
+# Administrator rights check
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
         ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host '❌ Требуются права администратора. Запустите от имени Admin.' -ForegroundColor Red
+    Write-Host '❌ Administrator rights required. Run as Admin.' -ForegroundColor Red
     exit 1
 }
 
-# Удаление задачи
+# Task removal
 if ($Uninstall) {
     if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
         Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
-        Write-Host "✅ Задача '$TaskName' удалена." -ForegroundColor Green
+        Write-Host "✅ Task '$TaskName' deleted." -ForegroundColor Green
     } else {
-        Write-Host "⚠️ Задача '$TaskName' не найдена." -ForegroundColor Yellow
+        Write-Host "⚠️ Task '$TaskName' not found." -ForegroundColor Yellow
     }
     exit 0
 }
 
-# Проверка autostart.ps1
+# Checking autostart.ps1
 if (-not (Test-Path $Script)) {
-    Write-Host "❌ Не найден autostart.ps1: $Script" -ForegroundColor Red
+    Write-Host "❌ autostart.ps1 not found: $Script" -ForegroundColor Red
     exit 1
 }
 
@@ -63,7 +63,7 @@ if (-not (Test-Path $LogDir)) {
     New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
 }
 
-# Аргументы для powershell.exe (скрытый запуск, вывод в лог)
+# Arguments for powershell.exe (hidden launch, output to log)
 $PsArgs = "-NonInteractive -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$Script`""
 
 $Action  = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $PsArgs -WorkingDirectory $Root
@@ -74,7 +74,7 @@ $Settings = New-ScheduledTaskSettingsSet `
     -RestartInterval (New-TimeSpan -Minutes 1) `
     -StartWhenAvailable
 
-# Удалить старую задачу если есть
+# Remove old task if it exists
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
 }
@@ -85,8 +85,8 @@ Register-ScheduledTask `
     -Trigger  $Trigger `
     -Settings $Settings `
     -RunLevel Highest `
-    -Description 'Автозапуск FastAPI Foundry при входе в систему' | Out-Null
+    -Description 'FastAPI Foundry autostart upon login' | Out-Null
 
-Write-Host "✅ Задача '$TaskName' зарегистрирована." -ForegroundColor Green
-Write-Host "📋 Лог запуска: $LogFile" -ForegroundColor Cyan
-Write-Host "💡 Для удаления: .\install-autostart.ps1 -Uninstall" -ForegroundColor Gray
+Write-Host "✅ Task '$TaskName' registered." -ForegroundColor Green
+Write-Host "📋 Launch log: $LogFile" -ForegroundColor Cyan
+Write-Host "💡 To remove: .\install-autostart.ps1 -Uninstall" -ForegroundColor Gray

@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Точная остановка FastAPI Foundry
+# Process Name: Precise Stop for FastAPI Foundry
 # =============================================================================
-# Описание:
-#   Улучшенный скрипт для завершения только активных процессов FastAPI Foundry
-#   Избегает убийства лишних процессов
+# Description:
+#   Improved script to terminate only active FastAPI Foundry processes
+#   Avoids killing unnecessary processes
 #
 # File: stop_precise.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.4.0
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
+# Date: December 9, 2025
 # =============================================================================
 
 import subprocess
@@ -23,7 +23,7 @@ import psutil
 import os
 
 def find_fastapi_processes():
-    """Найти только процессы FastAPI Foundry"""
+    """Find only FastAPI Foundry processes"""
     processes = []
     
     try:
@@ -31,7 +31,7 @@ def find_fastapi_processes():
             try:
                 cmdline = ' '.join(proc.info['cmdline'] or [])
                 
-                # Ищем только наши процессы
+                # Look only for our processes
                 if any(keyword in cmdline.lower() for keyword in [
                     'run.py',
                     'fastapi-foundry',
@@ -53,7 +53,7 @@ def find_fastapi_processes():
     return processes
 
 def kill_process_by_pid(pid):
-    """Убить процесс по PID"""
+    """Kill process by PID"""
     try:
         if platform.system().lower() == "windows":
             result = subprocess.run(
@@ -79,7 +79,7 @@ def main():
     print("🛑 FastAPI Foundry Precise Stop")
     print("=" * 40)
     
-    # Найти процессы FastAPI Foundry
+    # Find FastAPI Foundry processes
     processes = find_fastapi_processes()
     
     if not processes:

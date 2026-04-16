@@ -1,38 +1,38 @@
 @echo off
 chcp 65001 >nul
 
-REM FastApiFoundry-Docker: Единая установка
-REM Запускает install.ps1 (venv, зависимости, .env, logs, RAG) и install-foundry.ps1 (AI backend)
+REM FastApiFoundry-Docker: Unified Installation
+REM Runs install.ps1 (venv, dependencies, .env, logs, RAG) and install-foundry.ps1 (AI backend)
 
-REM 1. Основная установка
+REM 1. Core Installation
 powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install.ps1' }"
 if %errorlevel% neq 0 (
-    echo Ошибка при выполнении install.ps1
+    echo Error executing install.ps1
     pause
     exit /b %errorlevel%
 )
 
-REM 2. Установка Foundry Local (опционально, если не установлен)
+REM 2. Install Foundry Local (optional, if not installed)
 powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install-foundry.ps1' }"
 if %errorlevel% neq 0 (
-    echo Ошибка при выполнении install-foundry.ps1
-    echo Можно установить Foundry вручную install-foundry.ps1 или выбрать другой AI backend.
+    echo Error executing install-foundry.ps1
+    echo You can install Foundry manually using install-foundry.ps1 or choose another AI backend.
     pause
 )
 
-REM 3. Регистрация автозапуска при старте Windows
+REM 3. Register autostart with Windows
 powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install-autostart.ps1' }"
 if %errorlevel% neq 0 (
-    echo Предупреждение: автозапуск не зарегистрирован. Запустите install-autostart.ps1 от имени администратора вручную.
+    echo Warning: autostart not registered. Run install-autostart.ps1 as administrator manually.
 )
 
-REM 4. Установка HuggingFace CLI
+REM 4. Install HuggingFace CLI
 powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install-huggingface-cli.ps1' -SkipAuth }"
 if %errorlevel% neq 0 (
-    echo Предупреждение: HuggingFace CLI не установлен. Запустите install-huggingface-cli.ps1 вручную.
+    echo Warning: HuggingFace CLI not installed. Run install-huggingface-cli.ps1 manually.
 )
 
 echo.
-echo Установка завершена!
-echo Следуйте инструкциям в INSTALL.md
+echo Installation complete!
+echo Follow instructions in INSTALL.md
 pause

@@ -1,6 +1,6 @@
 # start.ps1 — FastAPI Foundry Smart Launcher
 # =============================================================================
-# Автоматически устанавливает зависимости при первом запуске
+# Automatically installs dependencies on first run
 # =============================================================================
 #$
 param(
@@ -14,9 +14,9 @@ Write-Host '🚀 FastAPI Foundry Smart Launcher' -ForegroundColor Cyan
 Write-Host ('=' * 60) -ForegroundColor Cyan
 
 # -----------------------------------------------------------------------------
-# Проверка и установка зависимостей
+# Dependency check and installation
 # -----------------------------------------------------------------------------
-# Активация виртуального окружения
+# Virtual environment activation
 $ActivateScript = "$Root\venv\Scripts\Activate.ps1"
 if (Test-Path $ActivateScript) {
     . $ActivateScript
@@ -31,21 +31,21 @@ if (-not (Test-Path $venvPath)) {
 }
 
 if (-not (Test-Path $venvPath)) {
-    Write-Host '📦 Первый запуск - установка зависимостей...' -ForegroundColor Yellow
-    Write-Host 'Это может занять несколько минут...' -ForegroundColor Yellow
+    Write-Host '📦 First run - installing dependencies...' -ForegroundColor Yellow
+    Write-Host 'This may take several minutes...' -ForegroundColor Yellow
     
     if (Test-Path "$Root\install.ps1") {
         try {
             & "$Root\install.ps1"
-            Write-Host '✅ Установка завершена!' -ForegroundColor Green
+            Write-Host '✅ Installation complete!' -ForegroundColor Green
         } catch {
-            Write-Host "❌ Ошибка установки: $_" -ForegroundColor Red
-            Write-Host 'Попробуйте запустить install.ps1 вручную' -ForegroundColor Yellow
+            Write-Host "❌ Installation error: $_" -ForegroundColor Red
+            Write-Host 'Try running install.ps1 manually' -ForegroundColor Yellow
             exit 1
         }
     } else {
-        Write-Host '❌ install.ps1 не найден!' -ForegroundColor Red
-        Write-Host 'Создайте venv вручную: python311 -m venv venv' -ForegroundColor Yellow
+        Write-Host '❌ install.ps1 not found!' -ForegroundColor Red
+        Write-Host 'Create venv manually: python311 -m venv venv' -ForegroundColor Yellow
         exit 1
     }
 }
@@ -56,7 +56,7 @@ if (-not (Test-Path $venvPath)) {
 function Load-EnvFile {
     param([string]$EnvPath)
     
-    # Проверяем что это файл, а не директория
+    # Check that it's a file, not a directory
     if (-not (Test-Path $EnvPath -PathType Leaf)) {
         if (Test-Path $EnvPath -PathType Container) {
             Write-Host "⚠️ .env is a directory, not a file: $EnvPath" -ForegroundColor Yellow
@@ -75,14 +75,14 @@ function Load-EnvFile {
         Get-Content $EnvPath | ForEach-Object {
             $line = $_.Trim()
             
-            # Пропускаем пустые строки и комментарии
+            # Skip empty lines and comments
             if ($line -and -not $line.StartsWith('#')) {
-                # ИСПРАВЛЕНО: Упрощено регулярное выражение для совместимости
+                # FIXED: Simplified regular expression for compatibility
                 if ($line -match '^([^=]+)=(.*)$') {
                     $key = $matches[1].Trim()
                     $value = $matches[2].Trim()
                     
-                    # Убираем кавычки если есть
+                    # Remove quotes if present
                     if ($value.StartsWith('"') -and $value.EndsWith('"')) {
                         $value = $value.Substring(1, $value.Length - 2)
                     }
@@ -93,7 +93,7 @@ function Load-EnvFile {
                     [System.Environment]::SetEnvironmentVariable($key, $value)
                     $envVars++
                     
-                    # Показываем только безопасные переменные
+                    # Show only safe variables
                     if ($key -notmatch '(PASSWORD|SECRET|KEY|TOKEN|PAT)') {
                         Write-Host "  ✓ $key = $value" -ForegroundColor DarkGray
                     } else {
@@ -108,7 +108,7 @@ function Load-EnvFile {
     }
 }
 
-# Загружаем .env файл
+# Load .env file
 Load-EnvFile "$Root\.env"
 
 # -----------------------------------------------------------------------------
@@ -148,7 +148,7 @@ function Get-FoundryPort {
 # -----------------------------------------------------------------------------
 Write-Host '🔍 Checking Local Foundry...' -ForegroundColor Cyan
 
-# Проверяем запущен ли Foundry
+# Check if Foundry is running
 $foundryPort = Get-FoundryPort
 
 if ($foundryPort) {
@@ -165,7 +165,7 @@ if ($foundryPort) {
             Start-Process -FilePath "foundry" -ArgumentList "service", "start" -WindowStyle Minimized -NoNewWindow:$false
             Write-Host "Foundry service start command executed" -ForegroundColor Gray
             
-            # Ждем запуска и ищем порт
+            # Wait for startup and find the port
             for ($i = 1; $i -le 10; $i++) {
                 Start-Sleep 2
                 $foundryPort = Get-FoundryPort
@@ -188,7 +188,7 @@ if ($foundryPort) {
     }
 }
 
-# Устанавливаем переменную окружения для FastAPI
+# Set environment variable for FastAPI
 if ($foundryPort) {
     $env:FOUNDRY_BASE_URL = "http://localhost:$foundryPort/v1/"
     Write-Host "🔗 FOUNDRY_BASE_URL = $env:FOUNDRY_BASE_URL" -ForegroundColor Green
@@ -197,7 +197,7 @@ if ($foundryPort) {
 }
 
 # -----------------------------------------------------------------------------
-# llama.cpp (опционально — если задан LLAMA_MODEL_PATH в .env)
+# llama.cpp (optional — if LLAMA_MODEL_PATH is set in .env)
 # -----------------------------------------------------------------------------
 $llamaModelPath = [System.Environment]::GetEnvironmentVariable('LLAMA_MODEL_PATH')
 $llamaAutoStart = [System.Environment]::GetEnvironmentVariable('LLAMA_AUTO_START')
@@ -210,7 +210,7 @@ if ($llamaModelPath -and $llamaAutoStart -eq 'true') {
         $llamaPort = [System.Environment]::GetEnvironmentVariable('LLAMA_PORT')
         if (-not $llamaPort) { $llamaPort = 8080 }
 
-        # Запускаем в отдельном окне чтобы не блокировать
+        # Start in a separate window to avoid blocking
         Start-Process powershell.exe -ArgumentList @(
             '-NonInteractive', '-NoProfile', '-ExecutionPolicy', 'Bypass',
             '-File', $llamaScript,
@@ -241,7 +241,7 @@ if (-not (Test-Path $venvPath)) {
 
 Write-Host "🔗 FOUNDRY_DYNAMIC_PORT = $env:FOUNDRY_DYNAMIC_PORT" -ForegroundColor Gray
 
-# Передаем переменную окружения в Python процесс
+# Pass environment variable to Python process
 if ($env:FOUNDRY_DYNAMIC_PORT) {
     $env:FOUNDRY_DYNAMIC_PORT = $env:FOUNDRY_DYNAMIC_PORT
 }
@@ -250,7 +250,7 @@ Write-Host '🌐 FastAPI Foundry starting...' -ForegroundColor Green
 Write-Host "📱 Web interface will be available at: http://localhost:9696" -ForegroundColor Cyan
 Write-Host ('=' * 60) -ForegroundColor Cyan
 
-# ВОССТАНОВЛЕНО: Полный try-catch блок для запуска Python
+# RESTORED: Full try-catch block for starting Python
 try {
     & $venvPath run.py --config $Config
 } catch {

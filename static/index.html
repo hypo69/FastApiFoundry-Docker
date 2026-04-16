@@ -139,6 +139,11 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link" id="translation-tab" data-bs-toggle="tab" data-bs-target="#translation" type="button">
+                    <i class="bi bi-translate"></i> Translation
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button">
                     <i class="bi bi-file-text"></i> Logs
                 </button>
@@ -595,10 +600,14 @@
             <!-- RAG Tab -->
             <div class="tab-pane fade" id="rag" role="tabpanel">
                 <div class="row mt-3">
+                    <!-- Left column: Status + Config -->
                     <div class="col-md-6">
                         <div class="card">
-                            <div class="card-header">
+                            <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">RAG System Status</h5>
+                                <button class="btn btn-sm btn-outline-primary" onclick="refreshRAGStatus()">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
                             </div>
                             <div class="card-body" id="rag-status">
                                 <div class="text-center">
@@ -607,17 +616,14 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="card mt-3">
-                            <div class="card-header">
-                                <h6 class="mb-0">RAG Configuration</h6>
-                            </div>
+                            <div class="card-header"><h6 class="mb-0">RAG Configuration</h6></div>
                             <div class="card-body">
                                 <div class="mb-3">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="rag-enabled">
-                                        <label class="form-check-label" for="rag-enabled">
-                                            Enable RAG System
-                                        </label>
+                                        <label class="form-check-label" for="rag-enabled">Enable RAG System</label>
                                     </div>
                                 </div>
                                 <div class="mb-3">
@@ -631,10 +637,9 @@
                                 <div class="mb-3">
                                     <label class="form-label">Embedding Model</label>
                                     <select id="rag-model" class="form-select">
-                                        <option value="sentence-transformers/all-MiniLM-L6-v2">all-MiniLM-L6-v2 (Default)</option>
+                                        <option value="sentence-transformers/all-MiniLM-L6-v2">all-MiniLM-L6-v2 (Default, fast)</option>
                                         <option value="sentence-transformers/all-mpnet-base-v2">all-mpnet-base-v2 (Better quality)</option>
-                                        <option value="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2">paraphrase-multilingual-MiniLM-L12-v2 (Multilingual)</option>
-                                        <option value="sentence-transformers/distilbert-base-nli-stsb-mean-tokens">distilbert-base-nli-stsb-mean-tokens (Fast)</option>
+                                        <option value="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2">paraphrase-multilingual (Multilingual)</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
@@ -647,41 +652,72 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Right column: Build + Manage -->
                     <div class="col-md-6">
+                        <!-- Build Index -->
                         <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0">RAG Management</h6>
-                                <button class="btn btn-sm btn-outline-primary" onclick="refreshRAGStatus()">
-                                    <i class="bi bi-arrow-clockwise"></i> Refresh
-                                </button>
-                            </div>
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-database-add"></i> Build Index</h6></div>
                             <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Directory to index</label>
+                                    <div class="input-group">
+                                        <select id="rag-docs-dir" class="form-select">
+                                            <option value="">Loading directories...</option>
+                                        </select>
+                                        <button class="btn btn-outline-secondary" onclick="ragLoadDirs()" title="Refresh list">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Or enter path manually:</div>
+                                    <input type="text" id="rag-docs-dir-manual" class="form-control mt-1" placeholder="e.g. docs">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Output directory</label>
+                                    <input type="text" id="rag-build-output" class="form-control" value="./rag_index">
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label">Chunk size</label>
+                                        <input type="number" id="rag-build-chunk" class="form-control" value="1000">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Overlap</label>
+                                        <input type="number" id="rag-build-overlap" class="form-control" value="50">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Embedding model</label>
+                                    <select id="rag-build-model" class="form-select">
+                                        <option value="sentence-transformers/all-mpnet-base-v2">all-mpnet-base-v2 (recommended)</option>
+                                        <option value="sentence-transformers/all-MiniLM-L6-v2">all-MiniLM-L6-v2 (fast)</option>
+                                        <option value="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2">paraphrase-multilingual</option>
+                                    </select>
+                                </div>
                                 <div class="d-grid gap-2">
-                                    <button class="btn btn-success" onclick="rebuildRAGIndex()">
-                                        <i class="bi bi-arrow-repeat"></i> Rebuild Index
+                                    <button class="btn btn-success" onclick="ragBuildIndex()" id="rag-build-btn">
+                                        <i class="bi bi-database-add"></i> Build Index
                                     </button>
-                                    <button class="btn btn-warning" onclick="clearRAGChunks()">
-                                        <i class="bi bi-trash"></i> Clear All Chunks
-                                    </button>
-                                    <button class="btn btn-info" onclick="testRAGSearch()">
-                                        <i class="bi bi-search"></i> Test Search
+                                    <button class="btn btn-outline-danger" onclick="ragClearIndex()">
+                                        <i class="bi bi-trash"></i> Clear Index
                                     </button>
                                 </div>
-                                <hr>
-                                <div id="rag-test-results" class="mt-3" style="display: none;">
-                                    <h6>Search Results:</h6>
-                                    <div id="rag-search-output" class="border rounded p-2" style="max-height: 200px; overflow-y: auto; font-size: 0.9rem;"></div>
-                                </div>
+                                <div id="rag-build-status" class="mt-3" style="display:none"></div>
                             </div>
                         </div>
+
+                        <!-- Test Search -->
                         <div class="card mt-3">
-                            <div class="card-header">
-                                <h6 class="mb-0">RAG Statistics</h6>
-                            </div>
-                            <div class="card-body" id="rag-stats">
-                                <div class="text-muted text-center">
-                                    <i class="bi bi-graph-up"></i><br>
-                                    Statistics will appear here
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-search"></i> Test Search</h6></div>
+                            <div class="card-body">
+                                <div class="input-group mb-2">
+                                    <input type="text" id="rag-test-query" class="form-control" placeholder="Enter test query...">
+                                    <button class="btn btn-info" onclick="testRAGSearch()">
+                                        <i class="bi bi-search"></i> Search
+                                    </button>
+                                </div>
+                                <div id="rag-test-results" style="display:none">
+                                    <div id="rag-search-output" class="border rounded p-2" style="max-height:200px;overflow-y:auto;font-size:.85rem"></div>
                                 </div>
                             </div>
                         </div>
@@ -1203,6 +1239,162 @@
                 </div>
             </div>
 
+            <!-- Translation Tab -->
+            <div class="tab-pane fade" id="translation" role="tabpanel">
+                <div class="row mt-3">
+                    <!-- Left: Settings -->
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-gear"></i> Translation Settings</h6></div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Provider</label>
+                                    <select id="trans-provider" class="form-select" onchange="transOnProviderChange()">
+                                        <option value="llm">🤖 LLM (current model)</option>
+                                        <option value="deepl">🔵 DeepL API</option>
+                                        <option value="google">🔴 Google Translate</option>
+                                        <option value="helsinki">🟢 Helsinki-NLP (local)</option>
+                                    </select>
+                                    <div class="form-text" id="trans-provider-hint">Uses the currently loaded AI model</div>
+                                </div>
+                                <div class="mb-3" id="trans-api-key-row" style="display:none">
+                                    <label class="form-label">API Key</label>
+                                    <div class="input-group">
+                                        <input type="password" id="trans-api-key" class="form-control" placeholder="Enter API key...">
+                                        <button class="btn btn-outline-success" onclick="transSaveApiKey()" title="Save to .env">
+                                            <i class="bi bi-floppy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Source Language</label>
+                                    <select id="trans-source-lang" class="form-select">
+                                        <option value="auto">🔍 Auto-detect</option>
+                                        <option value="ru">🇷🇺 Russian</option>
+                                        <option value="en">🇬🇧 English</option>
+                                        <option value="de">🇩🇪 German</option>
+                                        <option value="fr">🇫🇷 French</option>
+                                        <option value="es">🇪🇸 Spanish</option>
+                                        <option value="zh">🇨🇳 Chinese</option>
+                                        <option value="ja">🇯🇵 Japanese</option>
+                                        <option value="ar">🇸🇦 Arabic</option>
+                                        <option value="uk">🇺🇦 Ukrainian</option>
+                                        <option value="pl">🇵🇱 Polish</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Target Language</label>
+                                    <select id="trans-target-lang" class="form-select">
+                                        <option value="en">🇬🇧 English</option>
+                                        <option value="ru">🇷🇺 Russian</option>
+                                        <option value="de">🇩🇪 German</option>
+                                        <option value="fr">🇫🇷 French</option>
+                                        <option value="es">🇪🇸 Spanish</option>
+                                        <option value="zh">🇨🇳 Chinese</option>
+                                        <option value="ja">🇯🇵 Japanese</option>
+                                        <option value="ar">🇸🇦 Arabic</option>
+                                        <option value="uk">🇺🇦 Ukrainian</option>
+                                        <option value="pl">🇵🇱 Polish</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="trans-auto-detect" checked>
+                                        <label class="form-check-label" for="trans-auto-detect">Auto-detect language</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="trans-chat-inject">
+                                        <label class="form-check-label" for="trans-chat-inject">Translate chat input → EN before sending</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="trans-cache-enabled" checked>
+                                        <label class="form-check-label" for="trans-cache-enabled">Cache translations (session)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-info-circle"></i> Provider Info</h6></div>
+                            <div class="card-body" id="trans-provider-info">
+                                <small class="text-muted">Select a provider to see details</small>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Right: Translator UI -->
+                    <div class="col-md-8">
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-translate"></i> Translate Text</h6>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="transSwapLangs()" title="Swap languages">
+                                        <i class="bi bi-arrow-left-right"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="transClear()">
+                                        <i class="bi bi-trash"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted">Source text</label>
+                                        <textarea id="trans-input" class="form-control" rows="8" placeholder="Enter text to translate..."></textarea>
+                                        <div class="d-flex justify-content-between mt-1">
+                                            <small class="text-muted" id="trans-detected-lang"></small>
+                                            <small class="text-muted" id="trans-char-count">0 chars</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-muted">Translation</label>
+                                        <textarea id="trans-output" class="form-control" rows="8" placeholder="Translation will appear here..." readonly></textarea>
+                                        <div class="d-flex justify-content-between mt-1">
+                                            <small class="text-muted" id="trans-time"></small>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="transCopyOutput()" title="Copy">
+                                                <i class="bi bi-clipboard"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-3 d-flex gap-2">
+                                    <button class="btn btn-primary" onclick="transTranslate()" id="trans-btn">
+                                        <i class="bi bi-translate"></i> Translate
+                                    </button>
+                                    <button class="btn btn-outline-secondary" onclick="transDetectLang()">
+                                        <i class="bi bi-search"></i> Detect Language
+                                    </button>
+                                    <button class="btn btn-outline-info" onclick="transUseinChat()" title="Send translation to Chat">
+                                        <i class="bi bi-chat-dots"></i> Use in Chat
+                                    </button>
+                                </div>
+                                <div id="trans-status" class="mt-2" style="display:none"></div>
+                            </div>
+                        </div>
+                        <!-- Batch Translation -->
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-layers"></i> Batch Translation</h6>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="transClearBatch()">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <label class="form-label">Lines to translate <small class="text-muted">(one per line)</small></label>
+                                    <textarea id="trans-batch-input" class="form-control font-monospace" rows="5" placeholder="Line 1&#10;Line 2&#10;Line 3"></textarea>
+                                </div>
+                                <button class="btn btn-success" onclick="transBatch()" id="trans-batch-btn">
+                                    <i class="bi bi-layers"></i> Translate All
+                                </button>
+                                <div id="trans-batch-output" class="mt-3" style="display:none">
+                                    <label class="form-label">Results</label>
+                                    <div id="trans-batch-results" class="border rounded p-2" style="max-height:200px;overflow-y:auto;font-size:.85rem"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Logs Tab -->
             <div class="tab-pane fade" id="logs" role="tabpanel">
                 <div class="row mt-3">
@@ -1676,7 +1868,6 @@
                     <tr><td>HF Token</td><td>${d.hf_token_set
                         ? '<span class="badge bg-success">Set ✓</span>'
                         : '<span class="badge bg-warning">Not set — go to Settings</span>'}</td></tr>
-                    <tr><td>Models dir</td><td><small class="text-muted">${d.models_dir}</small></td></tr>
                 </table>
                 ${!d.transformers?.available ? `<div class="alert alert-warning mt-2 mb-0 p-2"><small>Run: <code>${d.install_cmd}</code></small></div>` : ''}`;
         } catch(e) { el.innerHTML = `<div class="text-danger"><small>${e.message}</small></div>`; }

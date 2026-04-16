@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Поиск моделей Foundry в системе
+# Process Name: Search for Foundry Models in the System
 # =============================================================================
-# Описание:
-#   Утилита для поиска и анализа моделей Foundry в различных директориях
+# Description:
+#   Utility for searching and analyzing Foundry models in various directories
 #
 # File: foundry_model_finder.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.4.0
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
+# Date: December 9, 2025
 # =============================================================================
 
 import os
@@ -20,9 +20,9 @@ from pathlib import Path
 from typing import List, Dict, Any
 
 def find_foundry_models() -> Dict[str, Any]:
-    """Поиск моделей Foundry в системе"""
+    """Search for Foundry models in the system"""
     
-    # Возможные пути для моделей
+    # Possible paths for models
     search_paths = [
         # Windows
         Path.home() / ".foundry" / "models",
@@ -41,7 +41,7 @@ def find_foundry_models() -> Dict[str, Any]:
         Path("/models"),
         Path("/app/models"),
         
-        # Текущая директория
+        # Current directory
         Path(".") / "models",
         Path("..") / "models",
     ]
@@ -49,24 +49,24 @@ def find_foundry_models() -> Dict[str, Any]:
     found_models = []
     model_dirs = []
     
-    print("🔍 Поиск моделей Foundry в системе...")
+    print("🔍 Searching for Foundry models in the system...")
     print()
     
     for search_path in search_paths:
         if search_path.exists():
-            print(f"✅ Найдена директория: {search_path}")
+            print(f"✅ Directory found: {search_path}")
             model_dirs.append(str(search_path))
             
-            # Поиск файлов моделей
+            # Search for model files
             for item in search_path.rglob("*"):
                 if item.is_file():
-                    # Типичные файлы моделей
+                    # Typical model files
                     if any(ext in item.name.lower() for ext in [
                         '.bin', '.safetensors', '.gguf', '.ggml', 
                         'pytorch_model', 'model.json', 'config.json'
                     ]):
                         size_mb = item.stat().st_size / (1024 * 1024)
-                        if size_mb > 10:  # Только большие файлы (модели)
+                        if size_mb > 10:  # Only large files (models)
                             found_models.append({
                                 "path": str(item),
                                 "name": item.name,
@@ -74,11 +74,11 @@ def find_foundry_models() -> Dict[str, Any]:
                                 "parent_dir": str(item.parent)
                             })
         else:
-            print(f"❌ Не найдена: {search_path}")
+            print(f"❌ Not found: {search_path}")
     
     print()
-    print(f"📊 Найдено директорий: {len(model_dirs)}")
-    print(f"📊 Найдено файлов моделей: {len(found_models)}")
+    print(f"📊 Directories found: {len(model_dirs)}")
+    print(f"📊 Model files found: {len(found_models)}")
     
     return {
         "model_directories": model_dirs,
@@ -88,11 +88,11 @@ def find_foundry_models() -> Dict[str, Any]:
     }
 
 def check_foundry_installation() -> Dict[str, Any]:
-    """Проверка установки Foundry"""
+    """Check Foundry installation"""
     
-    print("🔍 Проверка установки Foundry...")
+    print("🔍 Checking Foundry installation...")
     
-    # Поиск исполняемых файлов
+    # Search for executable files
     executables = []
     
     # Windows
@@ -103,13 +103,13 @@ def check_foundry_installation() -> Dict[str, Any]:
             "foundry-cli.exe"
         ]
         
-        # Поиск в PATH
+        # Search in PATH
         for exe in possible_exes:
             import shutil
             if shutil.which(exe):
                 executables.append(shutil.which(exe))
         
-        # Поиск в стандартных директориях
+        # Search in standard directories
         standard_dirs = [
             Path("C:") / "Program Files" / "Foundry",
             Path("C:") / "Program Files (x86)" / "Foundry",
@@ -130,7 +130,7 @@ def check_foundry_installation() -> Dict[str, Any]:
             if shutil.which(exe):
                 executables.append(shutil.which(exe))
     
-    print(f"📊 Найдено исполняемых файлов: {len(executables)}")
+    print(f"📊 Executable files found: {len(executables)}")
     for exe in executables:
         print(f"  ✅ {exe}")
     
@@ -140,44 +140,44 @@ def check_foundry_installation() -> Dict[str, Any]:
     }
 
 def main():
-    """Главная функция"""
+    """Main function"""
     print("=" * 60)
-    print("🔍 ПОИСК МОДЕЛЕЙ FOUNDRY В СИСТЕМЕ")
+    print("🔍 FOUNDRY MODEL SEARCH IN THE SYSTEM")
     print("=" * 60)
     print()
     
-    # Проверка установки
+    # Check installation
     installation = check_foundry_installation()
     print()
     
-    # Поиск моделей
+    # Search for models
     models = find_foundry_models()
     print()
     
-    # Вывод результатов
+    # Output results
     print("=" * 60)
-    print("📋 РЕЗУЛЬТАТЫ ПОИСКА")
+    print("📋 SEARCH RESULTS")
     print("=" * 60)
     
-    print(f"🔧 Foundry установлен: {'Да' if installation['installed'] else 'Нет'}")
-    print(f"📁 Найдено директорий с моделями: {models['total_directories']}")
-    print(f"📄 Найдено файлов моделей: {models['total_files']}")
+    print(f"🔧 Foundry installed: {'Yes' if installation['installed'] else 'No'}")
+    print(f"📁 Model directories found: {models['total_directories']}")
+    print(f"📄 Model files found: {models['total_files']}")
     
     if models['model_files']:
         print()
-        print("📄 НАЙДЕННЫЕ МОДЕЛИ:")
-        for model in models['model_files'][:10]:  # Первые 10
+        print("📄 FOUND MODELS:")
+        for model in models['model_files'][:10]:  # First 10
             print(f"  📄 {model['name']} ({model['size_mb']} MB)")
             print(f"     📁 {model['parent_dir']}")
     
     if models['model_directories']:
         print()
-        print("📁 ДИРЕКТОРИИ С МОДЕЛЯМИ:")
+        print("📁 MODEL DIRECTORIES:")
         for dir_path in models['model_directories']:
             print(f"  📁 {dir_path}")
     
     print()
-    print("💡 Для запуска Foundry используйте найденные пути к моделям")
+    print("💡 To run Foundry, use the found model paths")
 
 if __name__ == "__main__":
     main()

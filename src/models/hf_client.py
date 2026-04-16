@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: HuggingFace Local Model Client
+# Process Name: HuggingFace Local Model Client
 # =============================================================================
-# Описание:
-#   Клиент для работы с локальными HuggingFace моделями.
-#   Поддерживает скачивание через huggingface_hub, загрузку в память
-#   и inference через transformers pipeline.
+# Description:
+#   Client for working with local HuggingFace models.
+#   Supports downloading via huggingface_hub, loading into memory,
+#   and inference via transformers pipeline.
 #
-# Примеры:
+# Examples:
 #   >>> from src.models.hf_client import hf_client
 #   >>> await hf_client.download_model("google/gemma-2b")
 #   >>> result = await hf_client.generate("Hello", model_id="google/gemma-2b")
@@ -28,8 +28,8 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Директория для сохранения моделей: ~/.models/hf
-# Читаем напрямую из окружения, игнорируя config.json чтобы избежать подстановки ${VAR}
+# Directory for saving models: ~/.models/hf
+# Read directly from environment, ignoring config.json to avoid ${VAR} substitution
 def _get_models_dir() -> Path:
     raw = os.environ.get("HF_MODELS_DIR", "")
     if raw and not raw.startswith("${"):
@@ -38,19 +38,19 @@ def _get_models_dir() -> Path:
 
 HF_MODELS_DIR = _get_models_dir()
 
-# Стандартный кэш HuggingFace — сканируется дополнительно в list_downloaded()
+# Standard HuggingFace cache — scanned additionally in list_downloaded()
 HF_CACHE_DIR = Path.home() / ".cache" / "huggingface" / "hub"
 
-# Загруженные в память модели: {model_id: {"pipeline": Pipeline, "tokenizer": Tokenizer}}
-# Хранится на уровне модуля — один экземпляр на весь процесс FastAPI.
+# Models loaded into memory: {model_id: {"pipeline": Pipeline, "tokenizer": Tokenizer}}
+# Stored at module level — one instance for the entire FastAPI process.
 _loaded_models: dict = {}
 
 
 def _check_transformers() -> bool:
-    """! Проверить доступность библиотеки transformers.
+    """! Check availability of the transformers library.
 
     Returns:
-        bool: True если установлена, False если нет.
+        bool: True if installed, False otherwise.
     """
     try:
         import transformers  # noqa
@@ -60,10 +60,10 @@ def _check_transformers() -> bool:
 
 
 def _check_huggingface_hub() -> bool:
-    """! Проверить доступность библиотеки huggingface_hub.
+    """! Check availability of the huggingface_hub library.
 
     Returns:
-        bool: True если установлена, False если нет.
+        bool: True if installed, False otherwise.
     """
     try:
         import huggingface_hub  # noqa
@@ -73,32 +73,32 @@ def _check_huggingface_hub() -> bool:
 
 
 class HFClient:
-    """! Клиент для локальных HuggingFace моделей.
+    """! Client for local HuggingFace models.
 
-    Отвечает за:
-    - Скачивание моделей через huggingface-cli в ~/.models/hf
-    - Загрузку в память через transformers pipeline
-    - Инференс через загруженный pipeline
-    - Выгрузку из памяти с очисткой CUDA кэша
+    Responsible for:
+    - Downloading models via huggingface-cli to ~/.models/hf
+    - Loading into memory via transformers pipeline
+    - Inference via loaded pipeline
+    - Unloading from memory with CUDA cache clearing
 
-    Глобальный синглтон: hf_client = HFClient()
+    Global singleton: hf_client = HFClient()
     """
 
     def download_model(self, model_id: str, token: Optional[str] = None) -> dict:
-        """! Скачать модель через huggingface_hub.snapshot_download.
+        """! Download model via huggingface_hub.snapshot_download.
 
-        Токен берётся из HF_TOKEN в .env.
-        Модель сохраняется в HF_MODELS_DIR/<author>--<name>.
+        Token is taken from HF_TOKEN in .env.
+        Model is saved in HF_MODELS_DIR/<author>--<name>.
 
         Args:
-            model_id: Например 'mistralai/Mistral-7B-Instruct-v0.3'.
-            token:    Опциональный переопределяющий токен.
+            model_id: e.g., 'mistralai/Mistral-7B-Instruct-v0.3'.
+            token:    Optional overriding token.
 
         Returns:
             dict: {"success": bool, "path": str, "error": str}
         """
         if not _check_huggingface_hub():
-            return {"success": False, "error": "huggingface_hub не установлен. Запустите: pip install huggingface_hub"}
+            return {"success": False, "error": "huggingface_hub is not installed. Run: pip install huggingface_hub"}
 
         from huggingface_hub import snapshot_download
 
@@ -106,7 +106,7 @@ class HFClient:
         save_dir = HF_MODELS_DIR / model_id.replace("/", "--")
         save_dir.mkdir(parents=True, exist_ok=True)
 
-        logger.info(f"📥 Скачивание {model_id} → {save_dir}")
+        logger.info(f"📥 Downloading {model_id} → {save_dir}")
 
         try:
             path = snapshot_download(
@@ -115,27 +115,27 @@ class HFClient:
                 token=hf_token or None,
                 ignore_patterns=["*.msgpack", "*.h5", "flax_model*", "tf_model*"],
             )
-            logger.info(f"✅ {model_id} скачан: {path}")
+            logger.info(f"✅ {model_id} downloaded: {path}")
             return {"success": True, "model_id": model_id, "path": path}
         except Exception as e:
             err = str(e)
-            logger.error(f"❌ Ошибка скачивания {model_id}: {err}")
+            logger.error(f"❌ Error downloading {model_id}: {err}")
             if "401" in err or "403" in err or "gated" in err.lower() or "access" in err.lower():
-                err = f"Нет доступа. Примите лицензию на huggingface.co/{model_id} и установите HF_TOKEN"
+                err = f"Access denied. Accept the license at huggingface.co/{model_id} and set HF_TOKEN"
             return {"success": False, "error": err}
 
     def load_model(self, model_id: str, device: str = "auto") -> dict:
-        """! Загрузить модель в память для inference.
+        """! Load model into memory for inference.
 
         Args:
-            model_id: ID модели или путь к локальной директории.
+            model_id: Model ID or path to local directory.
             device: 'auto', 'cpu', 'cuda'.
 
         Returns:
             dict: {"success": bool, "model_id": str, "device": str}
         """
         if not _check_transformers():
-            return {"success": False, "error": "transformers не установлен. Запустите: pip install transformers accelerate"}
+            return {"success": False, "error": "transformers is not installed. Run: pip install transformers accelerate"}
 
         if model_id in _loaded_models:
             return {"success": True, "model_id": model_id, "status": "already_loaded"}
@@ -144,7 +144,7 @@ class HFClient:
             import torch
             from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 
-            # Ищем локальный путь: HF_MODELS_DIR → HF_CACHE_DIR → скачать
+            # Search for local path: HF_MODELS_DIR → HF_CACHE_DIR → download
             dir_name = f"models--{model_id.replace('/', '--')}"
             local_path = None
             for base in (HF_MODELS_DIR, HF_CACHE_DIR):
@@ -159,7 +159,7 @@ class HFClient:
             local_files_only = local_path is not None
             hf_token = None if local_files_only else (os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN"))
 
-            logger.info(f"Загрузка {model_id} из {'local: ' + model_path if local_files_only else 'HuggingFace Hub'}")
+            logger.info(f"Loading {model_id} from {'local: ' + model_path if local_files_only else 'HuggingFace Hub'}")
 
             torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
@@ -182,24 +182,24 @@ class HFClient:
 
             _loaded_models[model_id] = {"pipeline": pipe, "tokenizer": tokenizer}
             actual_device = str(next(model.parameters()).device)
-            logger.info(f"✅ Модель {model_id} загружена на {actual_device}")
+            logger.info(f"✅ Model {model_id} loaded on {actual_device}")
             return {"success": True, "model_id": model_id, "device": actual_device}
 
         except Exception as e:
-            logger.error(f"❌ Ошибка загрузки {model_id}: {e}")
+            logger.error(f"❌ Error loading {model_id}: {e}")
             return {"success": False, "error": str(e)}
 
     def unload_model(self, model_id: str) -> dict:
-        """! Выгрузить модель из памяти."""
+        """! Unload model from memory."""
         if model_id not in _loaded_models:
-            return {"success": False, "error": f"Модель {model_id} не загружена"}
+            return {"success": False, "error": f"Model {model_id} is not loaded"}
         try:
             import gc, torch
             del _loaded_models[model_id]
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-            logger.info(f"✅ Модель {model_id} выгружена")
+            logger.info(f"✅ Model {model_id} unloaded")
             return {"success": True, "model_id": model_id}
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -207,24 +207,24 @@ class HFClient:
     async def generate(self, prompt: str, model_id: str,
                        max_new_tokens: int = 512,
                        temperature: float = 0.7) -> dict:
-        """! Генерация текста через загруженную HF модель.
+        """! Text generation via loaded HF model.
 
         Args:
-            prompt: Входной текст.
-            model_id: ID загруженной модели.
-            max_new_tokens: Максимальное количество новых токенов.
-            temperature: Температура генерации.
+            prompt: Input text.
+            model_id: ID of the loaded model.
+            max_new_tokens: Maximum number of new tokens.
+            temperature: Generation temperature.
 
         Returns:
             dict: {"success": bool, "content": str, "model": str}
         """
         if model_id not in _loaded_models:
-            # Попробуем загрузить автоматически
+            # Try to load automatically
             load_result = await asyncio.get_event_loop().run_in_executor(
                 None, self.load_model, model_id
             )
             if not load_result["success"]:
-                return {"success": False, "error": f"Модель не загружена: {load_result['error']}"}
+                return {"success": False, "error": f"Model not loaded: {load_result['error']}"}
 
         try:
             pipe = _loaded_models[model_id]["pipeline"]
@@ -244,15 +244,15 @@ class HFClient:
             return {"success": True, "content": content, "model": model_id}
 
         except Exception as e:
-            logger.error(f"❌ Ошибка генерации {model_id}: {e}")
+            logger.error(f"❌ Error generating {model_id}: {e}")
             return {"success": False, "error": str(e)}
 
     def list_downloaded(self) -> list:
-        """! Список скачанных моделей.
+        """! List of downloaded models.
 
-        Сканирует две директории:
-        - HF_MODELS_DIR (~/.models по умолчанию или из .env)
-        - ~/.cache/huggingface/hub (стандартный кэш HuggingFace)
+        Scans two directories:
+        - HF_MODELS_DIR (~/.models by default or from .env)
+        - ~/.cache/huggingface/hub (standard HuggingFace cache)
 
         Returns:
             list: [{"id": str, "path": str, "loaded": bool, "size_mb": float, "source": str}]
@@ -286,7 +286,7 @@ class HFClient:
                 })
             return results
 
-        # Сканируем обе директории, дедуплицируем по model_id
+        # Scan both directories, deduplicate by model_id
         seen: set = set()
         results = []
         for model in _scan_dir(HF_MODELS_DIR, "~/.models") + _scan_dir(HF_CACHE_DIR, "~/.cache/huggingface/hub"):
@@ -297,7 +297,7 @@ class HFClient:
         return sorted(results, key=lambda x: x["id"])
 
     def list_loaded(self) -> list:
-        """! Список моделей загруженных в память.
+        """! List of models loaded into memory.
 
         Returns:
             list: [{"id": str, "status": "loaded"}]

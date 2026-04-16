@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Автозапуск FastAPI Foundry при старте Windows
+# Process name: FastAPI Foundry autostart on Windows startup
 # =============================================================================
-# Описание:
-#   Запускает start.ps1 в silent mode, весь вывод перенаправляется в лог.
-#   Предназначен для запуска через Windows Task Scheduler.
+# Description:
+#   Launches start.ps1 in silent mode, all output is redirected to the log.
+#   Intended for launching via Windows Task Scheduler.
 #
-# Примеры:
-#   # Прямой запуск:
+# Examples:
+#   # Direct launch:
 #   .\autostart.ps1
 #
-#   # Регистрация в планировщике:
+#   # Registration in the scheduler:
 #   .\install-autostart.ps1
 #
 # File: autostart.ps1
@@ -19,13 +19,13 @@
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
+# Date: December 9, 2025
 # =============================================================================
 
 $ErrorActionPreference = 'Continue'
 $Root = $PSScriptRoot
 
-# Директория и файл лога
+# Directory and log file
 $LogDir  = Join-Path $Root 'logs'
 $LogFile = Join-Path $LogDir 'autostart.log'
 
@@ -44,7 +44,7 @@ Write-Log "=== FastAPI Foundry autostart ==="
 Write-Log "Root: $Root"
 Write-Log "Log:  $LogFile"
 
-# Активация виртуального окружения
+# Virtual environment activation
 $ActivateScript = Join-Path $Root 'venv\Scripts\Activate.ps1'
 if (Test-Path $ActivateScript) {
     . $ActivateScript
@@ -60,9 +60,9 @@ if (-not (Test-Path $StartScript)) {
     exit 1
 }
 
-Write-Log "Запуск start.ps1..."
+Write-Log "Launching start.ps1..."
 
-# Временные файлы для перехвата вывода
+# Temporary files for capturing output
 $StdoutFile = Join-Path $LogDir 'autostart_stdout.tmp'
 $StderrFile = Join-Path $LogDir 'autostart_stderr.tmp'
 
@@ -80,7 +80,7 @@ try {
         -PassThru `
         -Wait
 
-    # Записать stdout в лог
+    # Write stdout to log
     if (Test-Path $StdoutFile) {
         Get-Content $StdoutFile -Encoding UTF8 | ForEach-Object {
             $text = $_ -replace '\x1b\[[0-9;]*m', ''
@@ -89,7 +89,7 @@ try {
         Remove-Item $StdoutFile -Force
     }
 
-    # Записать stderr в лог с уровнем ERROR
+    # Write stderr to log with ERROR level
     if (Test-Path $StderrFile) {
         Get-Content $StderrFile -Encoding UTF8 | ForEach-Object {
             $text = $_ -replace '\x1b\[[0-9;]*m', ''
@@ -100,13 +100,13 @@ try {
 
     $exitCode = $proc.ExitCode
     if ($exitCode -eq 0) {
-        Write-Log "start.ps1 завершён успешно (exit 0)"
+        Write-Log "start.ps1 completed successfully (exit 0)"
     } else {
-        Write-Log "start.ps1 завершён с кодом $exitCode" 'ERROR'
+        Write-Log "start.ps1 completed with code $exitCode" 'ERROR'
         exit $exitCode
     }
 
 } catch {
-    Write-Log "Ошибка запуска start.ps1: $_" 'ERROR'
+    Write-Log "Error launching start.ps1: $_" 'ERROR'
     exit 1
 }

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Models Management Endpoints
+# Process Name: Models Management Endpoints
 # =============================================================================
-# Описание:
-#   Дополнительные endpoints для управления моделями
+# Description:
+#   Additional endpoints for model management
 #
 # File: models_extra.py
 # Project: FastApiFoundry (Docker)
@@ -11,7 +11,7 @@
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
+# Date: December 9, 2025
 # =============================================================================
 
 from fastapi import APIRouter
@@ -21,7 +21,7 @@ router = APIRouter()
 
 @router.get("/models/providers")
 async def get_model_providers():
-    """Получить список провайдеров моделей"""
+    """Get a list of model providers"""
     return {
         "success": True,
         "providers": [
@@ -45,7 +45,7 @@ async def get_model_providers():
 
 @router.post("/models/health-check")
 async def check_models_health():
-    """Проверить здоровье всех моделей"""
+    """Check the health of all models"""
     return {
         "success": True,
         "message": "Health check completed",
@@ -58,7 +58,7 @@ async def check_models_health():
 
 @router.post("/batch-generate")
 async def batch_generate(request: Dict[str, Any]):
-    """Пакетная генерация текста"""
+    """Batch text generation"""
     prompts = request.get("prompts", [])
     
     if not prompts:
@@ -67,7 +67,7 @@ async def batch_generate(request: Dict[str, Any]):
             "error": "No prompts provided"
         }
     
-    # Заглушка для пакетной генерации
+    # Mock for batch generation
     results = []
     for prompt in prompts:
         results.append({

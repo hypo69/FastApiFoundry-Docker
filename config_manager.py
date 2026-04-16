@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Единый класс конфигурации (Refactored)
+# Process Name: Unified Configuration Class (Refactored)
 # =============================================================================
-# Описание:
-#   Упрощенный класс Config для всего проекта FastApiFoundry
-#   Загружает настройки из config.json и предоставляет единый интерфейс
+# Description:
+#   Simplified Config class for the entire FastApiFoundry project
+#   Loads settings from config.json and provides a unified interface
 #
 # File: config_manager.py
 # Project: FastApiFoundry (Docker)
@@ -19,11 +19,11 @@ from pathlib import Path
 from typing import Dict, Any
 
 class Config:
-    """Единый класс конфигурации для всего проекта"""
+    """Unified configuration class for the entire project"""
     
     _instance = None
     _config_data = None
-    _foundry_base_url = None  # Динамически устанавливается в run.py
+    _foundry_base_url = None  # Dynamically set in run.py
     
     def __new__(cls):
         if cls._instance is None:
@@ -32,7 +32,7 @@ class Config:
         return cls._instance
     
     def _load_config(self):
-        """Загрузить конфигурацию из config.json"""
+        """Load configuration from config.json"""
         config_path = Path("config.json")
         
         if not config_path.exists():
@@ -46,10 +46,10 @@ class Config:
         print(f"Config loaded with sections: {list(self._config_data.keys())}")
     
     def reload_config(self):
-        """Перезагрузить конфигурацию"""
+        """Reload configuration"""
         self._load_config()
     
-    # FastAPI Server настройки
+    # FastAPI Server settings
     @property
     def api_host(self) -> str:
         return self._config_data.get("fastapi_server", {}).get("host", "0.0.0.0")
@@ -70,15 +70,15 @@ class Config:
     def api_log_level(self) -> str:
         return self._config_data.get("fastapi_server", {}).get("log_level", "INFO")
     
-    # Foundry AI настройки
+    # Foundry AI settings
     @property
     def foundry_base_url(self) -> str:
-        # Возвращаем только динамически установленный URL
+        # Return only dynamically set URL
         return self._foundry_base_url
     
     @foundry_base_url.setter
     def foundry_base_url(self, value: str):
-        """Установить foundry_base_url динамически (используется в run.py)"""
+        """Set foundry_base_url dynamically (used in run.py)"""
         self._foundry_base_url = value
     
     @property
@@ -97,7 +97,7 @@ class Config:
     def foundry_max_tokens(self) -> int:
         return self._config_data.get("foundry_ai", {}).get("max_tokens", 2048)
     
-    # Port Management настройки
+    # Port Management settings
     @property
     def port_auto_find_free(self) -> bool:
         return self._config_data.get("port_management", {}).get("auto_find_free_port", False)
@@ -110,7 +110,7 @@ class Config:
     def port_range_end(self) -> int:
         return self._config_data.get("port_management", {}).get("port_range_end", 8100)
     
-    # RAG System настройки
+    # RAG System settings
     @property
     def rag_enabled(self) -> bool:
         return self._config_data.get("rag_system", {}).get("enabled", False)
@@ -131,22 +131,22 @@ class Config:
     def rag_top_k(self) -> int:
         return self._config_data.get("rag_system", {}).get("top_k", 5)
     
-    # Методы для работы с конфигурацией
+    # Methods for working with configuration
     def get_section(self, section: str) -> Dict[str, Any]:
-        """Получить целую секцию конфигурации"""
+        """Get an entire configuration section"""
         return self._config_data.get(section, {})
     
     def get_raw_config(self) -> Dict[str, Any]:
-        """Получить всю конфигурацию"""
+        """Get the entire configuration"""
         return self._config_data.copy()
     
     def update_config(self, new_config: Dict[str, Any]):
-        """Обновить конфигурацию и сохранить в файл"""
+        """Update configuration and save to file"""
         self._config_data = new_config
         
         config_path = Path("config.json")
         with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(new_config, f, indent=2, ensure_ascii=False)
 
-# Глобальный экземпляр конфигурации
+# Global configuration instance
 config = Config()

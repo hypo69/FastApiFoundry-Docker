@@ -243,6 +243,217 @@ huggingface-cli download TheBloke/Mistral-7B-v0.1-GGUF \
 - **unsloth** — быстрые и качественные кванты
 - **TheBloke** — огромный архив (Mistral, Gemma и др.)
 
+
+Собрал для тебя цельный **production-ориентированный how-to**: от нуля до скачивания GGUF модели с Hugging Face (включая все подводные камни, на которые ты уже наткнулся).
+
+---
+
+# 📘 HOWTO: Скачивание GGUF моделей (Gemma) через Hugging Face CLI
+
+## 1. 📦 Установка CLI
+
+Работа ведётся через пакет:
+
+```bash
+pip install huggingface_hub
+```
+
+Проверка:
+
+```bash
+hf --help
+```
+
+---
+
+## 2. 🔐 Авторизация (обязательно для gated моделей)
+
+Модели от Google (включая Gemma) — **закрытые (gated)**.
+
+### Шаг 1. Создать токен
+
+👉 [https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
+
+Параметры:
+
+```text
+Role: Read
+```
+
+---
+
+### Шаг 2. Логин в CLI
+
+```bash
+hf auth login
+```
+
+Вставить токен (ввод не отображается).
+
+На вопрос:
+
+```text
+Add token as git credential? (Y/n)
+```
+
+👉 ответ:
+
+```text
+Y
+```
+
+---
+
+### Шаг 3. Проверка
+
+```bash
+hf whoami
+```
+
+Ожидаемый результат:
+
+```text
+<your_username>
+```
+
+---
+
+## 3. 📜 Принятие лицензии
+
+Перейти в браузере:
+
+👉 [https://huggingface.co/google/gemma-7b-GGUF](https://huggingface.co/google/gemma-7b-GGUF)
+
+Особенность:
+
+* кнопки **“Agree” может не быть**
+* достаточно:
+
+  * быть залогиненым
+  * открыть страницу модели
+
+---
+
+## 4. 📥 Скачивание модели
+
+### Базовая команда
+
+```bash
+hf download google/gemma-7b-GGUF --local-dir C:\Users\<user>\.models
+```
+
+📌 Важно:
+
+* на Windows лучше **не использовать `~`**
+* использовать абсолютный путь
+
+---
+
+## 5. ⚠️ Типичная ошибка
+
+### ❌ 401 Unauthorized
+
+```text
+GatedRepoError: 401 Client Error
+```
+
+### Причины:
+
+| Причина          | Решение                 |
+| ---------------- | ----------------------- |
+| Нет логина в CLI | `hf auth login`         |
+| Не принят доступ | открыть страницу модели |
+| Неверный токен   | пересоздать токен       |
+
+---
+
+## 6. ⚠️ Особенность Google GGUF
+
+Модель из репозитория:
+
+* google/gemma-7b-GGUF
+
+имеет:
+
+```text
+FP32 (float32)
+~30GB
+```
+
+👉 Это НЕ готовый вариант для локального inference.
+
+---
+
+## 7. 🔥 Рекомендованный путь (production)
+
+Вместо Google-репозитория использовать уже квантованные сборки:
+
+### Пример:
+
+```bash
+hf download bartowski/gemma-7b-it-GGUF --local-dir D:\models\gemma
+```
+
+или:
+
+```bash
+hf download TheBloke/gemma-7B-it-GGUF --local-dir D:\models\gemma
+```
+
+---
+
+## 8. 📊 Выбор квантования
+
+| Тип    | Размер  | Назначение        |
+| ------ | ------- | ----------------- |
+| Q4_K_M | ~4–5 GB | оптимально        |
+| Q5_K_M | ~5–6 GB | лучше качество    |
+| Q8_0   | ~8–9 GB | максимум качества |
+
+---
+
+## 9. 🔍 Поиск моделей
+
+```bash
+hf search gemma GGUF
+```
+
+или через UI Hugging Face.
+
+---
+
+## 10. 📌 Итоговая схема
+
+```mermaid
+flowchart TD
+    A[Создать токен] --> B[hf auth login]
+    B --> C[hf whoami]
+    C --> D[Открыть страницу модели]
+    D --> E[hf download]
+    E --> F[Модель скачана]
+```
+
+---
+
+## 11. 💡 Практические рекомендации
+
+* Для локального запуска → **не брать FP32**
+* Для CPU → Q4_K_M
+* Для GPU → Q5/Q8
+* Для pipeline (FastAPI / Foundry) → сразу GGUF квант
+
+---
+
+## 12. 🚀 Минимальный рабочий набор
+
+```bash
+pip install huggingface_hub
+hf auth login
+hf download bartowski/gemma-7b-it-GGUF --local-dir D:\models\gemma
+```
+
+
+
 ### Альтернативные источники
 
 - LM Studio (встроенный каталог)

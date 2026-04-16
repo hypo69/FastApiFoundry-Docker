@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Управление портами и процессами
+# Process Name: Port and Process Management
 # =============================================================================
-# Описание:
-#   Утилиты для проверки и освобождения портов перед запуском сервера
+# Description:
+#   Utilities for checking and freeing ports before server startup
 #
-# Примеры:
+# Examples:
 #   >>> from src.utils.port_manager import kill_port_process
 #   >>> kill_port_process(8000)
 #
 # File: port_manager.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.4.0
 # Author: hypo69
 # License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 # Copyright: © 2025 AiStros
-# Date: 9 декабря 2025
+# Date: December 9, 2025
 # =============================================================================
 
 import subprocess
@@ -24,7 +24,7 @@ import time
 import os
 
 def kill_port_process(port: int) -> bool:
-    """Убивает процесс, занимающий указанный порт"""
+    """Kills the process occupying the specified port"""
     try:
         if sys.platform == "win32":
             # Windows
@@ -38,7 +38,7 @@ def kill_port_process(port: int) -> bool:
                     parts = line.split()
                     if len(parts) >= 5 and f':{port}' in parts[1]:
                         pid = parts[-1]
-                        print(f"Убиваем процесс PID {pid} на порту {port}")
+                        print(f"Killing process PID {pid} on port {port}")
                         subprocess.run(f'taskkill /f /pid {pid}', shell=True)
                         time.sleep(1)
                         return True
@@ -50,17 +50,17 @@ def kill_port_process(port: int) -> bool:
             )
             if result.stdout:
                 pid = result.stdout.strip()
-                print(f"Убиваем процесс PID {pid} на порту {port}")
+                print(f"Killing process PID {pid} on port {port}")
                 subprocess.run(f'kill -9 {pid}', shell=True)
                 time.sleep(1)
                 return True
         return False
     except Exception as e:
-        print(f"Ошибка при освобождении порта {port}: {e}")
+        print(f"Error freeing port {port}: {e}")
         return False
 
 def is_port_free(port: int) -> bool:
-    """Проверяет, свободен ли порт"""
+    """Checks if a port is free"""
     try:
         if sys.platform == "win32":
             result = subprocess.run(
@@ -78,9 +78,9 @@ def is_port_free(port: int) -> bool:
         return True
 
 def ensure_port_free(port: int) -> bool:
-    """Гарантирует, что порт свободен"""
+    """Ensures the port is free"""
     if is_port_free(port):
         return True
     
-    print(f"Порт {port} занят, освобождаем...")
+    print(f"Port {port} is occupied, freeing...")
     return kill_port_process(port)

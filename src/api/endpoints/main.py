@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Main Endpoints (Refactored)
+# Process Name: Main Endpoints (Refactored)
 # =============================================================================
-# Описание:
-#   Основные endpoints для корневых маршрутов
+# Description:
+#   Main endpoints for root routes
 #
 # File: main.py
 # Project: FastApiFoundry (Docker)
@@ -21,16 +21,16 @@ router = APIRouter()
 
 @router.get("/")
 async def root():
-    """Панель управления FastAPI Foundry"""
+    """FastAPI Foundry Control Panel"""
     return FileResponse('static/index.html')
 
 @router.get("/api")
 async def api_info():
-    """Информация об API"""
+    """API Information"""
     return {
         "service": "FastAPI Foundry",
         "version": "0.4.1",
-        "description": "REST API для локальных AI моделей",
+        "description": "REST API for local AI models",
         "endpoints": {
             "generate": "/api/v1/generate",
             "models": "/api/v1/models",

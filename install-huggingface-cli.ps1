@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Установка HuggingFace CLI и настройка окружения
+# Process name: HuggingFace CLI Installation and Environment Setup
 # =============================================================================
-# Описание:
-#   Устанавливает huggingface_hub, transformers, accelerate.
-#   Авторизует CLI через HF_TOKEN из .env.
-#   Выводит инструкцию по работе с публичными и закрытыми моделями.
+# Description:
+#   Installs huggingface_hub, transformers, accelerate.
+#   Authorizes the CLI via HF_TOKEN from .env.
+#   Provides instructions for working with public and gated models.
 #
-# Примеры:
-#   .\install-huggingface-cli.ps1                  # установка + авторизация
-#   .\install-huggingface-cli.ps1 -SkipAuth        # только установка
-#   .\install-huggingface-cli.ps1 -Token "hf_..."  # с явным токеном
+# Examples:
+#   .\install-huggingface-cli.ps1                  # installation + authorization
+#   .\install-huggingface-cli.ps1 -SkipAuth        # installation only
+#   .\install-huggingface-cli.ps1 -Token "hf_..."  # with explicit token
 #
 # File: install-huggingface-cli.ps1
 # Project: FastApiFoundry (Docker)
@@ -53,7 +53,7 @@ if (-not $python) {
 Write-Host "✅ Python: $python" -ForegroundColor Green
 
 # -----------------------------------------------------------------------------
-# 2. Установка пакетов
+# 2. Package Installation
 # -----------------------------------------------------------------------------
 if (-not $SkipInstall) {
     Write-Host "`n📦 Installing HuggingFace packages..." -ForegroundColor Yellow
@@ -78,7 +78,7 @@ if (-not $SkipInstall) {
 }
 
 # -----------------------------------------------------------------------------
-# 3. Загрузка токена из .env
+# 3. Loading token from .env
 # -----------------------------------------------------------------------------
 $envPath = Join-Path $Root ".env"
 
@@ -92,7 +92,7 @@ if (-not $Token) {
 }
 
 # -----------------------------------------------------------------------------
-# 4. Авторизация
+# 4. Authorization
 # -----------------------------------------------------------------------------
 if (-not $SkipAuth) {
     Write-Host "`n🔐 HuggingFace Authorization..." -ForegroundColor Yellow
@@ -106,7 +106,7 @@ if (-not $SkipAuth) {
     }
 
     if ($Token) {
-        # Сохранить в .env если ещё нет
+        # Save to .env if not already present
         if (Test-Path $envPath) {
             $content = Get-Content $envPath -Raw
             if ($content -match 'HF_TOKEN=') {
@@ -118,7 +118,7 @@ if (-not $SkipAuth) {
             Write-Host "✅ HF_TOKEN saved to .env" -ForegroundColor Green
         }
 
-        # Авторизация через huggingface-cli
+        # Authorization via huggingface-cli
         Write-Host "   Logging in to HuggingFace Hub..." -ForegroundColor Gray
         $loginResult = & $python -c "
 from huggingface_hub import login, whoami
@@ -142,7 +142,7 @@ except Exception as e:
 }
 
 # -----------------------------------------------------------------------------
-# 5. Проверка установки
+# 5. Installation Check
 # -----------------------------------------------------------------------------
 Write-Host "`n🔍 Checking installation..." -ForegroundColor Yellow
 
@@ -173,7 +173,7 @@ $checkResult | ForEach-Object {
 }
 
 # -----------------------------------------------------------------------------
-# 6. Инструкция
+# 6. Instructions
 # -----------------------------------------------------------------------------
 Write-Host ""
 Write-Host ("=" * 60) -ForegroundColor Cyan
@@ -182,7 +182,7 @@ Write-Host ("=" * 60) -ForegroundColor Cyan
 
 Write-Host @"
 
-✅ ПУБЛИЧНЫЕ МОДЕЛИ (без лицензии — скачиваются сразу):
+✅ PUBLIC MODELS (no license — download immediately):
    • microsoft/phi-2
    • microsoft/Phi-3-mini-4k-instruct
    • TinyLlama/TinyLlama-1.1B-Chat-v1.0
@@ -190,44 +190,44 @@ Write-Host @"
    • Qwen/Qwen2.5-1.5B-Instruct
    • deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
 
-   Скачать через API:
+   Download via API:
      POST http://localhost:9696/api/v1/hf/models/download
      {"model_id": "microsoft/phi-2"}
 
-   Или через PowerShell:
+   Or via PowerShell:
      .\scripts\hf-download-model.ps1 -ModelId "microsoft/phi-2"
 
 "@ -ForegroundColor White
 
 Write-Host @"
-⚠️  МОДЕЛИ С ЛИЦЕНЗИЕЙ (Gemma, Llama, Mistral):
-   Шаг 1: Откройте страницу модели в браузере:
+⚠️  GATED MODELS (Gemma, Llama, Mistral):
+   Step 1: Open the model page in your browser:
            https://huggingface.co/google/gemma-2-2b-it
            https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct
            https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3
 
-   Шаг 2: Нажмите "Agree and access repository"
-           (нужен аккаунт на huggingface.co)
+   Step 2: Click "Agree and access repository"
+           (requires a huggingface.co account)
 
-   Шаг 3: Убедитесь что HF_TOKEN задан в .env
+   Step 3: Ensure HF_TOKEN is set in .env
 
-   Шаг 4: Скачайте:
+   Step 4: Download:
            .\scripts\hf-download-model.ps1 -ModelId "google/gemma-2-2b-it"
 
 "@ -ForegroundColor Yellow
 
 Write-Host @"
-🔑 ТОКЕН:
-   Получить: https://huggingface.co/settings/tokens
-   Тип:      "Read" достаточно для скачивания
-   Сохранить в .env: HF_TOKEN=hf_ваш_токен
+🔑 TOKEN:
+   Get: https://huggingface.co/settings/tokens
+   Type:      "Read" is sufficient for downloading
+   Save to .env: HF_TOKEN=hf_your_token
 
-📁 МОДЕЛИ СОХРАНЯЮТСЯ В:
+📁 MODELS ARE SAVED IN:
    ~/.models/hf
-   (настраивается через HF_MODELS_DIR в .env)
+   (configured via HF_MODELS_DIR in .env)
 
-🌐 УПРАВЛЕНИЕ ЧЕРЕЗ ВЕБ-ИНТЕРФЕЙС:
-   http://localhost:9696 → вкладка HuggingFace
+🌐 MANAGEMENT VIA WEB INTERFACE:
+   http://localhost:9696 → HuggingFace tab
 
 "@ -ForegroundColor Cyan
 
