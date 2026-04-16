@@ -1,0 +1,50 @@
+<div class="tab-pane fade" id="logs" role="tabpanel">
+                <div class="row mt-3">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">System Logs</h5>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshLogs()">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="clearLogFile()">
+                                        <i class="bi bi-trash"></i> Clear Log
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <pre id="log-output" style="height: 400px; overflow-y: auto; font-size: 0.8em; background-color: #f8f9fa; padding: 10px; border-radius: 5px;">
+                                    Loading logs...
+                                </pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Log Settings</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="log-level-filter" class="form-label">Filter Level</label>
+                                    <select class="form-select" id="log-level-filter" onchange="filterLogs()">
+                                        <option value="">All</option>
+                                        <option value="DEBUG">DEBUG</option>
+                                        <option value="INFO">INFO</option>
+                                        <option value="WARNING">WARNING</option>
+                                        <option value="ERROR">ERROR</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="log-file-path" class="form-label">Log File</label>
+                                    <input type="text" class="form-control" id="log-file-path" readonly>
+                                </div>
+                                <button class="btn btn-outline-primary w-100" onclick="downloadLogs()">
+                                    <i class="bi bi-download"></i> Download Logs
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>

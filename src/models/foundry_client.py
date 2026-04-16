@@ -10,8 +10,8 @@
 # Project: FastApiFoundry (Docker)
 # Version: 0.4.1
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
+# Copyright: © 2026 hypo69
+# Copyright: © 2026 hypo69
 # =============================================================================
 
 import asyncio
@@ -174,23 +174,27 @@ class FoundryClient:
             }
     
     async def generate_text(self, prompt: str, **kwargs):
-        """Генерация текста"""
-        model = kwargs.get('model', "deepseek-r1:14b")
-        logger.info(f"🤖 Генерация текста для модели: {model}")
+        """Генерация текста. Если модель не загружена — загружает её автоматически."""
+        model = kwargs.get('model') or None
         
         try:
             health = await self.health_check()
             if health["status"] != "healthy":
-                logger.error(f"❌ Foundry недоступен: {health.get('error')}")
-                return {
-                    "success": False,
-                    "error": f"Foundry недоступен на порту {health.get('port', 50477)}",
-                    "foundry_status": health["status"]
-                }
+                return {"success": False, "error": f"Foundry недоступен: {health.get('error')}"}
             
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/chat/completions"
-            
+
+            # Если модель не указана — берём первую загруженную
+            if not model:
+                models_resp = await self.list_available_models()
+                loaded = models_resp.get('models', [])
+                if loaded:
+                    model = loaded[0].get('id', '')
+                    logger.info(f"🤖 Модель не указана, используем: {model}")
+                else:
+                    return {"success": False, "error": "Нет загруженных моделей в Foundry"}
+
             payload = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
@@ -198,39 +202,42 @@ class FoundryClient:
                 "max_tokens": kwargs.get('max_tokens', 2048),
                 "stream": False
             }
-            
-            logger.debug(f"Отправка запроса к {url}")
+
+            logger.info(f"🤖 Генерация: модель={model}")
             async with session.post(url, json=payload) as response:
                 if response.status == 200:
                     data = await response.json()
-                    if 'choices' in data and len(data['choices']) > 0:
+                    if data.get('choices'):
                         content = data['choices'][0]['message']['content']
-                        logger.info("✅ Текст успешно сгенерирован")
-                        return {
-                            "success": True,
-                            "content": content,
-                            "model": payload['model'],
-                            "tokens_used": data.get('usage', {}).get('total_tokens', 0)
-                        }
-                    else:
-                        logger.error("❌ Некорректный ответ от Foundry")
-                        return {
-                            "success": False,
-                            "error": "Некорректный ответ от Foundry"
-                        }
+                        return {"success": True, "content": content, "model": model}
+                    return {"success": False, "error": "Некорректный ответ от Foundry"}
+                elif response.status == 400:
+                    # Модель не загружена — пробуем загрузить и повторить
+                    logger.warning(f"⚠️ HTTP 400 для модели {model} — пробуем загрузить")
+                    import subprocess
+                    proc = subprocess.Popen(
+                        ["foundry", "model", "load", model],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                    )
+                    # Ждём до 60 секунд пока модель загрузится
+                    import asyncio
+                    for _ in range(30):
+                        await asyncio.sleep(2)
+                        async with session.post(url, json=payload) as retry:
+                            if retry.status == 200:
+                                data = await retry.json()
+                                if data.get('choices'):
+                                    content = data['choices'][0]['message']['content']
+                                    logger.info(f"✅ Модель {model} загружена и ответила")
+                                    return {"success": True, "content": content, "model": model}
+                    return {"success": False, "error": f"Модель {model} не отвечает после загрузки"}
                 else:
                     error_text = await response.text()
-                    logger.error(f"❌ Ошибка генерации: HTTP {response.status}")
-                    return {
-                        "success": False,
-                        "error": f"HTTP {response.status}: {error_text}"
-                    }
+                    logger.error(f"❌ HTTP {response.status}: {error_text}")
+                    return {"success": False, "error": f"HTTP {response.status}: {error_text}"}
         except Exception as e:
             logger.error(f"❌ Исключение при генерации: {e}")
-            return {
-                "success": False,
-                "error": f"Ошибка подключения к Foundry: {str(e)}"
-            }
+            return {"success": False, "error": f"Ошибка: {str(e)}"}
 
     async def generate_stream(self, prompt: str, **kwargs):
         """Генерация текста с потоковой передачей"""

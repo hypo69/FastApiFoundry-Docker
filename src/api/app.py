@@ -9,8 +9,8 @@
 # Project: FastApiFoundry (Docker)
 # Version: 0.4.1
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
+# Copyright: © 2026 hypo69
+# Copyright: © 2026 hypo69
 # =============================================================================
 
 import time
@@ -34,6 +34,20 @@ async def lifespan(app: FastAPI):
         print("✅ RAG system initialized")
     else:
         print("⚠️ RAG system not initialized")
+
+    # Автозагрузка модели по умолчанию
+    from ..core.config import config as app_config
+    if app_config.foundry_auto_load_default and app_config.foundry_default_model:
+        import asyncio, subprocess
+        model_id = app_config.foundry_default_model
+        try:
+            subprocess.Popen(
+                ["foundry", "model", "load", model_id],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+            print(f"✅ Auto-loading default model: {model_id}")
+        except Exception as e:
+            print(f"⚠️ Could not auto-load model {model_id}: {e}")
     
     yield
     

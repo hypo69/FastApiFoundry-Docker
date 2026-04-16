@@ -182,8 +182,8 @@
 # Class: <ClassName>
 # Function: <FunctionName>
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
+# Copyright: © 2026 hypo69
+# Copyright: © 2026 hypo69
 # =============================================================================
 ```
 
@@ -214,8 +214,8 @@
 # IF Class   - Class: <ClassName>
 # IF Function- Function: <FunctionName>
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
+# Copyright: © 2026 hypo69
+# Copyright: © 2026 hypo69
 # =============================================================================
 ```
 
@@ -243,8 +243,8 @@
  * Class: <ClassName>
  * Function: <FunctionName>
  * Author: hypo69
- * License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
- * Copyright: © 2025 AiStros
+ * Copyright: © 2026 hypo69
+ * Copyright: © 2026 hypo69
  * =============================================================================
  */
 ```
@@ -271,8 +271,8 @@ File: <имя_файла.html>
 Project: AiStros
 Module: <ModuleName>
 Author: hypo69
-License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-Copyright: © 2025 AiStros
+Copyright: © 2026 hypo69
+Copyright: © 2026 hypo69
 ===============================================================================
 -->
 ```
@@ -300,8 +300,8 @@ File: <имя_файла.css/scss>
 Project: AiStros
 Module: <ModuleName>
 Author: hypo69
-License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-Copyright: © 2025 AiStros
+Copyright: © 2026 hypo69
+Copyright: © 2026 hypo69
 ===============================================================================
 */
 ```
@@ -634,8 +634,8 @@ if (!array_key_exists('key', $data)) {
 # Package: PluginName
 # Class: Plugin_Main_Class
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
+# Copyright: © 2026 hypo69
+# Copyright: © 2026 hypo69
 # =============================================================================
 ?>
 ```
@@ -790,7 +790,7 @@ Plugin_Main_Class::get_instance();
 # File: functions.php
 # Project: AiStros
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# Copyright: © 2026 hypo69
 # =============================================================================
 ?>
 
@@ -921,7 +921,7 @@ File: template-parts/header.php
 Project: AiStros Theme
 Template: Header Template
 Author: hypo69
-License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+Copyright: © 2026 hypo69
 Copyright: © 2025
 ===============================================================================
 -->
@@ -999,7 +999,7 @@ defined( 'ABSPATH' ) || exit;
 # File: includes/class-rest-api.php
 # Project: AiStros
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# Copyright: © 2026 hypo69
 # =============================================================================
 ?>
 
@@ -1139,7 +1139,7 @@ add_action( 'rest_api_init', [ 'Plugin_REST_API', 'register_routes' ] );
 # =============================================================================
 # Project: AiStros
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# Copyright: © 2026 hypo69
 # =============================================================================
 
 defined( 'ABSPATH' ) || exit;
@@ -1212,7 +1212,7 @@ add_action( 'wp_loaded', [ 'Plugin_AJAX', 'register_handlers' ] );
 File: style.css
 Project: AiStros Theme
 Author: hypo69
-License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+Copyright: © 2026 hypo69
 ===============================================================================
 */
 
@@ -1260,7 +1260,7 @@ body {
  * File: assets/js/main.js
  * Project: AiStros Theme
  * Author: hypo69
- * License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+ * Copyright: © 2026 hypo69
  * =============================================================================
  */
 
@@ -1337,7 +1337,7 @@ body {
 # =============================================================================
 # Project: AiStros
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
+# Copyright: © 2026 hypo69
 # =============================================================================
 
 defined( 'ABSPATH' ) || exit;

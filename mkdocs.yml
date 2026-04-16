@@ -1,0 +1,67 @@
+site_name: FastAPI Foundry
+site_description: REST API for local AI models with RAG support
+site_author: hypo69
+site_url: https://hypo69.github.io/FastApiFoundry-Docker/
+
+theme:
+  name: material
+  language: ru
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: folder
+      languages:
+        - locale: ru
+          name: Русский
+          build: true
+          default: true
+        - locale: en
+          name: English
+          build: true
+      fallback_to_default: true
+
+nav:
+  - Главная: index.md
+  - Руководство пользователя:
+    - Быстрый старт: user/getting_started.md
+    - Установка: user/installation.md
+    - Работа с моделями: user/models_guide.md
+    - Веб-интерфейс: user/web_interface.md
+  - Для разработчиков:
+    - Архитектура: dev/architecture.md
+    - API Reference: dev/api_reference.md
+    - Система RAG: dev/rag_system.md
+    - Агенты: dev/agents.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg

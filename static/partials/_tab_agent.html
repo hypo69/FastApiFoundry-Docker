@@ -1,0 +1,33 @@
+<div class="tab-pane fade" id="agent" role="tabpanel">
+                <div class="row mt-3">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-robot"></i> AI Agent — модель вызывает инструменты</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>Эта вкладка демонстрирует возможности интеграции агентов, где модель может динамически вызывать инструменты для выполнения задач.</p>
+                                <p><strong>Пример:</strong></p>
+                                <pre><code># Python-код для примера
+print("Hello from Agent!")
+</code></pre>
+                                <button class="btn btn-primary" onclick="runAgentExample()">
+                                    <i class="bi bi-play-fill"></i> Запустить пример агента
+                                </button>
+                                <div id="agent-output" class="mt-3 border rounded p-3 bg-light" style="display:none;min-height:60px;white-space:pre-wrap;font-size:0.9rem"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Notes</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">Для работы агентов необходимо наличие моделей, способных вызывать инструменты. </p>
+                                <p class="card-text">Например, модели, обученные на функциях OpenAI.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>

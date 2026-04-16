@@ -9,11 +9,11 @@
 # Project: FastApiFoundry (Docker)
 # Version: 0.4.1
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
+# Copyright: © 2026 hypo69
+# Copyright: © 2026 hypo69
 # =============================================================================
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
@@ -62,6 +62,29 @@ async def get_config():
 
 class ConfigUpdateRequest(BaseModel):
     config: Dict[str, Any]
+
+
+@router.patch("/config")
+async def patch_config(request: Request):
+    """Частичное обновление конфигурации. Поддерживает dot-notation: 'foundry_ai.default_model'"""
+    try:
+        updates: Dict[str, Any] = await request.json()
+        raw = config.get_raw_config()
+
+        for key, value in updates.items():
+            parts = key.split(".")
+            node = raw
+            for part in parts[:-1]:
+                node = node.setdefault(part, {})
+            node[parts[-1]] = value
+
+        with open("config.json", "w", encoding="utf-8") as f:
+            json.dump(raw, f, indent=2, ensure_ascii=False)
+        config.reload_config()
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/config")
 async def save_config(request: ConfigUpdateRequest):

@@ -1,0 +1,290 @@
+<div class="tab-pane fade" id="settings" role="tabpanel">
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">System Status</h5>
+                            </div>
+                            <div class="card-body" id="system-status">
+                                <!-- Status will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Configuration</h5>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="exportConfig()" title="Export config to JSON">
+                                        <i class="bi bi-download"></i> Export
+                                    </button>
+                                    <label class="btn btn-sm btn-outline-secondary mb-0" title="Import config from JSON">
+                                        <i class="bi bi-upload"></i> Import
+                                        <input type="file" id="import-config-file" accept=".json" style="display:none" onchange="importConfig(event)">
+                                    </label>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="loadConfigFields()">
+                                        <i class="bi bi-arrow-clockwise"></i> Reload
+                                    </button>
+                                    <button class="btn btn-sm btn-success" onclick="saveConfigFields()">
+                                        <i class="bi bi-check-lg"></i> Save All
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                                <!-- Ports -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary"><i class="bi bi-hdd-network"></i> Порты сервисов</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label class="form-label">FastAPI</label>
+                                            <input type="number" id="config-api-port" class="form-control" placeholder="9696">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">llama.cpp</label>
+                                            <input type="number" id="config-llama-port" class="form-control" placeholder="9780">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">MkDocs</label>
+                                            <input type="number" id="config-docs-port" class="form-control" placeholder="9697">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- FastAPI Server -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary"><i class="bi bi-server"></i> FastAPI Server</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Host</label>
+                                                <input type="text" id="config-api-host" class="form-control" placeholder="0.0.0.0">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check mt-4">
+                                                <input class="form-check-input" type="checkbox" id="config-api-auto-port">
+                                                <label class="form-check-label" for="config-api-auto-port">Auto-find free port</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Mode</label>
+                                                <select id="config-api-mode" class="form-select">
+                                                    <option value="dev">Development</option>
+                                                    <option value="prod">Production</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Workers</label>
+                                                <input type="number" id="config-api-workers" class="form-control" placeholder="1">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Foundry AI -->
+                                <div class="mb-4">
+                                    <h6 class="text-success"><i class="bi bi-robot"></i> Foundry AI</h6>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-2">
+                                                <label class="form-label">Base URL</label>
+                                                <input type="url" id="config-foundry-url" class="form-control" placeholder="http://localhost:50477/v1/">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-2">
+                                                <label class="form-label">Default Model</label>
+                                                <input type="text" id="config-foundry-model" class="form-control" placeholder="deepseek-r1-distill-qwen-7b-generic-cpu:3">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Temperature</label>
+                                                <input type="number" id="config-foundry-temp" class="form-control" step="0.1" min="0" max="2" placeholder="0.6">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Max Tokens</label>
+                                                <input type="number" id="config-foundry-tokens" class="form-control" placeholder="2048">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="config-foundry-autoload">
+                                                <label class="form-check-label" for="config-foundry-autoload">
+                                                    Auto-load default model on startup
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- RAG System -->
+                                <div class="mb-4">
+                                    <h6 class="text-info"><i class="bi bi-search"></i> RAG System</h6>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="config-rag-enabled" onchange="handleRAGToggle(this)">
+                                                <label class="form-check-label" for="config-rag-enabled">
+                                                    Enable RAG System
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Index Directory</label>
+                                                <input type="text" id="config-rag-index" class="form-control" placeholder="./rag_index">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Chunk Size</label>
+                                                <input type="number" id="config-rag-chunk" class="form-control" placeholder="1000">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mt-3">
+                                                <button class="btn btn-warning" onclick="clearRAGChunks()">
+                                                    <i class="bi bi-trash"></i> Очистить RAG chunks
+                                                </button>
+                                                <small class="form-text text-muted d-block mt-1">
+                                                    Удалить все индексированные документы из RAG системы
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Security -->
+                                <div class="mb-4">
+                                    <h6 class="text-warning"><i class="bi bi-shield-lock"></i> Security</h6>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-2">
+                                                <label class="form-label">API Key</label>
+                                                <input type="password" id="config-security-key" class="form-control" placeholder="Leave empty to disable">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="config-security-https">
+                                                <label class="form-check-label" for="config-security-https">
+                                                    Enable HTTPS
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Logging -->
+                                <div class="mb-4">
+                                    <h6 class="text-secondary"><i class="bi bi-file-text"></i> Logging</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Log Level</label>
+                                                <select id="config-log-level" class="form-select">
+                                                    <option value="DEBUG">Debug</option>
+                                                    <option value="INFO">Info</option>
+                                                    <option value="WARNING">Warning</option>
+                                                    <option value="ERROR">Error</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Log File</label>
+                                                <input type="text" id="config-log-file" class="form-control" placeholder="logs/fastapi-foundry.log">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- HuggingFace -->
+                                <div class="mb-4">
+                                    <h6 class="text-danger"><i class="bi bi-boxes"></i> HuggingFace</h6>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-2">
+                                                <label class="form-label">HF Token <small class="text-muted">(для закрытых моделей)</small></label>
+                                                <div class="input-group">
+                                                    <input type="password" id="config-hf-token" class="form-control" placeholder="hf_...">
+                                                    <button class="btn btn-outline-success" type="button" onclick="saveHFToken()" title="Сохранить токен в .env">
+                                                        <i class="bi bi-floppy"></i> Сохранить
+                                                    </button>
+                                                </div>
+                                                <div class="form-text">Получить токен: <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-2">
+                                                <label class="form-label">Models Directory</label>
+                                                <input type="text" id="config-hf-models-dir" class="form-control" placeholder="./models/hf">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Device</label>
+                                                <select id="config-hf-device" class="form-select">
+                                                    <option value="auto">Auto</option>
+                                                    <option value="cpu">CPU</option>
+                                                    <option value="cuda">CUDA (GPU)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="form-label">Default Max Tokens</label>
+                                                <input type="number" id="config-hf-max-tokens" class="form-control" placeholder="512">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Docs Server -->
+                                <div class="mb-4">
+                                    <h6 class="text-dark"><i class="bi bi-book"></i> Docs Server (MkDocs)</h6>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="config-docs-enabled">
+                                                <label class="form-check-label" for="config-docs-enabled">Enable MkDocs server on startup</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Development -->
+                                <div class="mb-4">
+                                    <h6 class="text-dark"><i class="bi bi-code-slash"></i> Development</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="config-dev-debug">
+                                                <label class="form-check-label" for="config-dev-debug">
+                                                    Debug Mode
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="config-dev-verbose">
+                                                <label class="form-check-label" for="config-dev-verbose">
+                                                    Verbose Logging
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="config-status" class="alert" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>

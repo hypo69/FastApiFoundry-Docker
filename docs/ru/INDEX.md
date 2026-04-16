@@ -1,74 +1,17 @@
-# 📚 Индекс документации FastAPI Foundry
+# Индекс документации FastAPI Foundry (RU)
 
-## ✅ Обновленные документы
+## 👤 Руководство пользователя
+*Документация для тех, кто хочет просто запустить и пользоваться.*
 
-### 🎯 Основные документы
-- **[README.md](README.md)** - Главная страница документации
-- **[getting-started.md](getting-started.md)** - Запуск и первые шаги
-- **[web-interface.md](web-interface.md)** - Веб-интерфейс и управление
-- **[api-reference.md](api-reference.md)** - Полная документация API
-- **[configuration.md](configuration.md)** - Настройка config.json
+- [Быстрый старт](user/getting_started.md)
+- [Установка и настройка](user/installation.md)
+- [Работа с моделями](user/models_guide.md)
+- [Веб-интерфейс](user/web_interface.md)
 
-### 🏗️ Архитектура и интеграция
-- **[foundry-architecture.md](foundry-architecture.md)** - Архитектура Foundry
-- **[troubleshooting.md](troubleshooting.md)** - Устранение неполадок
-- **[examples.md](examples.md)** - Примеры использования
+## 💻 Руководство разработчика
+*Техническая информация для расширения и модификации системы.*
 
-## 📋 Структура новой документации
-
-```
-docs/
-├── README.md                    # ✅ Главная страница
-├── getting-started.md           # ✅ Запуск и настройка
-├── web-interface.md             # ✅ Веб-интерфейс
-├── api-reference.md             # ✅ API документация
-├── configuration.md             # ✅ Конфигурация
-├── foundry-architecture.md      # ✅ Архитектура
-├── troubleshooting.md           # ✅ Устранение неполадок
-├── examples.md                  # ✅ Примеры
-├── models-management.md         # 🔄 Требует создания
-├── rag-system.md               # 🔄 Требует создания
-├── mcp-server.md               # 🔄 Требует создания
-├── docker.md                   # 🔄 Требует обновления
-└── development.md              # 🔄 Требует обновления
-```
-
-## 🎯 Ключевые изменения
-
-### ✅ Что исправлено
-1. **Актуальная структура проекта** - документация соответствует коду
-2. **Правильные порты** - 9696 для FastAPI, 50477 для Foundry
-3. **Embedded Python** - документирован встроенный Python 3.11
-4. **Правильный порядок запуска** - Foundry → FastAPI
-5. **Реальные API endpoints** - соответствуют src/api/endpoints/
-6. **Актуальная конфигурация** - config.json структура
-7. **Практические примеры** - рабочие примеры кода
-
-### 🔄 Что требует доработки
-1. **models-management.md** - управление AI моделями
-2. **rag-system.md** - RAG система и индексация
-3. **mcp-server.md** - MCP интеграция с Claude
-4. **docker.md** - обновить под новую структуру
-5. **development.md** - архитектура кода
-
-## 🚀 Навигация
-
-### Для новичков
-1. [README.md](README.md) → [getting-started.md](getting-started.md) → [web-interface.md](web-interface.md)
-
-### Для разработчиков
-1. [api-reference.md](api-reference.md) → [configuration.md](configuration.md) → [foundry-architecture.md](foundry-architecture.md)
-
-### При проблемах
-1. [troubleshooting.md](troubleshooting.md) → [examples.md](examples.md)
-
-## 📊 Статистика обновления
-
-- **Обновлено**: 8 документов
-- **Создано заново**: 8 документов  
-- **Удалено устаревшего**: ~20 документов
-- **Соответствие коду**: 100%
-
----
-
-**Документация приведена в соответствие с актуальным кодом FastAPI Foundry v0.3.0**
+- [Общая архитектура](dev/architecture.md)
+- [API Reference](dev/api_reference.md)
+- [Система RAG](dev/rag_system.md)
+- [Создание агентов](dev/agents.md)

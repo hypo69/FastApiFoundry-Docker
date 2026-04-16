@@ -19,8 +19,8 @@
 # Project: FastApiFoundry (Docker)
 # Version: 0.4.1
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
+# Copyright: © 2026 hypo69
+# Copyright: © 2026 hypo69
 # =============================================================================
 
 import subprocess
@@ -107,6 +107,39 @@ def _run_foundry(args: list, timeout: int = 30) -> subprocess.CompletedProcess:
         text=True,
         timeout=timeout
     )
+
+
+@router.post("/auto-load-default")
+async def auto_load_default_model() -> dict:
+    """! Загрузить модель по умолчанию из config.json (foundry_ai.default_model)."""
+    import os
+    from ...core.config import config as app_config
+
+    model_id: str = app_config.foundry_default_model
+    if not model_id:
+        return {"success": False, "message": "default_model not set in config"}
+
+    if not app_config.foundry_auto_load_default:
+        return {"success": False, "message": "auto_load_default is disabled in config"}
+
+    try:
+        process = subprocess.Popen(
+            ["foundry", "model", "load", model_id],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        logger.info(f"Загрузка модели по умолчанию {model_id} (PID: {process.pid})")
+        return {"success": True, "model_id": model_id, "message": f"Загрузка {model_id} запущена", "pid": process.pid}
+    except FileNotFoundError:
+        return {"success": False, "error": "Foundry CLI не найден"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@router.get("")
+@router.get("/")
+async def list_models_root() -> dict:
+    """! Алиас для /available — список моделей из каталога Foundry."""
+    return await list_available_models()
 
 
 @router.get("/available")

@@ -316,5 +316,9 @@ profiles/
 !.env.example
 !.gitignore
 !README*.md
-!bin/
+#!bin/
 
+# распакованый сервер. Не надо, он устанавливается на клиенте при запуске install.ps1
+bin/llama-b8802-bin-win-cpu-x64/
+!bin/llama-b8802-bin-win-cpu-x64.zip
+!bin/Python-3.11.9.zip

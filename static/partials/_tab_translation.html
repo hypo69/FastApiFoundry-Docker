@@ -1,0 +1,88 @@
+<div class="tab-pane fade" id="translation" role="tabpanel">
+                <div class="row mt-3">
+                    <!-- Left: Settings -->
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-gear"></i> Translation Settings</h6></div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="translation-api-key" class="form-label">API Key</label>
+                                    <input type="password" class="form-control" id="translation-api-key" placeholder="Enter API Key">
+                                    <div class="form-text">For Google Translate, use a valid API key.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="source-lang" class="form-label">Source Language</label>
+                                    <input type="text" class="form-control" id="source-lang" value="en" placeholder="e.g., en, ru">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="target-lang" class="form-label">Target Language</label>
+                                    <input type="text" class="form-control" id="target-lang" value="ru" placeholder="e.g., en, ru">
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" onclick="saveTranslationSettings()">
+                                        <i class="bi bi-check-lg"></i> Save Settings
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-cloud-download"></i> Download Models</h6></div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="translation-model-select" class="form-label">Select Model</label>
+                                    <select class="form-select" id="translation-model-select">
+                                        <option value="">Select a model to download...</option>
+                                        <option value="Helsinki-NLP/opus-mt-en-ru">English to Russian (Helsinki-NLP)</option>
+                                        <option value="Helsinki-NLP/opus-mt-ru-en">Russian to English (Helsinki-NLP)</option>
+                                        <!-- Add more models as needed -->
+                                    </select>
+                                </div>
+                                <button class="btn btn-success w-100" onclick="downloadTranslationModel()">
+                                    <i class="bi bi-download"></i> Download Model
+                                </button>
+                                <div id="translation-download-status" class="mt-3" style="display:none"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Translation Interface -->
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-translate"></i> Translate Text</h6></div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="text-to-translate" class="form-label">Text to Translate</label>
+                                    <textarea class="form-control" id="text-to-translate" rows="5" placeholder="Enter text to translate..."></textarea>
+                                </div>
+                                <div class="d-grid gap-2 mb-3">
+                                    <button class="btn btn-primary" onclick="translateText()">
+                                        <i class="bi bi-arrow-right-circle"></i> Translate
+                                    </button>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="translated-text" class="form-label">Translated Text</label>
+                                    <textarea class="form-control" id="translated-text" rows="5" readonly></textarea>
+                                </div>
+                                <div id="translation-status" class="mt-3" style="display:none"></div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-3">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-folder2-open"></i> Translate Files</h6></div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="file-to-translate" class="form-label">Choose File</label>
+                                    <input class="form-control" type="file" id="file-to-translate">
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" onclick="translateFile()">
+                                        <i class="bi bi-arrow-right-circle"></i> Translate File
+                                    </button>
+                                </div>
+                                <div id="file-translation-status" class="mt-3" style="display:none"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>

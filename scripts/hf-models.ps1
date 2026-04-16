@@ -15,8 +15,8 @@
 # Project: FastApiFoundry (Docker)
 # Version: 0.4.1
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
+# Copyright: © 2026 hypo69
+# Copyright: © 2026 hypo69
 # =============================================================================
 
 param(

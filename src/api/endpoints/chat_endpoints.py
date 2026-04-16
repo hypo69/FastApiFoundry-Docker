@@ -9,8 +9,8 @@
 # Project: FastApiFoundry (Docker)
 # Version: 0.4.1
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
+# Copyright: © 2026 hypo69
+# Copyright: © 2026 hypo69
 # =============================================================================
 
 import json
@@ -67,7 +67,6 @@ async def send_chat_message(request: dict):
             temperature=request.get("temperature", 0.7),
             max_tokens=request.get("max_tokens", 2048)
         )
-        
         if response["success"]:
             ai_response = response.get("content", "")
             chat_sessions[session_id].append({"role": "assistant", "content": ai_response})

@@ -6,68 +6,9 @@
     <title>FastAPI Foundry - AI Models Interface</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        .model-card { transition: transform 0.2s; }
-        .model-card:hover { transform: translateY(-2px); }
-        .status-online { color: #28a745; }
-        .status-offline { color: #dc3545; }
-        .status-unknown { color: #6c757d; }
-        
-        /* Status indicator improvements */
-        #status-indicator {
-            background-color: rgba(255, 255, 255, 0.2);
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white !important;
-            font-weight: bold;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-        }
-        
-        #status-indicator .text-success {
-            color: #28a745 !important;
-        }
-        
-        #status-indicator .text-warning {
-            color: #ffc107 !important;
-        }
-        
-        #status-indicator .text-danger {
-            color: #dc3545 !important;
-        }
-        .chat-container { height: 400px; overflow-y: auto; }
-        .message { margin-bottom: 1rem; }
-        .message.user { text-align: right; }
-        .message.assistant { text-align: left; }
-        .message .content { 
-            display: inline-block; 
-            padding: 0.5rem 1rem; 
-            border-radius: 1rem; 
-            max-width: 70%; 
-        }
-        .message.user .content { background-color: #007bff; color: white; }
-        .message.assistant .content { background-color: #f8f9fa; border: 1px solid #dee2e6; }
-        
-        /* Log styles */
-        .log-entry { 
-            padding: 0.25rem 0.5rem; 
-            border-bottom: 1px solid #f0f0f0; 
-            font-size: 0.8rem;
-        }
-        .log-entry:hover { background-color: #f8f9fa; }
-        .log-debug { color: #6c757d; }
-        .log-info { color: #0d6efd; }
-        .log-warning { color: #fd7e14; }
-        .log-error { color: #dc3545; font-weight: 500; }
-        .log-timestamp { color: #6c757d; font-size: 0.75rem; }
-        .log-logger { color: #198754; font-weight: 500; }
-        .health-status-healthy { color: #28a745; }
-        .health-status-warning { color: #fd7e14; }
-        .health-status-critical { color: #dc3545; }
-    </style>
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <link href="/static/css/main.css" rel="stylesheet">
+</head><body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="#">
                 <i class="bi bi-robot"></i> FastAPI Foundry
@@ -78,11 +19,9 @@
                 </span>
             </div>
         </div>
-    </nav>
-
-    <div class="container mt-4">
-        <!-- Tabs -->
-        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+    </nav>    <div class="container mt-4">
+        <!-- Tabs Navigation -->
+<ul class="nav nav-tabs" id="mainTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button">
                     <i class="bi bi-chat-dots"></i> Chat
@@ -153,11 +92,9 @@
                     <i class="bi bi-book"></i> API Documentation
                 </button>
             </li>
-        </ul>
-
+        </ul>        <!-- Tab Content -->
         <div class="tab-content" id="mainTabsContent">
-            <!-- Chat Tab -->
-            <div class="tab-pane fade show active" id="chat" role="tabpanel">
+<div class="tab-pane fade show active" id="chat" role="tabpanel">
                 <div class="row mt-3">
                     <div class="col-md-8">
                         <div class="card">
@@ -175,7 +112,7 @@
                                     </div>
                                 </div>
                                 <div class="input-group">
-                                    <input type="text" id="chat-input" class="form-control" placeholder="Type your message..." onkeypress="handleChatKeyPress(event)">
+                                    <input type="text" id="chat-input" class="form-control" placeholder="Type your message...">
                                     <button class="btn btn-primary" onclick="sendMessage()">
                                         <i class="bi bi-send"></i> Send
                                     </button>
@@ -221,10 +158,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Models Tab -->
-            <div class="tab-pane fade" id="models" role="tabpanel">
+            </div><div class="tab-pane fade" id="models" role="tabpanel">
                 <div class="row mt-3">
                     <div class="col-12">
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -243,10 +177,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Foundry Tab -->
-            <div class="tab-pane fade" id="foundry" role="tabpanel">
+            </div><div class="tab-pane fade" id="foundry" role="tabpanel">
                 <div class="row mt-3">
                     <div class="col-md-6">
                         <div class="card">
@@ -369,10 +300,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- HuggingFace Tab -->
-            <div class="tab-pane fade" id="hf" role="tabpanel">
+            </div><div class="tab-pane fade" id="hf" role="tabpanel">
                 <div class="row mt-3">
                     <!-- Status + Download -->
                     <div class="col-md-5">
@@ -498,10 +426,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- llama.cpp Tab -->
-            <div class="tab-pane fade" id="llama" role="tabpanel">
+            </div><div class="tab-pane fade" id="llama" role="tabpanel">
                 <div class="row mt-3">
                     <!-- Status + Controls -->
                     <div class="col-md-5">
@@ -520,7 +445,7 @@
                                 <div class="mb-2">
                                     <label class="form-label">Model Path (.gguf)</label>
                                     <div class="input-group">
-                                        <input type="text" id="llama-model-path" class="form-control" placeholder="D:\gemma-2-2b-it-Q6_K.gguf">
+                                        <input type="text" id="llama-model-path" class="form-control" placeholder="~/.models/gemma-2-2b-it-Q6_K.gguf">
                                         <button class="btn btn-outline-secondary" onclick="llamaOpenPicker()" title="Browse models">
                                             <i class="bi bi-folder2-open"></i>
                                         </button>
@@ -589,16 +514,13 @@
                                     </button>
                                     <hr>
                                     <p class="mb-1">PowerShell:</p>
-                                    <code>.\scripts\llama-start.ps1 -ModelPath "D:\gemma-2-2b-it-Q6_K.gguf"</code>
+                                    <code>.\scripts\llama-start.ps1 -ModelPath "~/.models/gemma-2-2b-it-Q6_K.gguf"</code>
                                 </small>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- RAG Tab -->
-            <div class="tab-pane fade" id="rag" role="tabpanel">
+            </div><div class="tab-pane fade" id="rag" role="tabpanel">
                 <div class="row mt-3">
                     <!-- Left column: Status + Config -->
                     <div class="col-md-6">
@@ -723,10 +645,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Settings Tab -->
-            <div class="tab-pane fade" id="settings" role="tabpanel">
+            </div><div class="tab-pane fade" id="settings" role="tabpanel">
                 <div class="row mt-3">
                     <div class="col-md-4">
                         <div class="card">
@@ -759,6 +678,25 @@
                                 </div>
                             </div>
                             <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                                <!-- Ports -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary"><i class="bi bi-hdd-network"></i> Порты сервисов</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label class="form-label">FastAPI</label>
+                                            <input type="number" id="config-api-port" class="form-control" placeholder="9696">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">llama.cpp</label>
+                                            <input type="number" id="config-llama-port" class="form-control" placeholder="9780">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">MkDocs</label>
+                                            <input type="number" id="config-docs-port" class="form-control" placeholder="9697">
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- FastAPI Server -->
                                 <div class="mb-4">
                                     <h6 class="text-primary"><i class="bi bi-server"></i> FastAPI Server</h6>
@@ -770,17 +708,9 @@
                                             </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <div class="mb-2">
-                                                <label class="form-label">Port</label>
-                                                <input type="number" id="config-api-port" class="form-control" placeholder="9696">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
                                             <div class="form-check mt-4">
                                                 <input class="form-check-input" type="checkbox" id="config-api-auto-port">
-                                                <label class="form-check-label" for="config-api-auto-port">
-                                                    Auto-find free port
-                                                </label>
+                                                <label class="form-check-label" for="config-api-auto-port">Auto-find free port</label>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -963,6 +893,15 @@
                                     </div>
                                 </div>
 
+                                <!-- Docs Server -->
+                                <div class="mb-4">
+                                    <h6 class="text-dark"><i class="bi bi-book"></i> Docs Server (MkDocs)</h6>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="config-docs-enabled">
+                                        <label class="form-check-label" for="config-docs-enabled">Enable MkDocs server on startup</label>
+                                    </div>
+                                </div>
+
                                 <!-- Development -->
                                 <div class="mb-4">
                                     <h6 class="text-dark"><i class="bi bi-code-slash"></i> Development</h6>
@@ -991,147 +930,100 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Editor Tab -->
-            <div class="tab-pane fade" id="editor" role="tabpanel">
+            </div><div class="tab-pane fade" id="editor" role="tabpanel">
                 <div class="row mt-3">
                     <div class="col-md-6">
                         <div class="card h-100">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0"><i class="bi bi-shield-lock"></i> .env <small class="text-muted">(секреты)</small></h6>
                                 <div>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadEnvEditor()">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadEnv()">
                                         <i class="bi bi-arrow-clockwise"></i> Reload
                                     </button>
-                                    <button class="btn btn-sm btn-success" onclick="saveEnvEditor()">
-                                        <i class="bi bi-floppy"></i> Сохранить
+                                    <button class="btn btn-sm btn-success" onclick="saveEnv()">
+                                        <i class="bi bi-check-lg"></i> Save
                                     </button>
                                 </div>
                             </div>
-                            <div class="card-body p-2">
-                                <div id="env-editor-status" class="alert py-1 px-2 mb-2" style="display:none;font-size:.85rem"></div>
-                                <textarea id="env-editor" class="form-control font-monospace" rows="32" style="font-size:0.82rem;resize:vertical"></textarea>
+                            <div class="card-body d-flex flex-column">
+                                <textarea id="env-editor" class="form-control flex-grow-1" style="min-height: 200px; font-family: monospace;" placeholder="# Add your environment variables here
+# For example:
+# OPENAI_API_KEY=sk-..."></textarea>
+                                <div id="env-status" class="mt-2"></div>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="card h-100">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0"><i class="bi bi-braces"></i> config.json</h6>
+                                <h6 class="mb-0"><i class="bi bi-gear"></i> config.json <small class="text-muted">(настройки)</small></h6>
                                 <div>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadConfigEditor()">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadConfigJson()">
                                         <i class="bi bi-arrow-clockwise"></i> Reload
                                     </button>
-                                    <button class="btn btn-sm btn-success" onclick="saveConfigEditor()">
-                                        <i class="bi bi-floppy"></i> Сохранить
+                                    <button class="btn btn-sm btn-success" onclick="saveConfigJson()">
+                                        <i class="bi bi-check-lg"></i> Save
                                     </button>
                                 </div>
                             </div>
-                            <div class="card-body p-2">
-                                <div id="config-editor-status" class="alert py-1 px-2 mb-2" style="display:none;font-size:.85rem"></div>
-                                <textarea id="config-editor" class="form-control font-monospace" rows="32" style="font-size:0.82rem;resize:vertical"></textarea>
+                            <div class="card-body d-flex flex-column">
+                                <textarea id="config-json-editor" class="form-control flex-grow-1" style="min-height: 200px; font-family: monospace;" placeholder="// Edit your config.json here"></textarea>
+                                <div id="config-json-status" class="mt-2"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Examples Tab -->
-            <div class="tab-pane fade" id="examples" role="tabpanel">
+            </div><div class="tab-pane fade" id="examples" role="tabpanel">
                 <div class="row mt-3">
                     <div class="col-md-8">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">FastAPI Foundry SDK Examples</h5>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="clearExampleOutput()">
-                                    <i class="bi bi-trash"></i> Clear Output
+                                <button class="btn btn-sm btn-outline-primary" onclick="loadExamples()">
+                                    <i class="bi bi-arrow-clockwise"></i> Reload
                                 </button>
                             </div>
                             <div class="card-body">
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <button class="btn btn-primary w-100 mb-2" onclick="runSDKExample('basic')">
-                                            <i class="bi bi-play-fill"></i> Basic SDK Usage
-                                        </button>
-                                        <small class="text-muted">Основное использование SDK</small>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <button class="btn btn-success w-100 mb-2" onclick="runSDKExample('rag')">
-                                            <i class="bi bi-search"></i> RAG Search Demo
-                                        </button>
-                                        <small class="text-muted">Поиск через RAG систему</small>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <button class="btn btn-info w-100 mb-2" onclick="runSDKExample('batch')">
-                                            <i class="bi bi-layers"></i> Batch Generation
-                                        </button>
-                                        <small class="text-muted">Пакетная генерация</small>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <button class="btn btn-warning w-100 mb-2" onclick="runSDKExample('models')">
-                                            <i class="bi bi-cpu"></i> Models & Config
-                                        </button>
-                                        <small class="text-muted">Модели и конфигурация</small>
-                                    </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Select Example</label>
+                                    <select id="example-select" class="form-select" onchange="loadSelectedExample()">
+                                        <option value="">Select an example...</option>
+                                    </select>
                                 </div>
-                                <div id="example-output" class="border rounded p-3" style="height: 400px; overflow-y: auto; background-color: #f8f9fa; font-family: monospace; font-size: 0.9rem;">
-                                    <div class="text-muted text-center mt-5">
-                                        <i class="bi bi-play-circle" style="font-size: 2rem;"></i><br>
-                                        Выберите пример SDK для запуска
-                                    </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Example Code</label>
+                                    <textarea id="example-code" class="form-control" rows="15" readonly style="font-family: monospace;"></textarea>
                                 </div>
+                                <button class="btn btn-primary" onclick="runExample()">
+                                    <i class="bi bi-play-fill"></i> Run Example
+                                </button>
+                                <button class="btn btn-secondary" onclick="copyExampleToClipboard()">
+                                    <i class="bi bi-clipboard"></i> Copy
+                                </button>
+                                <div id="example-output" class="mt-3 border rounded p-3 bg-light" style="display:none;min-height:60px;white-space:pre-wrap;font-size:0.9rem"></div>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card mb-3">
-                            <div class="card-header">
-                                <h6 class="mb-0">SDK Status</h6>
-                            </div>
-                            <div class="card-body" id="example-status">
-                                <div class="text-muted text-center">
-                                    <i class="bi bi-clock"></i><br>
-                                    Ready to run SDK examples
-                                </div>
-                            </div>
-                        </div>
                         <div class="card">
                             <div class="card-header">
-                                <h6 class="mb-0">Available SDK Examples</h6>
+                                <h5 class="mb-0">Notes</h5>
                             </div>
                             <div class="card-body">
-                                <div class="list-group list-group-flush">
-                                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>Basic Usage</span>
-                                        <span class="badge bg-primary rounded-pill">SANDBOX/sdk/example.py</span>
-                                    </div>
-                                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>RAG Search</span>
-                                        <span class="badge bg-success rounded-pill">SDK RAG Demo</span>
-                                    </div>
-                                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>Batch Generation</span>
-                                        <span class="badge bg-info rounded-pill">SDK Batch Demo</span>
-                                    </div>
-                                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>Models & Config</span>
-                                        <span class="badge bg-warning rounded-pill">SDK Models Demo</span>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <a href="/static/SANDBOX/sdk/README.md" target="_blank" class="btn btn-sm btn-outline-primary w-100">
-                                        <i class="bi bi-book"></i> SDK Documentation
-                                    </a>
-                                </div>
+                                <p class="card-text">
+                                    Здесь вы можете тестировать примеры использования SDK FastAPI Foundry.
+                                </p>
+                                <p class="card-text">
+                                    Перед запуском убедитесь, что сервер FastAPI Foundry запущен.
+                                </p>
+                                <p class="card-text">
+                                    Результат выполнения примера будет отображен ниже.
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Agent Tab -->
-            <div class="tab-pane fade" id="agent" role="tabpanel">
+            </div><div class="tab-pane fade" id="agent" role="tabpanel">
                 <div class="row mt-3">
                     <div class="col-md-8">
                         <div class="card">
@@ -1139,108 +1031,71 @@
                                 <h5 class="mb-0"><i class="bi bi-robot"></i> AI Agent — модель вызывает инструменты</h5>
                             </div>
                             <div class="card-body">
-                                <div id="agent-messages" class="border rounded p-3 mb-3" style="height:420px;overflow-y:auto;background:#fafafa;font-size:.9rem">
-                                    <div class="text-muted text-center mt-5">
-                                        <i class="bi bi-robot" style="font-size:2rem"></i>
-                                        <p class="mt-2">Задайте вопрос — модель сама решит какие инструменты вызвать</p>
-                                        <small>Примеры: «покажи содержимое текущей директории», «сколько файлов .py в проекте»</small>
-                                    </div>
-                                </div>
-                                <div class="input-group">
-                                    <input type="text" id="agent-input" class="form-control"
-                                        placeholder="Например: покажи содержимое текущей директории"
-                                        onkeypress="if(event.key==='Enter') agentRun()">
-                                    <button class="btn btn-primary" onclick="agentRun()" id="agent-btn">
-                                        <i class="bi bi-send"></i> Run
-                                    </button>
-                                </div>
+                                <p>Эта вкладка демонстрирует возможности интеграции агентов, где модель может динамически вызывать инструменты для выполнения задач.</p>
+                                <p><strong>Пример:</strong></p>
+                                <pre><code># Python-код для примера
+print("Hello from Agent!")
+</code></pre>
+                                <button class="btn btn-primary" onclick="runAgentExample()">
+                                    <i class="bi bi-play-fill"></i> Запустить пример агента
+                                </button>
+                                <div id="agent-output" class="mt-3 border rounded p-3 bg-light" style="display:none;min-height:60px;white-space:pre-wrap;font-size:0.9rem"></div>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card mb-3">
-                            <div class="card-header"><h6 class="mb-0">Параметры</h6></div>
-                            <div class="card-body">
-                                <div class="mb-2">
-                                    <label class="form-label">Агент</label>
-                                    <select id="agent-name" class="form-select"></select>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Модель</label>
-                                    <input type="text" id="agent-model" class="form-control" placeholder="из config.json">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Max iterations</label>
-                                    <input type="number" id="agent-max-iter" class="form-control" value="5" min="1" max="10">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Temperature</label>
-                                    <input type="number" id="agent-temp" class="form-control" value="0.3" step="0.1" min="0" max="2">
-                                </div>
-                            </div>
-                        </div>
                         <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Доступные инструменты</h6></div>
-                            <div class="card-body p-0">
-                                <div id="agent-tools-list" style="font-size:.85rem">
-                                    <div class="text-muted text-center p-3"><div class="spinner-border spinner-border-sm"></div></div>
-                                </div>
+                            <div class="card-header">
+                                <h5 class="mb-0">Notes</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">Для работы агентов необходимо наличие моделей, способных вызывать инструменты. </p>
+                                <p class="card-text">Например, модели, обученные на функциях OpenAI.</p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- MCP Servers Tab -->
-            <div class="tab-pane fade" id="mcp" role="tabpanel">
+            </div><div class="tab-pane fade" id="mcp" role="tabpanel">
                 <div class="row mt-3">
                     <div class="col-md-8">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="bi bi-plug"></i> MCP PowerShell Servers</h5>
-                                <button class="btn btn-sm btn-outline-primary" onclick="mcpLoadServers()">
-                                    <i class="bi bi-arrow-clockwise"></i> Refresh
-                                </button>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="refreshMCPServers()">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                                    </button>
+                                    <button class="btn btn-sm btn-success" onclick="startAllMCPServers()">
+                                        <i class="bi bi-play-fill"></i> Start All
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="stopAllMCPServers()">
+                                        <i class="bi bi-stop-fill"></i> Stop All
+                                    </button>
+                                </div>
                             </div>
-                            <div class="card-body p-0">
-                                <div id="mcp-servers-list" style="min-height:100px">
-                                    <div class="text-muted text-center p-4"><div class="spinner-border spinner-border-sm"></div> Loading...</div>
+                            <div class="card-body">
+                                <div id="mcp-servers-list">
+                                    <div class="text-muted text-center">
+                                        <i class="bi bi-server"></i><br>
+                                        MCP servers will be listed here
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card mb-3">
-                            <div class="card-header"><h6 class="mb-0">Settings file</h6></div>
-                            <div class="card-body">
-                                <small class="text-muted d-block mb-2">mcp-powershell-servers/settings.json</small>
-                                <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="mcpOpenSettingsEditor()">
-                                    <i class="bi bi-pencil-square"></i> Edit settings.json
-                                </button>
-                                <div id="mcp-settings-status" class="alert py-1 px-2" style="display:none;font-size:.85rem"></div>
-                                <textarea id="mcp-settings-editor" class="form-control font-monospace mt-2" rows="18" style="font-size:0.78rem;display:none;resize:vertical"></textarea>
-                                <div id="mcp-settings-btns" style="display:none" class="mt-2 d-flex gap-2">
-                                    <button class="btn btn-sm btn-success" onclick="mcpSaveSettings()"><i class="bi bi-floppy"></i> Save</button>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="mcpCloseSettingsEditor()">Cancel</button>
-                                </div>
-                            </div>
-                        </div>
                         <div class="card">
-                            <div class="card-header"><h6 class="mb-0">Info</h6></div>
+                            <div class="card-header">
+                                <h5 class="mb-0">Notes</h5>
+                            </div>
                             <div class="card-body">
-                                <small class="text-muted">
-                                    <p>Серверы запускаются из корня проекта.<br>Пути в settings.json — относительные.</p>
-                                    <p>Логи: <code>%TEMP%\mcp-*.log</code></p>
-                                    <p>Требуется: <strong>PowerShell 7+</strong></p>
-                                </small>
+                                <p class="card-text">Управление микро-сервисами PowerShell (MCP).</p>
+                                <p class="card-text">Каждый MCP-сервер запускается как отдельный процесс и может предоставлять специфичную функциональность.</p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Translation Tab -->
-            <div class="tab-pane fade" id="translation" role="tabpanel">
+            </div><div class="tab-pane fade" id="translation" role="tabpanel">
                 <div class="row mt-3">
                     <!-- Left: Settings -->
                     <div class="col-md-4">
@@ -1248,233 +1103,145 @@
                             <div class="card-header"><h6 class="mb-0"><i class="bi bi-gear"></i> Translation Settings</h6></div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label class="form-label">Provider</label>
-                                    <select id="trans-provider" class="form-select" onchange="transOnProviderChange()">
-                                        <option value="llm">🤖 LLM (current model)</option>
-                                        <option value="deepl">🔵 DeepL API</option>
-                                        <option value="google">🔴 Google Translate</option>
-                                        <option value="helsinki">🟢 Helsinki-NLP (local)</option>
-                                    </select>
-                                    <div class="form-text" id="trans-provider-hint">Uses the currently loaded AI model</div>
-                                </div>
-                                <div class="mb-3" id="trans-api-key-row" style="display:none">
-                                    <label class="form-label">API Key</label>
-                                    <div class="input-group">
-                                        <input type="password" id="trans-api-key" class="form-control" placeholder="Enter API key...">
-                                        <button class="btn btn-outline-success" onclick="transSaveApiKey()" title="Save to .env">
-                                            <i class="bi bi-floppy"></i>
-                                        </button>
-                                    </div>
+                                    <label for="translation-api-key" class="form-label">API Key</label>
+                                    <input type="password" class="form-control" id="translation-api-key" placeholder="Enter API Key">
+                                    <div class="form-text">For Google Translate, use a valid API key.</div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Source Language</label>
-                                    <select id="trans-source-lang" class="form-select">
-                                        <option value="auto">🔍 Auto-detect</option>
-                                        <option value="ru">🇷🇺 Russian</option>
-                                        <option value="en">🇬🇧 English</option>
-                                        <option value="de">🇩🇪 German</option>
-                                        <option value="fr">🇫🇷 French</option>
-                                        <option value="es">🇪🇸 Spanish</option>
-                                        <option value="zh">🇨🇳 Chinese</option>
-                                        <option value="ja">🇯🇵 Japanese</option>
-                                        <option value="ar">🇸🇦 Arabic</option>
-                                        <option value="uk">🇺🇦 Ukrainian</option>
-                                        <option value="pl">🇵🇱 Polish</option>
-                                    </select>
+                                    <label for="source-lang" class="form-label">Source Language</label>
+                                    <input type="text" class="form-control" id="source-lang" value="en" placeholder="e.g., en, ru">
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Target Language</label>
-                                    <select id="trans-target-lang" class="form-select">
-                                        <option value="en">🇬🇧 English</option>
-                                        <option value="ru">🇷🇺 Russian</option>
-                                        <option value="de">🇩🇪 German</option>
-                                        <option value="fr">🇫🇷 French</option>
-                                        <option value="es">🇪🇸 Spanish</option>
-                                        <option value="zh">🇨🇳 Chinese</option>
-                                        <option value="ja">🇯🇵 Japanese</option>
-                                        <option value="ar">🇸🇦 Arabic</option>
-                                        <option value="uk">🇺🇦 Ukrainian</option>
-                                        <option value="pl">🇵🇱 Polish</option>
-                                    </select>
+                                    <label for="target-lang" class="form-label">Target Language</label>
+                                    <input type="text" class="form-control" id="target-lang" value="ru" placeholder="e.g., en, ru">
                                 </div>
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="trans-auto-detect" checked>
-                                        <label class="form-check-label" for="trans-auto-detect">Auto-detect language</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="trans-chat-inject">
-                                        <label class="form-check-label" for="trans-chat-inject">Translate chat input → EN before sending</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="trans-cache-enabled" checked>
-                                        <label class="form-check-label" for="trans-cache-enabled">Cache translations (session)</label>
-                                    </div>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" onclick="saveTranslationSettings()">
+                                        <i class="bi bi-check-lg"></i> Save Settings
+                                    </button>
                                 </div>
                             </div>
                         </div>
+
                         <div class="card">
-                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-info-circle"></i> Provider Info</h6></div>
-                            <div class="card-body" id="trans-provider-info">
-                                <small class="text-muted">Select a provider to see details</small>
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-cloud-download"></i> Download Models</h6></div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="translation-model-select" class="form-label">Select Model</label>
+                                    <select class="form-select" id="translation-model-select">
+                                        <option value="">Select a model to download...</option>
+                                        <option value="Helsinki-NLP/opus-mt-en-ru">English to Russian (Helsinki-NLP)</option>
+                                        <option value="Helsinki-NLP/opus-mt-ru-en">Russian to English (Helsinki-NLP)</option>
+                                        <!-- Add more models as needed -->
+                                    </select>
+                                </div>
+                                <button class="btn btn-success w-100" onclick="downloadTranslationModel()">
+                                    <i class="bi bi-download"></i> Download Model
+                                </button>
+                                <div id="translation-download-status" class="mt-3" style="display:none"></div>
                             </div>
                         </div>
                     </div>
-                    <!-- Right: Translator UI -->
+
+                    <!-- Right: Translation Interface -->
                     <div class="col-md-8">
-                        <div class="card mb-3">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0"><i class="bi bi-translate"></i> Translate Text</h6>
-                                <div>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="transSwapLangs()" title="Swap languages">
-                                        <i class="bi bi-arrow-left-right"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="transClear()">
-                                        <i class="bi bi-trash"></i> Clear
-                                    </button>
-                                </div>
-                            </div>
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-translate"></i> Translate Text</h6></div>
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <label class="form-label text-muted">Source text</label>
-                                        <textarea id="trans-input" class="form-control" rows="8" placeholder="Enter text to translate..."></textarea>
-                                        <div class="d-flex justify-content-between mt-1">
-                                            <small class="text-muted" id="trans-detected-lang"></small>
-                                            <small class="text-muted" id="trans-char-count">0 chars</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label text-muted">Translation</label>
-                                        <textarea id="trans-output" class="form-control" rows="8" placeholder="Translation will appear here..." readonly></textarea>
-                                        <div class="d-flex justify-content-between mt-1">
-                                            <small class="text-muted" id="trans-time"></small>
-                                            <button class="btn btn-sm btn-outline-secondary" onclick="transCopyOutput()" title="Copy">
-                                                <i class="bi bi-clipboard"></i>
-                                            </button>
-                                        </div>
-                                    </div>
+                                <div class="mb-3">
+                                    <label for="text-to-translate" class="form-label">Text to Translate</label>
+                                    <textarea class="form-control" id="text-to-translate" rows="5" placeholder="Enter text to translate..."></textarea>
                                 </div>
-                                <div class="mt-3 d-flex gap-2">
-                                    <button class="btn btn-primary" onclick="transTranslate()" id="trans-btn">
-                                        <i class="bi bi-translate"></i> Translate
-                                    </button>
-                                    <button class="btn btn-outline-secondary" onclick="transDetectLang()">
-                                        <i class="bi bi-search"></i> Detect Language
-                                    </button>
-                                    <button class="btn btn-outline-info" onclick="transUseinChat()" title="Send translation to Chat">
-                                        <i class="bi bi-chat-dots"></i> Use in Chat
+                                <div class="d-grid gap-2 mb-3">
+                                    <button class="btn btn-primary" onclick="translateText()">
+                                        <i class="bi bi-arrow-right-circle"></i> Translate
                                     </button>
                                 </div>
-                                <div id="trans-status" class="mt-2" style="display:none"></div>
+                                <div class="mb-3">
+                                    <label for="translated-text" class="form-label">Translated Text</label>
+                                    <textarea class="form-control" id="translated-text" rows="5" readonly></textarea>
+                                </div>
+                                <div id="translation-status" class="mt-3" style="display:none"></div>
                             </div>
                         </div>
-                        <!-- Batch Translation -->
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0"><i class="bi bi-layers"></i> Batch Translation</h6>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="transClearBatch()">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
+
+                        <div class="card mt-3">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-folder2-open"></i> Translate Files</h6></div>
                             <div class="card-body">
-                                <div class="mb-2">
-                                    <label class="form-label">Lines to translate <small class="text-muted">(one per line)</small></label>
-                                    <textarea id="trans-batch-input" class="form-control font-monospace" rows="5" placeholder="Line 1&#10;Line 2&#10;Line 3"></textarea>
+                                <div class="mb-3">
+                                    <label for="file-to-translate" class="form-label">Choose File</label>
+                                    <input class="form-control" type="file" id="file-to-translate">
                                 </div>
-                                <button class="btn btn-success" onclick="transBatch()" id="trans-batch-btn">
-                                    <i class="bi bi-layers"></i> Translate All
-                                </button>
-                                <div id="trans-batch-output" class="mt-3" style="display:none">
-                                    <label class="form-label">Results</label>
-                                    <div id="trans-batch-results" class="border rounded p-2" style="max-height:200px;overflow-y:auto;font-size:.85rem"></div>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" onclick="translateFile()">
+                                        <i class="bi bi-arrow-right-circle"></i> Translate File
+                                    </button>
                                 </div>
+                                <div id="file-translation-status" class="mt-3" style="display:none"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Logs Tab -->
-            <div class="tab-pane fade" id="logs" role="tabpanel">
+            </div><div class="tab-pane fade" id="logs" role="tabpanel">
                 <div class="row mt-3">
                     <div class="col-md-8">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">System Logs</h5>
                                 <div>
-                                    <select id="log-level-filter" class="form-select form-select-sm d-inline-block" style="width: auto;" onchange="filterLogs()">
-                                        <option value="">All Levels</option>
-                                        <option value="debug">Debug</option>
-                                        <option value="info">Info</option>
-                                        <option value="warning">Warning</option>
-                                        <option value="error">Error</option>
-                                    </select>
-                                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="refreshLogs()">
-                                        <i class="bi bi-arrow-clockwise"></i>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshLogs()">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh
                                     </button>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="clearLogsView()">
-                                        <i class="bi bi-trash"></i>
+                                    <button class="btn btn-sm btn-danger" onclick="clearLogFile()">
+                                        <i class="bi bi-trash"></i> Clear Log
                                     </button>
                                 </div>
                             </div>
-                            <div class="card-body p-0">
-                                <div id="logs-container" style="height: 500px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;">
-                                    <div class="text-muted text-center p-4">
-                                        <i class="bi bi-file-text"></i><br>
-                                        Loading logs...
-                                    </div>
-                                </div>
+                            <div class="card-body">
+                                <pre id="log-output" style="height: 400px; overflow-y: auto; font-size: 0.8em; background-color: #f8f9fa; padding: 10px; border-radius: 5px;">
+                                    Loading logs...
+                                </pre>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card mb-3">
-                            <div class="card-header">
-                                <h6 class="mb-0">System Health</h6>
-                            </div>
-                            <div class="card-body" id="logs-health-status">
-                                <div class="text-center">
-                                    <div class="spinner-border spinner-border-sm" role="status"></div>
-                                    <small class="d-block mt-2">Loading...</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card mb-3">
-                            <div class="card-header">
-                                <h6 class="mb-0">Error Summary (24h)</h6>
-                            </div>
-                            <div class="card-body" id="error-summary">
-                                <div class="text-center">
-                                    <div class="spinner-border spinner-border-sm" role="status"></div>
-                                    <small class="d-block mt-2">Loading...</small>
-                                </div>
-                            </div>
-                        </div>
                         <div class="card">
                             <div class="card-header">
-                                <h6 class="mb-0">Performance (24h)</h6>
+                                <h5 class="mb-0">Log Settings</h5>
                             </div>
-                            <div class="card-body" id="performance-metrics">
-                                <div class="text-center">
-                                    <div class="spinner-border spinner-border-sm" role="status"></div>
-                                    <small class="d-block mt-2">Loading...</small>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="log-level-filter" class="form-label">Filter Level</label>
+                                    <select class="form-select" id="log-level-filter" onchange="filterLogs()">
+                                        <option value="">All</option>
+                                        <option value="DEBUG">DEBUG</option>
+                                        <option value="INFO">INFO</option>
+                                        <option value="WARNING">WARNING</option>
+                                        <option value="ERROR">ERROR</option>
+                                    </select>
                                 </div>
+                                <div class="mb-3">
+                                    <label for="log-file-path" class="form-label">Log File</label>
+                                    <input type="text" class="form-control" id="log-file-path" readonly>
+                                </div>
+                                <button class="btn btn-outline-primary w-100" onclick="downloadLogs()">
+                                    <i class="bi bi-download"></i> Download Logs
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- API Documentation Tab -->
-            <div class="tab-pane fade" id="docs" role="tabpanel">
+            </div><div class="tab-pane fade" id="docs" role="tabpanel">
                 <div class="row mt-3">
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">API Documentation</h5>
-                                <a href="/docs" target="_blank" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
+                                <a href="/docs" target="_blank" class="btn btn-sm btn-primary me-2">
+                                    <i class="bi bi-box-arrow-up-right"></i> Open FastAPI Docs
+                                </a>
+                                <a href="http://localhost:9697" target="_blank" class="btn btn-sm btn-info">
+                                    <i class="bi bi-book"></i> Open MkDocs
                                 </a>
                             </div>
                             <div class="card-body p-0">
@@ -1483,11 +1250,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </div>        </div>
     </div>
-
-    <!-- llama.cpp Model Picker Modal -->
     <div class="modal fade" id="llamaPickerModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -1529,11 +1293,11 @@
                     <div class="mb-1">
                         <label class="form-label fw-semibold mb-1">
                             <i class="bi bi-search"></i> Search in another directory
-                            <small class="text-muted">(e.g. D:\ to find and copy)</small>
+                            <small class="text-muted">(e.g. ~/.models to search)</small>
                         </label>
                         <div class="input-group">
                             <input type="text" id="llama-picker-search-dir" class="form-control font-monospace"
-                                placeholder="D:\">
+                                placeholder="D:">
                             <button class="btn btn-outline-secondary" onclick="llamaPickerScan(true)">
                                 <i class="bi bi-search"></i> Search
                             </button>
@@ -1543,10 +1307,7 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Add Model Modal -->
-    <div class="modal fade" id="addModelModal" tabindex="-1">
+    </div>    <div class="modal fade" id="addModelModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1589,769 +1350,10 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="static/app.js"></script>
+    </div>    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script type="module" src="/static/app.js"></script>
     <script>
-    // ── Editor Tab ────────────────────────────────────────────────────────
-    async function loadEnvEditor() {
-        const ta = document.getElementById('env-editor');
-        const st = document.getElementById('env-editor-status');
-        try {
-            const d = await fetch('/api/v1/config/env-raw').then(r => r.json());
-            ta.value = d.content || '';
-            st.style.display = 'none';
-        } catch(e) {
-            st.className = 'alert alert-danger py-1 px-2 mb-2';
-            st.textContent = '❌ ' + e.message;
-            st.style.display = '';
-        }
-    }
-
-    async function saveEnvEditor() {
-        const st = document.getElementById('env-editor-status');
-        try {
-            const d = await fetch('/api/v1/config/env-raw', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({content: document.getElementById('env-editor').value})
-            }).then(r => r.json());
-            st.className = d.success ? 'alert alert-success py-1 px-2 mb-2' : 'alert alert-danger py-1 px-2 mb-2';
-            st.textContent = d.success ? '✅ .env сохранён' : '❌ ' + (d.detail || d.error);
-            st.style.display = '';
-        } catch(e) {
-            st.className = 'alert alert-danger py-1 px-2 mb-2';
-            st.textContent = '❌ ' + e.message;
-            st.style.display = '';
-        }
-    }
-
-    async function loadConfigEditor() {
-        const ta = document.getElementById('config-editor');
-        const st = document.getElementById('config-editor-status');
-        try {
-            const d = await fetch('/api/v1/config/raw').then(r => r.json());
-            ta.value = d.content || '';
-            st.style.display = 'none';
-        } catch(e) {
-            st.className = 'alert alert-danger py-1 px-2 mb-2';
-            st.textContent = '❌ ' + e.message;
-            st.style.display = '';
-        }
-    }
-
-    async function saveConfigEditor() {
-        const st = document.getElementById('config-editor-status');
-        try {
-            // Валидация JSON перед сохранением
-            JSON.parse(document.getElementById('config-editor').value);
-            const d = await fetch('/api/v1/config/raw', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({content: document.getElementById('config-editor').value})
-            }).then(r => r.json());
-            st.className = d.success ? 'alert alert-success py-1 px-2 mb-2' : 'alert alert-danger py-1 px-2 mb-2';
-            st.textContent = d.success ? '✅ config.json сохранён' : '❌ ' + (d.detail || d.error);
-            st.style.display = '';
-        } catch(e) {
-            st.className = 'alert alert-danger py-1 px-2 mb-2';
-            st.textContent = '❌ ' + (e instanceof SyntaxError ? 'Невалидный JSON: ' + e.message : e.message);
-            st.style.display = '';
-        }
-    }
-
-    document.getElementById('editor-tab')?.addEventListener('shown.bs.tab', () => {
-        loadEnvEditor();
-        loadConfigEditor();
-    });
-
-    // ── llama.cpp Tab ─────────────────────────────────────────────────────
-    const LLAMA_API = 'http://localhost:9696/api/v1/llama';
-
-    async function llamaCheckStatus() {
-        const el = document.getElementById('llama-status-body');
-        try {
-            const d = await fetch(`${LLAMA_API}/status`).then(r => r.json());
-            const badge = d.running
-                ? '<span class="badge bg-success">Running</span>'
-                : '<span class="badge bg-secondary">Stopped</span>';
-            el.innerHTML = `
-                <table class="table table-sm mb-0">
-                    <tr><td>Status</td><td>${badge}</td></tr>
-                    <tr><td>PID</td><td>${d.pid || '—'}</td></tr>
-                    <tr><td>URL</td><td><code>${d.url}</code></td></tr>
-                </table>`;
-            document.getElementById('llama-openai-url').textContent = d.openai_url;
-        } catch(e) {
-            el.innerHTML = `<div class="text-danger"><small>${e.message}</small></div>`;
-        }
-    }
-
-    async function llamaStart() {
-        const modelPath = document.getElementById('llama-model-path').value.trim();
-        const statusEl  = document.getElementById('llama-start-status');
-        if (!modelPath) return alert('Select a model first');
-        statusEl.style.display = '';
-        statusEl.innerHTML = '<div class="alert alert-info p-2"><div class="spinner-border spinner-border-sm me-2"></div>Starting (model will be copied to ~/models if needed)...</div>';
-        try {
-            const d = await fetch(`${LLAMA_API}/start`, {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({
-                    model_path:      modelPath,
-                    copy_to_models:  true,
-                    port:            parseInt(document.getElementById('llama-port').value),
-                    ctx_size:        parseInt(document.getElementById('llama-ctx').value)  || 4096,
-                    threads:         parseInt(document.getElementById('llama-threads').value) || 0,
-                    n_gpu_layers:    parseInt(document.getElementById('llama-ngl').value)  || 0,
-                })
-            }).then(r => r.json());
-            if (d.success) {
-                statusEl.innerHTML = `<div class="alert alert-success p-2">✅ Started (PID: ${d.pid})<br><small>Model: <code>${d.model}</code><br>OpenAI URL: <code>${d.openai_url}</code></small></div>`;
-                document.getElementById('llama-openai-url').textContent = d.openai_url;
-                setTimeout(llamaCheckStatus, 2000);
-                setTimeout(loadModels, 2500);
-            } else {
-                statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${d.error}</div>`;
-            }
-        } catch(e) {
-            statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${e.message}</div>`;
-        }
-    }
-
-    async function llamaCopyToModels() {
-        const modelPath = document.getElementById('llama-model-path').value.trim();
-        const statusEl  = document.getElementById('llama-start-status');
-        if (!modelPath) return alert('Select a model first');
-        statusEl.style.display = '';
-        statusEl.innerHTML = '<div class="alert alert-info p-2"><div class="spinner-border spinner-border-sm me-2"></div>Copying to ~/models...</div>';
-        try {
-            const d = await fetch(`${LLAMA_API}/models/copy`, {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({model_path: modelPath})
-            }).then(r => r.json());
-            if (d.success) {
-                const msg = d.status === 'already_exists' ? 'Already in ~/models' : `Copied (${d.size_gb} GB)`;
-                statusEl.innerHTML = `<div class="alert alert-success p-2">✅ ${msg}<br><small><code>${d.path}</code></small></div>`;
-                document.getElementById('llama-model-path').value = d.path;
-                llamaScanModels();
-            } else {
-                statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${d.error}</div>`;
-            }
-        } catch(e) {
-            statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${e.message}</div>`;
-        }
-    }
-
-    async function llamaStop() {
-        const d = await fetch(`${LLAMA_API}/stop`, {method:'POST'}).then(r => r.json());
-        alert(d.success ? `✅ ${d.message}` : `❌ ${d.error}`);
-        llamaCheckStatus();
-    }
-
-    async function llamaScanModels() {
-        const listEl = document.getElementById('llama-models-list');
-        listEl.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm"></div> Scanning...</div>';
-        try {
-            const d = await fetch(`${LLAMA_API}/models`).then(r => r.json());
-            if (!d.models?.length) {
-                listEl.innerHTML = '<div class="text-muted text-center p-3"><small>No .gguf files found</small></div>';
-                return;
-            }
-            listEl.innerHTML = d.models.map(m => `
-                <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
-                    <div>
-                        <strong style="font-size:.85rem">${m.name}</strong>
-                        <small class="text-muted d-block">${m.path} &nbsp;·&nbsp; ${m.size_gb} GB</small>
-                    </div>
-                    <button class="btn btn-sm btn-outline-primary" onclick="llamaSelectModel('${m.path.replace(/\\/g,'\\\\')}')">Use</button>
-                </div>`).join('');
-        } catch(e) {
-            listEl.innerHTML = `<div class="text-danger p-3"><small>${e.message}</small></div>`;
-        }
-    }
-
-    function llamaSelectModel(path) {
-        document.getElementById('llama-model-path').value = path;
-    }
-
-    // ── Model Picker ─────────────────────────────────────────────────────
-
-    let _pickerModal = null;
-
-    function llamaOpenPicker() {
-        if (!_pickerModal) {
-            _pickerModal = new bootstrap.Modal(document.getElementById('llamaPickerModal'));
-        }
-        // Предзаполнить текущим значением
-        const cur = document.getElementById('llama-model-path').value;
-        if (cur) document.getElementById('llama-picker-manual').value = cur;
-        _pickerModal.show();
-        // Автоскан при открытии
-        llamaPickerScan();
-    }
-
-    function llamaPickerConfirmManual() {
-        const path = document.getElementById('llama-picker-manual').value.trim();
-        if (!path) return;
-        document.getElementById('llama-model-path').value = path;
-        _pickerModal?.hide();
-    }
-
-    async function llamaPickerScan() {
-        const listEl = document.getElementById('llama-picker-list');
-        const extraDir = document.getElementById('llama-picker-search-dir').value.trim();
-        listEl.innerHTML = '<div class="text-center p-4"><div class="spinner-border"></div><div class="mt-2">Scanning...</div></div>';
-
-        try {
-            const url = extraDir
-                ? `${LLAMA_API}/models?extra_dir=${encodeURIComponent(extraDir)}`
-                : `${LLAMA_API}/models`;
-            const d = await fetch(url).then(r => r.json());
-
-            if (!d.models?.length) {
-                listEl.innerHTML = '<div class="text-muted text-center p-4">No .gguf files found.<br><small>Enter a directory above and click Scan.</small></div>';
-                return;
-            }
-
-            listEl.innerHTML = d.models.map(m => `
-                <div class="d-flex align-items-center gap-3 px-3 py-2 border-bottom llama-picker-row"
-                     style="cursor:pointer" onclick="llamaPickerSelect('${m.path.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"
-                     onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background=''">
-                    <i class="bi bi-file-earmark-binary text-primary fs-5"></i>
-                    <div class="flex-grow-1 overflow-hidden">
-                        <div class="fw-semibold text-truncate" style="font-size:.9rem">${m.name}</div>
-                        <div class="text-muted" style="font-size:.75rem">${m.path}</div>
-                    </div>
-                    <span class="badge bg-secondary">${m.size_gb} GB</span>
-                    <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();llamaPickerSelect('${m.path.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">Select</button>
-                </div>`).join('');
-        } catch(e) {
-            listEl.innerHTML = `<div class="text-danger p-3">${e.message}</div>`;
-        }
-    }
-
-    function llamaPickerSelect(path) {
-        document.getElementById('llama-model-path').value = path;
-        document.getElementById('llama-picker-manual').value = path;
-        _pickerModal?.hide();
-    }
-
-    function llamaCopyUrl() {
-        const url = document.getElementById('llama-openai-url').textContent;
-        navigator.clipboard.writeText(url).then(() => alert('✅ Copied: ' + url));
-    }
-
-    document.getElementById('llama-tab')?.addEventListener('shown.bs.tab', () => {
-        llamaCheckStatus();
-    });
-
-    // ── HuggingFace Tab ──────────────────────────────────────────────────────
-    const HF_API = 'http://localhost:9696/api/v1/hf';
-
-    async function hfCheckStatus() {
-        const el = document.getElementById('hf-status-body');
-        el.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm"></div></div>';
-        try {
-            const d = await fetch(`${HF_API}/status`).then(r => r.json());
-            const ok  = v => v ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-danger">Missing</span>';
-            const warn = document.getElementById('hf-token-warning');
-            if (warn) warn.style.display = d.hf_token_set ? 'none' : '';
-            el.innerHTML = `
-                <table class="table table-sm mb-0">
-                    <tr><td>transformers</td><td>${ok(d.transformers?.available)} ${d.transformers?.version||''}</td></tr>
-                    <tr><td>huggingface_hub</td><td>${ok(d.huggingface_hub?.available)} ${d.huggingface_hub?.version||''}</td></tr>
-                    <tr><td>torch</td><td>${ok(d.torch?.available)} ${d.torch?.version||''}</td></tr>
-                    <tr><td>CUDA</td><td>${d.torch?.cuda ? '<span class="badge bg-success">Available</span>' : '<span class="badge bg-secondary">CPU only</span>'}</td></tr>
-                    <tr><td>HF Token</td><td>${d.hf_token_set
-                        ? '<span class="badge bg-success">Set ✓</span>'
-                        : '<span class="badge bg-warning">Not set — go to Settings</span>'}</td></tr>
-                </table>
-                ${!d.transformers?.available ? `<div class="alert alert-warning mt-2 mb-0 p-2"><small>Run: <code>${d.install_cmd}</code></small></div>` : ''}`;
-        } catch(e) { el.innerHTML = `<div class="text-danger"><small>${e.message}</small></div>`; }
-    }
-
-    // ── Hub Models ─────────────────────────────────────────────────────
-
-    let _hubData = null;
-    let _hubTab  = 'my';
-
-    async function hfLoadHubModels() {
-        const listEl = document.getElementById('hf-hub-list');
-        listEl.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm"></div> Loading from Hub...</div>';
-        try {
-            _hubData = await fetch(`${HF_API}/hub/models`).then(r => r.json());
-            if (!_hubData.success && _hubData.error === 'HF_TOKEN not set') {
-                listEl.innerHTML = `<div class="alert alert-warning m-2 p-2">
-                    ⚠️ HF Token не задан.<br>
-                    <small>1. Перейдите в <strong>Settings → HuggingFace</strong><br>
-                    2. Введите токен и нажмите Save All<br>
-                    3. Вернитесь сюда и нажмите Load</small>
-                </div>`;
-                // Показываем публичные модели даже без токена
-                hfSwitchHubTab('public');
-                return;
-            }
-            hfSwitchHubTab(_hubTab);
-        } catch(e) {
-            listEl.innerHTML = `<div class="text-danger p-3">${e.message}</div>`;
-        }
-    }
-
-    function hfSwitchHubTab(tab) {
-        _hubTab = tab;
-        document.getElementById('hf-my-tab')?.classList.toggle('active', tab === 'my');
-        document.getElementById('hf-public-tab')?.classList.toggle('active', tab === 'public');
-        if (!_hubData) return;
-        const listEl = document.getElementById('hf-hub-list');
-        const models  = tab === 'my' ? (_hubData.user_models || []) : (_hubData.public_models || []);
-
-        if (!models.length) {
-            listEl.innerHTML = tab === 'my'
-                ? '<div class="text-muted text-center p-3"><small>No models in your account</small></div>'
-                : '<div class="text-muted text-center p-3"><small>No public models</small></div>';
-            return;
-        }
-
-        listEl.innerHTML = models.map(m => {
-            const note    = m.note    ? `<span class="text-muted"> — ${m.note}</span>`    : '';
-            const size    = m.size    ? `<span class="badge bg-light text-dark me-1">${m.size}</span>` : '';
-            const priv    = m.private ? '<span class="badge bg-secondary me-1">private</span>' : '';
-            const pipe    = m.pipeline ? `<span class="badge bg-info me-1">${m.pipeline}</span>` : '';
-            return `
-            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
-                <div class="overflow-hidden">
-                    <div style="font-size:.85rem;font-weight:600">${m.id}${note}</div>
-                    <div>${priv}${pipe}${size}</div>
-                </div>
-                <div class="d-flex gap-1 ms-2 flex-shrink-0">
-                    <button class="btn btn-sm btn-outline-secondary" title="Open on HuggingFace"
-                        onclick="window.open('https://huggingface.co/${m.id}','_blank')">
-                        <i class="bi bi-box-arrow-up-right"></i>
-                    </button>
-                    <button class="btn btn-sm btn-success"
-                        onclick="hfSelectAndDownload('${m.id}')">
-                        <i class="bi bi-download"></i>
-                    </button>
-                </div>
-            </div>`;
-        }).join('');
-
-        // Показываем инструкцию для публичных моделей
-        if (tab === 'public') {
-            listEl.insertAdjacentHTML('beforeend', `
-                <div class="alert alert-info m-2 p-2" style="font-size:.8rem">
-                    <strong>ℹ️ Как использовать публичные модели:</strong><br>
-                    • <strong>Без лицензии</strong> (Phi, Qwen, TinyLlama, DeepSeek): нажмите ↓ — скачается сразу<br>
-                    • <strong>С лицензией</strong> (Gemma, Llama, Mistral): сначала примите лицензию на 
-                    <a href="https://huggingface.co" target="_blank">huggingface.co</a> → кнопка ↗ откроет страницу модели<br>
-                    • HF Token должен быть задан в Settings для закрытых моделей
-                </div>`);
-        }
-    }
-
-    function hfSelectAndDownload(modelId) {
-        document.getElementById('hf-download-id').value = modelId;
-        hfDownload();
-    }
-
-    async function hfRefreshModels() {
-        try {
-            const d = await fetch(`${HF_API}/models`).then(r => r.json());
-            const dlEl = document.getElementById('hf-downloaded-list');
-            const ldEl = document.getElementById('hf-loaded-list');
-
-            if (!d.downloaded?.length) {
-                dlEl.innerHTML = '<div class="text-muted text-center p-3"><small>No models downloaded yet</small></div>';
-            } else {
-                dlEl.innerHTML = d.downloaded.map(m => `
-                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
-                        <div>
-                            <strong style="font-size:.85rem">${m.id}</strong>
-                            <small class="text-muted d-block">${m.size_mb} MB</small>
-                        </div>
-                        <div class="d-flex gap-1">
-                            ${m.loaded
-                                ? `<button class="btn btn-sm btn-outline-danger" onclick="hfUnload('${m.id}')">Unload</button>`
-                                : `<button class="btn btn-sm btn-outline-success" onclick="hfLoad('${m.id}')">Load</button>`
-                            }
-                        </div>
-                    </div>`).join('');
-            }
-
-            if (!d.loaded?.length) {
-                ldEl.innerHTML = '<div class="text-muted text-center p-3"><small>No models in memory</small></div>';
-            } else {
-                ldEl.innerHTML = d.loaded.map(m => `
-                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
-                        <span style="font-size:.85rem">${m.id}</span>
-                        <button class="btn btn-sm btn-outline-danger" onclick="hfUnload('${m.id}')">Unload</button>
-                    </div>`).join('');
-            }
-        } catch(e) { console.error(e); }
-    }
-
-    async function hfDownload() {
-        const modelId  = document.getElementById('hf-download-id').value.trim();
-        const statusEl = document.getElementById('hf-download-status');
-        if (!modelId) return alert('Enter model ID');
-        statusEl.style.display = '';
-        statusEl.innerHTML = '<div class="alert alert-info p-2"><div class="spinner-border spinner-border-sm me-2"></div>Downloading... This may take several minutes.</div>';
-        try {
-            const d = await fetch(`${HF_API}/models/download`, {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({ model_id: modelId })
-            }).then(r => r.json());
-            statusEl.innerHTML = d.success
-                ? `<div class="alert alert-success p-2">✅ Downloaded to: <code>${d.path}</code></div>`
-                : `<div class="alert alert-danger p-2">❌ ${d.error}
-                    ${d.error?.includes('license') || d.error?.includes('401') || d.error?.includes('403')
-                        ? `<br><small>→ <a href="https://huggingface.co/${modelId}" target="_blank">Примите лицензию на huggingface.co</a></small>`
-                        : ''}
-                   </div>`;
-            if (d.success) hfRefreshModels();
-        } catch(e) { statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${e.message}</div>`; }
-    }
-
-    async function hfLoad(modelId) {
-        const device = document.getElementById('hf-gen-device')?.value || 'auto';
-        // Показываем спиннер на кнопке
-        const btn = document.querySelector(`[onclick="hfLoad('${modelId}')"]`);
-        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; }
-        const d = await fetch(`${HF_API}/models/load`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({model_id: modelId, device})
-        }).then(r => r.json());
-        if (!d.success) alert(`❌ ${d.error}`);
-        hfRefreshModels();
-        hfUpdateChatModelSelect();
-    }
-
-    async function hfUnload(modelId) {
-        const d = await fetch(`${HF_API}/models/unload`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({model_id: modelId})
-        }).then(r => r.json());
-        if (!d.success) alert(`❌ ${d.error}`);
-        hfRefreshModels();
-        hfUpdateChatModelSelect();
-    }
-
-    // Добавляем загруженные HF модели в селект чата
-    async function hfUpdateChatModelSelect() {
-        try {
-            const d = await fetch(`${HF_API}/models`).then(r => r.json());
-            const sel = document.getElementById('chat-model');
-            if (!sel) return;
-            // Удаляем старые HF опции
-            [...sel.options].filter(o => o.dataset.hf).forEach(o => o.remove());
-            if (d.loaded?.length) {
-                const group = document.createElement('optgroup');
-                group.label = '— HuggingFace (loaded) —';
-                d.loaded.forEach(m => {
-                    const opt = new Option(`🤗 ${m.id}`, `hf::${m.id}`);
-                    opt.dataset.hf = '1';
-                    group.appendChild(opt);
-                });
-                sel.appendChild(group);
-            }
-        } catch(e) { console.error(e); }
-    }
-
-    async function hfGenerate() {
-        const modelId = document.getElementById('hf-gen-model').value.trim();
-        const prompt  = document.getElementById('hf-gen-prompt').value.trim();
-        const tokens  = parseInt(document.getElementById('hf-gen-tokens').value) || 256;
-        const temp    = parseFloat(document.getElementById('hf-gen-temp').value) || 0.7;
-        const outEl   = document.getElementById('hf-gen-output');
-        if (!modelId || !prompt) return alert('Fill in Model ID and Prompt');
-        outEl.style.display = '';
-        outEl.textContent = '⏳ Generating...';
-        try {
-            const d = await fetch(`${HF_API}/generate`, {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({model_id: modelId, prompt, max_new_tokens: tokens, temperature: temp})
-            }).then(r => r.json());
-            outEl.textContent = d.success ? d.content : `❌ ${d.error}`;
-        } catch(e) { outEl.textContent = `❌ ${e.message}`; }
-    }
-
-    // Сохранение HF токена в .env через отдельный endpoint
-    async function saveHFToken() {
-        const token = document.getElementById('config-hf-token')?.value?.trim();
-        if (!token) { alert('Введите токен'); return; }
-        try {
-            const r = await fetch('/api/v1/config/env', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({key: 'HF_TOKEN', value: token})
-            });
-            // Сохраняем оба варианта названия — разные части кода используют разные имена
-            await fetch('/api/v1/config/env', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({key: 'HUGGING_FACE_TOKEN', value: token})
-            });
-            const d = await r.json();
-            if (d.success) alert('✅ Токен сохранён в .env');
-            else alert('Ошибка: ' + (d.detail || d.error));
-        } catch(e) { alert('Ошибка запроса: ' + e); }
-    }
-
-    // Загрузка HF настроек в Settings
-    function loadHFConfigFields(cfg) {
-        const hf = cfg?.huggingface || {};
-        const el = id => document.getElementById(id);
-        if (el('config-hf-token'))      el('config-hf-token').value      = hf.token      || '';
-        if (el('config-hf-models-dir')) el('config-hf-models-dir').value = hf.models_dir || './models/hf';
-        if (el('config-hf-device'))     el('config-hf-device').value     = hf.device     || 'auto';
-        if (el('config-hf-max-tokens')) el('config-hf-max-tokens').value = hf.default_max_new_tokens || 512;
-    }
-
-    function collectHFConfigFields() {
-        const el = id => document.getElementById(id);
-        return {
-            token:                  el('config-hf-token')?.value      || '',
-            models_dir:             el('config-hf-models-dir')?.value || './models/hf',
-            device:                 el('config-hf-device')?.value     || 'auto',
-            default_max_new_tokens: parseInt(el('config-hf-max-tokens')?.value) || 512,
-            default_temperature:    0.7
-        };
-    }
-
-    // Перехватываем loadConfigFields и saveConfigFields из app.js
-    document.addEventListener('DOMContentLoaded', () => {
-        const origLoad = window.loadConfigFields;
-        if (origLoad) {
-            window.loadConfigFields = async function() {
-                await origLoad();
-                const r = await fetch('/api/v1/config').then(x => x.json()).catch(() => ({}));
-                loadHFConfigFields(r.config);
-            };
-        }
-        const origSave = window.saveConfigFields;
-        if (origSave) {
-            window.saveConfigFields = async function() {
-                const r = await fetch('/api/v1/config').then(x => x.json()).catch(() => ({}));
-                const cfg = r.config || {};
-                cfg.huggingface = collectHFConfigFields();
-                await fetch('/api/v1/config', {
-                    method: 'POST',
-                    headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({config: cfg})
-                });
-                await origSave();
-            };
-        }
-        // Автозагрузка при открытии вкладки
-        document.getElementById('hf-tab')?.addEventListener('shown.bs.tab', () => {
-            hfCheckStatus();
-            hfRefreshModels();
-            hfLoadHubModels();
-        });
-    });
-    // ── Agent Tab ────────────────────────────────────────────────────────────────────
-    const AGENT_API = 'http://localhost:9696/api/v1/agent';
-
-    async function agentLoadTools() {
-        // Загрузить список агентов
-        try {
-            const dl = await fetch(`${AGENT_API}/list`).then(r => r.json());
-            const sel = document.getElementById('agent-name');
-            if (sel && dl.success) {
-                sel.innerHTML = dl.agents.map(a =>
-                    `<option value="${a.name}" title="${a.description}">${a.name}</option>`
-                ).join('');
-            }
-        } catch(e) { logger.error(e); }
-
-        // Загрузить инструменты текущего агента
-        await agentRefreshTools();
-    }
-
-    async function agentRefreshTools() {
-        const el   = document.getElementById('agent-tools-list');
-        const name = document.getElementById('agent-name')?.value || 'powershell';
-        if (!el) return;
-        try {
-            const d = await fetch(`${AGENT_API}/${name}/tools`).then(r => r.json());
-            if (!d.success) { el.innerHTML = '<div class="text-danger p-2">Error</div>'; return; }
-            el.innerHTML = d.tools.map(t => `
-                <div class="px-3 py-2 border-bottom">
-                    <strong style="font-size:.8rem">${t}</strong>
-                    <div class="text-muted" style="font-size:.75rem">${d.descriptions[t]}</div>
-                </div>`).join('');
-        } catch(e) {
-            el.innerHTML = `<div class="text-danger p-2">${e.message}</div>`;
-        }
-    }
-
-    async function agentRun() {
-        const input   = document.getElementById('agent-input');
-        const btn     = document.getElementById('agent-btn');
-        const msgs    = document.getElementById('agent-messages');
-        const message = input.value.trim();
-        if (!message) return;
-
-        // Добавляем сообщение пользователя
-        if (msgs.querySelector('.text-muted.text-center')) msgs.innerHTML = '';
-        msgs.innerHTML += `<div class="mb-2"><span class="badge bg-primary">You</span> <span>${message}</span></div>`;
-        input.value = '';
-        btn.disabled = true;
-        btn.innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
-
-        const thinkingId = 'think-' + Date.now();
-        msgs.innerHTML += `<div id="${thinkingId}" class="mb-2 text-muted"><i class="bi bi-gear-fill"></i> Агент думает...</div>`;
-        msgs.scrollTop = msgs.scrollHeight;
-
-        try {
-            const d = await fetch(`${AGENT_API}/run`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    message,
-                    agent:          document.getElementById('agent-name')?.value || 'powershell',
-                    model:          document.getElementById('agent-model').value.trim() || undefined,
-                    temperature:    parseFloat(document.getElementById('agent-temp').value) || 0.3,
-                    max_iterations: parseInt(document.getElementById('agent-max-iter').value) || 5
-                })
-            }).then(r => r.json());
-
-            document.getElementById(thinkingId)?.remove();
-
-            // Показываем вызовы инструментов
-            if (d.tool_calls?.length) {
-                for (const tc of d.tool_calls) {
-                    msgs.innerHTML += `
-                        <div class="mb-2 p-2 border rounded" style="background:#f0f4ff;font-size:.82rem">
-                            <i class="bi bi-gear"></i> <strong>${tc.tool}</strong>
-                            <code class="d-block mt-1 text-muted">${JSON.stringify(tc.arguments)}</code>
-                            <pre class="mt-1 mb-0" style="font-size:.78rem;max-height:120px;overflow-y:auto;white-space:pre-wrap">${tc.result}</pre>
-                        </div>`;
-                }
-            }
-
-            // Финальный ответ
-            if (d.success) {
-                msgs.innerHTML += `<div class="mb-3"><span class="badge bg-success">Agent</span> <span style="white-space:pre-wrap">${d.answer || ''}</span></div>`;
-                if (d.note) msgs.innerHTML += `<div class="text-muted mb-2" style="font-size:.8rem">⚠️ ${d.note}</div>`;
-            } else {
-                msgs.innerHTML += `<div class="mb-2 text-danger">❌ ${d.error}</div>`;
-            }
-        } catch(e) {
-            document.getElementById(thinkingId)?.remove();
-            msgs.innerHTML += `<div class="mb-2 text-danger">❌ ${e.message}</div>`;
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-send"></i> Run';
-            msgs.scrollTop = msgs.scrollHeight;
-        }
-    }
-
-    document.getElementById('agent-tab')?.addEventListener('shown.bs.tab', agentLoadTools);
-
-    // ── MCP PowerShell Servers ────────────────────────────────────────────
-    const MCP_API = 'http://localhost:9696/api/v1/mcp-powershell';
-
-    async function mcpLoadServers() {
-        const list = document.getElementById('mcp-servers-list');
-        if (!list) return;
-        list.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm"></div></div>';
-        try {
-            const d = await fetch(`${MCP_API}/servers`).then(r => r.json());
-            if (!d.success || !d.servers.length) {
-                list.innerHTML = '<div class="text-muted text-center p-4">No MCP servers configured in settings.json</div>';
-                return;
-            }
-            list.innerHTML = d.servers.map(srv => {
-                const running = srv.status === 'running';
-                return `
-                <div class="d-flex align-items-center gap-3 px-3 py-2 border-bottom" id="mcp-row-${srv.name}">
-                    <div class="flex-grow-1">
-                        <strong style="font-size:.9rem">${srv.name}</strong>
-                        <small class="text-muted d-block">${srv.description || ''}</small>
-                    </div>
-                    <span class="badge ${running ? 'bg-success' : 'bg-secondary'}">
-                        ${running ? '&#9679; Running' : '&#9675; Stopped'}
-                    </span>
-                    ${running
-                        ? `<button class="btn btn-sm btn-danger" onclick="mcpStop('${srv.name}')"><i class="bi bi-stop-fill"></i> Stop</button>`
-                        : `<button class="btn btn-sm btn-success" onclick="mcpStart('${srv.name}')"><i class="bi bi-play-fill"></i> Start</button>`
-                    }
-                </div>`;
-            }).join('');
-        } catch(e) {
-            list.innerHTML = `<div class="text-danger p-3">Error: ${e.message}</div>`;
-        }
-    }
-
-    async function mcpStart(name) {
-        try {
-            const d = await fetch(`${MCP_API}/servers/${name}/start`, {method:'POST'}).then(r => r.json());
-            if (!d.success) alert(`❌ ${d.detail || d.message}`);
-        } catch(e) { alert(`❌ ${e.message}`); }
-        setTimeout(mcpLoadServers, 800);
-    }
-
-    async function mcpStop(name) {
-        try {
-            const d = await fetch(`${MCP_API}/servers/${name}/stop`, {method:'POST'}).then(r => r.json());
-            if (!d.success) alert(`❌ ${d.detail || d.message}`);
-        } catch(e) { alert(`❌ ${e.message}`); }
-        setTimeout(mcpLoadServers, 800);
-    }
-
-    async function mcpOpenSettingsEditor() {
-        const ta   = document.getElementById('mcp-settings-editor');
-        const btns = document.getElementById('mcp-settings-btns');
-        const st   = document.getElementById('mcp-settings-status');
-        try {
-            const d = await fetch(`${MCP_API}/settings`).then(r => r.json());
-            ta.value = JSON.stringify(d.settings, null, 2);
-            ta.style.display = '';
-            btns.style.display = '';
-            st.style.display = 'none';
-        } catch(e) {
-            st.className = 'alert alert-danger py-1 px-2';
-            st.textContent = '❌ ' + e.message;
-            st.style.display = '';
-        }
-    }
-
-    async function mcpSaveSettings() {
-        const ta = document.getElementById('mcp-settings-editor');
-        const st = document.getElementById('mcp-settings-status');
-        try {
-            const settings = JSON.parse(ta.value);
-            const d = await fetch(`${MCP_API}/settings`, {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({settings})
-            }).then(r => r.json());
-            st.className = d.success ? 'alert alert-success py-1 px-2' : 'alert alert-danger py-1 px-2';
-            st.textContent = d.success ? '✅ Saved' : '❌ ' + (d.detail || d.message);
-            st.style.display = '';
-            if (d.success) mcpLoadServers();
-        } catch(e) {
-            st.className = 'alert alert-danger py-1 px-2';
-            st.textContent = '❌ ' + (e instanceof SyntaxError ? 'Invalid JSON: ' + e.message : e.message);
-            st.style.display = '';
-        }
-    }
-
-    function mcpCloseSettingsEditor() {
-        document.getElementById('mcp-settings-editor').style.display = 'none';
-        document.getElementById('mcp-settings-btns').style.display = 'none';
-    }
-
-    document.getElementById('mcp-tab')?.addEventListener('shown.bs.tab', mcpLoadServers);
-
-    </script>
-</body>
+    // Инициализация вкладок и специфичных для страницы событий
+    // Эта логика перенесена в app.js для централизованного управления
+    </script></body>
 </html>

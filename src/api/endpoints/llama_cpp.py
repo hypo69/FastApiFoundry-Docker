@@ -17,8 +17,8 @@
 # Project: FastApiFoundry (Docker)
 # Version: 0.4.1
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
+# Copyright: © 2026 hypo69
+# Copyright: © 2026 hypo69
 # =============================================================================
 
 import subprocess
@@ -37,7 +37,7 @@ _server_process: subprocess.Popen | None = None
 
 # Настройки по умолчанию — переопределяются через .env или тело запроса
 DEFAULT_HOST    = "127.0.0.1"
-DEFAULT_PORT    = 8080
+DEFAULT_PORT    = 9780
 DEFAULT_CTX     = 4096
 DEFAULT_THREADS = os.cpu_count() or 4
 

@@ -10,8 +10,8 @@
 # Project: FastApiFoundry (Docker)
 # Version: 0.4.1
 # Author: hypo69
-# License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
-# Copyright: © 2025 AiStros
+# Copyright: © 2026 hypo69
+# Copyright: © 2026 hypo69
 # =============================================================================
 
 import json
@@ -52,15 +52,15 @@ class Config:
     # FastAPI Server settings
     @property
     def api_host(self) -> str:
-        return self._config_data.get("fastapi_server", {}).get("host", "0.0.0.0")
+        return self._config_data.get("fastapi_server", {}).get("host") or "0.0.0.0"
     
     @property
     def api_port(self) -> int:
-        return self._config_data.get("fastapi_server", {}).get("port", 8000)
+        return self._config_data.get("fastapi_server", {}).get("port") or 9696
     
     @property
     def api_workers(self) -> int:
-        return self._config_data.get("fastapi_server", {}).get("workers", 1)
+        return self._config_data.get("fastapi_server", {}).get("workers") or 1
     
     @property
     def api_reload(self) -> bool:

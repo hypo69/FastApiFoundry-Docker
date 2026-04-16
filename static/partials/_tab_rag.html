@@ -1,0 +1,126 @@
+<div class="tab-pane fade" id="rag" role="tabpanel">
+                <div class="row mt-3">
+                    <!-- Left column: Status + Config -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">RAG System Status</h5>
+                                <button class="btn btn-sm btn-outline-primary" onclick="refreshRAGStatus()">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </div>
+                            <div class="card-body" id="rag-status">
+                                <div class="text-center">
+                                    <div class="spinner-border" role="status"></div>
+                                    <p class="mt-2">Loading RAG status...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-3">
+                            <div class="card-header"><h6 class="mb-0">RAG Configuration</h6></div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="rag-enabled">
+                                        <label class="form-check-label" for="rag-enabled">Enable RAG System</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Index Directory</label>
+                                    <input type="text" id="rag-index-dir" class="form-control" placeholder="./rag_index">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Chunk Size</label>
+                                    <input type="number" id="rag-chunk-size" class="form-control" placeholder="1000">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Embedding Model</label>
+                                    <select id="rag-model" class="form-select">
+                                        <option value="sentence-transformers/all-MiniLM-L6-v2">all-MiniLM-L6-v2 (Default, fast)</option>
+                                        <option value="sentence-transformers/all-mpnet-base-v2">all-mpnet-base-v2 (Better quality)</option>
+                                        <option value="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2">paraphrase-multilingual (Multilingual)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Top K Results</label>
+                                    <input type="number" id="rag-top-k" class="form-control" placeholder="5">
+                                </div>
+                                <button type="button" class="btn btn-primary" onclick="saveRAGConfig()">
+                                    <i class="bi bi-check-lg"></i> Save Configuration
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right column: Build + Manage -->
+                    <div class="col-md-6">
+                        <!-- Build Index -->
+                        <div class="card">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-database-add"></i> Build Index</h6></div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Directory to index</label>
+                                    <div class="input-group">
+                                        <select id="rag-docs-dir" class="form-select">
+                                            <option value="">Loading directories...</option>
+                                        </select>
+                                        <button class="btn btn-outline-secondary" onclick="ragLoadDirs()" title="Refresh list">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Or enter path manually:</div>
+                                    <input type="text" id="rag-docs-dir-manual" class="form-control mt-1" placeholder="e.g. docs">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Output directory</label>
+                                    <input type="text" id="rag-build-output" class="form-control" value="./rag_index">
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label">Chunk size</label>
+                                        <input type="number" id="rag-build-chunk" class="form-control" value="1000">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Overlap</label>
+                                        <input type="number" id="rag-build-overlap" class="form-control" value="50">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Embedding model</label>
+                                    <select id="rag-build-model" class="form-select">
+                                        <option value="sentence-transformers/all-mpnet-base-v2">all-mpnet-base-v2 (recommended)</option>
+                                        <option value="sentence-transformers/all-MiniLM-L6-v2">all-MiniLM-L6-v2 (fast)</option>
+                                        <option value="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2">paraphrase-multilingual</option>
+                                    </select>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-success" onclick="ragBuildIndex()" id="rag-build-btn">
+                                        <i class="bi bi-database-add"></i> Build Index
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="ragClearIndex()">
+                                        <i class="bi bi-trash"></i> Clear Index
+                                    </button>
+                                </div>
+                                <div id="rag-build-status" class="mt-3" style="display:none"></div>
+                            </div>
+                        </div>
+
+                        <!-- Test Search -->
+                        <div class="card mt-3">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-search"></i> Test Search</h6></div>
+                            <div class="card-body">
+                                <div class="input-group mb-2">
+                                    <input type="text" id="rag-test-query" class="form-control" placeholder="Enter test query...">
+                                    <button class="btn btn-info" onclick="testRAGSearch()">
+                                        <i class="bi bi-search"></i> Search
+                                    </button>
+                                </div>
+                                <div id="rag-test-results" style="display:none">
+                                    <div id="rag-search-output" class="border rounded p-2" style="max-height:200px;overflow-y:auto;font-size:.85rem"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>

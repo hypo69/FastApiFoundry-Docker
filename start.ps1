@@ -197,6 +197,37 @@ if ($foundryPort) {
 }
 
 # -----------------------------------------------------------------------------
+# Docs Server (mkdocs serve)
+# -----------------------------------------------------------------------------
+Write-Host '🔍 Checking Docs Server configuration...' -ForegroundColor Cyan
+
+# Read config.json
+try {
+    $configContent = Get-Content "$Root\$Config" | Out-String
+    $parsedConfig = $configContent | ConvertFrom-Json
+    $docsServerConfig = $parsedConfig.docs_server
+} catch {
+    Write-Host "❌ Error reading config.json for docs_server: $_" -ForegroundColor Red
+    $docsServerConfig = $null
+}
+
+if ($docsServerConfig -and $docsServerConfig.enabled) {
+    Write-Host "🚀 Starting MkDocs server on port $($docsServerConfig.port)..." -ForegroundColor Yellow
+    try {
+        Start-Process powershell.exe -ArgumentList @(
+            '-NonInteractive', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-Command', "mkdocs serve -a 0.0.0.0:$($docsServerConfig.port)"
+        ) -WindowStyle Minimized -PassThru | Out-Null
+        Write-Host "✅ MkDocs server started in background" -ForegroundColor Green
+    } catch {
+        Write-Host "❌ Failed to start MkDocs server: $_" -ForegroundColor Red
+        Write-Host "⚠️ Continuing without docs server." -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "💡 Docs server is disabled in config.json (skipping)" -ForegroundColor Gray
+}
+
+# -----------------------------------------------------------------------------
 # llama.cpp (optional — if LLAMA_MODEL_PATH is set in .env)
 # -----------------------------------------------------------------------------
 $llamaModelPath = [System.Environment]::GetEnvironmentVariable('LLAMA_MODEL_PATH')
