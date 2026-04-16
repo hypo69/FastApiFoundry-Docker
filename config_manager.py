@@ -117,7 +117,8 @@ class Config:
     
     @property
     def rag_index_dir(self) -> str:
-        return self._config_data.get("rag_system", {}).get("index_dir", "./rag_index")
+        raw = self._config_data.get("rag_system", {}).get("index_dir") or "~/.rag"
+        return str(Path(raw).expanduser())
     
     @property
     def rag_model(self) -> str:

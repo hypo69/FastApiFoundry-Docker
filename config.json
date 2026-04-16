@@ -15,7 +15,7 @@
   },
   "rag_system": {
     "enabled": false,
-    "index_dir": "",
+    "index_dir": "~/.rag",
     "chunk_size": null
   },
   "security": {

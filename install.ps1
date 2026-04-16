@@ -239,7 +239,7 @@ $isFirstInstall = -not (Test-Path (Join-Path $Root "venv\.first_install_done"))
 if ($isFirstInstall) {
     $answer = Read-Host "`nDownload default models? (y/N)"
     if ($answer -eq 'y' -or $answer -eq 'Y') {
-        & (Join-Path $Root "install-models.ps1")
+        & (Join-Path $Root "install\install-models.ps1")
     }
     "" | Out-File (Join-Path $Root "venv\.first_install_done") -Encoding UTF8
 }

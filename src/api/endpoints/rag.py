@@ -198,129 +198,147 @@ async def list_indexable_dirs():
 
 # ── RAG Profiles (multiple named index sets) ─────────────────────────────────
 
-RAG_PROFILES_DIR = Path("rag_index/_profiles")
+RAG_HOME = Path.home() / ".rag"
 
 
-def _profiles_dir() -> Path:
-    RAG_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
-    return RAG_PROFILES_DIR
+def _rag_home() -> Path:
+    """~/.rag — корневая директория всех RAG баз. Создаётся автоматически."""
+    RAG_HOME.mkdir(parents=True, exist_ok=True)
+    return RAG_HOME
 
+
+def _profile_index_dir(safe_name: str) -> Path:
+    """Путь к индексу конкретной базы: ~/.rag/<name>/"""
+    return _rag_home() / safe_name
+
+
+def _safe(name: str) -> str:
+    """Безопасное имя директории из произвольной строки."""
+    return "".join(c if c.isalnum() or c in "-_" else "_" for c in name.strip())
+
+
+# ── Браузер файловой системы ──────────────────────────────────────────────────
+
+@router.get("/browse")
+async def browse_filesystem(path: str = ""):
+    """Возвращает содержимое директории для браузера выбора папки.
+
+    Query: path — абсолютный путь (по умолчанию домашняя директория).
+    """
+    base = Path(path).expanduser() if path else Path.home()
+    if not base.exists() or not base.is_dir():
+        return {"success": False, "error": f"Directory not found: {base}"}
+
+    skip = {"__pycache__", "node_modules", ".git", "venv", ".venv"}
+    dirs = []
+    for p in sorted(base.iterdir()):
+        if p.is_dir() and p.name not in skip:
+            dirs.append({"name": p.name, "path": str(p)})
+
+    return {
+        "success": True,
+        "current": str(base),
+        "parent": str(base.parent) if base.parent != base else None,
+        "dirs": dirs,
+    }
+
+
+# ── Профили RAG баз ───────────────────────────────────────────────────────────
 
 @router.get("/profiles")
 async def list_rag_profiles():
-    """List saved RAG profiles."""
-    d = _profiles_dir()
+    """Список всех RAG баз в ~/.rag/."""
     profiles = []
-    for meta_file in sorted(d.glob("*.json")):
-        try:
-            meta = json.loads(meta_file.read_text(encoding="utf-8"))
-            profiles.append(meta)
-        except Exception:
-            pass
+    for d in sorted(_rag_home().iterdir()):
+        if not d.is_dir():
+            continue
+        meta_file = d / "meta.json"
+        if meta_file.exists():
+            try:
+                meta = json.loads(meta_file.read_text(encoding="utf-8"))
+                # Проверяем наличие индекса
+                meta["has_index"] = (d / "faiss.index").exists()
+                profiles.append(meta)
+            except Exception:
+                pass
+        else:
+            # Директория без мета — показываем как неполный профиль
+            profiles.append({
+                "name": d.name,
+                "safe_name": d.name,
+                "index_dir": str(d),
+                "has_index": (d / "faiss.index").exists(),
+            })
     return {"success": True, "profiles": profiles}
-
-
-@router.post("/profiles/save")
-async def save_rag_profile(request: dict):
-    """Save the current RAG index as a named profile.
-
-    Body: { name, description?, source_dir? }
-    """
-    name = (request.get("name") or "").strip()
-    if not name:
-        return {"success": False, "error": "name is required"}
-
-    # Read current index_dir from config.json
-    config_path = Path("config.json")
-    current_index_dir = Path("./rag_index")
-    if config_path.exists():
-        cfg = json.loads(config_path.read_text(encoding="utf-8"))
-        current_index_dir = Path(cfg.get("rag_system", {}).get("index_dir", "./rag_index"))
-
-    if not current_index_dir.exists():
-        return {"success": False, "error": f"Index directory not found: {current_index_dir}"}
-
-    import shutil
-    safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)
-    profile_dir = _profiles_dir().parent / safe_name
-    try:
-        if profile_dir.exists():
-            shutil.rmtree(profile_dir)
-        shutil.copytree(current_index_dir, profile_dir,
-                        ignore=shutil.ignore_patterns("_profiles"))
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-    # Count files
-    file_count = sum(1 for _ in profile_dir.rglob("*") if _.is_file())
-
-    meta = {
-        "name": name,
-        "safe_name": safe_name,
-        "description": request.get("description", ""),
-        "source_dir": request.get("source_dir", str(current_index_dir)),
-        "index_dir": str(profile_dir),
-        "files": file_count,
-    }
-    (_profiles_dir() / f"{safe_name}.json").write_text(
-        json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    return {"success": True, "profile": meta}
 
 
 @router.post("/profiles/load")
 async def load_rag_profile(request: dict):
-    """Load a profile — switch index_dir in config.json.
+    """Переключить активную RAG базу.
 
     Body: { name }
+    Обновляет index_dir в config.json и перезагружает RAG систему.
     """
     name = (request.get("name") or "").strip()
     if not name:
         return {"success": False, "error": "name is required"}
 
-    safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)
-    meta_file = _profiles_dir() / f"{safe_name}.json"
-    if not meta_file.exists():
-        return {"success": False, "error": f"Profile '{name}' not found"}
-
-    meta = json.loads(meta_file.read_text(encoding="utf-8"))
-    profile_dir = Path(meta["index_dir"])
+    profile_dir = _profile_index_dir(_safe(name))
     if not profile_dir.exists():
-        return {"success": False, "error": f"Profile index directory missing: {profile_dir}"}
+        return {"success": False, "error": f"Profile '{name}' not found"}
+    if not (profile_dir / "faiss.index").exists():
+        return {"success": False, "error": f"Profile '{name}' has no index yet"}
 
-    # Update config.json
+    # Обновляем config.json
     config_path = Path("config.json")
     cfg = json.loads(config_path.read_text(encoding="utf-8")) if config_path.exists() else {}
     cfg.setdefault("rag_system", {})["index_dir"] = str(profile_dir)
     config_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    return {"success": True, "message": f"Profile '{name}' loaded", "index_dir": str(profile_dir)}
+    # Перезагружаем RAG систему
+    from ...rag.rag_system import rag_system
+    await rag_system.reload_index()
+
+    return {"success": True, "message": f"Loaded profile '{name}'", "index_dir": str(profile_dir)}
 
 
 @router.delete("/profiles/{name}")
 async def delete_rag_profile(name: str):
-    """Delete profile (metadata and index only, not the current active one)."""
-    safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)
-    meta_file = _profiles_dir() / f"{safe_name}.json"
-    if not meta_file.exists():
-        return {"success": False, "error": f"Profile '{name}' not found"}
-
-    meta = json.loads(meta_file.read_text(encoding="utf-8"))
-    profile_dir = Path(meta["index_dir"])
-
+    """Удалить RAG базу из ~/.rag/<name>/."""
     import shutil
-    if profile_dir.exists() and profile_dir != Path("./rag_index").resolve():
-        shutil.rmtree(profile_dir, ignore_errors=True)
-    meta_file.unlink(missing_ok=True)
+    profile_dir = _profile_index_dir(_safe(name))
+    if not profile_dir.exists():
+        return {"success": False, "error": f"Profile '{name}' not found"}
+    shutil.rmtree(profile_dir, ignore_errors=True)
     return {"success": True, "message": f"Profile '{name}' deleted"}
 
 
 @router.post("/build")
 async def build_rag_index(request: RAGBuildRequest):
-    """Build RAG index from specified directory"""
-    docs_dir = Path(request.docs_dir)
+    """Собрать RAG индекс из указанной директории.
+
+    Сохраняет в ~/.rag/<safe_name>/ где safe_name = имя исходной директории.
+    Если индекс уже существует — возвращает has_index=True без пересборки
+    (если не передан force=true).
+    """
+    docs_dir = Path(request.docs_dir).expanduser()
     if not docs_dir.exists():
-        return {"success": False, "error": f"Directory not found: {request.docs_dir}"}
+        return {"success": False, "error": f"Directory not found: {docs_dir}"}
+
+    safe_name = _safe(docs_dir.name)
+    output_dir = _profile_index_dir(safe_name)
+
+    # Проверяем существующий индекс
+    if (output_dir / "faiss.index").exists() and not getattr(request, "force", False):
+        return {
+            "success": True,
+            "already_indexed": True,
+            "message": f"Index for '{docs_dir.name}' already exists",
+            "index_dir": str(output_dir),
+            "name": safe_name,
+        }
+
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         from ...rag.indexer import RAGIndexer
@@ -335,18 +353,26 @@ async def build_rag_index(request: RAGBuildRequest):
             indexer.load_model()
             indexer.index_directory(docs_dir, chunk_size=request.chunk_size, overlap=request.overlap)
             if not indexer.chunks:
-                raise ValueError("No indexable documents found in the selected directory")
+                raise ValueError("No indexable documents found")
             indexer.create_embeddings()
-            indexer.save_index(Path(request.output_dir))
+            indexer.save_index(output_dir)
             return len(indexer.chunks)
 
-        chunks_count = await loop.run_in_executor(None, _run)
-        return {
-            "success": True,
-            "message": f"Index built successfully",
-            "chunks": chunks_count,
-            "docs_dir": request.docs_dir,
-            "output_dir": request.output_dir
+        chunks = await loop.run_in_executor(None, _run)
+
+        # Сохраняем мета-данные профиля
+        meta = {
+            "name": docs_dir.name,
+            "safe_name": safe_name,
+            "source_dir": str(docs_dir),
+            "index_dir": str(output_dir),
+            "chunks": chunks,
+            "model": request.model,
         }
+        (output_dir / "meta.json").write_text(
+            json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+
+        return {"success": True, "chunks": chunks, "index_dir": str(output_dir), "name": safe_name}
     except Exception as e:
         return {"success": False, "error": str(e)}

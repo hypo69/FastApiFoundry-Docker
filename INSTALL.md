@@ -86,7 +86,7 @@ install.bat
 
 Этот файл автоматически запустит все необходимые скрипты:
 - `install.ps1` — создаёт venv, устанавливает зависимости, RAG, .env, папку logs
-- `install-foundry.ps1` — устанавливает Microsoft Foundry Local (AI backend)
+- `.\install\install-foundry.ps1` — устанавливает Microsoft Foundry Local (AI backend)
 
 Если возникнут ошибки, следуйте подсказкам в окне или смотрите INSTALL.md ниже.
 
@@ -106,10 +106,10 @@ install.bat
 .\install.ps1 -Force
 ```
 
-Или через GUI:
+Или через скрипт установки бэкенда:
 
 ```powershell
-.\install-gui.ps1
+.\install\install-foundry.ps1
 ```
 
 ### Ручная установка
@@ -142,8 +142,8 @@ python install_rag_deps.py
 
 ```powershell
 # Установка через скрипт
-.\install-foundry.ps1
-
+.\install\install-foundry.ps1
+```
 # Или вручную через winget
 winget install Microsoft.FoundryLocal
 foundry service start
@@ -349,10 +349,11 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 | Файл | Назначение |
 |------|-----------|
 | `install.ps1` | Главный установщик (venv + зависимости + .env + logs) |
-| `install-foundry.ps1` | Установка Microsoft Foundry Local через winget |
-| `install-gui.ps1` | GUI установщик (Windows Forms) |
+| `install\install-foundry.ps1` | Установка Microsoft Foundry Local через winget |
+| `install\install-autostart.ps1` | Регистрация автозапуска в Windows |
+| `install\install-huggingface-cli.ps1` | Установка и авторизация HuggingFace CLI |
 | `install_rag_deps.py` | Установка RAG зависимостей (torch, faiss, sentence-transformers) |
-| `install-models.ps1` | Скачивание моделей по умолчанию (Foundry + HuggingFace) |
+| `install\install-models.ps1` | Скачивание моделей по умолчанию (Foundry + HuggingFace) |
 | `bin\Python-3.11.9.zip` | Локальный интерпретатор Python для офлайн-установки |
 
 ---

@@ -11,7 +11,7 @@
 #   .\autostart.ps1
 #
 #   # Registration in the scheduler:
-#   .\install-autostart.ps1
+#   .\install\install-autostart.ps1
 #
 # File: autostart.ps1
 # Project: FastApiFoundry (Docker)

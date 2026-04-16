@@ -13,23 +13,23 @@ if %errorlevel% neq 0 (
 )
 
 REM 2. Install Foundry Local (optional, if not installed)
-powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install-foundry.ps1' }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install\install-foundry.ps1' }"
 if %errorlevel% neq 0 (
     echo Error executing install-foundry.ps1
-    echo You can install Foundry manually using install-foundry.ps1 or choose another AI backend.
+    echo You can install Foundry manually using .\install\install-foundry.ps1 or choose another AI backend.
     pause
 )
 
 REM 3. Register autostart with Windows
-powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install-autostart.ps1' }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install\install-autostart.ps1' }"
 if %errorlevel% neq 0 (
-    echo Warning: autostart not registered. Run install-autostart.ps1 as administrator manually.
+    echo Warning: autostart not registered. Run .\install\install-autostart.ps1 as administrator manually.
 )
 
 REM 4. Install HuggingFace CLI
-powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install-huggingface-cli.ps1' -SkipAuth }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install\install-huggingface-cli.ps1' -SkipAuth }"
 if %errorlevel% neq 0 (
-    echo Warning: HuggingFace CLI not installed. Run install-huggingface-cli.ps1 manually.
+    echo Warning: HuggingFace CLI not installed. Run .\install\install-huggingface-cli.ps1 manually.
 )
 
 echo.

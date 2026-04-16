@@ -87,6 +87,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.hfLoadHubModels?.();
     });
 
+    // Вкладка RAG — статус и список баз
+    document.getElementById('rag-tab')?.addEventListener('shown.bs.tab', () => {
+        window.refreshRAGStatus?.();
+        window.ragLoadProfiles?.();
+    });
+
     // Вкладка Agent — список агентов и инструментов
     document.getElementById('agent-tab')?.addEventListener('shown.bs.tab', () => {
         window.agentLoadTools?.();

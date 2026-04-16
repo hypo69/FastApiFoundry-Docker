@@ -144,14 +144,33 @@
                                     <div class="alert alert-info mt-2 mb-0 p-2 small">
                                         <div class="fw-semibold mb-1"><i class="bi bi-info-circle"></i> Как работают модели в чате</div>
                                         <ul class="mb-2 ps-3">
-                                            <li><strong>Список:</strong> Foundry — из кэша, HuggingFace — скачанные, llama.cpp — <code>.gguf</code> из <code>~/.models</code>.</li>
-                                            <li><strong>Добавить:</strong> используйте вкладки <strong>Foundry</strong>, <strong>HuggingFace</strong> или <strong>llama.cpp</strong>.</li>
+                                            <li><strong>Список:</strong> показываются модели из локальных кэшей: Foundry берём из <code>/foundry/models/cached</code>, HuggingFace — из <code>/hf/models</code> (скачанные), llama.cpp — из <code>/llama/models</code> (локальные <code>.gguf</code> в <code>~/.models</code>).</li>
+                                            <li><strong>Переключение:</strong> при выборе модели выгружаются активные модели из памяти (Foundry unload + HF unload) и при необходимости останавливается <code>llama.cpp</code>, затем загружается выбранная и UI ждёт готовности (Foundry: <code>/foundry/models/loaded</code>, HF: <code>/hf/models</code>, llama.cpp: <code>/llama/status</code> как <code>running</code>).</li>
+                                            <li><strong>Как добавить через интерфейс:</strong> для Foundry — вкладка <strong>Foundry</strong>, для HuggingFace — вкладка <strong>HuggingFace</strong>. Для llama.cpp — скопируйте <code>.gguf</code> в <code>~/.models</code> во вкладке <strong>llama.cpp</strong>, затем Refresh — модель появится в списке.</li>
                                         </ul>
-                                        <div class="fw-semibold mb-1"><i class="bi bi-cloud-download"></i> Скачать HuggingFace модель</div>
+                                        <div class="fw-semibold mb-1"><i class="bi bi-terminal"></i> Загрузка через CLI (в обход интерфейса)</div>
+                                        <ul class="mb-2 ps-3">
+                                            <li><strong>Foundry:</strong>
+                                                <code class="d-block mt-1">foundry model download deepseek-r1-distill-qwen-7b-generic-cpu:3</code>
+                                                <code class="d-block">foundry model load deepseek-r1-distill-qwen-7b-generic-cpu:3</code>
+                                            </li>
+                                            <li class="mt-1"><strong>HuggingFace CLI:</strong>
+                                                <code class="d-block mt-1">pip install huggingface_hub</code>
+                                                <code class="d-block">hf auth login</code>
+                                                <code class="d-block">hf download bartowski/gemma-2-2b-it-GGUF --local-dir ~/.models</code>
+                                            </li>
+                                            <li class="mt-1"><strong>llama.cpp сервер:</strong>
+                                                <code class="d-block mt-1">llama-server --model ~/.models/gemma-2-2b-it-Q6_K.gguf --port 9780</code>
+                                                <span class="text-muted">Или через скрипт:</span>
+                                                <code class="d-block">.\scripts\llama-start.ps1 -ModelPath ~/.models/gemma-2-2b-it-Q6_K.gguf</code>
+                                            </li>
+                                        </ul>
+                                        <div class="fw-semibold mb-1"><i class="bi bi-cloud-download"></i> Получить HuggingFace модель через интерфейс</div>
                                         <ol class="mb-0 ps-3">
-                                            <li>Вкладка <strong>HuggingFace</strong> → задайте токен в <strong>Settings</strong> (для gated моделей).</li>
-                                            <li>Введите <code>model_id</code> (например <code>google/gemma-2b</code>) → <strong>Download</strong>.</li>
-                                            <li>Нажмите Refresh в <strong>Downloaded Locally</strong> — модель появится в списке.</li>
+                                            <li>Откройте вкладку <strong>HuggingFace</strong>.</li>
+                                            <li>Если модель gated (требует принятия лицензии) — задайте токен в <strong>Settings → HuggingFace</strong> и примите лицензию на странице модели.</li>
+                                            <li>В блоке <strong>Download Model</strong> введите <code>model_id</code> (например <code>google/gemma-2b</code>) и нажмите <strong>Download</strong>.</li>
+                                            <li>Нажмите Refresh в <strong>Downloaded Locally</strong> — модель появится в списке чата.</li>
                                         </ol>
                                     </div>
                                 </div>
@@ -563,82 +582,61 @@
                 </div>
             </div><div class="tab-pane fade" id="rag" role="tabpanel">
                 <div class="row mt-3">
-                    <!-- Left column: Status + Config -->
-                    <div class="col-md-6">
-                        <div class="card">
+
+                    <!-- Левая колонка: статус + профили -->
+                    <div class="col-md-5">
+
+                        <!-- Статус активной базы -->
+                        <div class="card mb-3">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">RAG System Status</h5>
+                                <h6 class="mb-0"><i class="bi bi-activity"></i> Active RAG Base</h6>
                                 <button class="btn btn-sm btn-outline-primary" onclick="refreshRAGStatus()">
                                     <i class="bi bi-arrow-clockwise"></i>
                                 </button>
                             </div>
                             <div class="card-body" id="rag-status">
-                                <div class="text-center">
-                                    <div class="spinner-border" role="status"></div>
-                                    <p class="mt-2">Loading RAG status...</p>
-                                </div>
+                                <div class="text-muted text-center"><small>Click refresh to check</small></div>
                             </div>
                         </div>
 
-                        <div class="card mt-3">
-                            <div class="card-header"><h6 class="mb-0">RAG Configuration</h6></div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="rag-enabled">
-                                        <label class="form-check-label" for="rag-enabled">Enable RAG System</label>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Index Directory</label>
-                                    <input type="text" id="rag-index-dir" class="form-control" placeholder="./rag_index">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Chunk Size</label>
-                                    <input type="number" id="rag-chunk-size" class="form-control" placeholder="1000">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Embedding Model</label>
-                                    <select id="rag-model" class="form-select">
-                                        <option value="sentence-transformers/all-MiniLM-L6-v2">all-MiniLM-L6-v2 (Default, fast)</option>
-                                        <option value="sentence-transformers/all-mpnet-base-v2">all-mpnet-base-v2 (Better quality)</option>
-                                        <option value="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2">paraphrase-multilingual (Multilingual)</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Top K Results</label>
-                                    <input type="number" id="rag-top-k" class="form-control" placeholder="5">
-                                </div>
-                                <button type="button" class="btn btn-primary" onclick="saveRAGConfig()">
-                                    <i class="bi bi-check-lg"></i> Save Configuration
+                        <!-- Список баз в ~/.rag -->
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-collection"></i> RAG Bases (~/.rag)</h6>
+                                <button class="btn btn-sm btn-outline-primary" onclick="ragLoadProfiles()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
                                 </button>
                             </div>
+                            <div class="card-body p-0">
+                                <div id="rag-profiles-list" style="max-height:300px;overflow-y:auto">
+                                    <div class="text-muted text-center p-3"><small>Click Refresh to load</small></div>
+                                </div>
+                            </div>
                         </div>
+
                     </div>
 
-                    <!-- Right column: Build + Manage -->
-                    <div class="col-md-6">
-                        <!-- Build Index -->
-                        <div class="card">
-                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-database-add"></i> Build Index</h6></div>
+                    <!-- Правая колонка: создание новой базы -->
+                    <div class="col-md-7">
+                        <div class="card mb-3">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-database-add"></i> Build New RAG Base</h6></div>
                             <div class="card-body">
+
+                                <!-- Выбор директории через стандартный диалог -->
                                 <div class="mb-3">
-                                    <label class="form-label">Directory to index</label>
+                                    <label class="form-label">Source Directory</label>
                                     <div class="input-group">
-                                        <select id="rag-docs-dir" class="form-select">
-                                            <option value="">Loading directories...</option>
-                                        </select>
-                                        <button class="btn btn-outline-secondary" onclick="ragLoadDirs()" title="Refresh list">
-                                            <i class="bi bi-arrow-clockwise"></i>
-                                        </button>
+                                        <input type="text" id="rag-selected-dir" class="form-control font-monospace"
+                                               placeholder="Path will appear here..." readonly>
+                                        <label class="btn btn-outline-secondary mb-0" title="Select directory">
+                                            <i class="bi bi-folder2-open"></i> Browse
+                                            <input type="file" id="rag-dir-input" webkitdirectory directory multiple
+                                                   style="display:none" onchange="ragOnDirSelected(this)">
+                                        </label>
                                     </div>
-                                    <div class="form-text">Or enter path manually:</div>
-                                    <input type="text" id="rag-docs-dir-manual" class="form-control mt-1" placeholder="e.g. docs">
+                                    <div id="rag-dir-status" class="mt-1" style="display:none"></div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Output directory</label>
-                                    <input type="text" id="rag-build-output" class="form-control" value="./rag_index">
-                                </div>
+
                                 <div class="row mb-3">
                                     <div class="col-6">
                                         <label class="form-label">Chunk size</label>
@@ -649,6 +647,7 @@
                                         <input type="number" id="rag-build-overlap" class="form-control" value="50">
                                     </div>
                                 </div>
+
                                 <div class="mb-3">
                                     <label class="form-label">Embedding model</label>
                                     <select id="rag-build-model" class="form-select">
@@ -657,20 +656,21 @@
                                         <option value="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2">paraphrase-multilingual</option>
                                     </select>
                                 </div>
+
                                 <div class="d-grid gap-2">
-                                    <button class="btn btn-success" onclick="ragBuildIndex()" id="rag-build-btn">
+                                    <button class="btn btn-success" id="rag-build-btn" onclick="ragBuildIndex()">
                                         <i class="bi bi-database-add"></i> Build Index
                                     </button>
-                                    <button class="btn btn-outline-danger" onclick="ragClearIndex()">
-                                        <i class="bi bi-trash"></i> Clear Index
+                                    <button class="btn btn-outline-danger" onclick="ragBuildIndex(true)">
+                                        <i class="bi bi-arrow-repeat"></i> Rebuild (force)
                                     </button>
                                 </div>
                                 <div id="rag-build-status" class="mt-3" style="display:none"></div>
                             </div>
                         </div>
 
-                        <!-- Test Search -->
-                        <div class="card mt-3">
+                        <!-- Тестовый поиск -->
+                        <div class="card">
                             <div class="card-header"><h6 class="mb-0"><i class="bi bi-search"></i> Test Search</h6></div>
                             <div class="card-body">
                                 <div class="input-group mb-2">
@@ -680,11 +680,13 @@
                                     </button>
                                 </div>
                                 <div id="rag-test-results" style="display:none">
-                                    <div id="rag-search-output" class="border rounded p-2" style="max-height:200px;overflow-y:auto;font-size:.85rem"></div>
+                                    <div id="rag-search-output" class="border rounded p-2"
+                                         style="max-height:200px;overflow-y:auto;font-size:.85rem"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div><div class="tab-pane fade" id="settings" role="tabpanel">
                 <div class="row mt-3">

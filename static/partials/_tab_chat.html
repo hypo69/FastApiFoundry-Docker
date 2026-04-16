@@ -48,14 +48,33 @@
                                     <div class="alert alert-info mt-2 mb-0 p-2 small">
                                         <div class="fw-semibold mb-1"><i class="bi bi-info-circle"></i> Как работают модели в чате</div>
                                         <ul class="mb-2 ps-3">
-                                            <li><strong>Список:</strong> Foundry — из кэша, HuggingFace — скачанные, llama.cpp — <code>.gguf</code> из <code>~/.models</code>.</li>
-                                            <li><strong>Добавить:</strong> используйте вкладки <strong>Foundry</strong>, <strong>HuggingFace</strong> или <strong>llama.cpp</strong>.</li>
+                                            <li><strong>Список:</strong> показываются модели из локальных кэшей: Foundry берём из <code>/foundry/models/cached</code>, HuggingFace — из <code>/hf/models</code> (скачанные), llama.cpp — из <code>/llama/models</code> (локальные <code>.gguf</code> в <code>~/.models</code>).</li>
+                                            <li><strong>Переключение:</strong> при выборе модели выгружаются активные модели из памяти (Foundry unload + HF unload) и при необходимости останавливается <code>llama.cpp</code>, затем загружается выбранная и UI ждёт готовности (Foundry: <code>/foundry/models/loaded</code>, HF: <code>/hf/models</code>, llama.cpp: <code>/llama/status</code> как <code>running</code>).</li>
+                                            <li><strong>Как добавить через интерфейс:</strong> для Foundry — вкладка <strong>Foundry</strong>, для HuggingFace — вкладка <strong>HuggingFace</strong>. Для llama.cpp — скопируйте <code>.gguf</code> в <code>~/.models</code> во вкладке <strong>llama.cpp</strong>, затем Refresh — модель появится в списке.</li>
                                         </ul>
-                                        <div class="fw-semibold mb-1"><i class="bi bi-cloud-download"></i> Скачать HuggingFace модель</div>
+                                        <div class="fw-semibold mb-1"><i class="bi bi-terminal"></i> Загрузка через CLI (в обход интерфейса)</div>
+                                        <ul class="mb-2 ps-3">
+                                            <li><strong>Foundry:</strong>
+                                                <code class="d-block mt-1">foundry model download deepseek-r1-distill-qwen-7b-generic-cpu:3</code>
+                                                <code class="d-block">foundry model load deepseek-r1-distill-qwen-7b-generic-cpu:3</code>
+                                            </li>
+                                            <li class="mt-1"><strong>HuggingFace CLI:</strong>
+                                                <code class="d-block mt-1">pip install huggingface_hub</code>
+                                                <code class="d-block">hf auth login</code>
+                                                <code class="d-block">hf download bartowski/gemma-2-2b-it-GGUF --local-dir ~/.models</code>
+                                            </li>
+                                            <li class="mt-1"><strong>llama.cpp сервер:</strong>
+                                                <code class="d-block mt-1">llama-server --model ~/.models/gemma-2-2b-it-Q6_K.gguf --port 9780</code>
+                                                <span class="text-muted">Или через скрипт:</span>
+                                                <code class="d-block">.\scripts\llama-start.ps1 -ModelPath ~/.models/gemma-2-2b-it-Q6_K.gguf</code>
+                                            </li>
+                                        </ul>
+                                        <div class="fw-semibold mb-1"><i class="bi bi-cloud-download"></i> Получить HuggingFace модель через интерфейс</div>
                                         <ol class="mb-0 ps-3">
-                                            <li>Вкладка <strong>HuggingFace</strong> → задайте токен в <strong>Settings</strong> (для gated моделей).</li>
-                                            <li>Введите <code>model_id</code> (например <code>google/gemma-2b</code>) → <strong>Download</strong>.</li>
-                                            <li>Нажмите Refresh в <strong>Downloaded Locally</strong> — модель появится в списке.</li>
+                                            <li>Откройте вкладку <strong>HuggingFace</strong>.</li>
+                                            <li>Если модель gated (требует принятия лицензии) — задайте токен в <strong>Settings → HuggingFace</strong> и примите лицензию на странице модели.</li>
+                                            <li>В блоке <strong>Download Model</strong> введите <code>model_id</code> (например <code>google/gemma-2b</code>) и нажмите <strong>Download</strong>.</li>
+                                            <li>Нажмите Refresh в <strong>Downloaded Locally</strong> — модель появится в списке чата.</li>
                                         </ol>
                                     </div>
                                 </div>

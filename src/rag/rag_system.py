@@ -39,6 +39,9 @@ class RAGSystem:
     
     def __init__(self):
         self.index_dir = Path(config.rag_index_dir)
+        # Создаём директорию если не существует
+        self.index_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"RAG index directory: {self.index_dir}")
         self.model_name = config.rag_model
         self.index = None
         self.chunks = []

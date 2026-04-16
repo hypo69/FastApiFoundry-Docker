@@ -1,81 +1,63 @@
 <div class="tab-pane fade" id="rag" role="tabpanel">
                 <div class="row mt-3">
-                    <!-- Left column: Status + Config -->
-                    <div class="col-md-6">
-                        <div class="card">
+
+                    <!-- Левая колонка: статус + профили -->
+                    <div class="col-md-5">
+
+                        <!-- Статус активной базы -->
+                        <div class="card mb-3">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">RAG System Status</h5>
+                                <h6 class="mb-0"><i class="bi bi-activity"></i> Active RAG Base</h6>
                                 <button class="btn btn-sm btn-outline-primary" onclick="refreshRAGStatus()">
                                     <i class="bi bi-arrow-clockwise"></i>
                                 </button>
                             </div>
                             <div class="card-body" id="rag-status">
-                                <div class="text-center">
-                                    <div class="spinner-border" role="status"></div>
-                                    <p class="mt-2">Loading RAG status...</p>
-                                </div>
+                                <div class="text-muted text-center"><small>Click refresh to check</small></div>
                             </div>
                         </div>
 
-                        <div class="card mt-3">
-                            <div class="card-header"><h6 class="mb-0">RAG Configuration</h6></div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="rag-enabled">
-                                        <label class="form-check-label" for="rag-enabled">Enable RAG System</label>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Index Directory</label>
-                                    <input type="text" id="rag-index-dir" class="form-control" placeholder="./rag_index">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Chunk Size</label>
-                                    <input type="number" id="rag-chunk-size" class="form-control" placeholder="1000">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Embedding Model</label>
-                                    <select id="rag-model" class="form-select">
-                                        <option value="sentence-transformers/all-MiniLM-L6-v2">all-MiniLM-L6-v2 (Default, fast)</option>
-                                        <option value="sentence-transformers/all-mpnet-base-v2">all-mpnet-base-v2 (Better quality)</option>
-                                        <option value="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2">paraphrase-multilingual (Multilingual)</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Top K Results</label>
-                                    <input type="number" id="rag-top-k" class="form-control" placeholder="5">
-                                </div>
-                                <button type="button" class="btn btn-primary" onclick="saveRAGConfig()">
-                                    <i class="bi bi-check-lg"></i> Save Configuration
+                        <!-- Список баз в ~/.rag -->
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-collection"></i> RAG Bases (~/.rag)</h6>
+                                <button class="btn btn-sm btn-outline-primary" onclick="ragLoadProfiles()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
                                 </button>
                             </div>
+                            <div class="card-body p-0">
+                                <div id="rag-profiles-list" style="max-height:300px;overflow-y:auto">
+                                    <div class="text-muted text-center p-3"><small>Click Refresh to load</small></div>
+                                </div>
+                            </div>
                         </div>
+
                     </div>
 
-                    <!-- Right column: Build + Manage -->
-                    <div class="col-md-6">
-                        <!-- Build Index -->
-                        <div class="card">
-                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-database-add"></i> Build Index</h6></div>
+                    <!-- Правая колонка: создание новой базы -->
+                    <div class="col-md-7">
+                        <div class="card mb-3">
+                            <div class="card-header"><h6 class="mb-0"><i class="bi bi-database-add"></i> Build New RAG Base</h6></div>
                             <div class="card-body">
+
+                                <!-- Браузер директорий -->
                                 <div class="mb-3">
-                                    <label class="form-label">Directory to index</label>
-                                    <div class="input-group">
-                                        <select id="rag-docs-dir" class="form-select">
-                                            <option value="">Loading directories...</option>
-                                        </select>
-                                        <button class="btn btn-outline-secondary" onclick="ragLoadDirs()" title="Refresh list">
-                                            <i class="bi bi-arrow-clockwise"></i>
+                                    <label class="form-label">Source Directory</label>
+                                    <div class="input-group mb-1">
+                                        <input type="text" id="rag-selected-dir" class="form-control font-monospace"
+                                               placeholder="Select directory below or type path..." readonly>
+                                        <button class="btn btn-outline-secondary" onclick="ragBrowseHome()" title="Go to home">
+                                            <i class="bi bi-house"></i>
                                         </button>
                                     </div>
-                                    <div class="form-text">Or enter path manually:</div>
-                                    <input type="text" id="rag-docs-dir-manual" class="form-control mt-1" placeholder="e.g. docs">
+                                    <!-- Браузер файловой системы -->
+                                    <div id="rag-browser" class="border rounded" style="max-height:200px;overflow-y:auto;font-size:.85rem">
+                                        <div class="text-muted text-center p-3"><small>Click <i class="bi bi-house"></i> to browse</small></div>
+                                    </div>
+                                    <!-- Индикатор: уже проиндексирована? -->
+                                    <div id="rag-dir-status" class="mt-1" style="display:none"></div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Output directory</label>
-                                    <input type="text" id="rag-build-output" class="form-control" value="./rag_index">
-                                </div>
+
                                 <div class="row mb-3">
                                     <div class="col-6">
                                         <label class="form-label">Chunk size</label>
@@ -86,6 +68,7 @@
                                         <input type="number" id="rag-build-overlap" class="form-control" value="50">
                                     </div>
                                 </div>
+
                                 <div class="mb-3">
                                     <label class="form-label">Embedding model</label>
                                     <select id="rag-build-model" class="form-select">
@@ -94,20 +77,21 @@
                                         <option value="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2">paraphrase-multilingual</option>
                                     </select>
                                 </div>
+
                                 <div class="d-grid gap-2">
-                                    <button class="btn btn-success" onclick="ragBuildIndex()" id="rag-build-btn">
+                                    <button class="btn btn-success" id="rag-build-btn" onclick="ragBuildIndex()">
                                         <i class="bi bi-database-add"></i> Build Index
                                     </button>
-                                    <button class="btn btn-outline-danger" onclick="ragClearIndex()">
-                                        <i class="bi bi-trash"></i> Clear Index
+                                    <button class="btn btn-outline-danger" onclick="ragBuildIndex(true)">
+                                        <i class="bi bi-arrow-repeat"></i> Rebuild (force)
                                     </button>
                                 </div>
                                 <div id="rag-build-status" class="mt-3" style="display:none"></div>
                             </div>
                         </div>
 
-                        <!-- Test Search -->
-                        <div class="card mt-3">
+                        <!-- Тестовый поиск -->
+                        <div class="card">
                             <div class="card-header"><h6 class="mb-0"><i class="bi bi-search"></i> Test Search</h6></div>
                             <div class="card-body">
                                 <div class="input-group mb-2">
@@ -117,10 +101,12 @@
                                     </button>
                                 </div>
                                 <div id="rag-test-results" style="display:none">
-                                    <div id="rag-search-output" class="border rounded p-2" style="max-height:200px;overflow-y:auto;font-size:.85rem"></div>
+                                    <div id="rag-search-output" class="border rounded p-2"
+                                         style="max-height:200px;overflow-y:auto;font-size:.85rem"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
