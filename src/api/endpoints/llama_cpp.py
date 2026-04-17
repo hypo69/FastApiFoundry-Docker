@@ -234,14 +234,15 @@ async def llama_stop() -> dict:
 
 @router.get("/models")
 async def llama_scan_models(extra_dir: str = "") -> dict:
-    """! Сканировать .gguf файлы в ~/.models и опциональном extra_dir.
+    """! Сканировать .gguf файлы в ~/.models, ~/.lmstudio/models и опциональном extra_dir.
 
-    Основная директория: ~/.models
+    Основные директории: ~/.models, ~/.lmstudio/models
     Дополнительная: extra_dir из query-параметра (например D:\ если модель ещё не скопирована)
     """
     from ...core.config import config as _cfg
     models_home = Path(_cfg.dir_models)
-    search_dirs = [models_home]
+    lmstudio_dir = Path.home() / ".lmstudio" / "models"
+    search_dirs = [models_home, lmstudio_dir]
 
     if extra_dir:
         search_dirs.insert(0, Path(extra_dir))
@@ -267,10 +268,10 @@ async def llama_scan_models(extra_dir: str = "") -> dict:
 
     found.sort(key=lambda x: x["name"])
     return {
-        "success":    True,
-        "models":     found,
-        "count":      len(found),
-        "search_dir": str(models_home)
+        "success":     True,
+        "models":      found,
+        "count":       len(found),
+        "search_dirs": [str(d) for d in search_dirs if d.exists()],
     }
 
 

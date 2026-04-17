@@ -78,8 +78,8 @@
                             <div class="card-header"><h6 class="mb-0"><i class="bi bi-info-circle"></i> Usage</h6></div>
                             <div class="card-body">
                                 <small class="text-muted">
-                                    <p>llama.cpp запускает OpenAI-совместимый API.</p>
-                                    <p>После запуска добавьте провайдер <strong>Custom (OpenAI-compatible)</strong> в расширении браузера:</p>
+                                    <p>llama.cpp exposes an OpenAI-compatible API.</p>
+                                    <p>After starting, add the <strong>Custom (OpenAI-compatible)</strong> provider in the browser extension:</p>
                                     <code id="llama-openai-url">http://127.0.0.1:8080/v1</code>
                                     <button class="btn btn-sm btn-outline-secondary ms-2" onclick="llamaCopyUrl()">
                                         <i class="bi bi-clipboard"></i>
@@ -89,6 +89,48 @@
                                     <code>.\scripts\llama-start.ps1 -ModelPath "~/.models/gemma-2-2b-it-Q6_K.gguf"</code>
                                 </small>
                             </div>
+                        </div>
+                        <div class="alert alert-info mt-3" style="font-size:.85rem">
+                            <div class="fw-semibold mb-2"><i class="bi bi-cloud-download"></i> <span data-i18n="llama.gguf_title">Where to get GGUF models</span></div>
+                            <p class="mb-2" data-i18n="llama.gguf_what"><strong>GGUF</strong> is a binary model format for local inference, used by llama.cpp and compatible tools.</p>
+                            <hr class="my-2">
+                            <div class="fw-semibold mb-1" data-i18n="llama.gguf_where_title">Where to download</div>
+                            <p class="mb-1"><strong data-i18n="llama.gguf_hf_title">1. Hugging Face (main source)</strong></p>
+                            <p class="mb-1" data-i18n="llama.gguf_hf_hint">Search: <code>gguf</code>, <code>llama gguf</code>, <code>mistral gguf</code>. Files: <code>model.Q4_K_M.gguf</code></p>
+                            <ul class="mb-2 ps-3">
+                                <li><a href="https://huggingface.co/TheBloke" target="_blank">TheBloke GGUF models</a></li>
+                                <li><a href="https://huggingface.co/models?search=mistral+gguf" target="_blank">Mistral GGUF</a></li>
+                                <li><a href="https://huggingface.co/models?search=llama+gguf" target="_blank">LLaMA GGUF</a></li>
+                            </ul>
+                            <p class="mb-1" data-i18n="llama.gguf_lmstudio">2. LM Studio &mdash; built-in catalog, download via GUI.</p>
+                            <p class="mb-2" data-i18n="llama.gguf_ollama">3. Ollama &mdash; downloads automatically (<code>ollama pull</code>), but does not expose the file directly.</p>
+                            <hr class="my-2">
+                            <div class="fw-semibold mb-1" data-i18n="llama.gguf_how_title">How to download</div>
+                            <p class="mb-1"><strong data-i18n="llama.gguf_cli_label">CLI (recommended):</strong></p>
+                            <code class="d-block bg-white rounded p-2 mb-2">pip install huggingface_hub<br>huggingface-cli download TheBloke/Mistral-7B-Instruct-GGUF \<br>&nbsp;&nbsp;mistral-7b-instruct.Q4_K_M.gguf \<br>&nbsp;&nbsp;--local-dir ./models</code>
+                            <p class="mb-1"><strong data-i18n="llama.gguf_direct_label">Direct:</strong></p>
+                            <code class="d-block bg-white rounded p-2 mb-2">wget https://huggingface.co/.../model.Q4_K_M.gguf</code>
+                            <p class="mb-2" data-i18n="llama.gguf_browser_label">Via browser: open repository &rarr; select <code>.gguf</code> &rarr; download.</p>
+                            <hr class="my-2">
+                            <div class="fw-semibold mb-1" data-i18n="llama.gguf_quant_title">How to choose quantization</div>
+                            <table class="table table-sm table-bordered mb-2" style="font-size:.8rem">
+                                <thead class="table-light"><tr><th>Type</th><th>RAM</th><th>Quality</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>Q2</code></td><td>minimal</td><td>low</td></tr>
+                                    <tr><td><code>Q4_K_M</code></td><td>low</td><td>medium</td></tr>
+                                    <tr><td><code>Q5_K_M</code></td><td>medium</td><td>good</td></tr>
+                                    <tr><td><code>Q8</code></td><td>high</td><td>near-original</td></tr>
+                                </tbody>
+                            </table>
+                            <ul class="mb-2 ps-3">
+                                <li data-i18n="llama.gguf_quant_16">up to 16 GB RAM &rarr; Q4_K_M</li>
+                                <li data-i18n="llama.gguf_quant_32">16&ndash;32 GB &rarr; Q5</li>
+                                <li data-i18n="llama.gguf_quant_32p">32+ GB &rarr; Q8</li>
+                            </ul>
+                            <hr class="my-2">
+                            <div class="fw-semibold mb-1" data-i18n="llama.gguf_run_title">Running</div>
+                            <code class="d-block bg-white rounded p-2 mb-2">./main -m model.gguf -p &quot;Hello&quot;</code>
+                            <p class="mb-0" data-i18n="llama.gguf_run_hint">Or via GUI: LM Studio, Text Generation WebUI.</p>
                         </div>
                     </div>
                 </div>

@@ -1487,7 +1487,80 @@ function plugin_user_can( string $capability ): bool {
 ---
 
 
-## 🔐 7. Правила экспорта и импорта параметров настроек
+## 🌐 7. Мультиязычность и язык комментариев (HTML, JS, CSS, PHP)
+
+### 7.1 Плейсхолдеры для мультиязычности
+
+Все пользовательские строки в файлах `.html`, `.js`, `.css`, `.php` **обязаны** использовать плейсхолдеры вместо хардкода текста:
+
+- **HTML** — атрибут `data-i18n` или шаблонный тег:
+  ```html
+  <!-- Use data-i18n attribute for all user-visible text -->
+  <button data-i18n="btn.save">Save</button>
+  <h1 data-i18n="page.title">Title</h1>
+  ```
+
+- **JavaScript** — функция `t()` или `i18n()`:
+  ```javascript
+  // Use i18n() for all user-facing strings
+  showAlert(i18n('error.not_found'));
+  el.textContent = i18n('label.model_name');
+  ```
+
+- **PHP** — WordPress `__()` / `_e()` обязательны для всех строк:
+  ```php
+  // Use __() for all translatable strings
+  echo esc_html__( 'Settings saved', 'plugin-textdomain' );
+  ```
+
+- **CSS** — строки в CSS не локализуются, но `content: "..."` в псевдоэлементах **запрещён** для пользовательского текста.
+
+### 7.2 Язык внутренних комментариев
+
+**ОБЯЗАТЕЛЬНО:** Все inline-комментарии внутри кода файлов `.html`, `.js`, `.css`, `.php` пишутся **только на английском языке**.
+
+```javascript
+// ✅ Correct
+// Initialize menu toggle on DOM ready
+function initMenuToggle() { ... }
+
+// ❌ Wrong
+// Инициализация меню при загрузке DOM
+function initMenuToggle() { ... }
+```
+
+```php
+// ✅ Correct
+// Verify nonce before processing form data
+if ( ! wp_verify_nonce( ... ) ) { ... }
+
+// ❌ Wrong
+// Проверка nonce перед обработкой формы
+```
+
+```css
+/* ✅ Correct */
+/* Primary navigation styles */
+.site-nav { ... }
+
+/* ❌ Wrong */
+/* Стили основной навигации */
+```
+
+```html
+<!-- ✅ Correct -->
+<!-- Main content wrapper -->
+<div class="wrap">
+
+<!-- ❌ Wrong -->
+<!-- Основной контейнер контента -->
+```
+
+> Это правило распространяется на **все** комментарии внутри кода. Заголовки файлов (file header block) могут содержать описание на русском языке.
+
+---
+
+## 🔐 8. Правила экспорта и импорта параметров настроек
 
 ### 7.1 Общий принцип
 

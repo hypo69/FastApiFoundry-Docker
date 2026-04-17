@@ -44,6 +44,21 @@ Write-Log "=== FastAPI Foundry autostart ==="
 Write-Log "Root: $Root"
 Write-Log "Log:  $LogFile"
 
+# Install PowerShell 7 if not already installed
+$pwsh = 'C:\Program Files\PowerShell\7\pwsh.exe'
+if (-not (Test-Path $pwsh)) {
+    $msi = Join-Path $Root 'bin\PowerShell-7.4.6-win-x64.msi'
+    if (Test-Path $msi) {
+        Write-Log "Installing PowerShell 7 from $msi"
+        Start-Process msiexec.exe -ArgumentList "/i `"$msi`" /quiet /norestart" -Wait
+        Write-Log "PowerShell 7 installed"
+    } else {
+        Write-Log "PowerShell 7 MSI not found: $msi" 'WARNING'
+    }
+} else {
+    Write-Log "PowerShell 7 already installed"
+}
+
 # Virtual environment activation
 $ActivateScript = Join-Path $Root 'venv\Scripts\Activate.ps1'
 if (Test-Path $ActivateScript) {

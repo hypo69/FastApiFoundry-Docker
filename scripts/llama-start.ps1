@@ -3,8 +3,8 @@
 # Название процесса: Запуск llama.cpp сервера с GGUF моделью
 # =============================================================================
 # Описание:
-#   Запускает llama-server с OpenAI-совместимым API.
-#   FastAPI Foundry подключается к нему как к провайдеру.
+#   Инициализация сервера llama-server для предоставления OpenAI-совместимого API.
+#   Обеспечение связи между локальными GGUF моделями и FastAPI Foundry.
 #
 # Примеры:
 #   .\llama-start.ps1 -ModelPath "D:\gemma-2-2b-it-Q6_K.gguf"
@@ -14,30 +14,35 @@
 # File: scripts/llama-start.ps1
 # Project: FastApiFoundry (Docker)
 # Version: 0.4.1
-# Author: hypo69
-# Copyright: © 2026 hypo69
+# Автор: hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
 
 param(
+    # Путь к файлу модели в формате GGUF
     [string]$ModelPath = "",
+    # Порт для прослушивания входящих HTTP запросов
     [int]$Port         = 8080,
     [string]$Host      = "127.0.0.1",
+    # Размер контекстного окна (токены)
     [int]$CtxSize      = 4096,
-    [int]$Threads      = 0,          # 0 = auto
-    [int]$NGL          = 0,          # GPU layers, 0 = CPU only
+    # Количество потоков CPU. Обоснование: 0 — автоматическое определение всех ядер.
+    [int]$Threads      = 0,
+    # Количество слоев, переносимых на GPU (NGL). Обоснование: 0 — только CPU.
+    [int]$NGL          = 0,
     [string]$ApiBase   = "http://localhost:9696/api/v1",
-    [switch]$ViaApi                  # запустить через FastAPI Foundry API
+    # Флаг для делегирования запуска самому серверу FastAPI Foundry
+    [switch]$ViaApi
 )
 
 $ErrorActionPreference = 'Continue'
 
-Write-Host "🦙 llama.cpp Server Launcher" -ForegroundColor Cyan
+Write-Host "🦙 Запуск сервера llama.cpp" -ForegroundColor Cyan
 
-# Автоопределение потоков
+# Определение количества потоков на основе аппаратных ресурсов
 if ($Threads -eq 0) { $Threads = [Environment]::ProcessorCount }
 
-# Загрузка пути из .env если не передан
+# Получение пути к модели из конфигурации .env при отсутствии явного параметра
 if (-not $ModelPath) {
     $envPath = Join-Path $PSScriptRoot ".." ".env"
     if (Test-Path $envPath) {
@@ -47,32 +52,35 @@ if (-not $ModelPath) {
 }
 
 if (-not $ModelPath) {
-    # Поиск .gguf на диске D:
-    Write-Host "🔍 Searching for .gguf files on D:\..." -ForegroundColor Yellow
+    # Автоматический поиск файлов .gguf на диске D:
+    # Обоснование: Упрощение первого запуска для пользователей Windows, хранящих тяжелые модели на доп. дисках.
+    Write-Host "🔍 Поиск моделей .gguf на диске D:\..." -ForegroundColor Yellow
     $found = Get-ChildItem -Path "D:\" -Filter "*.gguf" -Recurse -Depth 3 -ErrorAction SilentlyContinue
     if ($found) {
-        Write-Host "Found models:" -ForegroundColor Green
-        $found | ForEach-Object { Write-Host "  $($_.FullName)  ($([math]::Round($_.Length/1GB,2)) GB)" }
+        Write-Host "Обнаруженные модели:" -ForegroundColor Green
+        $found | ForEach-Object { Write-Host "  $($_.FullName)  ($([math]::Round($_.Length/1GB,2)) ГБ)" }
         $ModelPath = $found[0].FullName
-        Write-Host "Using: $ModelPath" -ForegroundColor Yellow
+        Write-Host "Выбрано автоматически: $ModelPath" -ForegroundColor Yellow
     } else {
-        Write-Host "❌ No .gguf files found. Specify -ModelPath" -ForegroundColor Red
+        Write-Host "❌ Файлы .gguf не найдены. Укажите -ModelPath" -ForegroundColor Red
         exit 1
     }
 }
 
 if (-not (Test-Path $ModelPath)) {
-    Write-Host "❌ File not found: $ModelPath" -ForegroundColor Red
+    Write-Host "❌ Файл не найден: $ModelPath" -ForegroundColor Red
     exit 1
 }
 
+# Вывод текущих параметров запуска
 $modelName = Split-Path $ModelPath -Leaf
-Write-Host "Model:   $modelName" -ForegroundColor White
-Write-Host "Port:    $Port" -ForegroundColor White
-Write-Host "Threads: $Threads" -ForegroundColor White
-Write-Host "GPU layers: $NGL" -ForegroundColor White
+Write-Host "Модель:   $modelName" -ForegroundColor White
+Write-Host "Порт:     $Port" -ForegroundColor White
+Write-Host "Потоки:   $Threads" -ForegroundColor White
+Write-Host "GPU слои: $NGL" -ForegroundColor White
 
-# Запуск через FastAPI API
+# Инициирование запуска через API FastAPI Foundry
+# Обоснование: Позволяет управлять жизненным циклом процесса через веб-интерфейс.
 if ($ViaApi) {
     try {
         $body = @{
@@ -88,40 +96,55 @@ if ($ViaApi) {
             -Method POST -ContentType "application/json" -Body $body -TimeoutSec 15
 
         if ($result.success) {
-            Write-Host "✅ Started via API (PID: $($result.pid))" -ForegroundColor Green
-            Write-Host "   OpenAI URL: $($result.openai_url)" -ForegroundColor Cyan
+            Write-Host "✅ Запущено через API (PID: $($result.pid))" -ForegroundColor Green
+            Write-Host "   URL интерфейса OpenAI: $($result.openai_url)" -ForegroundColor Cyan
         } else {
             Write-Host "❌ $($result.error)" -ForegroundColor Red
             exit 1
         }
     } catch {
-        Write-Host "❌ API error: $_" -ForegroundColor Red
+        Write-Host "❌ Ошибка обращения к API: $_" -ForegroundColor Red
         exit 1
     }
     exit 0
 }
 
-# Прямой запуск llama-server
+# Find llama-server binary: bin/ in project root, then PATH, then standard locations
 $serverBin = $null
-foreach ($name in @("llama-server.exe", "server.exe")) {
-    $found = Get-Command $name -ErrorAction SilentlyContinue
-    if ($found) { $serverBin = $found.Source; break }
-    # Стандартные пути
-    foreach ($dir in @("C:\llama.cpp", "C:\Program Files\llama.cpp")) {
-        $p = Join-Path $dir $name
+$projectRoot = Join-Path $PSScriptRoot ".."
+$binDir = Join-Path $projectRoot "bin"
+
+# 1. Search in project bin/ directory (recursive)
+if (Test-Path $binDir) {
+    $found = Get-ChildItem -Path $binDir -Filter "llama-server.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($found) { $serverBin = $found.FullName }
+}
+
+# 2. PATH
+if (-not $serverBin) {
+    foreach ($name in @("llama-server.exe", "server.exe")) {
+        $found = Get-Command $name -ErrorAction SilentlyContinue
+        if ($found) { $serverBin = $found.Source; break }
+    }
+}
+
+# 3. Standard install locations
+if (-not $serverBin) {
+    foreach ($p in @("C:\llama.cpp\llama-server.exe", "C:\Program Files\llama.cpp\llama-server.exe")) {
         if (Test-Path $p) { $serverBin = $p; break }
     }
-    if ($serverBin) { break }
 }
 
 if (-not $serverBin) {
-    Write-Host "❌ llama-server not found in PATH" -ForegroundColor Red
-    Write-Host "   Download: https://github.com/ggerganov/llama.cpp/releases" -ForegroundColor Cyan
-    Write-Host "   Or add to PATH and retry" -ForegroundColor Gray
+    Write-Host "❌ llama-server не найден" -ForegroundColor Red
+    Write-Host "   Проверено: $binDir" -ForegroundColor Gray
+    Write-Host "   Загрузите бинарные файлы: https://github.com/ggerganov/llama.cpp/releases" -ForegroundColor Cyan
     exit 1
 }
 
-Write-Host "🚀 Starting llama-server..." -ForegroundColor Green
+Write-Host "   Бинарник: $serverBin" -ForegroundColor Gray
+
+Write-Host "🚀 Запуск процесса llama-server..." -ForegroundColor Green
 
 $args = @(
     "--model",        $ModelPath,
@@ -132,9 +155,10 @@ $args = @(
     "--n-gpu-layers", $NGL
 )
 
+# Вызов внешнего процесса сервера
 & $serverBin @args
 
-# Сохранить URL в .env для FastAPI Foundry
+# Сохранение итогового URL в файл .env для автоматизации последующих запусков
 $envPath = Join-Path $PSScriptRoot ".." ".env"
 if (Test-Path $envPath) {
     $content = Get-Content $envPath
@@ -145,5 +169,5 @@ if (Test-Path $envPath) {
         $content += "`n$newLine"
     }
     $content | Set-Content $envPath
-    Write-Host "✅ LLAMA_BASE_URL saved to .env" -ForegroundColor Green
+    Write-Host "✅ Параметр LLAMA_BASE_URL успешно обновлен в .env" -ForegroundColor Green
 }

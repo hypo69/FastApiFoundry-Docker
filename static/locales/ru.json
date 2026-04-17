@@ -173,6 +173,25 @@
     "log_file": "Файл логов",
     "download": "Скачать логи"
   },
+  "llama": {
+    "gguf_title": "Где взять GGUF модели",
+    "gguf_what": "<strong>GGUF</strong> — бинарный формат моделей для локального инференса, используемый в llama.cpp и совместимых инструментах.",
+    "gguf_where_title": "Где скачать",
+    "gguf_hf_title": "1. Hugging Face (основной источник)",
+    "gguf_hf_hint": "Искать по ключевым словам: <code>gguf</code>, <code>llama gguf</code>, <code>mistral gguf</code>. Файлы выглядят так: <code>model.Q4_K_M.gguf</code>",
+    "gguf_lmstudio": "2. LM Studio — встроенный каталог, скачивание через GUI.",
+    "gguf_ollama": "3. Ollama — скачивает модели автоматически (<code>ollama pull</code>), но не выдаёт файл напрямую.",
+    "gguf_how_title": "Как скачать",
+    "gguf_cli_label": "CLI (рекомендуется):",
+    "gguf_direct_label": "Напрямую:",
+    "gguf_browser_label": "Через браузер: открыть репозиторий &rarr; выбрать <code>.gguf</code> &rarr; скачать.",
+    "gguf_quant_title": "Как выбрать квантизацию",
+    "gguf_quant_16": "до 16 GB RAM &rarr; Q4_K_M",
+    "gguf_quant_32": "16&ndash;32 GB &rarr; Q5",
+    "gguf_quant_32p": "32+ GB &rarr; Q8",
+    "gguf_run_title": "Запуск",
+    "gguf_run_hint": "Или через GUI: LM Studio, Text Generation WebUI."
+  },
   "common": {
     "notes": "Заметки",
     "loading": "Загрузка...",

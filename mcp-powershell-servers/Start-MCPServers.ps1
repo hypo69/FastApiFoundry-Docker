@@ -1,57 +1,43 @@
-## \file Start-MCPServers.ps1
 # -*- coding: utf-8 -*-
 #! .pyenv/bin/pwsh
 
+# =============================================================================
+# Название процесса: Запуск и управление MCP PowerShell серверами
+# =============================================================================
+# Описание:
+#   Автоматизированный запуск всех доступных MCP серверов в фоновом режиме.
+#   Управление жизненным циклом процессов через PID-файлы и мониторинг состояния.
+#
+# File: Start-MCPServers.ps1
+# Project: AiStros
+# Author: hypo69
+# Copyright: © 2025 hypo69
+# Version: 1.1.2
+# =============================================================================
+
 <#
 .SYNOPSIS
-    Start-MCPServers для MCP PowerShell серверов
-    
+    Запуск и управление MCP PowerShell серверами.
 .DESCRIPTION
-    Start-MCPServers автоматически запускает все MCP серверы в фоновых процессах.
-    
-.PARAMETER StopServers
-    Остановить все запущенные MCP серверы
+    Обеспечение автоматизированного запуска набора MCP серверов в изолированных сессиях PowerShell.
+    Организация контроля исполнения и реализация механизмов принудительной остановки группы процессов.
     
 .PARAMETER ConfigPath
-    Путь к директории с конфигурациями (по умолчанию: src/config)
-    
+    Указание пути к директории расположения конфигурационных файлов.
 .PARAMETER Force
-    Принудительный запуск, игнорируя PID файл
-    
-.EXAMPLE
-    .\Start-MCPServers.ps1
-    
-.EXAMPLE
-    .\Start-MCPServers.ps1 -StopServers
-
-.EXAMPLE
-    .\Start-MCPServers.ps1 -Force
-
-.NOTES
-    Version: 1.1.2
-    Author: hypo69
-    License: MIT (https://opensource.org/licenses/MIT)
-    Copyright: @hypo69 - 2025
+    Принудительный перезапуск, игнорируя существующие записи в PID-файле.
+.PARAMETER StopServers
+    Команда на остановку всех активных серверов, зарегистрированных в системе.
 #>
-
 #Requires -Version 7.0
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $false)]
     [switch]$StopServers,
-    
-    [Parameter(Mandatory = $false)]
-    [string]$ConfigPath = 'src\config',
-    
-    [Parameter(Mandatory = $false)]
+    [string]$ConfigPath,
     [switch]$Force,
-    
-    [Parameter(Mandatory = $false)]
     [switch]$Help
 )
-
-#region Global Variables
 
 $script:LauncherVersion = '1.1.2'
 $script:ServerProcesses = @{}
@@ -63,11 +49,16 @@ $script:PidFile = Join-Path $env:TEMP 'mcp-servers.pid'
 #region Utility Functions
 
 function Write-Log {
+    <#
+    .SYNOPSIS
+        Регистрация сообщения в лог-файле и вывод в консоль.
+    #>
     param(
         [Parameter(Mandatory = $true)]
         [string]$Message,
         
         [Parameter(Mandatory = $false)]
+        # Обоснование выбора уровней: соответствие стандартам LOGGING-STANDARD.md для AiStros.
         [ValidateSet('DEBUG', 'INFO', 'WARNING', 'ERROR', 'SUCCESS')]
         [string]$Level = 'INFO'
     )
@@ -99,6 +90,12 @@ function Write-Log {
 }
 
 function Save-ServerPIDs {
+    <#
+    .SYNOPSIS
+        Сохранение идентификаторов процессов (PID).
+    .DESCRIPTION
+        Запись идентификаторов (PID) активных серверов в JSON-файл. Обоснование: необходимость восстановления контроля над запущенными процессами при перезапуске лаунчера.
+    #>
     try {
         $processData = @{}
         foreach ($serverName in $script:ServerProcesses.Keys) {
@@ -122,6 +119,12 @@ function Save-ServerPIDs {
 }
 
 function Load-ServerPIDs {
+    <#
+    .SYNOPSIS
+        Загрузка идентификаторов процессов из файла.
+    .DESCRIPTION
+        Восстановление управления процессами, запущенными в предыдущих сессиях. Использование JSON-формата обеспечивает структурированное хранение метаданных серверов.
+    #>
     try {
         if (-not (Test-Path $script:PidFile)) {
             Write-Log "Файл PID не найден, процессы не загружены" -Level 'DEBUG'
@@ -137,10 +140,11 @@ function Load-ServerPIDs {
             $processId = $property.Value
             
             try {
-                # Проверка существования процесса
+                # Проверка фактического наличия процесса в операционной системе.
                 $process = Get-Process -Id $processId -ErrorAction Stop
                 
-                # Двойная проверка - процесс найден и не завершился
+                # Двойная проверка состояния: процесс найден в таблице ОС и флаг HasExited отрицателен.
+                # Обоснование: Исключение ситуаций, когда PID переиспользуется другим процессом системы.
                 if (-not $process.HasExited) {
                     $script:ServerProcesses[$serverName] = $process
                     Write-Log "Загружен процесс для $serverName : PID $processId" -Level 'DEBUG'
@@ -151,13 +155,13 @@ function Load-ServerPIDs {
                 }
             }
             catch {
-                # Процесс не найден - это нормально, если был убит вручную
+                # Обработка ситуации отсутствия процесса (например, после ручного завершения или сбоя).
                 Write-Log "Процесс $serverName (PID: $processId) не найден (был убит вручную)" -Level 'DEBUG'
                 $deadCount++
             }
         }
         
-        Write-Log "Загружено процессов: $loadedCount, мертвых: $deadCount" -Level 'INFO'
+        Write-Log "Успешная загрузка процессов: $loadedCount, завершено: $deadCount" -Level 'INFO'
         
         # Если все процессы мертвые - очищаем файл PID
         if ($loadedCount -eq 0 -and $deadCount -gt 0) {
@@ -173,6 +177,10 @@ function Load-ServerPIDs {
 }
 
 function Remove-PidFile {
+    <#
+    .SYNOPSIS
+        Удаление файла идентификаторов. Обоснование: предотвращение попыток загрузки неактуальных данных при следующем старте.
+    #>
     try {
         if (Test-Path $script:PidFile) {
             Remove-Item $script:PidFile -Force -ErrorAction Stop
@@ -224,6 +232,12 @@ MCP PowerShell Server Launcher v$script:LauncherVersion
 }
 
 function Find-ServerScript {
+    <#
+    .SYNOPSIS
+        Поиск пути к скрипту сервера.
+    .DESCRIPTION
+        Последовательная проверка стандартных директорий (src/servers, servers) для локализации исполняемого файла.
+    #>
     param([string]$ServerName)
     $possiblePaths = @(
         "src\servers\$ServerName.ps1",
@@ -241,6 +255,14 @@ function Find-ServerScript {
 }
 
 function Test-ServerRunning {
+    <#
+    .SYNOPSIS
+        Проверка активности сервера.
+    .DESCRIPTION
+        Определение статуса процесса. 
+        Обоснование использования Refresh(): метод принудительно обновляет свойства объекта Process, 
+        запрашивая актуальное состояние у ядра ОС, исключая работу с устаревшим кэшем .NET.
+    #>
     param([string]$ServerName)
     
     if (-not $script:ServerProcesses.ContainsKey($ServerName)) {
@@ -275,6 +297,16 @@ function Test-ServerRunning {
 }
 
 function Start-MCPServer {
+    <#
+    .SYNOPSIS
+        Инициализация и запуск отдельного экземпляра MCP сервера.
+    .DESCRIPTION
+        Формирование параметров ProcessStartInfo для запуска в фоновом (скрытом) режиме.
+        Обоснование выбора перенаправления потоков (RedirectStandardOutput/Error): 
+        позволяет захватывать отладочную информацию без открытия лишних окон консоли.
+        Фоновое исполнение критично для параллельной работы нескольких независимых MCP-сервисов 
+        в рамках единой экосистемы AiStros.
+    #>
     param(
         [Parameter(Mandatory = $true)]
         [string]$ServerName,
@@ -321,6 +353,10 @@ function Start-MCPServer {
 }
 
 function Stop-MCPServers {
+    <#
+    .SYNOPSIS
+        Принудительное завершение всех управляемых серверов.
+    #>
     param([switch]$Force)
     Write-Log 'Остановка всех MCP серверов...' -Level 'INFO'
     Load-ServerPIDs
@@ -342,6 +378,10 @@ function Stop-MCPServers {
 }
 
 function Show-ServerStatus {
+    <#
+    .SYNOPSIS
+        Отображение текущего состояния всех серверов в консоли.
+    #>
     Write-Host ''
     Write-Host '=== СТАТУС MCP СЕРВЕРОВ ===' -ForegroundColor Cyan
     
@@ -379,6 +419,12 @@ function Show-ServerStatus {
 #region Main Logic
 
 function Start-AllServers {
+    <#
+    .SYNOPSIS
+        Комплексный запуск всей группы MCP серверов AiStros.
+    .DESCRIPTION
+        Определение реестра серверов и их запуск с передачей необходимых переменных окружения.
+    #>
     Write-Host ''
     Write-Host "=== MCP PowerShell Server Launcher v$script:LauncherVersion ===" -ForegroundColor Cyan
     $servers = @{
@@ -396,6 +442,7 @@ function Start-AllServers {
     if ($found.Count -eq 0) { Write-Log "Не найдено ни одного серверного скрипта" -Level 'ERROR'; return $false }
     foreach ($s in $found.Keys) {
         Write-Log "Запуск $s ($($servers[$s].Description))" -Level 'INFO'
+        # Обоснование передачи переменных: HF_TOKEN необходим для авторизации в HuggingFace, WP_PATH — для WP-CLI.
         $env=@{POWERSHELL_EXECUTION_POLICY='RemoteSigned';HF_TOKEN=$env:HF_TOKEN;WP_PATH='C:\xampp\htdocs\wordpress'}
         Start-MCPServer -ServerName $s -ScriptPath $found[$s] -Environment $env | Out-Null
         Start-Sleep -Milliseconds 300
@@ -412,7 +459,7 @@ try {
     if ($Help) { Show-Help; exit 0 }
     if ($StopServers) { Stop-MCPServers; exit 0 }
 
-    # Если -Force, то удаляем PID файл и начинаем с чистого листа
+    # Обоснование режима Force: решение проблем с "зависшими" записями в PID-файле после некорректного завершения системы.
     if ($Force) {
         Write-Log "Режим Force: игнорирование PID файла" -Level 'WARNING'
         Remove-PidFile
@@ -445,6 +492,7 @@ try {
     Write-Host "=== СЕРВЕРЫ УСПЕШНО ЗАПУЩЕНЫ ===" -ForegroundColor Green
     Write-Host "Для остановки: .\Start-MCPServers.ps1 -StopServers" -ForegroundColor Yellow
 
+    # Обоснование регистрации события: сохранение состояния при ручном закрытии консоли (Ctrl+C).
     $null = Register-EngineEvent -SourceIdentifier Console.CancelKeyPress -Action {
         Write-Host "`nСохранение PID..." -ForegroundColor Yellow
         Save-ServerPIDs

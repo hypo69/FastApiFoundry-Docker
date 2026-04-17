@@ -1,0 +1,10 @@
+<Configuration>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>D:\sandbox_mount</HostFolder>
+      <SandboxFolder>C:\Users\WDAGUtilityAccount\Desktop\src</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <Networking>Enable</Networking>
+</Configuration>
