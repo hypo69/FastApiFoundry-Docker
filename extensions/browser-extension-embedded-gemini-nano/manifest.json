@@ -2,9 +2,10 @@
   "manifest_version": 3,
   "name": "Gemini Nano Assistant",
   "version": "1.0.0",
-  "description": "9",
+  "description": "Локальный помощник на базе Gemini Nano",
   "permissions": [
-    "storage"
+    "storage",
+    "userScripts"
   ],
   "action": {
     "default_popup": "popup.html",
