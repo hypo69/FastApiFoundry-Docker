@@ -322,3 +322,5 @@ profiles/
 bin/llama-b8802-bin-win-cpu-x64/
 !bin/llama-b8802-bin-win-cpu-x64.zip
 !bin/Python-3.11.9.zip
+~config.*
+Математика

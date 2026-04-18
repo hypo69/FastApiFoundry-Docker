@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Простой пример использования FastAPI Foundry SDK"""
 
-from sdk import FoundryClient
+from SANDBOX.Alrix010.sdk import FoundryClient
 
 def main():
     print("🚀 FastAPI Foundry SDK - Simple Example")

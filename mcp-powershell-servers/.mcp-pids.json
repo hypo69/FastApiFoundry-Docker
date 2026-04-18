@@ -1,4 +1,5 @@
 {
-  "powershell-stdio": 30324,
-  "wordpress-cli": 79640
+  "powershell-stdio": 25524,
+  "wordpress-cli": 79640,
+  "powershell-https": 23680
 }
