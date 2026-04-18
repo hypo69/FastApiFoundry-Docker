@@ -258,14 +258,25 @@ try {
 }
 
 if ($docsServerConfig -and $docsServerConfig.enabled) {
+    Write-Host "📚 Сборка документации MkDocs..." -ForegroundColor Yellow
+    try {
+        # Пересборка site/ перед запуском сервера
+        Push-Location $Root
+        & $venvPath -m mkdocs build --quiet
+        Pop-Location
+        Write-Host "✅ Документация собрана" -ForegroundColor Green
+    } catch {
+        Write-Host "⚠️ Сборка документации не удалась: $_" -ForegroundColor Yellow
+    }
+
     Write-Host "🚀 Запуск сервера MkDocs на порту $($docsServerConfig.port)..." -ForegroundColor Yellow
     try {
-        # Запуск mkdocs в отдельном свернутом окне
+        # Запуск mkdocs serve в отдельном свернутом окне (hot-reload при изменениях docs/)
         Start-Process powershell.exe -ArgumentList @(
             '-NonInteractive', '-NoProfile', '-ExecutionPolicy', 'Bypass',
-            '-Command', "mkdocs serve -a 0.0.0.0:$($docsServerConfig.port)"
+            '-Command', "cd '$Root'; & '$venvPath' -m mkdocs serve -a 0.0.0.0:$($docsServerConfig.port)"
         ) -WindowStyle Minimized -PassThru | Out-Null
-        Write-Host "✅ Сервер MkDocs запущен в фоновом режиме" -ForegroundColor Green
+        Write-Host "✅ Сервер MkDocs запущен на http://localhost:$($docsServerConfig.port)" -ForegroundColor Green
     } catch {
         Write-Host "❌ Сбой при запуске сервера MkDocs: $_" -ForegroundColor Red
         Write-Host "⚠️ Продолжение работы без сервера документации." -ForegroundColor Yellow

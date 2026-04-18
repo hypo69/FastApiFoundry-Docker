@@ -1,66 +1,124 @@
 # Установка FastAPI Foundry
 
-Этот документ описывает процесс установки и настройки FastAPI Foundry, включая подготовку окружения, установку зависимостей и интеграцию с различными бэкендами ИИ.
+## Системные требования
 
-## 🛠️ Основной установщик (`install.ps1`)
+- Windows 10/11
+- Python 3.11+ (или будет установлен автоматически из `bin/Python-3.11.9.zip`)
+- PowerShell 5+
 
-Скрипт `install.ps1` автоматизирует большую часть процесса установки. Он выполняет следующие шаги:
+---
 
-1.  **Проверка и установка Python**: Ищет Python 3.11+ в системе. Если не найден, предлагает установить из локального архива `bin\Python-3.11.9.zip` (если присутствует).
-2.  **Создание виртуального окружения (`venv`)**: Изолирует зависимости проекта.
-3.  **Обновление `pip`**: Гарантирует использование последней версии менеджера пакетов Python.
-4.  **Установка основных зависимостей**: Устанавливает пакеты из `requirements.txt`.
-5.  **Установка RAG зависимостей (опционально)**: `sentence-transformers` и `faiss-cpu`. Можно пропустить, используя флаг `-SkipRag`.
-6.  **Настройка файла `.env`**: Создает его из `.env.example` или с настройками по умолчанию. Этот файл используется для переменных окружения.
-7.  **Создание папки `logs/`**: Для хранения логов приложения.
-8.  **Интеграция `llama.cpp` (опционально)**: Если в `bin/` найден архив `llama-*-bin-win-*.zip`, он распаковывается, и путь к `llama-server.exe` добавляется в `.env`.
-9.  **Установка Microsoft Foundry Local (опционально)**: Если Foundry CLI не найден, скрипт предложит установить его через `winget` (требуется Windows Package Manager).
-10. **Загрузка моделей (опционально)**: При первой установке скрипт предложит загрузить модели по умолчанию, используя `install\install-models.ps1`.
+## Автоматическая установка
 
-### Использование `install.ps1`
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+`install.ps1` выполняет следующие шаги:
+
+1. Ищет Python 3.11+ в системе. Если не найден — предлагает установить из `bin\Python-3.11.9.zip`
+2. Создаёт виртуальное окружение `venv\`
+3. Обновляет `pip`
+4. Устанавливает зависимости из `requirements.txt`
+5. Опционально устанавливает RAG-зависимости (`sentence-transformers`, `faiss-cpu`) — можно пропустить флагом `-SkipRag`
+6. Создаёт `.env` из `.env.example` (если `.env` ещё не существует)
+7. Создаёт папку `logs\`
+8. Если в `bin\` найден архив `llama-*-bin-win-*.zip` — распаковывает и прописывает путь в `.env`
+9. Если `foundry` не найден в PATH — предлагает установить через `winget`
+10. Опционально загружает модели по умолчанию через `install\install-models.ps1`
+
+### Параметры install.ps1
 
 ```powershell
 # Стандартная установка
 .\install.ps1
 
-# Пересоздать виртуальное окружение
+# Пересоздать venv (если что-то сломалось)
 .\install.ps1 -Force
 
-# Установка без RAG зависимостей
+# Без RAG зависимостей (экономит ~2 GB)
 .\install.ps1 -SkipRag
 ```
 
-## 🐳 Установка через Docker
+---
 
-FastAPI Foundry можно запустить в контейнере Docker, используя `docker-compose.yml`.
+## Настройка .env
 
-1.  **Убедитесь, что Docker установлен и запущен** ([Docker Desktop](https://docker.com/products/docker-desktop)).
-2.  **Запустите `launcher.ps1`** и выберите "4. 🐳 Docker Launch", или выполните команды вручную:
+После установки отредактируйте `.env`:
 
-    ```powershell
-    # Сборка образа Docker
-    docker-compose build
+```env
+# Foundry (если не определяется автоматически)
+FOUNDRY_BASE_URL=http://localhost:50477/v1
 
-    # Запуск контейнера
-    docker-compose up
-    ```
+# HuggingFace (для закрытых моделей: Gemma, Llama)
+HF_TOKEN=hf_ваш_токен
 
-## 🔧 Настройка переменных окружения (`.env`)
+# llama.cpp (опционально)
+LLAMA_MODEL_PATH=D:\models\qwen2.5-0.5b-q4_k_m.gguf
+LLAMA_AUTO_START=false
+```
 
-Файл `.env` используется для хранения конфиденциальных данных и настроек, которые могут меняться между окружениями. Важные переменные:
+Полный список переменных — в `.env.example`.
 
-*   `FOUNDRY_BASE_URL`: URL для Foundry Local (например, `http://localhost:50477/v1`).
-*   `LLAMA_SERVER_PATH`: Путь к исполняемому файлу `llama-server.exe`.
-*   `GEMINI_API_KEY`: API ключ для Google Gemini (если используется).
+---
 
-Вы можете настроить их вручную или использовать скрипт `setup-env.ps1` (доступен через `launcher.ps1` -> "5. ⚙️ Environment Setup").
+## Установка бэкендов ИИ
 
-## 🤖 Установка бэкендов ИИ
+### Microsoft Foundry Local (рекомендуется)
 
-FastAPI Foundry поддерживает несколько бэкендов для запуска моделей ИИ:
+```powershell
+# Через winget
+winget install Microsoft.FoundryLocal
 
-*   **Microsoft Foundry Local**: Рекомендуется для запуска Qwen, DeepSeek и других моделей. Устанавливается через `winget` или вручную ([инструкции](https://aka.ms/foundry-local)).
-*   **llama.cpp**: Для моделей в формате GGUF. Требует загрузки `llama-server.exe` и указания пути в `.env`.
-*   **Ollama**: Популярная платформа для запуска локальных моделей. [Скачать Ollama](https://ollama.com/download).
+# Или через скрипт
+.\install\install-foundry.ps1
+```
 
-Подробности по установке и настройке каждого бэкенда см. в [соответствующих документах](models_guide.md).
+После установки Foundry запускается автоматически при старте `start.ps1`.
+
+### HuggingFace CLI
+
+```powershell
+.\install\install-huggingface-cli.ps1
+```
+
+Устанавливает `huggingface-hub` и запускает `hf auth login`.
+
+### llama.cpp
+
+Бинарники для Windows x64 уже включены в `bin\llama-b8802-bin-win-cpu-x64\`.
+`install.ps1` автоматически прописывает путь в `.env`.
+
+---
+
+## Docker
+
+```powershell
+docker-compose build
+docker-compose up
+```
+
+Или через `docker-compose up -d` для фонового режима.
+
+Веб-интерфейс: **http://localhost:9696**
+
+---
+
+## Проверка установки
+
+```powershell
+# Проверить конфигурацию
+venv\Scripts\python.exe check_env.py
+
+# Диагностика системы
+venv\Scripts\python.exe diagnose.py
+
+# Запустить сервер
+.\start.ps1
+```
+
+После запуска:
+
+- Веб-интерфейс: http://localhost:9696
+- Swagger UI: http://localhost:9696/docs
+- Health check: http://localhost:9696/api/v1/health

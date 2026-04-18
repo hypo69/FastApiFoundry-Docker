@@ -348,15 +348,18 @@ export function updateFoundryStatus(status, details = {}) {
         }
     }
 
-    // Foundry Service card badges
-    const badge = document.getElementById('foundry-service-status');
-    const portBadge = document.getElementById('foundry-port-indicator');
-    const infoEl = document.getElementById('foundry-service-info');
+    const badge      = document.getElementById('foundry-service-status');
+    const portBadge  = document.getElementById('foundry-port-indicator');
+    const infoEl     = document.getElementById('foundry-service-info');
+    const sw         = document.getElementById('foundry-toggle-switch');
+    const swLabel    = document.getElementById('foundry-toggle-label');
 
     if (status === 'running') {
-        if (badge) { badge.className = 'badge bg-success'; badge.textContent = 'Running'; }
-        if (portBadge) { portBadge.className = 'badge bg-info me-2'; portBadge.textContent = `Port: ${details.port || '?'}`; }
-        if (infoEl) infoEl.innerHTML = `
+        if (badge)    { badge.className = 'badge bg-success'; badge.textContent = 'Running'; }
+        if (portBadge){ portBadge.className = 'badge bg-info me-2'; portBadge.textContent = `Port: ${details.port || '?'}`; }
+        if (sw)       { sw.checked = true; sw.disabled = false; }
+        if (swLabel)  swLabel.textContent = 'Foundry запущен';
+        if (infoEl)   infoEl.innerHTML = `
             <div class="d-flex flex-column gap-1">
                 <span><i class="bi bi-circle-fill text-success"></i> <strong>Foundry запущен</strong></span>
                 <span class="text-muted"><small>URL: ${details.url || 'N/A'}</small></span>
@@ -364,13 +367,17 @@ export function updateFoundryStatus(status, details = {}) {
                 ${details.default_model ? `<span class="text-muted"><small>Model: ${details.default_model}</small></span>` : ''}
             </div>`;
     } else if (status === 'stopped') {
-        if (badge) { badge.className = 'badge bg-warning'; badge.textContent = 'Stopped'; }
-        if (portBadge) { portBadge.className = 'badge bg-secondary me-2'; portBadge.textContent = 'Port: N/A'; }
-        if (infoEl) infoEl.innerHTML = `<span class="text-warning"><i class="bi bi-stop-fill"></i> Foundry не запущен. Нажмите Start Foundry.</span>`;
+        if (badge)    { badge.className = 'badge bg-warning'; badge.textContent = 'Stopped'; }
+        if (portBadge){ portBadge.className = 'badge bg-secondary me-2'; portBadge.textContent = 'Port: N/A'; }
+        if (sw)       { sw.checked = false; sw.disabled = false; }
+        if (swLabel)  swLabel.textContent = 'Foundry остановлен';
+        if (infoEl)   infoEl.innerHTML = `<span class="text-warning"><i class="bi bi-stop-fill"></i> Foundry не запущен.</span>`;
     } else {
-        if (badge) { badge.className = 'badge bg-danger'; badge.textContent = 'Offline'; }
-        if (portBadge) { portBadge.className = 'badge bg-secondary me-2'; portBadge.textContent = 'Port: N/A'; }
-        if (infoEl) infoEl.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Нет связи с Foundry.</span>`;
+        if (badge)    { badge.className = 'badge bg-danger'; badge.textContent = 'Offline'; }
+        if (portBadge){ portBadge.className = 'badge bg-secondary me-2'; portBadge.textContent = 'Port: N/A'; }
+        if (sw)       { sw.checked = false; sw.disabled = false; }
+        if (swLabel)  swLabel.textContent = 'Foundry недоступен';
+        if (infoEl)   infoEl.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Нет связи с Foundry.</span>`;
     }
 }
 
@@ -453,76 +460,52 @@ export async function selectFoundryModel(modelId) {
     }
 }
 
-// Запуск Foundry сервиса
-export async function startFoundryService() {
-    const btn = document.getElementById('foundry-start-btn');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Starting...';
-    }
-    if (window.addLog) window.addLog('▶ Starting Foundry service...');
+export async function toggleFoundryService(checked) {
+    if (checked) await startFoundryService();
+    else await stopFoundryService();
+}
 
+export async function startFoundryService() {
+    const sw = document.getElementById('foundry-toggle-switch');
+    if (sw) sw.disabled = true;
+    if (window.addLog) window.addLog('▶ Starting Foundry service...');
     try {
-        const response = await fetch(`${window.API_BASE}/foundry/start`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'}
-        });
+        const response = await fetch(`${window.API_BASE}/foundry/start`, { method: 'POST', headers: {'Content-Type': 'application/json'} });
         const data = await response.json();
-        
         if (data.success) {
-            if (window.addLog) window.addLog('✅ Foundry started successfully');
             showAlert('Foundry started successfully', 'success');
-            setTimeout(() => {
-                checkSystemStatus();
-                if (window.loadModels) window.loadModels();
-            }, 3000);
+            setTimeout(() => { checkSystemStatus(); if (window.loadModels) window.loadModels(); }, 3000);
         } else {
-            if (window.addLog) window.addLog(`❌ Failed to start Foundry: ${data.error}`);
             showAlert(`Failed to start Foundry: ${data.error}`, 'danger');
+            if (sw) sw.checked = false;
         }
     } catch (error) {
-        if (window.addLog) window.addLog(`❌ Start request failed: ${error.message}`);
         showAlert(`Start request failed: ${error.message}`, 'danger');
+        if (sw) sw.checked = false;
     } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-play-fill"></i> Start Foundry';
-        }
+        if (sw) sw.disabled = false;
     }
 }
 
-// Остановка Foundry сервиса
 export async function stopFoundryService() {
-    const btn = document.getElementById('foundry-stop-btn');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Stopping...';
-    }
+    const sw = document.getElementById('foundry-toggle-switch');
+    if (sw) sw.disabled = true;
     if (window.addLog) window.addLog('⏹ Stopping Foundry service...');
-
     try {
-        const response = await fetch(`${window.API_BASE}/foundry/stop`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'}
-        });
+        const response = await fetch(`${window.API_BASE}/foundry/stop`, { method: 'POST', headers: {'Content-Type': 'application/json'} });
         const data = await response.json();
-        
         if (data.success) {
-            if (window.addLog) window.addLog('✅ Foundry stopped');
             showAlert('Foundry stopped', 'success');
             checkSystemStatus();
         } else {
-            if (window.addLog) window.addLog(`❌ Failed to stop Foundry: ${data.error}`);
             showAlert(`Failed to stop Foundry: ${data.error}`, 'danger');
+            if (sw) sw.checked = true;
         }
     } catch (error) {
-        if (window.addLog) window.addLog(`❌ Stop request failed: ${error.message}`);
         showAlert(`Stop request failed: ${error.message}`, 'danger');
+        if (sw) sw.checked = true;
     } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-stop-fill"></i> Stop Foundry';
-        }
+        if (sw) sw.disabled = false;
     }
 }
 

@@ -9,8 +9,17 @@ on:
       - 'src/**'
       - 'docs/**'
       - 'mkdocs.yml'
-      - 'extentions/**'
+      - 'extensions/**'
       - 'mcp-powershell-servers/**'
+      - 'scripts/**'
+      - 'install/**'
+      - 'utils/**'
+      - 'static/**'
+      - 'check_engine/**'
+      - 'SANDBOX/**'
+      - 'config.json'
+      - 'config_manager.py'
+      - 'run.py'
       - '.github/workflows/deploy-docs.yml'
 
 permissions:
@@ -30,7 +39,7 @@ jobs:
           node-version: '20'
 
       - name: Generate JS docs (TypeDoc)
-        working-directory: extentions/browser-extention-summarizer
+        working-directory: extensions/browser-extension-summarizer
         run: |
           npx --yes typedoc \
             --plugin typedoc-plugin-markdown \
@@ -41,7 +50,7 @@ jobs:
             --hideGenerator \
             --outputFileStrategy modules \
             --flattenOutputFiles \
-            summarizer.js connectors/foundry.js connectors/gemini.js \
+            summarizer.js connectors/gemini.js \
             connectors/openai-compat.js connectors/openrouter.js \
             logger.js ui-manager.js
 

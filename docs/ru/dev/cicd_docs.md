@@ -31,8 +31,17 @@ paths:
   - 'src/**'                        # Python исходники
   - 'docs/**'                       # Markdown документация
   - 'mkdocs.yml'                    # Конфиг MkDocs
-  - 'extentions/**'                 # JS браузерное расширение
+  - 'extensions/**'                 # JS браузерное расширение
   - 'mcp-powershell-servers/**'     # PowerShell MCP серверы
+  - 'scripts/**'                    # PowerShell операционные скрипты
+  - 'install/**'                    # Скрипты установки
+  - 'utils/**'                      # Вспомогательные утилиты
+  - 'static/**'                     # Веб-интерфейс
+  - 'check_engine/**'               # Диагностические тесты
+  - 'SANDBOX/**'                    # SDK и эксперименты
+  - 'config.json'                   # Основная конфигурация
+  - 'config_manager.py'             # Класс Config
+  - 'run.py'                        # Точка входа
   - '.github/workflows/deploy-docs.yml'
 ```
 
@@ -42,13 +51,13 @@ paths:
 
 Генерирует документацию из JSDoc аннотаций в JavaScript файлах браузерного расширения.
 
-**Исходники:** `extentions/browser-extention-summarizer/`
+**Исходники:** `extensions/browser-extension-summarizer/`
 
 **Инструменты:**
 - [TypeDoc](https://typedoc.org/) — парсит JSDoc и генерирует документацию
 - [typedoc-plugin-markdown](https://typedoc-plugin-markdown.org/) — выводит в формате Markdown вместо HTML
 
-**Конфигурация:** `extentions/browser-extention-summarizer/typedoc.json`
+**Конфигурация:** `extensions/browser-extension-summarizer/typedoc.json`
 
 **Вывод:** `docs/ru/dev/js/` — передаётся в job `deploy` через GitHub Actions artifact
 
@@ -57,7 +66,6 @@ paths:
 | Файл | Описание |
 |---|---|
 | `summarizer.js` | Логика суммаризации страниц, маршрутизация к провайдерам |
-| `connectors/foundry.js` | Коннектор к Foundry Local API |
 | `connectors/gemini.js` | Коннектор к Google Gemini |
 | `connectors/openai-compat.js` | OpenAI-совместимый коннектор |
 | `connectors/openrouter.js` | Коннектор к OpenRouter |
@@ -243,7 +251,7 @@ mkdocs build
 
 ### JavaScript файл
 
-Добавьте путь к файлу в `extentions/browser-extention-summarizer/typedoc.json`:
+Добавьте путь к файлу в `extensions/browser-extension-summarizer/typedoc.json`:
 
 ```json
 {

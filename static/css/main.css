@@ -1,0 +1,63 @@
+/*
+===============================================================================
+Process Name: Main UI styles — contrast overrides for form controls
+===============================================================================
+Description:
+  Ensures select/option elements on white backgrounds have sufficient contrast.
+  Uses high specificity to override Bootstrap 5 defaults.
+
+File: css/main.css
+Project: FastApiFoundry (Docker)
+Version: 0.6.0
+Author: hypo69
+Copyright: © 2026 hypo69
+===============================================================================
+*/
+
+/* ── Select on white/light backgrounds — high specificity override ── */
+body select.form-select,
+body select.form-control,
+.tab-content select.form-select,
+.tab-content select.form-control,
+.card select.form-select,
+.card select.form-control,
+.modal select.form-select,
+.modal select.form-control {
+    color: #212529 !important;
+    background-color: #fff !important;
+}
+
+body select.form-select option,
+body select.form-control option,
+.tab-content select.form-select option,
+.card select.form-select option,
+.modal select.form-select option {
+    color: #212529;
+    background-color: #fff;
+}
+
+/* Placeholder / empty option */
+body select.form-select option[value=""],
+body select.form-control option[value=""] {
+    color: #6c757d;
+}
+
+/* Disabled */
+body select.form-select:disabled,
+body select.form-control:disabled {
+    color: #6c757d !important;
+    background-color: #e9ecef !important;
+}
+
+/* ── Navbar selects stay white text on blue bg ── */
+.navbar select.form-select,
+.navbar select.form-control {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, .15) !important;
+}
+
+.navbar select.form-select option,
+.navbar select.form-control option {
+    color: #212529 !important;
+    background-color: #fff !important;
+}

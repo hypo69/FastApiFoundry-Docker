@@ -13,7 +13,7 @@
 #
 # File: src/api/endpoints/rag.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.6.0
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # Copyright: © 2026 hypo69
@@ -301,9 +301,9 @@ async def load_rag_profile(request: dict):
     cfg.setdefault("rag_system", {})["index_dir"] = str(profile_dir)
     config_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    # Перезагружаем RAG систему
+    # Перезагружаем RAG систему с новым путём
     from ...rag.rag_system import rag_system
-    await rag_system.reload_index()
+    await rag_system.reload_index(index_dir=str(profile_dir))
 
     return {"success": True, "message": f"Loaded profile '{name}'", "index_dir": str(profile_dir)}
 

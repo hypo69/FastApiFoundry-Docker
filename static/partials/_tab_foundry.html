@@ -12,15 +12,16 @@
                                 </div>
                             </div>
                             <div class="card-body">
-                                <div class="d-grid gap-2 mb-3" style="max-width:300px">
-                                    <button id="foundry-start-btn" class="btn btn-success" onclick="startFoundryService()">
-                                        <i class="bi bi-play-fill"></i> <span data-i18n="foundry.start">Start Foundry</span>
-                                    </button>
-                                    <button id="foundry-stop-btn" class="btn btn-danger" onclick="stopFoundryService()">
-                                        <i class="bi bi-stop-fill"></i> <span data-i18n="foundry.stop">Stop Foundry</span>
-                                    </button>
-                                    <button class="btn btn-outline-primary" onclick="checkFoundryStatus()">
-                                        <i class="bi bi-arrow-clockwise"></i> <span data-i18n="foundry.check_status">Check Status</span>
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                               id="foundry-toggle-switch" style="width:3em;height:1.5em;cursor:pointer"
+                                               onchange="toggleFoundryService(this.checked)">
+                                        <label class="form-check-label fw-semibold" for="foundry-toggle-switch"
+                                               id="foundry-toggle-label" data-i18n="foundry.start">Start Foundry</label>
+                                    </div>
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="checkFoundryStatus()">
+                                        <i class="bi bi-arrow-clockwise"></i>
                                     </button>
                                 </div>
                                 <div id="foundry-service-info" class="text-muted">

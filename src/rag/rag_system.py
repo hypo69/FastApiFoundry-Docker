@@ -9,6 +9,7 @@
 # File: rag_system.py
 # Project: AiStros
 # Module: FastApiFoundry
+# Version: 0.6.0
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # Copyright: © 2026 hypo69
@@ -188,14 +189,21 @@ class RAGSystem:
             'vectors_count': self.index.ntotal if self.loaded and self.index else 0
         }
     
-    async def reload_index(self) -> bool:
-        """Перезагрузить RAG индекс"""
+    async def reload_index(self, index_dir: Optional[str] = None) -> bool:
+        """Перезагрузить RAG индекс, опционально из нового пути"""
         logger.info("Reloading RAG index...")
         self.loaded = False
         self.index = None
         self.chunks = []
         self.model = None
-        
+
+        if index_dir:
+            self.index_dir = Path(index_dir)
+            logger.info(f"Switching RAG index_dir to: {self.index_dir}")
+        else:
+            # Re-read from config in case it was updated
+            self.index_dir = Path(config.dir_rag)
+
         return await self.initialize()
     
     async def clear_index(self) -> bool:

@@ -1,7 +1,7 @@
-# Индекс документации FastAPI Foundry (RU)
+# Документация FastAPI Foundry
 
 ## 👤 Руководство пользователя
-*Документация для тех, кто хочет просто запустить и пользоваться.*
+*Для тех, кто хочет запустить и использовать систему.*
 
 - [Быстрый старт](user/getting_started.md)
 - [Установка и настройка](user/installation.md)
@@ -14,4 +14,19 @@
 - [Общая архитектура](dev/architecture.md)
 - [API Reference](dev/api_reference.md)
 - [Система RAG](dev/rag_system.md)
-- [Создание агентов](dev/agents.md)
+- [Агенты ИИ](dev/agents.md)
+- [CI/CD документации](dev/cicd_docs.md)
+
+## 📖 Code Reference (Python)
+*Автогенерируемая документация из docstrings.*
+
+- [Foundry Client](dev/code/foundry_client.md)
+- [Config](dev/code/config.md)
+- [RAG System](dev/code/rag_system.md)
+- [App Factory](dev/code/app.md)
+
+## 🌐 Browser Extension (JS)
+- [Обзор](dev/js/index.md)
+
+## ⚙️ PowerShell MCP Servers
+- [Обзор](dev/powershell/index.md)

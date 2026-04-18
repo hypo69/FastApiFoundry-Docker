@@ -17,6 +17,7 @@
     "examples": "Examples",
     "mcp": "MCP Servers",
     "agent": "Agent",
+    "providers": "API Keys",
     "logs": "Logs",
     "docs": "API Documentation"
   },

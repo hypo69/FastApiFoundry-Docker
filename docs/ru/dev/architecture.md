@@ -1,98 +1,304 @@
 # Архитектура FastAPI Foundry
 
-FastAPI Foundry — это модульная платформа, объединяющая быстрый веб-фреймворк FastAPI с возможностями локальных моделей искусственного интеллекта. Ее архитектура спроектирована для гибкости, расширяемости и простоты интеграции с различными ИИ-бэкендами.
-
-## 🗺️ Обзор высокоуровневой архитектуры
-
-Ядро системы состоит из:
-
-1.  **FastAPI Server**: Основной веб-сервер, предоставляющий RESTful API для взаимодействия с ИИ-моделями, чатом, RAG и другими функциями.
-2.  **Configuration Manager**: Единая точка управления всеми настройками приложения.
-3.  **AI Backends**: Внешние сервисы (Microsoft Foundry Local, llama.cpp, Ollama), которые запускают и управляют ИИ-моделями.
-4.  **RAG System**: Модуль для поиска и извлечения контекста.
-5.  **Agents**: Расширяемые компоненты, использующие ИИ-модели для выполнения задач с помощью инструментов.
+## Обзор системы
 
 ```
-+-----------------------+
-|       Web UI          |
-|   (Static Files)      |
-+-----------+-----------+
-            |
-            | HTTP/HTTPS
-            |
-+-----------------------+
-|    FastAPI Server     |
-| (src/api/main.py)     |
-|                       |
-| +-------------------+ |
-| |  API Endpoints    | |
-| | (src/api/endpoints/)| |
-| +---------+---------+ |
-|           |           |
-| +---------+---------+ |
-| |  Config Manager   | |
-| | (config_manager.py)| |
-| +---------+---------+ |
-|           |           |
-| +---------+---------+ |
-| |   RAG System      | |
-| | (src/rag/rag_system.py) |
-| +---------+---------+ |
-|           |           |
-| +---------+---------+ |
-| |    Agents         | |
-| | (src/agents/)     | |
-| +---------+---------+ |
-+-----------+-----------+
-            | API Calls (HTTP/gRPC)
-            |
-+-----------+-----------+
-|    AI Backends        |
-| (Foundry Local,       |
-|  llama.cpp, Ollama)   |
-+-----------------------+
+Browser / API Client
+        │ HTTP
+        ▼
+┌─────────────────────────────────────────┐
+│           FastAPI (port 9696)           │
+│  src/api/app.py  ←  create_app()        │
+│                                         │
+│  /api/v1/health      health.py          │
+│  /api/v1/generate    generate.py        │
+│  /api/v1/chat        chat_endpoints.py  │
+│  /api/v1/rag/*       rag.py             │
+│  /api/v1/hf/*        hf_models.py       │
+│  /api/v1/llama/*     llama_cpp.py       │
+│  /api/v1/foundry/*   foundry*.py        │
+│  /api/v1/agent/*     agent.py           │
+│  /api/v1/config      config.py          │
+│  /static             static/            │
+└──────────┬──────────────────────────────┘
+           │
+    ┌──────┴───────┬──────────────┬──────────────┐
+    ▼              ▼              ▼              ▼
+Foundry Local  HuggingFace   llama.cpp      Ollama
+(port dynamic) Transformers  (port 8080)  (port 11434)
+ONNX models    PyTorch/HF    GGUF models   GGUF models
 ```
 
-## 🚀 Запуск приложения (`run.py`)
+---
 
-Файл `run.py` является главной точкой входа для запуска FastAPI сервера. Он выполняет следующие ключевые шаги:
+## Startup workflow
 
-1.  **Инициализация логирования**: Настраивает систему логирования для вывода в консоль и файл `logs/app.log`.
-2.  **Загрузка переменных окружения**: Использует `src/utils/env_processor.py` для загрузки переменных из `.env`.
-3.  **Определение порта сервера**: Динамически находит свободный порт в заданном диапазоне (по умолчанию 9696-9796), если включена опция `port_auto_find_free` в `config.json`. В противном случае используется порт из конфигурации (по умолчанию 8000).
-4.  **Обнаружение Foundry AI**: Автоматически определяет, запущен ли сервис Microsoft Foundry Local, и если да, устанавливает его базовый URL в конфигурацию.
-5.  **Запуск Uvicorn**: Использует библиотеку `uvicorn` для запуска FastAPI приложения (`src.api.main:app`).
+### Полный запуск через start.ps1
 
-## ⚙️ Управление конфигурацией (`config_manager.py`)
+```
+start.ps1
+  │
+  ├─[1] venv проверка
+  │      ├─ venv\Scripts\python.exe найден → активировать
+  │      └─ не найден → запустить install.ps1 → создать venv
+  │
+  ├─[2] Load-EnvFile ".env"
+  │      └─ SetEnvironmentVariable для каждой KEY=VALUE
+  │
+  ├─[3] Get-FoundryPort()
+  │      ├─ Get-Process "Inference.Service.Agent*"
+  │      │   ├─ найден → netstat -ano | grep PID | grep LISTENING
+  │      │   │            └─ GET /v1/models → HTTP 200 → вернуть порт
+  │      │   └─ не найден → foundry service start
+  │      │                   └─ опрос 10×2 сек → FOUNDRY_DYNAMIC_PORT=<port>
+  │      └─ FOUNDRY_BASE_URL = http://localhost:<port>/v1/
+  │
+  ├─[4] config.json → docs_server.enabled?
+  │      └─ true → mkdocs serve -a 0.0.0.0:<port>  (фоновое окно)
+  │
+  ├─[5] .env → LLAMA_MODEL_PATH + LLAMA_AUTO_START=true?
+  │      └─ true → scripts\llama-start.ps1 -ModelPath ... -Port ...  (фоновое окно)
+  │                 └─ LLAMA_BASE_URL = http://127.0.0.1:<port>/v1
+  │
+  ├─[6] %TEMP%\fastapi-foundry.pid → убить предыдущий процесс
+  │
+  └─[7] venv\Scripts\python.exe run.py  ← блокирующий вызов
+          │
+          run.py
+            ├─ UTF-8 stdout/stderr (Windows)
+            ├─ src/utils/env_processor → load_env_variables()
+            ├─ Config() singleton → config.json
+            ├─ get_server_port():
+            │   ├─ port_auto_find_free=false → config.api_port (9696)
+            │   └─ port_auto_find_free=true  → scan 9696–9796
+            ├─ resolve_foundry_base_url():
+            │   1. os.getenv("FOUNDRY_BASE_URL")
+            │   2. os.getenv("FOUNDRY_DYNAMIC_PORT")
+            │   3. tasklist → Inference.Service.Agent* → netstat → /v1/models
+            ├─ config.foundry_base_url = url
+            └─ uvicorn.run("src.api.main:app", port=port, ...)
+                  │
+                  lifespan(app):
+                    ├─ await rag_system.initialize()
+                    │   └─ загружает FAISS индекс из rag_index/
+                    ├─ if auto_load_default and default_model:
+                    │   └─ subprocess: foundry model load <model>
+                    yield
+                    └─ await foundry_client.close()
+```
 
-Класс `Config` (`config_manager.py`) реализует паттерн Singleton и предоставляет централизованный доступ ко всем настройкам приложения. Настройки загружаются из файла `config.json`.
+### Прямой запуск (без start.ps1)
 
-Ключевые секции конфигурации:
+```powershell
+# Если Foundry уже запущен и venv активирован
+venv\Scripts\python.exe run.py
+```
 
-*   `fastapi_server`: Настройки хоста, порта, режима перезагрузки и уровня логирования для FastAPI.
-*   `foundry_ai`: Параметры для взаимодействия с Foundry AI, такие как модель по умолчанию, температура и `max_tokens`.
-*   `port_management`: Настройки для автоматического поиска свободного порта.
-*   `rag_system`: Параметры для системы RAG (включено ли, директория индекса, модель).
+`run.py` самостоятельно находит Foundry через `tasklist` + `netstat`.
 
-Переменные окружения (из `.env`) могут переопределять или дополнять значения из `config.json`.
+---
 
-## 🌐 FastAPI приложение (`src/api/main.py`)
+## Конфигурация
 
-`src/api/main.py` создает экземпляр FastAPI приложения, используя фабричную функцию `create_app()` из `src/api/app.py`.
+### Приоритет источников
 
-В `src/api/app.py` происходит регистрация всех маршрутов (endpoints), которые определены в `src/api/endpoints/`.
+```
+.env (секреты, токены, пути)
+  └─ переопределяет →
+config.json (публичные настройки)
+  └─ читается через →
+Config singleton (config_manager.py)
+  └─ доступен везде как →
+from src.core.config import config
+```
 
-Пример регистрации маршрута:
+### Секции config.json
+
+```json
+{
+  "fastapi_server": {
+    "host": "0.0.0.0",
+    "port": 9696,
+    "auto_find_free_port": false,
+    "mode": "dev",
+    "workers": 1
+  },
+  "foundry_ai": {
+    "default_model": "qwen3-0.6b-generic-cpu:4",
+    "auto_load_default": true,
+    "temperature": 0.7,
+    "max_tokens": 2048
+  },
+  "rag_system": {
+    "enabled": true,
+    "index_dir": "rag_index",
+    "chunk_size": 1000
+  },
+  "docs_server": {
+    "enabled": false,
+    "port": 9697
+  },
+  "llama_cpp": {
+    "port": 9780,
+    "host": "127.0.0.1"
+  },
+  "huggingface": {
+    "models_dir": "./models/hf",
+    "device": "auto",
+    "default_max_new_tokens": 512,
+    "default_temperature": 0.7
+  }
+}
+```
+
+### Config singleton
 
 ```python
-from .endpoints.translation import router as translation_router
-app.include_router(translation_router, prefix="/api/v1")
+from src.core.config import config
+
+config.api_port            # int, порт FastAPI
+config.api_host            # str, хост
+config.api_reload          # bool, hot reload
+config.foundry_base_url    # str | None, URL Foundry API
+config.foundry_base_url = "http://localhost:50477/v1/"  # setter
+config.foundry_default_model   # str
+config.foundry_auto_load_default  # bool
+config.rag_enabled         # bool
+config.rag_index_dir       # str, путь к индексу
+config.rag_model           # str, модель эмбеддингов
+config.rag_top_k           # int
+config.dir_models          # str, ~/.models
+config.dir_hf_models       # str, ~/.hf_models
+
+config.get_section("huggingface")   # dict секции
+config.get_raw_config()             # весь config.json
+config.update_config(new_dict)      # сохранить в файл
+config.reload_config()              # перечитать файл
 ```
 
-Каждый файл в `src/api/endpoints/` отвечает за определенную функциональную область (например, `chat_endpoints.py`, `rag.py`, `agent.py`) и экспортирует свой `APIRouter`.
+---
 
-## 📊 Модели данных (`src/models/`)
+## Модули src/
 
-Директория `src/models/` содержит классы и утилиты для взаимодействия с различными бэкендами ИИ и моделями данных. Здесь определены классы-обертки для Foundry Local, HuggingFace и другие утилиты, позволяющие FastAPI Foundry абстрагироваться от деталей конкретных ИИ-сервисов.
+### src/api/
 
-Например, `src/models/foundry_client.py` и `src/models/enhanced_foundry_client.py` предоставляют функциональность для взаимодействия с Foundry API.
+| Файл | Назначение |
+|---|---|
+| `app.py` | `create_app()` — фабрика FastAPI, регистрация роутеров, lifespan, CORS, middleware |
+| `main.py` | `app = create_app()` — точка входа для Uvicorn |
+| `models.py` | Pydantic модели запросов/ответов |
+| `endpoints/` | Роутеры по функциональным областям |
+
+Все роутеры подключаются с префиксом `/api/v1`:
+
+```python
+app.include_router(health.router,        prefix="/api/v1")
+app.include_router(generate.router,      prefix="/api/v1")
+app.include_router(chat_router,          prefix="/api/v1")
+app.include_router(rag.router,           prefix="/api/v1")
+app.include_router(hf_router,            prefix="/api/v1")
+app.include_router(llama_router,         prefix="/api/v1")
+app.include_router(foundry_mgmt_router,  prefix="/api/v1")
+app.include_router(agent_router,         prefix="/api/v1")
+app.include_router(converter_router,     prefix="/api/v1")
+```
+
+### src/models/
+
+| Файл | Назначение |
+|---|---|
+| `foundry_client.py` | Async HTTP клиент к Foundry API (aiohttp, singleton) |
+| `enhanced_foundry_client.py` | Расширенный клиент с дополнительными методами |
+| `hf_client.py` | HuggingFace: скачивание, загрузка в память, inference |
+| `model_manager.py` | Унифицированный менеджер всех бэкендов |
+
+### src/rag/
+
+| Файл | Назначение |
+|---|---|
+| `rag_system.py` | `RAGSystem` — FAISS поиск, singleton `rag_system` |
+| `indexer.py` | Индексация документов, генерация эмбеддингов |
+
+### src/agents/
+
+| Файл | Назначение |
+|---|---|
+| `base.py` | `BaseAgent` — абстрактный класс агента |
+| `powershell_agent.py` | `PowerShellAgent` — выполнение команд через MCP |
+
+### src/utils/
+
+| Файл | Назначение |
+|---|---|
+| `env_processor.py` | Загрузка `.env`, обработка переменных |
+| `foundry_finder.py` | Поиск порта Foundry |
+| `logging_config.py` | Настройка логирования |
+| `logging_system.py` | Структурированное логирование (JSONL) |
+| `log_analyzer.py` | Анализ лог-файлов |
+
+---
+
+## Паттерны кода
+
+### Singleton (Config, FoundryClient, RAGSystem)
+
+```python
+class Config:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._load_config()
+        return cls._instance
+
+config = Config()  # глобальный экземпляр
+```
+
+### Async HTTP клиент (FoundryClient)
+
+```python
+class FoundryClient:
+    def __init__(self):
+        self.session = None
+
+    async def _get_session(self):
+        if self.session is None or self.session.closed:
+            self.session = aiohttp.ClientSession(timeout=...)
+        return self.session
+
+    async def close(self):
+        if self.session and not self.session.closed:
+            await self.session.close()
+```
+
+### Ответы API
+
+Все endpoints возвращают единый формат:
+
+```python
+# Успех
+{"success": True, "data": ..., "count": N}
+
+# Ошибка
+{"success": False, "error": "Human-readable message"}
+```
+
+### CPU-bound операции в async контексте
+
+```python
+# FAISS, SentenceTransformer, HF inference — блокирующие операции
+loop = asyncio.get_event_loop()
+result = await loop.run_in_executor(None, blocking_function, arg1, arg2)
+```
+
+### Префиксы моделей
+
+```python
+if model_id.startswith("hf::"):
+    # HuggingFace Transformers
+elif model_id.startswith("llama::"):
+    # llama.cpp
+else:
+    # Foundry Local
+```

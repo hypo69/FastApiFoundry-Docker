@@ -76,12 +76,28 @@ class HFClient:
     """! Client for local HuggingFace models.
 
     Responsible for:
-    - Downloading models via huggingface-cli to ~/.models/hf
-    - Loading into memory via transformers pipeline
-    - Inference via loaded pipeline
+
+    - Downloading models via `huggingface_hub.snapshot_download` to `HF_MODELS_DIR`
+    - Loading into memory via `transformers.pipeline`
+    - Inference via loaded pipeline (CPU float32 / GPU float16)
     - Unloading from memory with CUDA cache clearing
 
-    Global singleton: hf_client = HFClient()
+    Global singleton `hf_client` is created at module level and shared
+    across the entire FastAPI process.
+
+    Example:
+        >>> from src.models.hf_client import hf_client
+        >>> hf_client.download_model("Qwen/Qwen2.5-0.5B-Instruct")
+        {"success": True, "model_id": "Qwen/Qwen2.5-0.5B-Instruct", "path": "..."}
+        >>> hf_client.load_model("Qwen/Qwen2.5-0.5B-Instruct", device="auto")
+        {"success": True, "model_id": "Qwen/Qwen2.5-0.5B-Instruct", "device": "cpu"}
+        >>> import asyncio
+        >>> asyncio.run(hf_client.generate("Hello", model_id="Qwen/Qwen2.5-0.5B-Instruct"))
+        {"success": True, "content": "...", "model": "Qwen/Qwen2.5-0.5B-Instruct"}
+
+    Environment variables:
+        HF_TOKEN: HuggingFace access token (required for gated models).
+        HF_MODELS_DIR: Directory to save downloaded models (default: ``~/.models``).
     """
 
     def download_model(self, model_id: str, token: Optional[str] = None) -> dict:

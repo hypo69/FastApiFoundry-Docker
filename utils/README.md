@@ -14,7 +14,7 @@
 
 File: utils/README.md
 Project: FastApiFoundry (Docker)
-Version: 0.2.1
+Version: 0.6.0
 Author: hypo69
 Copyright: © 2026 hypo69
 Copyright: © 2026 hypo69

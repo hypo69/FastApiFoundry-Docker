@@ -1,0 +1,53 @@
+{
+  "fastapi_server": {
+    "host": "0.0.0.0",
+    "port": 9696,
+    "auto_find_free_port": false,
+    "mode": "dev",
+    "workers": 1
+  },
+  "foundry_ai": {
+    "base_url": "",
+    "default_model": "qwen3-0.6b-generic-cpu:4",
+    "temperature": 0.7,
+    "max_tokens": 2048,
+    "auto_load_default": true
+  },
+  "rag_system": {
+    "enabled": true,
+    "index_dir": "~/.rag",
+    "chunk_size": 1000
+  },
+  "security": {
+    "api_key": "",
+    "https_enabled": false
+  },
+  "logging": {
+    "level": "DEBUG",
+    "file": ""
+  },
+  "development": {
+    "debug": false,
+    "verbose": false
+  },
+  "docs_server": {
+    "enabled": true,
+    "port": 9697
+  },
+  "llama_cpp": {
+    "port": 9780,
+    "host": "127.0.0.1"
+  },
+  "directories": {
+    "models": "~/.models",
+    "rag": "~/.rag",
+    "hf_models": "~/.hf_models"
+  },
+  "huggingface": {
+    "token": "",
+    "models_dir": "./models/hf",
+    "device": "auto",
+    "default_max_new_tokens": 512,
+    "default_temperature": 0.7
+  }
+}

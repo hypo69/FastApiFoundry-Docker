@@ -260,6 +260,115 @@ async def export_config():
         raise HTTPException(status_code=500, detail=f"Failed to export configuration: {str(e)}")
 
 
+# ── Provider API Keys (stored in .env) ──────────────────────────────────────
+
+PROVIDER_KEY_MAP = {
+    "gemini":     "GEMINI_API_KEY",
+    "openai":     "OPENAI_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
+    "anthropic":  "ANTHROPIC_API_KEY",
+    "mistral":    "MISTRAL_API_KEY",
+    "groq":       "GROQ_API_KEY",
+    "cohere":     "COHERE_API_KEY",
+    "deepseek":   "DEEPSEEK_API_KEY",
+    "xai":        "XAI_API_KEY",
+    "nvidia":     "NVIDIA_API_KEY",
+    "custom":     "CUSTOM_API_KEY",
+    "custom_url": "CUSTOM_BASE_URL",
+}
+
+
+@router.get("/config/provider-keys")
+async def get_provider_keys():
+    """Читает ключи провайдеров из .env. Возвращает замаскированные значения."""
+    env = _read_env_file(".env")
+    result = {}
+    for provider, env_key in PROVIDER_KEY_MAP.items():
+        val = env.get(env_key, "")
+        result[provider] = val  # full value — JS masks on display
+    return {"success": True, "keys": result}
+
+
+class ProviderKeysRequest(BaseModel):
+    keys: Dict[str, str]  # {provider_id: api_key}
+
+
+@router.post("/config/provider-keys")
+async def save_provider_keys(request: ProviderKeysRequest):
+    """Сохраняет ключи провайдеров в .env."""
+    env = _read_env_file(".env")
+    saved = []
+    for provider, key_value in request.keys.items():
+        env_key = PROVIDER_KEY_MAP.get(provider)
+        if not env_key:
+            continue
+        if key_value:
+            env[env_key] = key_value
+            os.environ[env_key] = key_value
+        elif env_key in env:
+            del env[env_key]
+        saved.append(provider)
+    _write_env_file(".env", env)
+    return {"success": True, "saved": saved}
+
+
+class ExtensionSyncRequest(BaseModel):
+    providerKeys: Dict[str, Any] = {}
+    customModels: Dict[str, Any] = {}
+    activeProvider: Optional[str] = None
+    activeModel: Optional[str] = None
+
+
+@router.get("/config/extension-export")
+async def extension_export():
+    """Экспортирует ключи провайдеров в формат расширения (chrome.storage.sync)."""
+    env = _read_env_file(".env")
+    provider_keys: Dict[str, Any] = {}
+    for provider, env_key in PROVIDER_KEY_MAP.items():
+        if provider in ("custom_url",):
+            continue
+        val = env.get(env_key, "")
+        if val:
+            provider_keys[provider] = [val]
+    custom_url = env.get("CUSTOM_BASE_URL", "")
+    if custom_url:
+        provider_keys["custom_url"] = custom_url
+    return {
+        "success": True,
+        "version": 1,
+        "exportedAt": datetime.now().isoformat(),
+        "providerKeys": provider_keys,
+        "customModels": {},
+        "activeProvider": None,
+        "activeModel": None,
+        "activeKeyIndex": {},
+        "providerModels": {},
+    }
+
+
+@router.post("/config/extension-import")
+async def extension_import(request: ExtensionSyncRequest):
+    """Импортирует ключи из формата расширения в .env."""
+    env = _read_env_file(".env")
+    imported = []
+    for provider, keys_val in request.providerKeys.items():
+        if provider == "custom_url":
+            env["CUSTOM_BASE_URL"] = str(keys_val)
+            os.environ["CUSTOM_BASE_URL"] = str(keys_val)
+            imported.append("custom_url")
+            continue
+        env_key = PROVIDER_KEY_MAP.get(provider)
+        if not env_key:
+            continue
+        key_value = keys_val[0] if isinstance(keys_val, list) and keys_val else str(keys_val)
+        if key_value:
+            env[env_key] = key_value
+            os.environ[env_key] = key_value
+            imported.append(provider)
+    _write_env_file(".env", env)
+    return {"success": True, "imported": imported}
+
+
 class ConfigImportRequest(BaseModel):
     config: Dict[str, Any]
     merge: Optional[bool] = False

@@ -1,0 +1,59 @@
+<!--
+===============================================================================
+Process Name: API Keys / Providers tab partial
+===============================================================================
+Description:
+    Tab content for managing LLM provider API keys.
+    Keys stored in .env via /api/v1/config/provider-keys.
+    Supports export/import sync with the browser extension.
+
+File: partials/_tab_providers.html
+Project: FastApiFoundry (Docker)
+Version: 0.6.0
+Author: hypo69
+Copyright: © 2026 hypo69
+===============================================================================
+-->
+<div class="tab-pane fade" id="providers" role="tabpanel">
+    <div class="row mt-3">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-key"></i> <span data-i18n="tabs.providers">API Keys</span></h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="providersRefresh()">
+                            <i class="bi bi-arrow-clockwise"></i> <span data-i18n="common.refresh">Refresh</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="providersExport()">
+                            <i class="bi bi-box-arrow-up"></i> Export to Extension
+                        </button>
+                        <label class="btn btn-sm btn-outline-warning mb-0">
+                            <i class="bi bi-box-arrow-in-down"></i> Import from Extension
+                            <input type="file" id="providers-import-file" accept=".json"
+                                   style="display:none" onchange="providersImport(event)">
+                        </label>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="providers-list">
+                        <div class="text-muted text-center p-3"><small data-i18n="common.loading">Loading…</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0">ℹ️ Info</h5></div>
+                <div class="card-body">
+                    <p class="small">Keys are stored in <code>.env</code> on the server. They are never sent to the browser in plain text except when you explicitly view them.</p>
+                    <hr>
+                    <p class="small fw-semibold">🔄 Sync with extension</p>
+                    <p class="small"><strong>Export to Extension</strong> — downloads a JSON file. Open the extension → Providers &amp; Models → Import.</p>
+                    <p class="small"><strong>Import from Extension</strong> — upload the JSON exported from the extension. Keys will be written to <code>.env</code>.</p>
+                    <hr>
+                    <p class="small text-muted">Custom provider: set Base URL to <code>http://localhost:9696/v1</code> to use this local server.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
