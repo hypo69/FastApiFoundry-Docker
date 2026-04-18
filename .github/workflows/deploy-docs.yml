@@ -81,22 +81,22 @@ jobs:
           $outDir = "docs/ru/dev/powershell"
           New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
-          $servers = Get-ChildItem -Path "mcp-powershell-servers/src/servers" -Filter "*.ps1"
-          foreach ($file in $servers) {
-            try {
-              . $file.FullName -ErrorAction SilentlyContinue 2>$null
-            } catch {}
-          }
+          # Собираем как серверы, так и основные операционные скрипты
+          $files = Get-ChildItem -Path "mcp-powershell-servers/src/servers", "scripts" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue
 
           # Генерируем .md из comment-based help для каждого .ps1
-          foreach ($file in $servers) {
+          foreach ($file in $files) {
+            try {
             $name = $file.BaseName
             $content = Get-Content $file.FullName -Raw
 
             # Извлекаем .SYNOPSIS и .DESCRIPTION из comment-based help
-            $synopsis = if ($content -match '\.SYNOPSIS\s*\n\s*(.+)') { $Matches[1].Trim() } else { $name }
-            $description = if ($content -match '\.DESCRIPTION\s*\n([\s\S]+?)(?=\n\.[A-Z]|\n#>)') { $Matches[1].Trim() } else { '' }
-            $notes = if ($content -match '\.NOTES\s*\n([\s\S]+?)(?=\n\.[A-Z]|\n#>)') { $Matches[1].Trim() } else { '' }
+            # Улучшенные регулярные выражения для поддержки разных окончаний строк (Windows/Unix)
+            $synopsis = if ($content -match '\.SYNOPSIS\s*\r?\n\s*(.+)') { $Matches[1].Trim() } else { $name }
+            $description = if ($content -match '\.DESCRIPTION\s*\r?\n([\s\S]+?)(?=\r?\n\.[A-Z]|\r?\n#>)') { $Matches[1].Trim() } else { '' }
+            $notes = if ($content -match '\.NOTES\s*\r?\n([\s\S]+?)(?=\r?\n\.[A-Z]|\r?\n#>)') { $Matches[1].Trim() } else { '' }
+
+            $relativeSource = $file.FullName.Replace("$Root\", "").Replace("\", "/")
 
             $md = @"
 # $name
@@ -111,17 +111,24 @@ $(if ($notes) { "## Notes`n`n$notes" })
 
 ## Source
 
-File: ``mcp-powershell-servers/src/servers/$($file.Name)``
+File: ``$relativeSource``
 "@
             $md | Set-Content -Path "$outDir/$name.md" -Encoding UTF8
+            } catch {
+                Write-Warning "Failed to process $($file.Name): $_"
+            }
           }
 
           # Индексная страница
           $index = "# PowerShell MCP Servers`n`n"
-          foreach ($file in $servers) {
+          foreach ($file in $files) {
             $index += "- [$($file.BaseName)]($($file.BaseName).md)`n"
           }
           $index | Set-Content -Path "$outDir/index.md" -Encoding UTF8
+        } catch {
+           Write-Error "Critical error in PS docs generation: $_"
+           exit 1
+        }
 
       - uses: actions/upload-artifact@v4
         with:
