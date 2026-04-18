@@ -111,7 +111,7 @@ class FoundryClient:
     
     async def health_check(self):
         """Проверка состояния Foundry"""
-        logger.info("🏥 Проверка состояния Foundry...")
+        logger.debug("🏥 Проверка состояния Foundry...")
         
         try:
             # Обновляем URL перед каждым запросом
@@ -140,10 +140,11 @@ class FoundryClient:
                         port = parsed.port or 50477
                     except (ValueError, AttributeError, IndexError):
                         port = 50477
-                    logger.info(f"✅ Foundry онлайн: {self.base_url}")
+                    models_count = len(data.get('data', []))
+                    logger.debug(f"✅ Foundry онлайн: {self.base_url} ({models_count} моделей)")
                     return {
                         "status": "healthy",
-                        "models_count": len(data.get('data', [])),
+                        "models_count": models_count,
                         "url": self.base_url,
                         "port": port,
                         "timestamp": datetime.now().isoformat()
@@ -309,7 +310,7 @@ class FoundryClient:
 
     async def list_available_models(self):
         """Получить список доступных моделей"""
-        logger.info("📋 Получение списка моделей...")
+        logger.debug("📋 Получение списка моделей...")
         
         try:
             await self._update_base_url()
@@ -330,7 +331,7 @@ class FoundryClient:
                 if response.status == 200:
                     data = await response.json()
                     models = data.get('data', [])
-                    logger.info(f"✅ Получено {len(models)} моделей")
+                    logger.debug(f"✅ Получено {len(models)} моделей")
                     return {
                         "success": True,
                         "models": models,

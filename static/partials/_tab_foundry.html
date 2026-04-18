@@ -43,26 +43,20 @@
                                 <h5 class="mb-0" data-i18n="foundry.downloaded">Downloaded Models</h5>
                             </div>
                             <div class="card-body">
-                                <div class="row g-2 align-items-center mb-2">
-                                    <div class="col-md-8">
-                                        <div class="input-group">
-                                            <select id="foundry-downloaded-model-select" class="form-select">
-                                                <option value="" data-i18n="foundry.downloaded_placeholder">Click Refresh to see cached models</option>
-                                            </select>
-                                            <button class="btn btn-success" onclick="loadSelectedFoundryModel()">
-                                                <i class="bi bi-play-fill"></i> Load &amp; Use
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <button class="btn btn-outline-primary w-100" onclick="listCachedFoundryModels()">
-                                            <i class="bi bi-arrow-clockwise"></i> <span data-i18n="foundry.refresh_downloaded">Refresh Downloaded</span>
-                                        </button>
-                                    </div>
-                                </div>
                                 <div class="form-text mb-2" data-i18n="foundry.downloaded_hint">Only already downloaded models can be loaded.</div>
                                 <div id="foundry-downloaded-models-list" style="max-height:220px;overflow-y:auto">
                                     <div class="text-muted text-center p-3"><small data-i18n="foundry.downloaded_placeholder">Click Refresh Downloaded to see cached models</small></div>
+                                </div>
+                                <div class="d-flex gap-2 mt-3">
+                                    <select id="foundry-downloaded-model-select" class="form-select form-select-sm">
+                                        <option value="" data-i18n="foundry.downloaded_placeholder">Select a downloaded model...</option>
+                                    </select>
+                                    <button class="btn btn-success btn-sm" onclick="loadSelectedFoundryModel()" style="white-space:nowrap">
+                                        <i class="bi bi-play-fill"></i> Load &amp; Use
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="listCachedFoundryModels()" style="white-space:nowrap">
+                                        <i class="bi bi-arrow-clockwise"></i> <span data-i18n="foundry.refresh_downloaded">Refresh</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
