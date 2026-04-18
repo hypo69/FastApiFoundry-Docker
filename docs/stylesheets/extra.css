@@ -1,0 +1,54 @@
+/* Badge "код" next to the collapse arrow on all details/summary blocks */
+details summary::after {
+    content: 'код';
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 7px;
+    font-size: 0.68em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    background-color: var(--md-primary-fg-color);
+    color: var(--md-primary-bg-color);
+    vertical-align: middle;
+    line-height: 1.6;
+    pointer-events: none;
+}
+
+/* ── mkdocstrings: separators between methods/functions ── */
+.doc-function,
+.doc-method,
+.doc-attribute {
+    border-top: 1px solid var(--md-default-fg-color--lightest);
+    margin-top: 0.6rem !important;
+    padding-top: 0.6rem;
+}
+
+/* ── mkdocstrings: tighter vertical spacing ── */
+.doc-function p,
+.doc-method p,
+.doc-attribute p,
+.doc-function li,
+.doc-method li {
+    margin-top: 0.2rem;
+    margin-bottom: 0.2rem;
+    line-height: 1.5;
+}
+
+.doc-function h2,
+.doc-function h3,
+.doc-function h4,
+.doc-method h2,
+.doc-method h3,
+.doc-method h4 {
+    margin-top: 0.5rem;
+    margin-bottom: 0.3rem;
+}
+
+/* Source code link — less space above */
+.doc-function .doc-source,
+.doc-method .doc-source {
+    margin-top: 0.3rem;
+    margin-bottom: 0.3rem;
+}

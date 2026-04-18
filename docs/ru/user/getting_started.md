@@ -129,10 +129,11 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
     }
     ```
 
-    При `enabled: true` выполняется два шага:
+    Последовательность действий:
 
-    1. `mkdocs build` — пересобирает `site/` из актуальных `docs/`
-    2. `mkdocs serve` — запускает live-сервер с hot-reload в фоновом окне
+    1. `Get-NetTCPConnection -LocalPort 9697` — если порт занят, убивает процесс (`Stop-Process`)
+    2. `mkdocs build` — пересобирает `site/` из актуальных `docs/`
+    3. `mkdocs serve` — запускает live-сервер с hot-reload в фоновом окне
 
     Документация доступна на **http://localhost:9697**
 
@@ -151,8 +152,11 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
     LLAMA_PORT=8080
     ```
 
-    При наличии обоих параметров запускается `scripts\llama-start.ps1` в фоне.
-    Экспортируется `LLAMA_BASE_URL=http://127.0.0.1:8080/v1`.
+    Последовательность действий:
+
+    1. `Get-NetTCPConnection -LocalPort 8080` — если порт занят, убивает процесс (`Stop-Process`)
+    2. Запускает `scripts\llama-start.ps1` в фоновом окне
+    3. Экспортирует `LLAMA_BASE_URL=http://127.0.0.1:8080/v1`
 
 ??? note "Этап 6 — Остановка предыдущего экземпляра"
 
@@ -183,6 +187,30 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
         yield
         await foundry_client.close()           # закрытие aiohttp сессии
     ```
+
+---
+
+## Повторный запуск (restart)
+
+Команда та же самая:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start.ps1
+```
+
+`start.ps1` сам разберётся что остановить, что оставить и что запустить заново:
+
+| Сервис | Уже запущен? | Действие |
+|---|---|---|
+| **FastAPI** | да | убивает по PID-файлу → запускает новый |
+| **MkDocs** | да | убивает по порту → `mkdocs build` → `mkdocs serve` |
+| **llama.cpp** | да | убивает по порту → запускает новый |
+| **Foundry** | да | не трогает — только читает порт |
+| **Foundry** | нет | запускает `foundry service start`, ждёт 20 сек |
+
+!!! info "Foundry не перезапускается намеренно"
+    Foundry — внешний системный сервис Microsoft. Его перезапуск выгрузил бы загруженную модель из памяти.
+    `start.ps1` никогда не останавливает Foundry самостоятельно.
 
 ---
 

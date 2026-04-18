@@ -258,6 +258,19 @@ try {
 }
 
 if ($docsServerConfig -and $docsServerConfig.enabled) {
+    # Stop previous mkdocs serve instance if running on this port
+    $docsPort = $docsServerConfig.port
+    $oldMkdocs = Get-NetTCPConnection -LocalPort $docsPort -State Listen -ErrorAction SilentlyContinue
+    if ($oldMkdocs) {
+        $oldMkdocsPid = $oldMkdocs.OwningProcess
+        try {
+            Stop-Process -Id $oldMkdocsPid -Force -ErrorAction Stop
+            Write-Host "✅ Предыдущий MkDocs (PID: $oldMkdocsPid) остановлен" -ForegroundColor Green
+        } catch {
+            Write-Host "⚠️ Не удалось остановить MkDocs (PID: $oldMkdocsPid): $_" -ForegroundColor Yellow
+        }
+    }
+
     Write-Host "📚 Сборка документации MkDocs..." -ForegroundColor Yellow
     try {
         # Пересборка site/ перед запуском сервера
@@ -269,14 +282,14 @@ if ($docsServerConfig -and $docsServerConfig.enabled) {
         Write-Host "⚠️ Сборка документации не удалась: $_" -ForegroundColor Yellow
     }
 
-    Write-Host "🚀 Запуск сервера MkDocs на порту $($docsServerConfig.port)..." -ForegroundColor Yellow
+    Write-Host "🚀 Запуск сервера MkDocs на порту $docsPort..." -ForegroundColor Yellow
     try {
         # Запуск mkdocs serve в отдельном свернутом окне (hot-reload при изменениях docs/)
         Start-Process powershell.exe -ArgumentList @(
             '-NonInteractive', '-NoProfile', '-ExecutionPolicy', 'Bypass',
-            '-Command', "cd '$Root'; & '$venvPath' -m mkdocs serve -a 0.0.0.0:$($docsServerConfig.port)"
+            '-Command', "cd '$Root'; & '$venvPath' -m mkdocs serve -a 0.0.0.0:$docsPort"
         ) -WindowStyle Minimized -PassThru | Out-Null
-        Write-Host "✅ Сервер MkDocs запущен на http://localhost:$($docsServerConfig.port)" -ForegroundColor Green
+        Write-Host "✅ Сервер MkDocs запущен на http://localhost:$docsPort" -ForegroundColor Green
     } catch {
         Write-Host "❌ Сбой при запуске сервера MkDocs: $_" -ForegroundColor Red
         Write-Host "⚠️ Продолжение работы без сервера документации." -ForegroundColor Yellow
@@ -298,10 +311,21 @@ if ($llamaModelPath -and $llamaAutoStart -eq 'true') {
     $llamaScript = Join-Path $Root 'scripts\llama-start.ps1'
     if (Test-Path $llamaScript) {
         $llamaPort = [System.Environment]::GetEnvironmentVariable('LLAMA_PORT')
-        # Порт по умолчанию 8080 при отсутствии значения в .env
         if (-not $llamaPort) { $llamaPort = 8080 }
 
-        # Запуск llama.cpp в отдельном свернутом окне для фоновой работы
+        # Stop previous llama.cpp instance if running on this port
+        $oldLlama = Get-NetTCPConnection -LocalPort $llamaPort -State Listen -ErrorAction SilentlyContinue
+        if ($oldLlama) {
+            $oldLlamaPid = $oldLlama.OwningProcess
+            try {
+                Stop-Process -Id $oldLlamaPid -Force -ErrorAction Stop
+                Write-Host "✅ Предыдущий llama.cpp (PID: $oldLlamaPid) остановлен" -ForegroundColor Green
+                Start-Sleep 1
+            } catch {
+                Write-Host "⚠️ Не удалось остановить llama.cpp (PID: $oldLlamaPid): $_" -ForegroundColor Yellow
+            }
+        }
+
         Start-Process powershell.exe -ArgumentList @(
             '-NonInteractive', '-NoProfile', '-ExecutionPolicy', 'Bypass',
             '-File', $llamaScript,
