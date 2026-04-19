@@ -47,6 +47,10 @@ async def generate_text(request: dict):
             context = rag_system.format_context(rag_results)
             prompt = f"Context:\n{context}\n\nQuestion: {prompt}"
 
+    def _count_tokens(text: str) -> int:
+        """Approximate token count: ~4 chars per token."""
+        return max(1, len(text) // 4)
+
     # HF models are addressed as `hf::<model_id>` from UI.
     if model and str(model).startswith("hf::"):
         hf_model_id = str(model)[4:]
@@ -58,10 +62,16 @@ async def generate_text(request: dict):
                 temperature=temperature,
             )
             if hf_result.get("success"):
+                content = hf_result.get("content", "")
                 return {
                     "success": True,
-                    "content": hf_result.get("content", ""),
+                    "content": content,
                     "model": model,
+                    "usage": {
+                        "prompt_tokens": _count_tokens(prompt),
+                        "completion_tokens": _count_tokens(content),
+                        "total_tokens": _count_tokens(prompt) + _count_tokens(content),
+                    },
                 }
             return {
                 "success": False,
@@ -73,9 +83,6 @@ async def generate_text(request: dict):
     # llama.cpp models are addressed as `llama::<gguf_path>` from UI.
     if model and str(model).startswith("llama::"):
         try:
-            llama_model_path = str(model)[len("llama::"):]
-
-            # Получаем текущий openai_url llama.cpp сервера из endpoint (/llama/status)
             from .llama_cpp import llama_status
             st = await llama_status()
             openai_url = st.get("openai_url")
@@ -83,7 +90,6 @@ async def generate_text(request: dict):
                 return {"success": False, "error": "llama.cpp is not running (no openai_url)"}
 
             url = f"{openai_url.rstrip('/')}/chat/completions"
-
             payload = {
                 "model": "llama",
                 "messages": [{"role": "user", "content": prompt}],
@@ -104,10 +110,17 @@ async def generate_text(request: dict):
                 return {"success": False, "error": "llama.cpp returned no choices"}
 
             content = choices[0].get("message", {}).get("content", "")
-            return {"success": True, "content": content, "model": model}
+            # Use real usage from llama.cpp if available, else estimate
+            raw_usage = data.get("usage") or {}
+            usage = {
+                "prompt_tokens":     raw_usage.get("prompt_tokens")     or _count_tokens(prompt),
+                "completion_tokens": raw_usage.get("completion_tokens") or _count_tokens(content),
+                "total_tokens":      raw_usage.get("total_tokens")      or _count_tokens(prompt) + _count_tokens(content),
+            }
+            return {"success": True, "content": content, "model": model, "usage": usage}
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+
     try:
         result = await foundry_client.generate_text(
             prompt,
@@ -115,21 +128,22 @@ async def generate_text(request: dict):
             temperature=temperature,
             max_tokens=max_tokens
         )
-        
+
         if result["success"]:
+            content = result["content"]
+            # Use real usage from Foundry if available, else estimate
+            raw_usage = result.get("usage") or {}
+            usage = {
+                "prompt_tokens":     raw_usage.get("prompt_tokens")     or _count_tokens(prompt),
+                "completion_tokens": raw_usage.get("completion_tokens") or _count_tokens(content),
+                "total_tokens":      raw_usage.get("total_tokens")      or _count_tokens(prompt) + _count_tokens(content),
+            }
             return {
                 "success": True,
-                "content": result["content"],
-                "model": result["model"]
+                "content": content,
+                "model": result["model"],
+                "usage": usage,
             }
-        else:
-            return {
-                "success": False,
-                "error": result["error"]
-            }
-                    
+        return {"success": False, "error": result["error"]}
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return {"success": False, "error": str(e)}

@@ -139,13 +139,15 @@ function escapeHtml(t) {
 }
 
 function startTimer() {
-    const t0    = Date.now();
-    const badge = document.getElementById('chat-timer');
-    const val   = document.getElementById('chat-timer-value');
-    if (badge) badge.style.display = '';
+    const t0 = Date.now();
     clearInterval(_timerInterval);
+    // Store start time for elapsed calculation on response
+    window._chatTimerStart = t0;
     _timerInterval = setInterval(() => {
+        const val = document.getElementById('chat-timer-value');
         if (val) val.textContent = ((Date.now() - t0) / 1000).toFixed(1) + 's';
+        const timerEl = document.getElementById('chat-timer');
+        if (timerEl) timerEl.style.display = '';
     }, 100);
 }
 
@@ -199,9 +201,11 @@ export async function sendMessage() {
 
         if (data.success) {
             appendMessage('assistant', data.content);
-            updateChatModelBadge(model);
+            const elapsedMs = Date.now() - (window._chatTimerStart || Date.now());
+            const totalTokens = data.usage?.total_tokens ?? null;
+            updateChatModelBadge(model, { elapsedMs, totalTokens });
             _chatHistoryMessages.push({ role: 'assistant', content: data.content });
-            // Сохраняем модель как default в config.json
+            // Save model as default in config.json
             patchConfig({ 'foundry_ai.default_model': model });
         } else {
             const errText = `❌ ${data.error || 'Ошибка генерации'}`;
@@ -249,10 +253,15 @@ export function clearChat() {
     const c = document.getElementById('chat-messages');
     if (c) c.innerHTML = `<div class="text-muted text-center">
         <i class="bi bi-chat-square-dots"></i><br>Start a conversation with AI</div>`;
-    const badge = document.getElementById('chat-timer');
-    if (badge) badge.style.display = 'none';
 
-    // Сбрасываем локальную историю
+    // Hide stats badge
+    const statWrap = document.getElementById('chat-stats-badge');
+    if (statWrap) statWrap.style.display = 'none';
+    const timerEl = document.getElementById('chat-timer');
+    if (timerEl) timerEl.style.display = 'none';
+    const tokBadge = document.getElementById('chat-tokens-badge');
+    if (tokBadge) tokBadge.style.display = 'none';
+
     _chatHistoryMessages = [];
     _activeAbortController = null;
     _isSending = false;

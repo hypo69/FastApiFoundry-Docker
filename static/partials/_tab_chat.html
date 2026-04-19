@@ -35,17 +35,10 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0" data-i18n="chat.settings">Chat Settings</h6>
-                                <div class="d-flex align-items-center gap-1">
-                                    <span id="chat-model-badge" class="badge bg-primary"
-                                          style="display:none;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-                                    <span id="chat-timer" class="badge bg-secondary" style="display:none">
-                                        <i class="bi bi-stopwatch"></i> <span id="chat-timer-value">0.0s</span>
-                                    </span>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadModels()"
-                                            data-i18n-title="common.refresh">
-                                        <i class="bi bi-arrow-clockwise"></i>
-                                    </button>
-                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="loadModels()"
+                                        data-i18n-title="common.refresh">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
@@ -54,6 +47,18 @@
                                         <option value="" data-i18n="chat.model_auto">Auto-select</option>
                                     </select>
                                     <div class="form-text" data-i18n="chat.model_hint">Selected model will be saved as default</div>
+
+                                    <!-- Active model + response stats badge -->
+                                    <div id="chat-stats-badge" class="mt-2" style="display:none">
+                                        <span class="badge bg-primary me-1" id="chat-model-badge"
+                                              style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle"></span>
+                                        <span class="badge bg-secondary me-1" id="chat-timer" style="display:none">
+                                            <i class="bi bi-stopwatch"></i> <span id="chat-timer-value">0.0s</span>
+                                        </span>
+                                        <span class="badge bg-info text-dark" id="chat-tokens-badge" style="display:none">
+                                            <i class="bi bi-hash"></i> <span id="chat-tokens-value">0</span> <span data-i18n="chat.tokens">tok</span>
+                                        </span>
+                                    </div>
 
                                     <!-- Info block: how models work + CLI instructions -->
                                     <div class="alert alert-info mt-2 mb-0 p-2 small">

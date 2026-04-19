@@ -46,10 +46,12 @@
     "hf_step1": "Open <strong>HuggingFace</strong> tab.",
     "hf_step2": "For gated models set token in <strong>Settings &rarr; HuggingFace</strong> and accept license.",
     "hf_step3": "Enter <code>model_id</code> (e.g. <code>google/gemma-2b</code>) and click <strong>Download</strong>.",
-    "hf_step4": "Click Refresh in <strong>Downloaded Locally</strong> — model appears in chat list."
+    "hf_step4": "Click Refresh in <strong>Downloaded Locally</strong> — model appears in chat list.",
+    "tokens": "tok"
   },
   "models": {
     "title": "Connected Models",
+    "available": "Available Models",
     "add": "Add Model",
     "refresh": "Refresh",
     "no_models": "No models connected. Use the Foundry tab to load models.",

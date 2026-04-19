@@ -46,10 +46,12 @@
     "hf_step1": "Откройте вкладку <strong>HuggingFace</strong>.",
     "hf_step2": "Для gated моделей задайте токен в <strong>Settings &rarr; HuggingFace</strong> и примите лицензию.",
     "hf_step3": "Введите <code>model_id</code> (например <code>google/gemma-2b</code>) и нажмите <strong>Download</strong>.",
-    "hf_step4": "Нажмите Refresh в <strong>Downloaded Locally</strong> — модель появится в списке чата."
+    "hf_step4": "Нажмите Refresh в <strong>Downloaded Locally</strong> — модель появится в списке чата.",
+    "tokens": "ток"
   },
   "models": {
     "title": "Подключённые модели",
+    "available": "Доступные модели",
     "add": "Добавить модель",
     "refresh": "Обновить",
     "no_models": "Нет подключённых моделей. Используйте вкладку Foundry.",

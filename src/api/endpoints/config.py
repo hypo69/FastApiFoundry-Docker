@@ -350,12 +350,14 @@ async def extension_export():
         provider_keys["custom_url"] = custom_url
     return {
         "success": True,
-        "version": 1,
-        "exportedAt": datetime.now().isoformat(),
-        "providerKeys": provider_keys,
-        "customModels": {},
+        "schema":        "ai-assistant-config",
+        "version":       2,
+        "exportedAt":    datetime.now().isoformat(),
+        "exportedFrom":  "app",
+        "providerKeys":  provider_keys,
+        "customModels":  {},
         "activeProvider": None,
-        "activeModel": None,
+        "activeModel":   None,
         "activeKeyIndex": {},
         "providerModels": {},
     }
@@ -363,7 +365,10 @@ async def extension_export():
 
 @router.post("/config/extension-import")
 async def extension_import(request: ExtensionSyncRequest):
-    """Импортирует ключи из формата расширения в .env."""
+    """Импортирует ключи из формата расширения (v1/v2) в .env.
+    providerKeys может содержать строки (app) или массивы (extension).
+    Неизвестные поля (summaryLang, providerModels и т.д.) игнорируются.
+    """
     env = _read_env_file(".env")
     imported = []
     for provider, keys_val in request.providerKeys.items():

@@ -3,9 +3,9 @@
  * Process Name: API Keys / Providers tab — manage LLM provider keys
  * =============================================================================
  * Description:
- *   Mirrors the browser extension providers UI exactly.
+ *   Web app UI for managing provider API keys.
  *   Keys are stored in .env via /api/v1/config/provider-keys.
- *   Supports sync with the browser extension (export / import JSON).
+ *   Supports export/import using the shared ai-assistant-config format.
  *
  * File: js/providers.js
  * Project: FastApiFoundry (Docker)
@@ -15,21 +15,16 @@
  * =============================================================================
  */
 
-const PROVIDERS_META = {
-    gemini:     { label: 'Google Gemini',              placeholder: 'AIza…',    hint: 'aistudio.google.com/app/apikey' },
-    openai:     { label: 'OpenAI',                     placeholder: 'sk-…',     hint: 'platform.openai.com/api-keys' },
-    openrouter: { label: 'OpenRouter',                 placeholder: 'sk-or-…',  hint: 'openrouter.ai/keys' },
-    anthropic:  { label: 'Anthropic Claude',           placeholder: 'sk-ant-…', hint: 'console.anthropic.com/settings/keys' },
-    mistral:    { label: 'Mistral AI',                 placeholder: '…',        hint: 'console.mistral.ai/api-keys' },
-    groq:       { label: 'Groq',                       placeholder: 'gsk_…',    hint: 'console.groq.com/keys' },
-    cohere:     { label: 'Cohere',                     placeholder: '…',        hint: 'dashboard.cohere.com/api-keys' },
-    deepseek:   { label: 'DeepSeek',                   placeholder: 'sk-…',     hint: 'platform.deepseek.com/api_keys' },
-    xai:        { label: 'xAI Grok',                   placeholder: 'xai-…',    hint: 'console.x.ai' },
-    nvidia:     { label: 'NVIDIA NIM',                 placeholder: 'nvapi-…',  hint: 'build.nvidia.com' },
-    custom:     { label: 'Custom (OpenAI-compatible)', placeholder: 'API key…', hint: '' },
-};
+import {
+    PROVIDERS,
+    CONFIG_SCHEMA_NAME,
+    CONFIG_SCHEMA_VERSION,
+    validateConfigFile,
+    normalizeProviderKeys,
+    wrapProviderKeysAsArrays,
+} from './providers-registry.js';
 
-// Active provider state (in-memory, not persisted to server — cosmetic only)
+// Active provider state (in-memory, cosmetic only — not persisted to server)
 let _activeProvider = null;
 let _activeModel    = null;
 
@@ -55,95 +50,9 @@ async function saveProviderKey(provider, value) {
     }).then(r => r.json());
 }
 
-// Fetch models from provider API directly from browser
-async function fetchModelsForProvider(providerId, apiKey, customUrl) {
-    try {
-        switch (providerId) {
-            case 'gemini': {
-                const r = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${encodeURIComponent(apiKey)}`);
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.error?.message || `HTTP ${r.status}`);
-                return (d.models || [])
-                    .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
-                    .map(m => ({ id: m.name.replace('models/', ''), label: m.displayName || m.name }));
-            }
-            case 'openai': {
-                const r = await fetch('https://api.openai.com/v1/models', { headers: { Authorization: `Bearer ${apiKey}` } });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.error?.message || `HTTP ${r.status}`);
-                return (d.data || []).filter(m => /^(gpt|o1|o3)/.test(m.id))
-                    .sort((a, b) => b.created - a.created).map(m => ({ id: m.id, label: m.id }));
-            }
-            case 'openrouter': {
-                const r = await fetch('https://openrouter.ai/api/v1/models', { headers: { Authorization: `Bearer ${apiKey}` } });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.error?.message || `HTTP ${r.status}`);
-                return (d.data || []).map(m => ({ id: m.id, label: m.name || m.id }));
-            }
-            case 'anthropic': {
-                const r = await fetch('https://api.anthropic.com/v1/models', {
-                    headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }
-                });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.error?.message || `HTTP ${r.status}`);
-                return (d.data || []).map(m => ({ id: m.id, label: m.display_name || m.id }));
-            }
-            case 'mistral': {
-                const r = await fetch('https://api.mistral.ai/v1/models', { headers: { Authorization: `Bearer ${apiKey}` } });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.error?.message || `HTTP ${r.status}`);
-                return (d.data || []).filter(m => m.capabilities?.completion_chat)
-                    .map(m => ({ id: m.id, label: m.name || m.id }));
-            }
-            case 'groq': {
-                const r = await fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: `Bearer ${apiKey}` } });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.error?.message || `HTTP ${r.status}`);
-                return (d.data || []).filter(m => m.active !== false).map(m => ({ id: m.id, label: m.id }));
-            }
-            case 'cohere': {
-                const r = await fetch('https://api.cohere.com/v2/models?default_only=false&endpoint=chat&page_size=50',
-                    { headers: { Authorization: `Bearer ${apiKey}` } });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.message || `HTTP ${r.status}`);
-                return (d.models || []).map(m => ({ id: m.name, label: m.name }));
-            }
-            case 'deepseek': {
-                const r = await fetch('https://api.deepseek.com/models', { headers: { Authorization: `Bearer ${apiKey}` } });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.error?.message || `HTTP ${r.status}`);
-                return (d.data || []).map(m => ({ id: m.id, label: m.id }));
-            }
-            case 'xai': {
-                const r = await fetch('https://api.x.ai/v1/models', { headers: { Authorization: `Bearer ${apiKey}` } });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.error?.message || `HTTP ${r.status}`);
-                return (d.data || []).map(m => ({ id: m.id, label: m.id }));
-            }
-            case 'nvidia': {
-                const r = await fetch('https://integrate.api.nvidia.com/v1/models', { headers: { Authorization: `Bearer ${apiKey}` } });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.error?.message || `HTTP ${r.status}`);
-                return (d.data || []).map(m => ({ id: m.id, label: m.id }));
-            }
-            case 'custom': {
-                const base = (customUrl || 'http://localhost:9696/v1').replace(/\/$/, '');
-                const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
-                const r = await fetch(`${base}/models`, { headers });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.error?.message || `HTTP ${r.status}`);
-                return (d.data || []).map(m => ({ id: m.id, label: m.id }));
-            }
-            default: return [];
-        }
-    } catch (e) {
-        throw e;
-    }
-}
-
 // ── Build provider card ──────────────────────────────────────────────────────
 
-function buildProviderCard(providerId, meta, currentKey, customUrl) {
+function buildProviderCard(providerId, cfg, currentKey, customUrl) {
     const hasKey   = !!currentKey;
     const isActive = _activeProvider === providerId;
 
@@ -154,7 +63,7 @@ function buildProviderCard(providerId, meta, currentKey, customUrl) {
     card.innerHTML = `
         <div class="card-header provider-card-header d-flex align-items-center gap-2"
              style="cursor:pointer;user-select:none">
-            <span class="fw-semibold small flex-grow-1">${meta.label}</span>
+            <span class="fw-semibold small flex-grow-1">${cfg.label}</span>
             <span class="provider-badge badge ${isActive ? 'bg-success' : 'bg-secondary'}">
                 ${isActive ? 'Активен' : 'Не активен'}
             </span>
@@ -162,11 +71,11 @@ function buildProviderCard(providerId, meta, currentKey, customUrl) {
         </div>
         <div class="card-body provider-card-body" style="display:${hasKey || isActive ? '' : 'none'}">
             <div class="form-label small mb-2">
-                API ключи${meta.hint ? ` — <a href="https://${meta.hint}" target="_blank" class="text-primary">${meta.hint}</a>` : ''}
+                API ключи${cfg.hint ? ` — <a href="https://${cfg.hint}" target="_blank" class="text-primary">${cfg.hint}</a>` : ''}
             </div>
             <div class="keys-list mb-2"></div>
             <div class="input-group input-group-sm add-key-row">
-                <input type="password" class="form-control new-key-input" placeholder="${meta.placeholder}">
+                <input type="password" class="form-control new-key-input" placeholder="${cfg.placeholder}">
                 <button class="btn btn-outline-secondary btn-sm toggle-new-key" type="button">👁</button>
                 <button class="btn btn-outline-secondary add-key-btn" type="button">+ Добавить ключ</button>
             </div>
@@ -187,19 +96,16 @@ function buildProviderCard(providerId, meta, currentKey, customUrl) {
     const keysList = card.querySelector('.keys-list');
     const newInput = card.querySelector('.new-key-input');
 
-    // Toggle collapse
     header.addEventListener('click', () => {
         const open = body.style.display !== 'none';
         body.style.display = open ? 'none' : '';
         chevron.style.transform = open ? '' : 'rotate(180deg)';
     });
 
-    // Toggle new key visibility
     card.querySelector('.toggle-new-key').addEventListener('click', () => {
         newInput.type = newInput.type === 'password' ? 'text' : 'password';
     });
 
-    // Custom URL save on blur
     if (providerId === 'custom') {
         const urlInput  = card.querySelector('.url-input');
         const urlStatus = card.querySelector('.url-status');
@@ -209,7 +115,6 @@ function buildProviderCard(providerId, meta, currentKey, customUrl) {
         });
     }
 
-    // Keys state: array of {value, models:[]}
     const keysState = currentKey ? [{ value: currentKey, models: [] }] : [];
 
     function markAllInactive() {
@@ -249,7 +154,6 @@ function buildProviderCard(providerId, meta, currentKey, customUrl) {
             const chosenEl     = block.querySelector('.key-chosen-model');
             const setActiveBtn = block.querySelector('.set-active-btn');
 
-            // Load models
             block.querySelector('.load-models-btn').addEventListener('click', async () => {
                 fetchStatus.textContent = 'Загрузка моделей…';
                 fetchStatus.className = 'small text-primary';
@@ -257,7 +161,7 @@ function buildProviderCard(providerId, meta, currentKey, customUrl) {
                 try {
                     const customUrl = providerId === 'custom'
                         ? (card.querySelector('.url-input')?.value || '') : '';
-                    const models = await fetchModelsForProvider(providerId, entry.value, customUrl);
+                    const models = await cfg.fetchModels(entry.value, { customUrl });
                     entry.models = models;
                     renderModelsList(models, entry, chosenEl, modelsPanel, setActiveBtn);
                     fetchStatus.textContent = `✓ ${models.length} моделей`;
@@ -269,7 +173,6 @@ function buildProviderCard(providerId, meta, currentKey, customUrl) {
                 setTimeout(() => { fetchStatus.textContent = ''; }, 5000);
             });
 
-            // Set active
             setActiveBtn.addEventListener('click', () => {
                 if (!entry.chosenModel) {
                     fetchStatus.textContent = '✗ Сначала загрузите и выберите модель';
@@ -287,10 +190,8 @@ function buildProviderCard(providerId, meta, currentKey, customUrl) {
                 setActiveBtn.textContent = 'Активен';
             });
 
-            // Remove key
             block.querySelector('.remove-key-btn').addEventListener('click', async () => {
                 keysState.splice(i, 1);
-                // Save: if no keys left — clear
                 const newVal = keysState.length ? keysState[0].value : '';
                 await saveProviderKey(providerId, newVal);
                 renderKeys();
@@ -329,7 +230,6 @@ function buildProviderCard(providerId, meta, currentKey, customUrl) {
 
     renderKeys();
 
-    // Add key
     card.querySelector('.add-key-btn').addEventListener('click', async () => {
         const val = newInput.value.trim();
         if (!val) return;
@@ -361,17 +261,14 @@ export async function initProviders() {
     const keys = await loadProviderKeys();
     list.innerHTML = '';
 
-    for (const [id, meta] of Object.entries(PROVIDERS_META)) {
-        list.appendChild(buildProviderCard(id, meta, keys[id] || '', keys['custom_url'] || ''));
+    for (const [id, cfg] of Object.entries(PROVIDERS)) {
+        list.appendChild(buildProviderCard(id, cfg, keys[id] || '', keys['custom_url'] || ''));
     }
 }
 
-// ── Export to extension format ───────────────────────────────────────────────
+// ── Export to shared format ──────────────────────────────────────────────────
 
 export async function exportToExtension() {
-    const res = await fetch(`${window.API_BASE}/config/extension-export`).then(r => r.json());
-    if (!res.success) { alert('Export failed'); return; }
-
     const confirmed = confirm(
         '⚠️ Предупреждение безопасности\n\n' +
         'Экспортируемый файл будет содержать ВСЕ ваши API ключи в открытом виде.\n\n' +
@@ -379,7 +276,22 @@ export async function exportToExtension() {
     );
     if (!confirmed) return;
 
-    const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
+    const res = await fetch(`${window.API_BASE}/config/extension-export`).then(r => r.json());
+    if (!res.success) { alert('Export failed'); return; }
+
+    // Upgrade to v2 schema
+    const payload = {
+        schema:         CONFIG_SCHEMA_NAME,
+        version:        CONFIG_SCHEMA_VERSION,
+        exportedAt:     new Date().toISOString(),
+        exportedFrom:   'app',
+        providerKeys:   res.providerKeys   || {},
+        customModels:   res.customModels   || {},
+        activeProvider: res.activeProvider || null,
+        activeModel:    res.activeModel    || null,
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
@@ -388,31 +300,35 @@ export async function exportToExtension() {
     URL.revokeObjectURL(url);
 }
 
-// ── Import from extension JSON ───────────────────────────────────────────────
+// ── Import from shared format ────────────────────────────────────────────────
 
 export async function importFromExtension(file) {
-    let config;
-    try { config = JSON.parse(await file.text()); }
+    let cfg;
+    try { cfg = JSON.parse(await file.text()); }
     catch { alert('✗ Неверный JSON файл'); return; }
 
-    if (config.version !== 1 || typeof config.providerKeys !== 'object') {
-        alert('✗ Неизвестный формат. Ожидается экспорт расширения версии 1.');
-        return;
-    }
+    // Accept both v1 (legacy, no schema field) and v2
+    const isLegacyV1 = cfg.version === 1 && typeof cfg.providerKeys === 'object' && !cfg.schema;
+    const err = isLegacyV1 ? null : validateConfigFile(cfg);
+    if (err) { alert(`✗ Неизвестный формат: ${err}`); return; }
 
     const confirmed = confirm(
-        `Импортировать ключи из расширения?\n\nЭкспортировано: ${config.exportedAt || 'неизвестно'}\n\nКлючи будут записаны в .env.`
+        `Импортировать ключи?\n\nЭкспортировано: ${cfg.exportedAt || 'неизвестно'}\n` +
+        `Источник: ${cfg.exportedFrom || 'неизвестно'}\n\nКлючи будут записаны в .env.`
     );
     if (!confirmed) return;
+
+    // Normalize: extension stores arrays, app stores strings
+    const normalizedKeys = normalizeProviderKeys(cfg.providerKeys);
 
     const res = await fetch(`${window.API_BASE}/config/extension-import`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-            providerKeys:   config.providerKeys   || {},
-            customModels:   config.customModels   || {},
-            activeProvider: config.activeProvider || null,
-            activeModel:    config.activeModel    || null,
+            providerKeys:   normalizedKeys,
+            customModels:   cfg.customModels   || {},
+            activeProvider: cfg.activeProvider || null,
+            activeModel:    cfg.activeModel    || null,
         }),
     }).then(r => r.json());
 

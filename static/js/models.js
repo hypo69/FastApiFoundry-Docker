@@ -186,7 +186,7 @@ export function updateModelSelect(models) {
 }
 
 /**
- * Отрисовывает список моделей в #models-list (вкладка Models).
+ * Renders available (cached) models into #models-list.
  * @param {Array} models
  */
 export function updateModelsList(models) {
@@ -194,21 +194,29 @@ export function updateModelsList(models) {
     if (!list) return;
 
     if (models?.length) {
-        list.innerHTML = models.map(({ id }) => `
-            <div class="model-item d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
-                <div><strong>${id}</strong><br><small class="text-muted">Available</small></div>
+        list.innerHTML = models.map(({ id, name }) => `
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                <div>
+                    <strong style="font-size:.9rem">${name || id}</strong>
+                    <small class="text-muted d-block">${id}</small>
+                </div>
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-primary" onclick="selectModelForChat('${id}')">
+                        <i class="bi bi-chat"></i>
+                    </button>
+                </div>
             </div>`).join('');
     } else {
-        list.innerHTML = '<div class="text-muted text-center p-4">No models found. Start Foundry first.</div>';
+        list.innerHTML = '<div class="text-muted text-center p-4"><small>No models found. Start Foundry or add a model.</small></div>';
     }
 
-    // Обновляем счётчик моделей в navbar
+    // Update navbar counter
     const counter = document.getElementById('models-count');
     if (counter) counter.textContent = models?.length || 0;
 }
 
 /**
- * Загружает карточки подключённых моделей (вкладка Models).
+ * Renders active/loaded model cards into #models-container.
  */
 export async function loadConnectedModels() {
     const container = document.getElementById('models-container');
@@ -217,18 +225,30 @@ export async function loadConnectedModels() {
         const data = await fetch(`${window.API_BASE}/models/connected`).then(r => r.json());
         if (data.success && data.models?.length) {
             container.innerHTML = data.models.map(({ id, name }) => `
-                <div class="col-md-6 mb-3">
-                    <div class="card h-100">
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 border-success">
                         <div class="card-body">
-                            <h5>${name || id}</h5>
-                            <p class="small text-muted">ID: ${id}</p>
-                            <button class="btn btn-sm btn-primary" onclick="selectModelForChat('${id}')">Use in Chat</button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="removeModel('${id}')">Unload</button>
+                            <div class="d-flex align-items-start justify-content-between mb-2">
+                                <span class="badge bg-success"><i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>Active</span>
+                            </div>
+                            <h6 class="card-title mb-1" style="word-break:break-all">${name || id}</h6>
+                            <p class="card-text small text-muted mb-3" style="word-break:break-all">${id}</p>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-primary flex-fill" onclick="selectModelForChat('${id}')">
+                                    <i class="bi bi-chat"></i> Use in Chat
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeModel('${id}')">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>`).join('');
         } else {
-            container.innerHTML = '<div class="col-12"><p class="text-muted text-center">No models connected. Use the Foundry tab to load models.</p></div>';
+            container.innerHTML = `<div class="col-12 text-muted text-center py-3">
+                <i class="bi bi-inbox" style="font-size:1.5rem"></i>
+                <p class="mt-2 mb-0 small" data-i18n="models.no_models">No models connected. Use the Foundry tab to load models.</p>
+            </div>`;
         }
     } catch (e) {
         console.error('Failed to load connected models:', e);

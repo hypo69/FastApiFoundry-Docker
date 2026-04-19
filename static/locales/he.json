@@ -46,10 +46,12 @@
     "hf_step1": "פתח את לשונית <strong>HuggingFace</strong>.",
     "hf_step2": "למודלים מוגבלים הגדר טוקן ב-<strong>Settings &rarr; HuggingFace</strong>.",
     "hf_step3": "הזן <code>model_id</code> ולחץ <strong>Download</strong>.",
-    "hf_step4": "לחץ Refresh ב-<strong>Downloaded Locally</strong> — המודל יופיע ברשימה."
+    "hf_step4": "לחץ Refresh ב-<strong>Downloaded Locally</strong> — המודל יופיע ברשימה.",
+    "tokens": "טוק"
   },
   "models": {
     "title": "מודלים מחוברים",
+    "available": "מודלים זמינים",
     "add": "הוסף מודל",
     "refresh": "רענן",
     "no_models": "אין מודלים מחוברים. השתמש בלשונית Foundry.",

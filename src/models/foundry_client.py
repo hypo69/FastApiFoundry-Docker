@@ -210,7 +210,8 @@ class FoundryClient:
                     data = await response.json()
                     if data.get('choices'):
                         content = data['choices'][0]['message']['content']
-                        return {"success": True, "content": content, "model": model}
+                        usage = data.get('usage') or {}
+                        return {"success": True, "content": content, "model": model, "usage": usage}
                     return {"success": False, "error": "Некорректный ответ от Foundry"}
                 elif response.status == 400:
                     # Модель не загружена — пробуем загрузить и повторить

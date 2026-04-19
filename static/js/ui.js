@@ -38,18 +38,36 @@ export function showAlert(message, type = 'info') {
 // ── Модель ────────────────────────────────────────────────────────────────────
 
 /**
- * Обновляет бейдж выбранной модели в шапке чата.
- * Для HuggingFace моделей (hf::) добавляет эмодзи 🤗.
+ * Updates the chat stats badge: model name, response time, token count.
  * @param {string} modelId
+ * @param {{totalTokens?: number, elapsedMs?: number}} [stats]
  */
-export function updateChatModelBadge(modelId) {
-    const badge = document.getElementById('chat-model-badge');
+export function updateChatModelBadge(modelId, stats = {}) {
+    const badge     = document.getElementById('chat-model-badge');
+    const statWrap  = document.getElementById('chat-stats-badge');
+    const timerEl   = document.getElementById('chat-timer');
+    const timerVal  = document.getElementById('chat-timer-value');
+    const tokBadge  = document.getElementById('chat-tokens-badge');
+    const tokVal    = document.getElementById('chat-tokens-value');
+
     if (!badge) return;
+
     if (modelId) {
         badge.textContent = modelId.startsWith('hf::') ? '🤗 ' + modelId.slice(4) : modelId;
-        badge.style.display = '';
+        if (statWrap) statWrap.style.display = '';
     } else {
-        badge.style.display = 'none';
+        if (statWrap) statWrap.style.display = 'none';
+        return;
+    }
+
+    if (stats.elapsedMs != null && timerEl && timerVal) {
+        timerVal.textContent = (stats.elapsedMs / 1000).toFixed(1) + 's';
+        timerEl.style.display = '';
+    }
+
+    if (stats.totalTokens != null && tokBadge && tokVal) {
+        tokVal.textContent = stats.totalTokens;
+        tokBadge.style.display = '';
     }
 }
 
