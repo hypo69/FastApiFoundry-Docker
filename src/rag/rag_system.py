@@ -1,264 +1,230 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: RAG System for FastAPI Foundry
+# Process Name: RAG System for FastAPI Foundry
 # =============================================================================
-# Описание:
-#   Система поиска и извлечения контекста (RAG) для FastAPI Foundry
-#   Использует FAISS для векторного поиска и sentence-transformers для эмбеддингов
+# Description:
+#   Retrieval-Augmented Generation system using FAISS vector search
+#   and sentence-transformers embeddings.
 #
 # File: rag_system.py
-# Project: AiStros
-# Module: FastApiFoundry
-# Version: 0.6.0
+# Project: FastApiFoundry (Docker)
+# Version: 0.5.5
+# Changes in 0.5.5:
+#   - Added granular try/except with logging in _load_index, search,
+#     clear_index, get_all_chunks, reload_index
+#   - Each except block explains why the error can occur
 # Author: hypo69
-# Copyright: © 2026 hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
 
+import asyncio
 import json
 import logging
-import asyncio
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 
 from ..core.config import config
 
 logger = logging.getLogger(__name__)
 
-# Проверка доступности RAG зависимостей
 RAG_AVAILABLE = False
 try:
     from sentence_transformers import SentenceTransformer
     import faiss
     RAG_AVAILABLE = True
 except ImportError:
-    logger.warning("RAG dependencies not installed. Install: pip install sentence-transformers faiss-cpu")
+    logger.warning('⚠️ RAG dependencies not installed. Run: pip install sentence-transformers faiss-cpu')
+
 
 class RAGSystem:
-    """Система поиска и извлечения контекста (RAG)"""
-    
-    def __init__(self):
+    """Retrieval-Augmented Generation system."""
+
+    def __init__(self) -> None:
         self.index_dir = Path(config.dir_rag)
-        # Создаём директорию если не существует
         self.index_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"RAG index directory: {self.index_dir}")
+        logger.info(f'RAG index directory: {self.index_dir}')
         self.model_name = config.rag_model
         self.index = None
-        self.chunks = []
+        self.chunks: List[Dict[str, Any]] = []
         self.model = None
         self.loaded = False
         self._lock = asyncio.Lock()
-    
+
     async def initialize(self) -> bool:
-        """Инициализировать RAG систему"""
+        """Initialize the RAG system."""
         if not RAG_AVAILABLE:
-            logger.warning("RAG not available - missing dependencies")
+            logger.warning('⚠️ RAG not available — missing dependencies')
             return False
-        
         if not config.rag_enabled:
-            logger.info("RAG disabled in configuration")
+            logger.info('RAG disabled in configuration')
             return False
-        
         async with self._lock:
             return await self._load_index()
-    
+
     async def _load_index(self) -> bool:
-        """Загрузить FAISS индекс и метаданные"""
-        index_path = self.index_dir / "faiss.index"
-        meta_path = self.index_dir / "chunks.json"
-        
+        """Load FAISS index and chunk metadata from disk."""
+        index_path = self.index_dir / 'faiss.index'
+        meta_path  = self.index_dir / 'chunks.json'
+
         if not index_path.exists() or not meta_path.exists():
-            logger.warning(f"RAG index not found at {self.index_dir}")
+            logger.warning(f'⚠️ RAG index not found at {self.index_dir}')
             return False
-        
+
+        loop = asyncio.get_event_loop()
+
         try:
-            # Загрузить модель эмбеддингов в отдельном потоке
-            logger.info(f"Loading embedding model: {self.model_name}")
-            loop = asyncio.get_event_loop()
-            self.model = await loop.run_in_executor(
-                None, 
-                SentenceTransformer, 
-                self.model_name
-            )
-            
-            # Загрузить FAISS индекс
-            logger.info("Loading FAISS index...")
-            self.index = await loop.run_in_executor(
-                None,
-                faiss.read_index,
-                str(index_path)
-            )
-            
-            # Загрузить метаданные чанков
-            logger.info("Loading chunks metadata...")
-            with open(meta_path, 'r', encoding='utf-8') as f:
-                self.chunks = json.load(f)
-            
-            self.loaded = True
-            logger.info(f"RAG loaded: {self.index.ntotal} vectors from {len(self.chunks)} chunks")
-            return True
-            
+            logger.info(f'Loading embedding model: {self.model_name}')
+            self.model = await loop.run_in_executor(None, SentenceTransformer, self.model_name)
         except Exception as e:
-            logger.error(f"Failed to load RAG index: {e}")
+            # Model name wrong, no internet, or transformers version mismatch
+            logger.error(f'❌ Failed to load embedding model "{self.model_name}": {e}')
             return False
-    
+
+        try:
+            logger.info('Loading FAISS index…')
+            self.index = await loop.run_in_executor(None, faiss.read_index, str(index_path))
+        except Exception as e:
+            # Index file corrupted or written by incompatible FAISS version
+            logger.error(f'❌ Failed to read FAISS index from {index_path}: {e}')
+            return False
+
+        try:
+            logger.info('Loading chunks metadata…')
+            with open(meta_path, encoding='utf-8') as f:
+                self.chunks = json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            # chunks.json missing, empty, or malformed
+            logger.error(f'❌ Failed to load chunks metadata from {meta_path}: {e}')
+            return False
+
+        self.loaded = True
+        logger.info(f'✅ RAG loaded: {self.index.ntotal} vectors, {len(self.chunks)} chunks')
+        return True
+
     async def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        """
-        Найти релевантные чанки для запроса
-        
+        """Find relevant chunks for a query.
+
         Args:
-            query: Поисковый запрос
-            top_k: Количество результатов
-            
+            query: Search query text.
+            top_k: Number of results to return.
+
         Returns:
-            Список релевантных чанков с метаданными
+            List of matching chunks with score field added.
         """
         if not self.loaded:
             return []
-        
+
+        loop = asyncio.get_event_loop()
+
         try:
-            # Кодировать запрос в отдельном потоке
-            loop = asyncio.get_event_loop()
-            query_vec = await loop.run_in_executor(
-                None,
-                self.model.encode,
-                [query]
-            )
-            
-            # Нормализовать вектор
+            query_vec = await loop.run_in_executor(None, self.model.encode, [query])
+        except Exception as e:
+            # Encoding can fail if model was unloaded or GPU OOM
+            logger.error(f'❌ RAG encode failed for query={query!r}: {e}')
+            return []
+
+        try:
             query_vec = np.array(query_vec).astype('float32')
             faiss.normalize_L2(query_vec)
-            
-            # Поиск в индексе
-            scores, indices = await loop.run_in_executor(
-                None,
-                self.index.search,
-                query_vec,
-                top_k
-            )
-            
-            # Собрать результаты
-            results = []
-            for score, idx in zip(scores[0], indices[0]):
-                if idx < len(self.chunks):
-                    chunk = self.chunks[idx].copy()
-                    chunk['score'] = float(score)
-                    results.append(chunk)
-            
-            return results
-            
+            scores, indices = await loop.run_in_executor(None, self.index.search, query_vec, top_k)
         except Exception as e:
-            logger.error(f"RAG search error: {e}")
+            # FAISS search can fail if index is corrupted or dimension mismatch
+            logger.error(f'❌ FAISS search failed: {e}')
             return []
-    
+
+        results = []
+        for score, idx in zip(scores[0], indices[0]):
+            if idx < len(self.chunks):
+                chunk = self.chunks[idx].copy()
+                chunk['score'] = float(score)
+                results.append(chunk)
+        return results
+
     def format_context(self, results: List[Dict[str, Any]]) -> str:
-        """
-        Форматировать результаты поиска как контекст
-        
-        Args:
-            results: Результаты поиска RAG
-            
-        Returns:
-            Отформатированный контекст для промпта
-        """
+        """Format search results as a context string for prompts."""
         if not results:
-            return "No relevant context found."
-        
-        context_parts = ["=== PROJECT CONTEXT START ===\n"]
-        
+            return 'No relevant context found.'
+        parts = ['=== PROJECT CONTEXT START ===\n']
         for i, r in enumerate(results, 1):
-            context_parts.append(
-                f"[{i}] Source: {r['source']} | Section: {r['section']} | Relevance: {r['score']:.2f}"
-            )
-            context_parts.append(r['text'])
-            context_parts.append("")
-        
-        context_parts.append("=== PROJECT CONTEXT END ===")
-        return "\n".join(context_parts)
-    
+            parts.append(f"[{i}] Source: {r['source']} | Section: {r['section']} | Relevance: {r['score']:.2f}")
+            parts.append(r['text'])
+            parts.append('')
+        parts.append('=== PROJECT CONTEXT END ===')
+        return '\n'.join(parts)
+
     async def get_status(self) -> Dict[str, Any]:
-        """Получить статус RAG системы"""
+        """Return current RAG system status."""
         return {
-            'available': RAG_AVAILABLE,
-            'enabled': config.rag_enabled,
-            'loaded': self.loaded,
-            'index_dir': str(self.index_dir),
-            'model': self.model_name,
+            'available':    RAG_AVAILABLE,
+            'enabled':      config.rag_enabled,
+            'loaded':       self.loaded,
+            'index_dir':    str(self.index_dir),
+            'model':        self.model_name,
             'chunks_count': len(self.chunks) if self.loaded else 0,
-            'vectors_count': self.index.ntotal if self.loaded and self.index else 0
+            'vectors_count': self.index.ntotal if self.loaded and self.index else 0,
         }
-    
+
     async def reload_index(self, index_dir: Optional[str] = None) -> bool:
-        """Перезагрузить RAG индекс, опционально из нового пути"""
-        logger.info("Reloading RAG index...")
+        """Reload RAG index, optionally from a new path."""
+        logger.info('Reloading RAG index…')
         self.loaded = False
-        self.index = None
+        self.index  = None
         self.chunks = []
-        self.model = None
+        self.model  = None
 
         if index_dir:
             self.index_dir = Path(index_dir)
-            logger.info(f"Switching RAG index_dir to: {self.index_dir}")
+            logger.info(f'Switching RAG index_dir to: {self.index_dir}')
         else:
-            # Re-read from config in case it was updated
             self.index_dir = Path(config.dir_rag)
 
-        return await self.initialize()
-    
-    async def clear_index(self) -> bool:
-        """Очистить RAG индекс и все chunks"""
         try:
-            logger.info("Clearing RAG index...")
-            
-            # Сбросить состояние
-            self.loaded = False
-            self.index = None
-            self.chunks = []
-            self.model = None
-            
-            # Удалить файлы индекса
-            index_path = self.index_dir / "faiss.index"
-            chunks_path = self.index_dir / "chunks.json"
-            info_path = self.index_dir / "index_info.json"
-            
-            files_removed = []
-            for file_path in [index_path, chunks_path, info_path]:
-                if file_path.exists():
-                    file_path.unlink()
-                    files_removed.append(file_path.name)
-                    logger.info(f"Removed: {file_path}")
-            
-            if files_removed:
-                logger.info(f"RAG index cleared. Removed files: {', '.join(files_removed)}")
-            else:
-                logger.info("RAG index was already empty")
-            
-            return True
-            
+            return await self.initialize()
         except Exception as e:
-            logger.error(f"Failed to clear RAG index: {e}")
+            # initialize() itself should not raise, but guard just in case
+            logger.error(f'❌ Unexpected error during RAG reload: {e}')
             return False
-    
+
+    async def clear_index(self) -> bool:
+        """Clear RAG index files and reset in-memory state."""
+        logger.info('Clearing RAG index…')
+        self.loaded = False
+        self.index  = None
+        self.chunks = []
+        self.model  = None
+
+        removed = []
+        for name in ('faiss.index', 'chunks.json', 'index_info.json'):
+            p = self.index_dir / name
+            try:
+                if p.exists():
+                    p.unlink()
+                    removed.append(name)
+                    logger.info(f'Removed: {p}')
+            except OSError as e:
+                # File locked by another process or permission denied
+                logger.error(f'❌ Cannot remove {p}: {e}')
+                return False
+
+        logger.info(f'RAG index cleared. Removed: {removed or "nothing (already empty)"}')
+        return True
+
     async def get_all_chunks(self) -> List[Dict[str, Any]]:
-        """Получить все RAG chunks с метаданными"""
+        """Return all chunks with index metadata."""
         if not self.loaded:
             return []
-        
         try:
-            # Возвращаем копию chunks с дополнительной информацией
-            chunks_with_info = []
-            for i, chunk in enumerate(self.chunks):
-                chunk_info = chunk.copy()
-                chunk_info['chunk_id'] = i
-                chunk_info['text_length'] = len(chunk.get('text', ''))
-                chunks_with_info.append(chunk_info)
-            
-            return chunks_with_info
-            
+            return [
+                {**chunk, 'chunk_id': i, 'text_length': len(chunk.get('text', ''))}
+                for i, chunk in enumerate(self.chunks)
+            ]
         except Exception as e:
-            logger.error(f"Failed to get chunks: {e}")
+            # Unexpected structure in chunks list
+            logger.error(f'❌ Failed to build chunks list: {e}')
             return []
 
-# Глобальный экземпляр RAG системы
+
+# Global singleton
 rag_system = RAGSystem()

@@ -625,18 +625,9 @@ export function hideProgress() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Initial check on load
-    checkSystemStatus();
-    // Set interval for periodic checks
-    setInterval(checkSystemStatus, 30000);
-
     const gpuCheckbox = document.getElementById('foundry-include-gpu-models');
     if (gpuCheckbox) {
         gpuCheckbox.checked = false;
-        gpuCheckbox.addEventListener('change', () => {
-            listFoundryModels();
-        });
+        gpuCheckbox.addEventListener('change', () => listFoundryModels());
     }
-
-    listCachedFoundryModels();
 });

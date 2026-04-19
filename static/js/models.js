@@ -473,15 +473,10 @@ export function updateProviderFields() {
 
 // ── Инициализация ─────────────────────────────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Загружаем модели и каталог при старте страницы
-    loadModels();
-    loadConnectedModels();
-    loadCatalog();
-
+export function initModelSelectListener() {
     const select = document.getElementById('chat-model');
-    if (select) {
-        select.addEventListener('change', async () => {
+    if (!select) return;
+    select.addEventListener('change', async () => {
             const modelId = select.value;
 
             if (!modelId) {
@@ -529,5 +524,4 @@ document.addEventListener('DOMContentLoaded', () => {
                 showAlert(`Failed to switch model: ${e.message}`, 'danger');
             }
         });
-    }
-});
+}

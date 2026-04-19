@@ -5,6 +5,20 @@
 
 const LLAMA_API = '/api/v1/llama';
 
+export async function toggleLlamaService(on) {
+    const label = document.getElementById('llama-toggle-label');
+    const sw    = document.getElementById('llama-toggle-switch');
+    if (on) {
+        if (label) label.textContent = 'Starting…';
+        await llamaStart();
+    } else {
+        if (label) label.textContent = 'Stopping…';
+        await llamaStop();
+    }
+    // Sync switch state with actual status
+    await llamaCheckStatus();
+}
+
 export async function llamaCheckStatus() {
     const el = document.getElementById('llama-status-body');
     if (!el) return;
@@ -24,6 +38,11 @@ export async function llamaCheckStatus() {
         const port = portEl?.value || 9780;
         const urlCode = document.getElementById('llama-openai-url');
         if (urlCode) urlCode.textContent = d.openai_url || `http://127.0.0.1:${port}/v1`;
+
+        const sw    = document.getElementById('llama-toggle-switch');
+        const label = document.getElementById('llama-toggle-label');
+        if (sw) sw.checked = !!d.running;
+        if (label) label.textContent = d.running ? 'Stop llama.cpp' : 'Start llama.cpp';
 
         const badge = d.running
             ? '<span class="badge bg-success">Running</span>'

@@ -97,11 +97,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     foundry.checkSystemStatus();
     setInterval(foundry.checkSystemStatus, 30_000);
 
+    models.loadModels();
+    models.loadConnectedModels();
+    models.initModelSelectListener();
+
     document.getElementById('chat-input')?.addEventListener('keypress', e => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendMessage?.(); }
     });
 
     // Lazy tab loading
+    document.getElementById('foundry-tab')?.addEventListener('shown.bs.tab',     () => { window.listCachedFoundryModels?.(); });
     document.getElementById('editor-tab')?.addEventListener('shown.bs.tab',    () => { window.loadEnv?.(); window.loadConfigJson?.(); });
     document.getElementById('llama-tab')?.addEventListener('shown.bs.tab',     () => { window.llamaCheckStatus?.(); window.llamaScanModels?.(); });
     document.getElementById('hf-tab')?.addEventListener('shown.bs.tab',        () => { window.hfCheckStatus?.(); window.hfRefreshModels?.(); window.hfLoadHubModels?.(); });
@@ -110,5 +115,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('mcp-tab')?.addEventListener('shown.bs.tab',       () => { window.mcpLoadServers?.(); });
     document.getElementById('settings-tab')?.addEventListener('shown.bs.tab',  () => { window.loadConfigFields?.(); });
     document.getElementById('providers-tab')?.addEventListener('shown.bs.tab', () => { window.providersRefresh?.(); });
-    document.getElementById('logs-tab')?.addEventListener('shown.bs.tab',      () => { window.refreshLogs?.(); });
+    let _logViewerInited = false;
+    document.getElementById('logs-tab')?.addEventListener('shown.bs.tab', () => {
+        if (!_logViewerInited) { window.initLogViewer?.(); _logViewerInited = true; }
+        else { window.refreshLogs?.(); }
+    });
 });

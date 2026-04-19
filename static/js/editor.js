@@ -95,6 +95,7 @@ export async function saveConfigJson() {
             st.textContent = d.success ? '✅ config.json сохранён' : '❌ ' + (d.detail || d.error || JSON.stringify(d));
             st.style.display = '';
         }
+        if (d.success && window.loadConfig) await window.loadConfig();
     } catch(e) {
         console.error('❌ Save config.json error:', e);
         if (st) {

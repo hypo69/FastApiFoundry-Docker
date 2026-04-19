@@ -74,81 +74,215 @@ export function clearFoundryLogs() {
     if (el) el.innerHTML = '<div class="text-muted text-center mt-5"><i class="bi bi-terminal"></i><br>Foundry logs cleared</div>';
 }
 
-// ── Системные логи (вкладка Logs) ─────────────────────────────────────────────
+// ── Log Viewer (Logs tab) ─────────────────────────────────────────────────────
+
+/** @type {number|null} Auto-refresh interval id */
+let _logRefreshTimer = null;
+
+/** @type {number} Current pagination offset (lines from tail) */
+let _logOffset = 0;
+
+/** @type {boolean} Word-wrap state */
+let _logWrap = false;
+
+/** Level → Bootstrap text color class */
+const _LEVEL_CLASS = {
+    DEBUG:    'text-secondary',
+    INFO:     'text-info',
+    WARNING:  'text-warning',
+    ERROR:    'text-danger',
+    CRITICAL: 'text-danger fw-bold',
+};
 
 /**
- * Добавляет запись в контейнер системных логов.
- * @param {string} message
- * @param {'info'|'warning'|'error'|'debug'} level
+ * Detect log level from a plain-text log line.
+ * @param {string} line
+ * @returns {string}
  */
-export function addLog(message, level = 'info') {
-    const container = document.getElementById('log-output');
-    if (!container) return;
-
-    const ts = new Date().toLocaleTimeString();
-    // Добавляем строку в конец pre-блока
-    container.textContent += `[${ts}] ${message}\n`;
-    container.scrollTop = container.scrollHeight;
+function _detectLevel(line) {
+    for (const lvl of ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG']) {
+        if (line.includes(lvl)) return lvl;
+    }
+    return 'INFO';
 }
 
 /**
- * Загружает последние логи с сервера и отображает в #log-output.
- * Вызывается кнопкой Refresh на вкладке Logs.
+ * Render a single log line as a colored <div>.
+ * Highlights search term if provided.
+ * @param {string} line
+ * @param {string} search
+ * @returns {HTMLElement}
  */
-export async function refreshLogs() {
-    const container = document.getElementById('log-output');
-    if (!container) return;
+function _renderLine(line, search = '') {
+    const level = _detectLevel(line);
+    const cls   = _LEVEL_CLASS[level] || '';
+    const el    = document.createElement('div');
+    el.className = `log-line ${cls}`;
+
+    if (search) {
+        // Highlight search term (case-insensitive)
+        const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const html = line.replace(
+            new RegExp(`(${escaped})`, 'gi'),
+            '<mark>$1</mark>'
+        );
+        el.innerHTML = html;
+    } else {
+        el.textContent = line;
+    }
+    return el;
+}
+
+/**
+ * Fetch logs from API and render into #log-output.
+ * @param {boolean} append - If true, prepend older lines (pagination).
+ */
+export async function refreshLogs(append = false) {
+    const output  = document.getElementById('log-output');
+    const status  = document.getElementById('log-status');
+    const footer  = document.getElementById('log-footer-info');
+    const moreBtn = document.getElementById('log-load-more');
+    if (!output) return;
+
+    const file   = document.getElementById('log-file-select')?.value  || 'fastapi-foundry.log';
+    const level  = document.getElementById('log-level-filter')?.value || '';
+    const search = document.getElementById('log-search')?.value       || '';
+    const lines  = document.getElementById('log-lines-count')?.value  || '200';
+
+    const params = new URLSearchParams({ file, lines, level, search, offset: _logOffset });
+
     try {
-        const data = await fetch(`${window.API_BASE}/logs/recent`).then(r => r.json());
-        if (data.logs) {
-            container.textContent = data.logs.map(l => `[${l.timestamp || ''}] ${l.message}`).join('\n');
-            container.scrollTop = container.scrollHeight;
+        if (status) status.textContent = 'Loading…';
+        const data = await fetch(`${window.API_BASE}/logs?${params}`).then(r => r.json());
+        if (!data.success) throw new Error(data.detail || 'API error');
+
+        if (!append) {
+            output.innerHTML = '';
         }
+
+        const frag = document.createDocumentFragment();
+        for (const line of data.lines) {
+            frag.appendChild(_renderLine(line, search));
+        }
+
+        if (append) {
+            output.insertBefore(frag, output.firstChild);
+        } else {
+            output.appendChild(frag);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        if (status) status.textContent = `${file} — ${data.filtered_total} lines`;
+        if (footer) footer.textContent = `Showing ${data.returned} of ${data.filtered_total} filtered (${data.total_lines} total)`;
+        if (moreBtn) moreBtn.style.display = data.has_more ? '' : 'none';
+
     } catch (e) {
-        console.error('Failed to refresh logs:', e);
+        if (status) status.textContent = `Error: ${e.message}`;
+        console.error('Log fetch failed:', e);
     }
 }
 
-/**
- * Фильтрует строки лога по выбранному уровню.
- * Работает с текстовым содержимым #log-output.
- */
-export function filterLogs() {
-    const level  = document.getElementById('log-level-filter')?.value?.toUpperCase();
-    const output = document.getElementById('log-output');
-    if (!output || !level) return;
-
-    const lines = output.textContent.split('\n');
-    output.textContent = lines.filter(l => !level || l.includes(level)).join('\n');
+/** Load older lines (pagination). */
+async function _loadMore() {
+    const lines = parseInt(document.getElementById('log-lines-count')?.value || '200');
+    _logOffset += lines;
+    await refreshLogs(true);
 }
 
-/**
- * Скачивает содержимое лога как текстовый файл.
- */
-export function downloadLogs() {
-    const text = document.getElementById('log-output')?.textContent;
-    if (!text) { showAlert('No logs to download', 'warning'); return; }
-
-    const a = Object.assign(document.createElement('a'), {
-        href: URL.createObjectURL(new Blob([text], { type: 'text/plain' })),
-        download: `foundry-logs-${new Date().toISOString().slice(0, 10)}.txt`
-    });
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    showAlert('Logs downloaded', 'success');
+/** Toggle auto-refresh every 5 s. */
+function _toggleAutoRefresh(enabled) {
+    clearInterval(_logRefreshTimer);
+    if (enabled) {
+        _logRefreshTimer = setInterval(() => refreshLogs(), 5000);
+    }
 }
 
-/**
- * Очищает файл лога через API.
- */
-export async function clearLogFile() {
+/** Toggle word-wrap on log output. */
+function _toggleWrap() {
+    _logWrap = !_logWrap;
+    const el = document.getElementById('log-output');
+    if (el) el.classList.toggle('log-viewer--wrap', _logWrap);
+}
+
+/** Download current log file from server. */
+function _downloadLog() {
+    const file = document.getElementById('log-file-select')?.value || 'fastapi-foundry.log';
+    window.open(`${window.API_BASE}/logs/download?file=${encodeURIComponent(file)}`, '_blank');
+}
+
+/** Clear current log file via API. */
+async function _clearLog() {
+    const file = document.getElementById('log-file-select')?.value || 'fastapi-foundry.log';
+    if (!confirm(`Clear ${file}?`)) return;
     try {
-        await fetch(`${window.API_BASE}/logs/clear`, { method: 'POST' });
-        const output = document.getElementById('log-output');
-        if (output) output.textContent = '';
-        showAlert('Log cleared', 'success');
+        const data = await fetch(
+            `${window.API_BASE}/logs/clear?file=${encodeURIComponent(file)}`,
+            { method: 'POST' }
+        ).then(r => r.json());
+        if (data.success) {
+            document.getElementById('log-output').innerHTML = '';
+            showAlert(data.message, 'success');
+        }
     } catch (e) {
         showAlert('Failed to clear log', 'danger');
     }
+}
+
+/** Populate file selector from /logs/files. */
+async function _loadFileList() {
+    const sel = document.getElementById('log-file-select');
+    if (!sel) return;
+    try {
+        const data = await fetch(`${window.API_BASE}/logs/files`).then(r => r.json());
+        if (!data.success) return;
+        sel.innerHTML = data.files.map(f =>
+            `<option value="${f.name}">${f.name} (${f.size_kb} KB)</option>`
+        ).join('');
+    } catch (_) { /* keep default option */ }
+}
+
+/**
+ * Initialize log viewer — attach all event listeners.
+ * Called once when the Logs tab becomes active.
+ */
+export function initLogViewer() {
+    _loadFileList().then(() => refreshLogs());
+
+    // Reset offset on any filter change
+    const resetAndRefresh = () => { _logOffset = 0; refreshLogs(); };
+
+    document.getElementById('log-file-select')  ?.addEventListener('change', resetAndRefresh);
+    document.getElementById('log-level-filter') ?.addEventListener('change', resetAndRefresh);
+    document.getElementById('log-lines-count')  ?.addEventListener('change', resetAndRefresh);
+    document.getElementById('log-refresh-btn')  ?.addEventListener('click',  resetAndRefresh);
+
+    // Search with debounce
+    let _searchTimer;
+    document.getElementById('log-search')?.addEventListener('input', () => {
+        clearTimeout(_searchTimer);
+        _searchTimer = setTimeout(resetAndRefresh, 400);
+    });
+    document.getElementById('log-search-clear')?.addEventListener('click', () => {
+        const el = document.getElementById('log-search');
+        if (el) { el.value = ''; resetAndRefresh(); }
+    });
+
+    document.getElementById('log-auto-refresh') ?.addEventListener('change', e => _toggleAutoRefresh(e.target.checked));
+    document.getElementById('log-wrap-toggle')  ?.addEventListener('click',  _toggleWrap);
+    document.getElementById('log-scroll-bottom')?.addEventListener('click',  () => {
+        const el = document.getElementById('log-output');
+        if (el) el.scrollTop = el.scrollHeight;
+    });
+    document.getElementById('log-load-more')    ?.addEventListener('click',  _loadMore);
+    document.getElementById('log-download-btn') ?.addEventListener('click',  _downloadLog);
+    document.getElementById('log-clear-btn')    ?.addEventListener('click',  _clearLog);
+}
+
+/** @deprecated Use initLogViewer() instead. */
+export function filterLogs() { refreshLogs(); }
+export function downloadLogs() { _downloadLog(); }
+export async function clearLogFile() { await _clearLog(); }
+export function addLog(message, level = 'info') {
+    const el = document.getElementById('log-output');
+    if (el) el.appendChild(_renderLine(`[${new Date().toLocaleTimeString()}] ${message}`));
 }

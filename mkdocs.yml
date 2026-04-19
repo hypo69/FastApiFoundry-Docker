@@ -60,11 +60,13 @@ nav:
     - Установка: user/installation.md
     - Работа с моделями: user/models_guide.md
     - Веб-интерфейс: user/web_interface.md
+    - Логирование: user/logging.md
   - Для разработчиков:
     - Архитектура: dev/architecture.md
     - API Reference: dev/api_reference.md
     - Система RAG: dev/rag_system.md
     - Агенты: dev/agents.md
+    - Логирование: dev/logging.md
     - CI/CD документации: dev/cicd_docs.md
     - Code Reference (Python):
       - Foundry Client: dev/code/foundry_client.md

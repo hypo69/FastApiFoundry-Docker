@@ -80,19 +80,10 @@ except ImportError:
     UVICORN_AVAILABLE = False
     sys.exit(1)
 
-# Logging configuration with watchfiles suppression
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('logs/app.log', encoding='utf-8')
-    ]
-)
-
-# Suppress INFO logs from watchfiles
-logging.getLogger('watchfiles.main').setLevel(logging.WARNING)
-logging.getLogger('watchfiles').setLevel(logging.WARNING)
+# Initialize logging subsystem (handlers wired in src/logger/__init__.py)
+from src.logger import logger as _root_logger  # noqa: E402 — must follow sys.path setup
+from src.utils.logging_config import setup_logging
+setup_logging(os.getenv('LOG_LEVEL', 'INFO'))
 
 logger = logging.getLogger(__name__)
 

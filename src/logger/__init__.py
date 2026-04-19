@@ -1,188 +1,111 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Logger Module for FastAPI Foundry
+# Process Name: Logging Subsystem for FastAPI Foundry
 # =============================================================================
-# Описание:
-#   Модуль логирования с поддержкой dev/prod режимов
-#   Ведет файл логов и выводит сообщения в консоль
+# Description:
+#   Cross-platform logging with rotating file handlers and structured JSONL.
+#   Console + plain rotating log + errors-only log + structured JSONL.
+#
+# Examples:
+#   >>> from src.logger import logger
+#   >>> logger.info("✅ Server started")
+#   >>> logger.error("❌ Connection failed", exc_info=True)
 #
 # File: __init__.py
-# Project: AiStros
-# Module: FastApiFoundry
+# Project: FastApiFoundry (Docker)
+# Version: 0.6.0
 # Author: hypo69
-# Copyright: © 2026 hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
 
 import logging
 import logging.handlers
 import sys
-import os
 from pathlib import Path
-from datetime import datetime
-from typing import Optional
 
-class FastAPIFoundryLogger:
-    """Логгер для FastAPI Foundry с поддержкой dev/prod режимов"""
-    
-    def __init__(self, name: str = "fastapi-foundry", mode: str = "dev"):
-        self.name = name
-        self.mode = mode.lower()
-        self.logger = logging.getLogger(name)
-        self._setup_logger()
-    
-    def _setup_logger(self):
-        """Настройка логгера"""
-        # Очистить существующие обработчики
-        self.logger.handlers.clear()
-        
-        # Установить уровень логирования
-        if self.mode == "prod":
-            self.logger.setLevel(logging.INFO)
-            console_level = logging.WARNING
-            file_level = logging.INFO
-        else:  # dev mode
-            self.logger.setLevel(logging.DEBUG)
-            console_level = logging.DEBUG
-            file_level = logging.DEBUG
-        
-        # Создать директорию для логов
-        log_dir = Path("logs")
-        log_dir.mkdir(exist_ok=True)
-        
-        # Форматтеры
-        if self.mode == "prod":
-            # Продакшн: компактный формат
-            console_formatter = logging.Formatter(
-                '%(asctime)s | %(levelname)-7s | %(message)s',
-                datefmt='%H:%M:%S'
-            )
-            file_formatter = logging.Formatter(
-                '%(asctime)s | %(levelname)-8s | %(name)-15s | %(funcName)-15s | %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
-            )
-        else:
-            # Разработка: подробный формат
-            console_formatter = logging.Formatter(
-                '%(asctime)s | %(levelname)-7s | %(name)-12s | %(funcName)-12s | %(message)s',
-                datefmt='%H:%M:%S'
-            )
-            file_formatter = logging.Formatter(
-                '%(asctime)s | %(levelname)-8s | %(name)-20s | %(funcName)-20s | %(lineno)-4d | %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
-            )
-        
-        # Консольный обработчик
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(console_level)
-        console_handler.setFormatter(console_formatter)
-        self.logger.addHandler(console_handler)
-        
-        # Файловый обработчик с ротацией
-        log_file = log_dir / f"{self.name}.log"
-        try:
-            file_handler = logging.handlers.RotatingFileHandler(
-                log_file,
-                maxBytes=10*1024*1024,  # 10MB
-                backupCount=5,
-                encoding='utf-8'
-            )
-            file_handler.setLevel(file_level)
-            file_handler.setFormatter(file_formatter)
-            self.logger.addHandler(file_handler)
-        except Exception as e:
-            print(f"Warning: Could not setup file logging: {e}")
-        
-        # Обработчик ошибок (отдельный файл)
-        error_file = log_dir / f"{self.name}-errors.log"
-        try:
-            error_handler = logging.handlers.RotatingFileHandler(
-                error_file,
-                maxBytes=5*1024*1024,  # 5MB
-                backupCount=3,
-                encoding='utf-8'
-            )
-            error_handler.setLevel(logging.ERROR)
-            error_handler.setFormatter(file_formatter)
-            self.logger.addHandler(error_handler)
-        except Exception as e:
-            print(f"Warning: Could not setup error logging: {e}")
-    
-    def debug(self, message: str, *args, **kwargs):
-        """Отладочное сообщение"""
-        self.logger.debug(message, *args, **kwargs)
-    
-    def info(self, message: str, *args, **kwargs):
-        """Информационное сообщение"""
-        self.logger.info(message, *args, **kwargs)
-    
-    def warning(self, message: str, *args, **kwargs):
-        """Предупреждение"""
-        self.logger.warning(message, *args, **kwargs)
-    
-    def error(self, message: str, *args, exc_info=None, **kwargs):
-        """Ошибка"""
-        self.logger.error(message, *args, exc_info=exc_info, **kwargs)
-    
-    def critical(self, message: str, *args, **kwargs):
-        """Критическая ошибка"""
-        self.logger.critical(message, *args, **kwargs)
-    
-    def exception(self, message: str, *args, **kwargs):
-        """Ошибка с трассировкой стека"""
-        self.logger.exception(message, *args, **kwargs)
 
-    def export_to_file(self, dest: Optional[str] = None) -> Path:
-        """Скопировать текущий лог-файл в dest или вернуть его путь.
+def _build_logger(name: str = 'fastapi-foundry') -> logging.Logger:
+    """Build and configure the application logger.
 
-        Args:
-            dest: Путь назначения. Если None — возвращает путь к текущему лог-файлу.
+    Args:
+        name (str): Root logger name.
 
-        Returns:
-            Path к файлу с логами.
+    Returns:
+        logging.Logger: Configured logger instance.
+    """
+    log = logging.getLogger(name)
+    if log.handlers:
+        return log
 
-        Example:
-            >>> path = logger.export_to_file('exported.log')
-            >>> print(path)
-        """
-        import shutil
-        src = Path("logs") / f"{self.name}.log"
-        if not src.exists():
-            raise FileNotFoundError(f"Log file not found: {src}")
-        if dest is None:
-            return src
-        dest_path = Path(dest)
-        shutil.copy2(src, dest_path)
-        return dest_path
+    log.setLevel(logging.DEBUG)
+    log_dir = Path('logs')
+    log_dir.mkdir(exist_ok=True)
 
-    def get_log_path(self) -> Path:
-        """Вернуть путь к текущему лог-файлу."""
-        return Path("logs") / f"{self.name}.log"
+    fmt_console = logging.Formatter(
+        '%(asctime)s | %(levelname)-7s | %(name)-15s | %(message)s',
+        datefmt='%H:%M:%S',
+    )
+    fmt_file = logging.Formatter(
+        '%(asctime)s | %(levelname)-8s | %(name)-20s | %(funcName)-20s | %(lineno)-4d | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+    )
 
-    def get_error_log_path(self) -> Path:
-        """Вернуть путь к файлу ошибок."""
-        return Path("logs") / f"{self.name}-errors.log"
+    # Console
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(fmt_console)
+    log.addHandler(ch)
 
-# Определить режим из переменной окружения
-MODE = os.getenv("FASTAPI_FOUNDRY_MODE", "dev").lower()
+    # Rotating plain-text file — all levels
+    fh = logging.handlers.RotatingFileHandler(
+        log_dir / f'{name}.log',
+        maxBytes=10 * 1024 * 1024,
+        backupCount=5,
+        encoding='utf-8',
+    )
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(fmt_file)
+    log.addHandler(fh)
 
-# Создать глобальный логгер
-logger = FastAPIFoundryLogger("fastapi-foundry", MODE)
+    # Errors-only file
+    eh = logging.handlers.RotatingFileHandler(
+        log_dir / f'{name}-errors.log',
+        maxBytes=5 * 1024 * 1024,
+        backupCount=3,
+        encoding='utf-8',
+    )
+    eh.setLevel(logging.ERROR)
+    eh.setFormatter(fmt_file)
+    log.addHandler(eh)
 
-# Экспортировать методы для удобства
-debug = logger.debug
-info = logger.info
-warning = logger.warning
-error = logger.error
-critical = logger.critical
-exception = logger.exception
+    # Structured JSONL — for log viewer and analysis
+    jh = logging.handlers.RotatingFileHandler(
+        log_dir / f'{name}-structured.jsonl',
+        maxBytes=20 * 1024 * 1024,
+        backupCount=3,
+        encoding='utf-8',
+    )
+    jh.setLevel(logging.INFO)
+    jh.setFormatter(logging.Formatter('%(message)s'))
+    log.addHandler(jh)
 
-def get_logger(name: str, mode: Optional[str] = None) -> FastAPIFoundryLogger:
-    """Получить именованный логгер"""
-    return FastAPIFoundryLogger(name, mode or MODE)
+    return log
 
-def set_mode(mode: str):
-    """Изменить режим логирования"""
-    global logger, MODE
-    MODE = mode.lower()
-    logger = FastAPIFoundryLogger("fastapi-foundry", MODE)
+
+logger: logging.Logger = _build_logger()
+
+
+def get_logger(name: str) -> logging.Logger:
+    """Return a child logger sharing the root handler chain.
+
+    Args:
+        name (str): Logger name (typically module __name__).
+
+    Returns:
+        logging.Logger: Configured logger instance.
+
+    Example:
+        >>> log = get_logger(__name__)
+        >>> log.info("Module ready")
+    """
+    return logging.getLogger(name)

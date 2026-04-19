@@ -3,170 +3,198 @@
 # Process Name: Unified Configuration Class (Refactored)
 # =============================================================================
 # Description:
-#   Simplified Config class for the entire FastApiFoundry project
-#   Loads settings from config.json and provides a unified interface
+#   Simplified Config class for the entire FastApiFoundry project.
+#   Loads settings from config.json and provides a unified interface.
 #
 # File: config_manager.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
+# Version: 0.5.5
+# Changes in 0.5.5:
+#   - Added try/except with logging in _load_config and update_config
+#   - Replaced bare print() with logger calls on errors
 # Author: hypo69
-# Copyright: © 2026 hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
 
 import json
+import logging
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
+
+logger = logging.getLogger(__name__)
+
 
 class Config:
-    """Unified configuration class for the entire project"""
-    
+    """Unified configuration class for the entire project."""
+
     _instance = None
-    _config_data = None
+    _config_data: Dict[str, Any] = {}
     _foundry_base_url = None  # Dynamically set in run.py
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._load_config()
         return cls._instance
-    
-    def _load_config(self):
-        """Load configuration from config.json"""
-        config_path = Path("config.json")
-        
+
+    def _load_config(self) -> None:
+        """Load configuration from config.json."""
+        config_path = Path('config.json')
+
         if not config_path.exists():
-            raise FileNotFoundError(f"config.json not found at {config_path.absolute()}")
-        
-        print(f"Loading config from: {config_path.absolute()}")
-        
-        with open(config_path, 'r', encoding='utf-8') as f:
-            self._config_data = json.load(f)
-            
-        print(f"Config loaded with sections: {list(self._config_data.keys())}")
-    
-    def reload_config(self):
-        """Reload configuration"""
+            # Config file missing — cannot start; re-raise so caller sees it
+            raise FileNotFoundError(f'config.json not found at {config_path.absolute()}')
+
+        print(f'Loading config from: {config_path.absolute()}')
+
+        try:
+            with open(config_path, encoding='utf-8') as f:
+                self._config_data = json.load(f)
+            print(f'Config loaded with sections: {list(self._config_data.keys())}')
+        except json.JSONDecodeError as e:
+            # Malformed JSON — log and re-raise; server cannot start with broken config
+            logger.error(f'❌ config.json contains invalid JSON: {e}')
+            raise
+        except OSError as e:
+            logger.error(f'❌ Cannot read config.json: {e}')
+            raise
+
+    def reload_config(self) -> None:
+        """Reload configuration from disk."""
         self._load_config()
-    
-    # FastAPI Server settings
+
+    # ── FastAPI Server ────────────────────────────────────────────────────
+
     @property
     def api_host(self) -> str:
-        return self._config_data.get("fastapi_server", {}).get("host") or "0.0.0.0"
-    
+        return self._config_data.get('fastapi_server', {}).get('host') or '0.0.0.0'
+
     @property
     def api_port(self) -> int:
-        return self._config_data.get("fastapi_server", {}).get("port") or 9696
-    
+        return self._config_data.get('fastapi_server', {}).get('port') or 9696
+
     @property
     def api_workers(self) -> int:
-        return self._config_data.get("fastapi_server", {}).get("workers") or 1
-    
+        return self._config_data.get('fastapi_server', {}).get('workers') or 1
+
     @property
     def api_reload(self) -> bool:
-        return self._config_data.get("fastapi_server", {}).get("reload", True)
-    
+        return self._config_data.get('fastapi_server', {}).get('reload', True)
+
     @property
     def api_log_level(self) -> str:
-        return self._config_data.get("fastapi_server", {}).get("log_level", "INFO")
-    
-    # Foundry AI settings
+        return self._config_data.get('fastapi_server', {}).get('log_level', 'INFO')
+
+    # ── Foundry AI ────────────────────────────────────────────────────────
+
     @property
     def foundry_base_url(self) -> str:
-        # Return only dynamically set URL
         return self._foundry_base_url
-    
+
     @foundry_base_url.setter
-    def foundry_base_url(self, value: str):
-        """Set foundry_base_url dynamically (used in run.py)"""
+    def foundry_base_url(self, value: str) -> None:
         self._foundry_base_url = value
-    
+
     @property
     def foundry_default_model(self) -> str:
-        return self._config_data.get("foundry_ai", {}).get("default_model", "")
-    
+        return self._config_data.get('foundry_ai', {}).get('default_model', '')
+
     @property
     def foundry_auto_load_default(self) -> bool:
-        return self._config_data.get("foundry_ai", {}).get("auto_load_default", False)
-    
+        return self._config_data.get('foundry_ai', {}).get('auto_load_default', False)
+
     @property
     def foundry_temperature(self) -> float:
-        return self._config_data.get("foundry_ai", {}).get("temperature", 0.7)
-    
+        return self._config_data.get('foundry_ai', {}).get('temperature', 0.7)
+
     @property
     def foundry_max_tokens(self) -> int:
-        return self._config_data.get("foundry_ai", {}).get("max_tokens", 2048)
-    
-    # Port Management settings
+        return self._config_data.get('foundry_ai', {}).get('max_tokens', 2048)
+
+    @property
+    def foundry_top_p(self) -> float:
+        return self._config_data.get('foundry_ai', {}).get('top_p', 0.9)
+
+    @property
+    def foundry_top_k(self) -> int:
+        return self._config_data.get('foundry_ai', {}).get('top_k', 50)
+
+    # ── Port Management ───────────────────────────────────────────────────
+
     @property
     def port_auto_find_free(self) -> bool:
-        return self._config_data.get("port_management", {}).get("auto_find_free_port", False)
-    
+        return self._config_data.get('port_management', {}).get('auto_find_free_port', False)
+
     @property
     def port_range_start(self) -> int:
-        return self._config_data.get("port_management", {}).get("port_range_start", 8000)
-    
+        return self._config_data.get('port_management', {}).get('port_range_start', 8000)
+
     @property
     def port_range_end(self) -> int:
-        return self._config_data.get("port_management", {}).get("port_range_end", 8100)
-    
-    # RAG System settings
+        return self._config_data.get('port_management', {}).get('port_range_end', 8100)
+
+    # ── RAG System ────────────────────────────────────────────────────────
+
     @property
     def rag_enabled(self) -> bool:
-        return self._config_data.get("rag_system", {}).get("enabled", False)
-    
+        return self._config_data.get('rag_system', {}).get('enabled', False)
+
     @property
     def rag_index_dir(self) -> str:
-        raw = self._config_data.get("rag_system", {}).get("index_dir") or "~/.rag"
+        raw = self._config_data.get('rag_system', {}).get('index_dir') or '~/.rag'
         return str(Path(raw).expanduser())
-    
+
     @property
     def rag_model(self) -> str:
-        return self._config_data.get("rag_system", {}).get("model", "sentence-transformers/all-MiniLM-L6-v2")
-    
+        return self._config_data.get('rag_system', {}).get('model', 'sentence-transformers/all-MiniLM-L6-v2')
+
     @property
     def rag_chunk_size(self) -> int:
-        return self._config_data.get("rag_system", {}).get("chunk_size", 1000)
-    
+        return self._config_data.get('rag_system', {}).get('chunk_size', 1000)
+
     @property
     def rag_top_k(self) -> int:
-        return self._config_data.get("rag_system", {}).get("top_k", 5)
-    
-    # Directories
+        return self._config_data.get('rag_system', {}).get('top_k', 5)
+
+    # ── Directories ───────────────────────────────────────────────────────
+
     @property
     def dir_models(self) -> str:
-        """~/.models — директория GGUF моделей llama.cpp"""
-        raw = self._config_data.get("directories", {}).get("models") or "~/.models"
+        raw = self._config_data.get('directories', {}).get('models') or '~/.models'
         return str(Path(raw).expanduser())
 
     @property
     def dir_rag(self) -> str:
-        """~/.rag — директория RAG баз"""
-        raw = self._config_data.get("directories", {}).get("rag") or "~/.rag"
+        raw = self._config_data.get('directories', {}).get('rag') or '~/.rag'
         return str(Path(raw).expanduser())
 
     @property
     def dir_hf_models(self) -> str:
-        """~/.hf_models — директория HuggingFace моделей"""
-        raw = self._config_data.get("directories", {}).get("hf_models") or "~/.hf_models"
+        raw = self._config_data.get('directories', {}).get('hf_models') or '~/.hf_models'
         return str(Path(raw).expanduser())
 
-    # Methods for working with configuration
+    # ── Helpers ───────────────────────────────────────────────────────────
+
     def get_section(self, section: str) -> Dict[str, Any]:
-        """Get an entire configuration section"""
+        """Return an entire configuration section."""
         return self._config_data.get(section, {})
-    
+
     def get_raw_config(self) -> Dict[str, Any]:
-        """Get the entire configuration"""
+        """Return a copy of the entire configuration."""
         return self._config_data.copy()
-    
-    def update_config(self, new_config: Dict[str, Any]):
-        """Update configuration and save to file"""
+
+    def update_config(self, new_config: Dict[str, Any]) -> None:
+        """Update configuration in memory and persist to config.json."""
         self._config_data = new_config
-        
-        config_path = Path("config.json")
-        with open(config_path, 'w', encoding='utf-8') as f:
-            json.dump(new_config, f, indent=2, ensure_ascii=False)
+        config_path = Path('config.json')
+        try:
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(new_config, f, indent=2, ensure_ascii=False)
+        except OSError as e:
+            # Disk write failed — config updated in memory but not persisted
+            logger.error(f'❌ Failed to write config.json: {e}')
+            raise
+
 
 # Global configuration instance
 config = Config()

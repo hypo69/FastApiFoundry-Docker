@@ -61,3 +61,73 @@ body select.form-control:disabled {
     color: #212529 !important;
     background-color: #fff !important;
 }
+
+/* ── Log Viewer ── */
+.log-viewer {
+    height: calc(100vh - 260px);
+    min-height: 500px;
+    overflow-y: auto;
+    overflow-x: auto;
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    padding: 8px 12px;
+    border-radius: 0 0 4px 4px;
+}
+
+.log-viewer--wrap .log-line {
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.log-line {
+    white-space: pre;
+    padding: 1px 0;
+    border-bottom: 1px solid rgba(255,255,255,.03);
+}
+
+.log-line:hover {
+    background: rgba(255,255,255,.05);
+}
+
+.log-line mark {
+    background: #f0c040;
+    color: #0d1117;
+    border-radius: 2px;
+    padding: 0 2px;
+}
+
+/* Level colors */
+.log-line.text-secondary { color: #6e7681 !important; }
+.log-line.text-info      { color: #79c0ff !important; }
+.log-line.text-warning   { color: #e3b341 !important; }
+.log-line.text-danger    { color: #ff7b72 !important; }
+.log-line.fw-bold        { font-weight: 700 !important; }
+
+/* ── Chat window ── */
+#chat-messages {
+    height: calc(100vh - 300px) !important;
+    min-height: 500px !important;
+    overflow-y: auto;
+}
+
+/* ── Editor textareas ── */
+#env-editor,
+#config-json-editor {
+    height: calc(100vh - 220px) !important;
+    min-height: 560px !important;
+    resize: vertical;
+}
+
+/* ── Settings card body ── */
+#settings .card-body[style*="max-height"] {
+    max-height: calc(100vh - 200px) !important;
+    overflow-y: auto;
+}
+
+#settings-card-body {
+    max-height: calc(100vh - 200px) !important;
+    overflow-y: auto;
+}

@@ -1,213 +1,230 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Environment Variables Processor for Config
+# Process Name: Environment Variables Processor for Config
 # =============================================================================
-# Описание:
-#   Утилита для подстановки переменных окружения в config.json
-#   Поддерживает синтаксис ${VAR_NAME:default_value}
+# Description:
+#   Utility for substituting environment variables in config.json.
+#   Supports ${VAR_NAME:default_value} syntax.
 #
-# Примеры:
+# Examples:
 #   from src.utils.env_processor import process_config
 #   config = process_config('config.json')
 #
 # File: src/utils/env_processor.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.5.5
+# Changes in 0.5.5:
+#   - Added try/except with logging in process_config, substitute_env_vars,
+#     save_processed_config
+#   - load_env_variables now logs on failure instead of silently returning False
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
-# Date: 9 декабря 2025
 # =============================================================================
 
-import os
 import json
+import logging
+import os
 import re
 from pathlib import Path
 from typing import Any, Dict, Union
+
 from dotenv import load_dotenv
 
-def load_env_variables():
-    """Загрузка переменных окружения из .env файла"""
+logger = logging.getLogger(__name__)
+
+
+def load_env_variables() -> bool:
+    """Load environment variables from .env file.
+
+    Returns:
+        bool: True if .env was found and loaded.
+    """
     env_path = Path('.env')
-    if env_path.exists():
+    if not env_path.exists():
+        return False
+    try:
         load_dotenv(env_path)
         return True
-    return False
+    except Exception as e:
+        # .env exists but dotenv failed to parse it (encoding, permissions, etc.)
+        logger.error(f'❌ Failed to load .env: {e}')
+        return False
 
-def substitute_env_vars(value: str) -> Union[str, int, float, bool]:
-    """
-    Подстановка переменных окружения в строке
-    
-    Поддерживаемые форматы:
-    - ${VAR_NAME} - обязательная переменная
-    - ${VAR_NAME:default} - с значением по умолчанию
-    
+
+def substitute_env_vars(value: str) -> Union[str, int, float, bool, list]:
+    """Substitute environment variables in a string.
+
+    Supported formats:
+        ${VAR_NAME}          — required variable
+        ${VAR_NAME:default}  — with default value
+
     Args:
-        value (str): Строка с переменными окружения
-        
+        value: String potentially containing ${...} placeholders.
+
     Returns:
-        Union[str, int, float, bool]: Обработанное значение
+        Substituted and type-converted value.
+
+    Raises:
+        ValueError: If a required variable is not set.
     """
     if not isinstance(value, str):
         return value
-    
-    # Паттерн для поиска ${VAR_NAME} или ${VAR_NAME:default}
-    pattern = r'\$\{([^}:]+)(?::([^}]*))?\}'
-    
-    def replace_var(match):
+
+    pattern = r'\$\{([^}:]+)(?::([^}]*))?}'
+
+    def _replace(match: re.Match) -> str:
         var_name = match.group(1)
-        default_value = match.group(2) if match.group(2) is not None else None
-        
-        # Получаем значение из переменных окружения
-        env_value = os.getenv(var_name)
-        
-        if env_value is not None:
-            result = env_value
-        elif default_value is not None:
-            result = default_value
-        else:
-            raise ValueError(f"Environment variable '{var_name}' is required but not set")
-        
-        return result
-    
-    # Заменяем все переменные
-    result = re.sub(pattern, replace_var, value)
-    
-    # Пытаемся преобразовать в соответствующий тип
+        default = match.group(2)
+        env_val = os.getenv(var_name)
+        if env_val is not None:
+            return env_val
+        if default is not None:
+            return default
+        # Required variable missing — caller must handle
+        raise ValueError(f"Required environment variable '{var_name}' is not set")
+
+    try:
+        result = re.sub(pattern, _replace, value)
+    except ValueError:
+        raise
+    except Exception as e:
+        # Regex substitution failed for unexpected reason
+        logger.error(f'❌ substitute_env_vars failed for value={value!r}: {e}')
+        return value
+
     return convert_type(result)
 
-def convert_type(value: str) -> Union[str, int, float, bool]:
-    """Преобразование строки в соответствующий тип"""
+
+def convert_type(value: str) -> Union[str, int, float, bool, list]:
+    """Convert a string to the most appropriate Python type."""
     if not isinstance(value, str):
         return value
-    
-    # Булевы значения
     if value.lower() in ('true', 'yes', '1', 'on'):
         return True
     if value.lower() in ('false', 'no', '0', 'off'):
         return False
-    
-    # Числа
     try:
-        if '.' in value:
-            return float(value)
-        return int(value)
+        return float(value) if '.' in value else int(value)
     except ValueError:
         pass
-    
-    # Массивы (разделенные запятыми)
     if ',' in value:
         return [item.strip() for item in value.split(',')]
-    
     return value
 
+
 def process_dict(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Рекурсивная обработка словаря"""
-    result = {}
-    
-    for key, value in data.items():
-        if isinstance(value, dict):
-            result[key] = process_dict(value)
-        elif isinstance(value, list):
+    """Recursively substitute env vars in a config dict."""
+    result: Dict[str, Any] = {}
+    for key, val in data.items():
+        if isinstance(val, dict):
+            result[key] = process_dict(val)
+        elif isinstance(val, list):
             result[key] = [
-                process_dict(item) if isinstance(item, dict) 
+                process_dict(item) if isinstance(item, dict)
                 else substitute_env_vars(item) if isinstance(item, str)
                 else item
-                for item in value
+                for item in val
             ]
-        elif isinstance(value, str):
-            result[key] = substitute_env_vars(value)
+        elif isinstance(val, str):
+            result[key] = substitute_env_vars(val)
         else:
-            result[key] = value
-    
+            result[key] = val
     return result
 
+
 def process_config(config_path: Union[str, Path]) -> Dict[str, Any]:
-    """
-    Загрузка и обработка конфигурационного файла
-    
+    """Load and process a config file, substituting env vars.
+
     Args:
-        config_path (Union[str, Path]): Путь к config.json
-        
+        config_path: Path to config.json.
+
     Returns:
-        Dict[str, Any]: Обработанная конфигурация
-        
+        Processed configuration dict.
+
     Raises:
-        FileNotFoundError: Если файл не найден
-        json.JSONDecodeError: Если файл содержит невалидный JSON
-        ValueError: Если обязательная переменная окружения не установлена
+        FileNotFoundError: Config file not found.
+        json.JSONDecodeError: Invalid JSON in config file.
+        ValueError: Required env variable not set.
     """
     config_path = Path(config_path)
-    
-    if not config_path.exists():
-        raise FileNotFoundError(f"Config file not found: {config_path}")
-    
-    # Загружаем переменные окружения
-    load_env_variables()
-    
-    # Читаем и парсим JSON
-    with open(config_path, 'r', encoding='utf-8') as f:
-        config_data = json.load(f)
-    
-    # Обрабатываем переменные окружения
-    processed_config = process_dict(config_data)
-    
-    return processed_config
 
-def validate_config(config: Dict[str, Any]) -> bool:
-    """
-    Валидация обработанной конфигурации
-    
+    if not config_path.exists():
+        raise FileNotFoundError(f'Config file not found: {config_path}')
+
+    load_env_variables()
+
+    try:
+        with open(config_path, encoding='utf-8') as f:
+            raw = json.load(f)
+    except json.JSONDecodeError as e:
+        # Config file is not valid JSON — cannot proceed
+        logger.error(f'❌ Invalid JSON in {config_path}: {e}')
+        raise
+    except OSError as e:
+        logger.error(f'❌ Cannot read {config_path}: {e}')
+        raise
+
+    try:
+        return process_dict(raw)
+    except ValueError as e:
+        # Missing required env variable — propagate with context
+        logger.error(f'❌ Env substitution failed in {config_path}: {e}')
+        raise
+
+
+def validate_config(cfg: Dict[str, Any]) -> bool:
+    """Validate processed configuration.
+
     Args:
-        config (Dict[str, Any]): Конфигурация для проверки
-        
+        cfg: Configuration dict to check.
+
     Returns:
-        bool: True если конфигурация валидна
+        bool: True if all required sections are present.
     """
-    required_sections = ['fastapi_server', 'foundry_ai', 'security']
-    
-    for section in required_sections:
-        if section not in config:
-            print(f"❌ Missing required section: {section}")
+    required = ['fastapi_server', 'foundry_ai', 'security']
+    for section in required:
+        if section not in cfg:
+            logger.error(f'❌ Missing required config section: {section}')
             return False
-    
-    # Проверяем критичные настройки
-    if not config.get('security', {}).get('api_key'):
-        print("⚠️ API_KEY not set in security section")
-    
-    if not config.get('security', {}).get('secret_key'):
-        print("⚠️ SECRET_KEY not set in security section")
-    
+    if not cfg.get('security', {}).get('api_key'):
+        logger.warning('⚠️ API_KEY not set in security section')
+    if not cfg.get('security', {}).get('secret_key'):
+        logger.warning('⚠️ SECRET_KEY not set in security section')
     return True
 
-def save_processed_config(config: Dict[str, Any], output_path: Union[str, Path]):
-    """Сохранение обработанной конфигурации"""
-    output_path = Path(output_path)
-    
-    with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=2, ensure_ascii=False)
 
-if __name__ == "__main__":
-    import sys
-    
-    config_file = sys.argv[1] if len(sys.argv) > 1 else 'config.json'
-    
+def save_processed_config(cfg: Dict[str, Any], output_path: Union[str, Path]) -> None:
+    """Save processed configuration to a file.
+
+    Args:
+        cfg: Configuration dict.
+        output_path: Destination file path.
+    """
+    output_path = Path(output_path)
     try:
-        print(f"🔧 Processing config: {config_file}")
-        config = process_config(config_file)
-        
-        print("✅ Config processed successfully!")
-        
-        if validate_config(config):
-            print("✅ Config validation passed!")
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+    except OSError as e:
+        # Disk write failed — caller decides whether to abort
+        logger.error(f'❌ Cannot write processed config to {output_path}: {e}')
+        raise
+
+
+if __name__ == '__main__':
+    import sys
+
+    _cfg_file = sys.argv[1] if len(sys.argv) > 1 else 'config.json'
+    try:
+        print(f'🔧 Processing config: {_cfg_file}')
+        _cfg = process_config(_cfg_file)
+        print('✅ Config processed successfully!')
+        if validate_config(_cfg):
+            print('✅ Config validation passed!')
         else:
-            print("⚠️ Config validation warnings found")
-        
-        # Сохраняем обработанную конфигурацию для отладки
-        debug_path = Path(config_file).with_suffix('.processed.json')
-        save_processed_config(config, debug_path)
-        print(f"💾 Processed config saved to: {debug_path}")
-        
-    except Exception as e:
-        print(f"❌ Error processing config: {e}")
+            print('⚠️ Config validation warnings found')
+        _debug = Path(_cfg_file).with_suffix('.processed.json')
+        save_processed_config(_cfg, _debug)
+        print(f'💾 Saved to: {_debug}')
+    except Exception as exc:
+        print(f'❌ Error: {exc}')
         sys.exit(1)

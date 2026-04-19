@@ -1,68 +1,96 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Foundry Finder Utility
+# Process Name: Foundry Finder Utility
 # =============================================================================
-# Описание:
-#   Утилита для поиска запущенного Foundry сервиса
-#   Проверяет известные порты и переменные окружения
+# Description:
+#   Utility for locating a running Foundry service.
+#   Checks known ports and environment variables.
 #
 # File: foundry_finder.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.3.3
+# Version: 0.5.5
+# Changes in 0.5.5:
+#   - Added try/except with logging in find_foundry_port and _test_foundry_port
+#   - ValueError on bad FOUNDRY_DYNAMIC_PORT now logged instead of silently skipped
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
-# Date: 9 декабря 2025
 # =============================================================================
 
-import os
-import requests
 import logging
+import os
+
+import requests
 
 logger = logging.getLogger(__name__)
 
+_KNOWN_PORTS = [62171, 50477, 58130]
+
+
 def find_foundry_port() -> int | None:
-    """Найти порт запущенного Foundry"""
-    # Сначала проверяем переменную окружения
-    foundry_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
-    if foundry_port:
+    """Locate the port of a running Foundry service.
+
+    Returns:
+        int | None: Port number if found, None otherwise.
+    """
+    # Check environment variable first
+    raw_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
+    if raw_port:
         try:
-            port = int(foundry_port)
+            port = int(raw_port)
             if _test_foundry_port(port):
-                logger.info(f"✅ Foundry найден через переменную окружения: {port}")
+                logger.info(f'✅ Foundry found via env variable: {port}')
                 return port
         except ValueError:
-            pass
-    
-    # Проверяем известные порты
-    test_ports = [62171, 50477, 58130]
-    logger.info(f"🔍 Поиск Foundry на портах: {test_ports}")
-    
-    for port in test_ports:
+            # FOUNDRY_DYNAMIC_PORT is set but not a valid integer
+            logger.warning(f'⚠️ FOUNDRY_DYNAMIC_PORT is not a valid integer: {raw_port!r}')
+
+    logger.info(f'🔍 Scanning known ports: {_KNOWN_PORTS}')
+    for port in _KNOWN_PORTS:
         if _test_foundry_port(port):
-            logger.info(f"✅ Foundry найден на порту: {port}")
+            logger.info(f'✅ Foundry found on port: {port}')
             return port
-    
-    logger.warning("❌ Foundry не найден на известных портах")
+
+    logger.warning('❌ Foundry not found on any known port')
     return None
 
+
 def _test_foundry_port(port: int) -> bool:
-    """Проверить доступность Foundry на порту"""
+    """Check whether Foundry is responding on the given port.
+
+    Args:
+        port: TCP port to probe.
+
+    Returns:
+        bool: True if Foundry API responds with HTTP 200.
+    """
     try:
-        logger.debug(f"Проверка порта {port}...")
-        response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=2)
-        if response.status_code == 200:
+        logger.debug(f'Probing port {port}…')
+        resp = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=2)
+        if resp.status_code == 200:
             return True
-        else:
-            logger.debug(f"❌ Порт {port}: HTTP {response.status_code}")
-            return False
+        logger.debug(f'Port {port}: HTTP {resp.status_code}')
+        return False
+    except requests.exceptions.ConnectionError:
+        # Port is closed or service not running — expected during scan
+        logger.debug(f'Port {port}: connection refused')
+        return False
+    except requests.exceptions.Timeout:
+        # Service exists but too slow — treat as unavailable
+        logger.debug(f'Port {port}: timeout')
+        return False
     except Exception as e:
-        logger.debug(f"❌ Порт {port}: {e}")
+        # Unexpected error (e.g. SSL, socket error) — log and skip
+        logger.warning(f'⚠️ Unexpected error probing port {port}: {e}')
         return False
 
+
 def find_foundry_url() -> str | None:
-    """Найти URL запущенного Foundry"""
+    """Return the base URL of a running Foundry service.
+
+    Returns:
+        str | None: URL like 'http://localhost:50477/v1/' or None.
+    """
     port = find_foundry_port()
     if port:
-        return f"http://localhost:{port}/v1/"
+        return f'http://localhost:{port}/v1/'
     return None
