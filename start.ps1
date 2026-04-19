@@ -302,45 +302,215 @@ if ($docsServerConfig -and $docsServerConfig.enabled) {
 # Step 6: Optional llama.cpp local inference server
 # Only started when LLAMA_MODEL_PATH and LLAMA_AUTO_START=true are set in .env
 # -----------------------------------------------------------------------------
-$llamaModelPath = [System.Environment]::GetEnvironmentVariable('LLAMA_MODEL_PATH')
-$llamaAutoStart = [System.Environment]::GetEnvironmentVariable('LLAMA_AUTO_START')
 
-if ($llamaModelPath -and $llamaAutoStart -eq 'true') {
-    Write-Host '🦙 Запуск сервера llama.cpp...' -ForegroundColor Cyan
+function Ensure-LlamaBin {
+    <#
+    .SYNOPSIS
+        Ensures llama-server binary is extracted from the latest zip in bin/.
+        Version is read from / written to config.json (llama_cpp.bin_version).
+        If a newer zip is found, prompts the user before extracting.
+    .OUTPUTS
+        [string] Path to llama-server.exe, or $null if unavailable.
+    #>
+    $binDir     = Join-Path $Root 'bin'
+    $configPath = Join-Path $Root 'config.json'
 
-    $llamaScript = Join-Path $Root 'scripts\llama-start.ps1'
-    if (Test-Path $llamaScript) {
-        $llamaPort = [System.Environment]::GetEnvironmentVariable('LLAMA_PORT')
-        if (-not $llamaPort) { $llamaPort = 8080 }
+    # Find all llama zips, pick the latest by name (build number is in the name)
+    $zips = Get-ChildItem -Path $binDir -Filter 'llama-*-bin-win-*.zip' -ErrorAction SilentlyContinue |
+            Sort-Object Name -Descending
 
-        # Stop previous llama.cpp instance if running on this port
-        $oldLlama = Get-NetTCPConnection -LocalPort $llamaPort -State Listen -ErrorAction SilentlyContinue
-        if ($oldLlama) {
-            $oldLlamaPid = $oldLlama.OwningProcess
-            try {
-                Stop-Process -Id $oldLlamaPid -Force -ErrorAction Stop
-                Write-Host "✅ Предыдущий llama.cpp (PID: $oldLlamaPid) остановлен" -ForegroundColor Green
-                Start-Sleep 1
-            } catch {
-                Write-Host "⚠️ Не удалось остановить llama.cpp (PID: $oldLlamaPid): $_" -ForegroundColor Yellow
+    if (-not $zips) {
+        Write-Host '⚠️  No llama.cpp zip found in bin/' -ForegroundColor Yellow
+        return $null
+    }
+
+    $latestZip  = $zips[0]
+    $latestStem = [System.IO.Path]::GetFileNameWithoutExtension($latestZip.Name)
+    $extractDir = Join-Path $binDir $latestStem
+    $serverExe  = Join-Path $extractDir 'llama-server.exe'
+
+    # Read installed version from config.json
+    $installedVersion = $null
+    $cfg = $null
+    try {
+        $cfg = Get-Content $configPath -Raw | ConvertFrom-Json
+        $installedVersion = $cfg.llama_cpp.bin_version
+    } catch { }
+
+    $isUpToDate = ($installedVersion -eq $latestStem) -and (Test-Path $serverExe)
+
+    if ($isUpToDate) {
+        Write-Host "✅ llama.cpp binary up-to-date: $latestStem" -ForegroundColor Green
+        return $serverExe
+    }
+
+    # New version available — prompt user
+    if ($installedVersion -and $installedVersion -ne $latestStem) {
+        Write-Host '' 
+        Write-Host '📦 New llama.cpp version available!' -ForegroundColor Cyan
+        Write-Host "   Installed : $installedVersion" -ForegroundColor Gray
+        Write-Host "   Available : $latestStem" -ForegroundColor Green
+        $answer = Read-Host '   Install now? [Y/n]'
+        if ($answer -match '^[Nn]') {
+            Write-Host '⏭️  Skipping update. Using existing binary.' -ForegroundColor Yellow
+            # Return existing exe if it still works
+            $oldExe = Join-Path $binDir $installedVersion 'llama-server.exe'
+            if (Test-Path $oldExe) { return $oldExe }
+            Write-Host '⚠️  Old binary not found, proceeding with extraction.' -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "📦 Extracting $($latestZip.Name) → bin/$latestStem/ ..." -ForegroundColor Yellow
+    }
+
+    # Remove old dir and extract fresh
+    if (Test-Path $extractDir) {
+        Remove-Item $extractDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    try {
+        # Zip has no root folder — extract directly into the named subdirectory
+        Expand-Archive -Path $latestZip.FullName -DestinationPath $extractDir -Force
+        Write-Host "✅ Extracted: $extractDir" -ForegroundColor Green
+    } catch {
+        Write-Host "❌ Extraction failed: $_" -ForegroundColor Red
+        return $null
+    }
+
+    # Persist new version to config.json
+    try {
+        if (-not $cfg) { $cfg = Get-Content $configPath -Raw | ConvertFrom-Json }
+        $cfg.llama_cpp.bin_version = $latestStem
+        $cfg | ConvertTo-Json -Depth 10 | Set-Content $configPath -Encoding UTF8
+        Write-Host "✅ config.json updated: llama_cpp.bin_version = $latestStem" -ForegroundColor Green
+    } catch {
+        Write-Host "⚠️  Could not update config.json: $_" -ForegroundColor Yellow
+    }
+
+    if (Test-Path $serverExe) { return $serverExe }
+    Write-Host "❌ llama-server.exe not found after extraction in $extractDir" -ForegroundColor Red
+    return $null
+}
+
+function Start-LlamaServer {
+    <#
+    .SYNOPSIS
+        Starts llama.cpp server. On failure — ensures binary and retries once.
+    .PARAMETER ServerExe
+        Path to llama-server.exe.
+    .PARAMETER ModelPath
+        Path to .gguf model file.
+    .PARAMETER Port
+        TCP port for the server.
+    .OUTPUTS
+        [bool] True if started successfully.
+    #>
+    param(
+        [string]$ServerExe,
+        [string]$ModelPath,
+        [int]$Port
+    )
+
+    for ($attempt = 1; $attempt -le 2; $attempt++) {
+        if (-not (Test-Path $ServerExe)) {
+            Write-Host "🔧 llama-server.exe missing, re-extracting (attempt $attempt)..." -ForegroundColor Yellow
+            $ServerExe = Ensure-LlamaBin
+            if (-not $ServerExe) {
+                Write-Host '❌ Cannot find llama-server.exe after extraction.' -ForegroundColor Red
+                return $false
             }
         }
 
-        Start-Process powershell.exe -ArgumentList @(
-            '-NonInteractive', '-NoProfile', '-ExecutionPolicy', 'Bypass',
-            '-File', $llamaScript,
-            '-ModelPath', $llamaModelPath,
-            '-Port', $llamaPort
-        ) -WindowStyle Minimized
+        Write-Host "🦙 Starting llama.cpp (attempt $attempt): $([System.IO.Path]::GetFileName($ServerExe))" -ForegroundColor Cyan
 
-        $env:LLAMA_BASE_URL = "http://127.0.0.1:$llamaPort/v1"
-        Write-Host "✅ llama.cpp запускается (порт $llamaPort)" -ForegroundColor Green
-        Write-Host "🔗 LLAMA_BASE_URL = $env:LLAMA_BASE_URL" -ForegroundColor Green
+        $proc = Start-Process -FilePath $ServerExe `
+            -ArgumentList "--model", $ModelPath, "--port", $Port, "--host", "127.0.0.1", "--log-disable" `
+            -PassThru -WindowStyle Minimized -ErrorAction SilentlyContinue
+
+        if (-not $proc) {
+            Write-Host "⚠️  Start-Process returned nothing on attempt $attempt." -ForegroundColor Yellow
+            $ServerExe = ''  # force re-extract on next attempt
+            continue
+        }
+
+        # Wait up to 10 s for the HTTP health endpoint
+        for ($i = 1; $i -le 5; $i++) {
+            Start-Sleep 2
+            try {
+                $r = Invoke-WebRequest -Uri "http://127.0.0.1:$Port/health" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
+                if ($r.StatusCode -eq 200) {
+                    Write-Host "✅ llama.cpp running on port $Port (PID: $($proc.Id))" -ForegroundColor Green
+                    return $true
+                }
+            } catch { }
+            Write-Host "⏳ Waiting for llama.cpp... ($i/5)" -ForegroundColor Gray
+        }
+
+        # Process exited immediately — binary likely broken
+        if ($proc.HasExited) {
+            Write-Host "⚠️  llama-server.exe exited immediately (code $($proc.ExitCode)). Re-extracting..." -ForegroundColor Yellow
+            $ServerExe = Ensure-LlamaBin
+            if (-not $ServerExe) { return $false }
+        }
+    }
+
+    Write-Host '❌ llama.cpp failed to start after 2 attempts.' -ForegroundColor Red
+    return $false
+}
+
+$llamaModelPath = $null
+$llamaAutoStart = $false
+$llamaPort      = 9780
+
+# Read llama.cpp settings from config.json (not .env — no secrets there)
+try {
+    $cfg        = Get-Content (Join-Path $Root 'config.json') -Raw | ConvertFrom-Json
+    $llamaCfg   = $cfg.llama_cpp
+    $llamaModelPath = $llamaCfg.model_path
+    $llamaAutoStart = [bool]$llamaCfg.auto_start
+    $llamaPort      = if ($llamaCfg.port) { [int]$llamaCfg.port } else { 9780 }
+} catch {
+    Write-Host "⚠️  Could not read llama_cpp from config.json: $_" -ForegroundColor Yellow
+}
+
+# LLAMA_SERVER_PATH override still lives in .env (it's a machine-specific binary path)
+$llamaServerPathEnv = [System.Environment]::GetEnvironmentVariable('LLAMA_SERVER_PATH')
+
+# Always ensure binary is up-to-date (fast no-op if already correct)
+$llamaServerExe = Ensure-LlamaBin
+
+if ($llamaModelPath -and $llamaAutoStart) {
+    Write-Host '🦙 Auto-starting llama.cpp server...' -ForegroundColor Cyan
+    Write-Host "   Model : $llamaModelPath" -ForegroundColor Gray
+    Write-Host "   Port  : $llamaPort" -ForegroundColor Gray
+
+    $llamaPort = [System.Environment]::GetEnvironmentVariable('LLAMA_PORT')
+    if (-not $llamaPort) { $llamaPort = 9780 }
+
+    # Stop previous instance on this port
+    $oldLlama = Get-NetTCPConnection -LocalPort $llamaPort -State Listen -ErrorAction SilentlyContinue
+    if ($oldLlama) {
+        try {
+            Stop-Process -Id $oldLlama.OwningProcess -Force -ErrorAction Stop
+            Write-Host "✅ Previous llama.cpp (PID: $($oldLlama.OwningProcess)) stopped" -ForegroundColor Green
+            Start-Sleep 1
+        } catch {
+            Write-Host "⚠️  Could not stop previous llama.cpp: $_" -ForegroundColor Yellow
+        }
+    }
+
+    if ($llamaServerExe) {
+        $started = Start-LlamaServer -ServerExe $llamaServerExe -ModelPath $llamaModelPath -Port $llamaPort
+        if ($started) {
+            $env:LLAMA_BASE_URL = "http://127.0.0.1:$llamaPort/v1"
+            Write-Host "🔗 LLAMA_BASE_URL = $env:LLAMA_BASE_URL" -ForegroundColor Green
+        }
     } else {
-        Write-Host '⚠️ scripts\llama-start.ps1 не найден, пропуск llama.cpp' -ForegroundColor Yellow
+        Write-Host '❌ llama-server.exe not available, skipping auto-start.' -ForegroundColor Red
     }
 } elseif ($llamaModelPath) {
-    Write-Host "💡 Модель llama.cpp настроена, но автозапуск отключен" -ForegroundColor Gray
+    Write-Host '💡 llama.cpp model configured but auto_start=false in config.json (skipping)' -ForegroundColor Gray
+} else {
+    Write-Host '💡 llama.cpp: no model_path set in config.json (skipping)' -ForegroundColor Gray
 }
 
 # -----------------------------------------------------------------------------

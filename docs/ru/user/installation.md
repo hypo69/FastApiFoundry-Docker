@@ -42,23 +42,27 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 
 ---
 
-## Настройка .env
+## Настройка конфигурации
 
-После установки отредактируйте `.env`:
+После установки скопируйте `.env.example` в `.env` и заполните секреты:
 
-```env
-# Foundry (если не определяется автоматически)
-FOUNDRY_BASE_URL=http://localhost:50477/v1
-
-# HuggingFace (для закрытых моделей: Gemma, Llama)
-HF_TOKEN=hf_ваш_токен
-
-# llama.cpp (опционально)
-LLAMA_MODEL_PATH=D:\models\qwen2.5-0.5b-q4_k_m.gguf
-LLAMA_AUTO_START=false
+```powershell
+Copy-Item .env.example .env
+notepad .env
 ```
 
-Полный список переменных — в `.env.example`.
+Минимальный `.env` для старта:
+
+```env
+# HuggingFace токен (только для закрытых моделей: Gemma, Llama)
+HF_TOKEN=hf_ваш_токен
+
+# Foundry URL — только если автоопределение не работает
+# FOUNDRY_BASE_URL=http://localhost:50477/v1
+```
+
+Все остальные настройки (порты, пути к моделям, флаги автозапуска) — в `config.json`.
+Подробнее: [Конфигурация](configuration.md)
 
 ---
 

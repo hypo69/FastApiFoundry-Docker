@@ -60,6 +60,27 @@
                                         </span>
                                     </div>
 
+                                    <!-- Generation params -->
+                                    <div class="mt-2">
+                                        <div class="mb-2">
+                                            <label class="form-label mb-1">
+                                                <span data-i18n="chat.temperature">Temperature</span>:
+                                                <span id="temp-value">0.7</span>
+                                            </label>
+                                            <input type="range" id="temperature" class="form-range"
+                                                   min="0" max="2" step="0.1" value="0.7"
+                                                   oninput="updateTempValue(this.value)">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label mb-1" data-i18n="chat.max_tokens">Max Tokens</label>
+                                            <input type="number" id="max-tokens" class="form-control form-control-sm" value="2048" min="1" max="8192">
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="use-rag" checked>
+                                            <label class="form-check-label" for="use-rag" data-i18n="chat.use_rag">Use RAG Context</label>
+                                        </div>
+                                    </div>
+
                                     <!-- Info block: how models work + CLI instructions -->
                                     <div class="alert alert-info mt-2 mb-0 p-2 small">
                                         <div class="fw-semibold mb-1">
@@ -102,23 +123,7 @@
                                         </ol>
                                     </div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">
-                                        <span data-i18n="chat.temperature">Temperature</span>:
-                                        <span id="temp-value">0.7</span>
-                                    </label>
-                                    <input type="range" id="temperature" class="form-range"
-                                           min="0" max="2" step="0.1" value="0.7"
-                                           oninput="updateTempValue(this.value)">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label" data-i18n="chat.max_tokens">Max Tokens</label>
-                                    <input type="number" id="max-tokens" class="form-control" value="2048" min="1" max="8192">
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="use-rag" checked>
-                                    <label class="form-check-label" for="use-rag" data-i18n="chat.use_rag">Use RAG Context</label>
-                                </div>
+
                             </div>
                         </div>
                     </div>

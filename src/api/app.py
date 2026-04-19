@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
         import asyncio, subprocess
         model_id = app_config.foundry_default_model
         # Модели в UI/чате имеют префиксы `hf::...` и `llama::...`, их нельзя пытаться загрузить в Foundry.
-        if str(model_id).startswith("hf::") or str(model_id).startswith("llama::"):
+        if str(model_id).startswith("hf::") or str(model_id).startswith("llama::") or str(model_id).startswith("ollama::"):
             logger.info(f"Skip auto-loading non-Foundry default model in Foundry: {model_id}")
         else:
             try:
@@ -122,10 +122,12 @@ def create_app() -> FastAPI:
     from .endpoints.foundry_models import router as foundry_models_router
     from .endpoints.hf_models import router as hf_router
     from .endpoints.llama_cpp import router as llama_router
+    from .endpoints.ollama import router as ollama_router
     from .endpoints.mcp_powershell import router as mcp_ps_router
     from .endpoints.agent import router as agent_router
     from .endpoints.converter import router as converter_router
     from .endpoints.ai_endpoints import router as ai_router
+    from .endpoints.system_stats import router as system_stats_router
 
     app.include_router(main.router)
     app.include_router(health.router, prefix="/api/v1")
@@ -141,8 +143,10 @@ def create_app() -> FastAPI:
     app.include_router(logs.router, prefix="/api/v1")
     app.include_router(hf_router, prefix="/api/v1")
     app.include_router(llama_router, prefix="/api/v1")
+    app.include_router(ollama_router, prefix="/api/v1")
     app.include_router(mcp_ps_router, prefix="/api/v1")
     app.include_router(agent_router, prefix="/api/v1")
     app.include_router(converter_router, prefix="/api/v1")
+    app.include_router(system_stats_router, prefix="/api/v1")
     
     return app

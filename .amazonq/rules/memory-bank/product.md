@@ -1,57 +1,61 @@
 # FastAPI Foundry — Product Overview
 
 ## Purpose
-FastAPI Foundry is a REST API server that bridges local AI models (via Microsoft Foundry Local CLI) with a rich web interface and developer API. It enables running AI inference locally without cloud dependencies, with integrated RAG (Retrieval-Augmented Generation) for context-aware responses.
+FastAPI Foundry is a REST API server that provides a unified interface for running and interacting with local AI models. It bridges multiple AI backends (Microsoft Foundry Local, HuggingFace Transformers, llama.cpp, Ollama) through a single FastAPI service with an integrated web UI and RAG (Retrieval-Augmented Generation) system.
 
 ## Value Proposition
-- Run AI models (DeepSeek, Qwen, Mistral, Llama) entirely on local hardware
-- Single unified API for multiple AI backends: Foundry, HuggingFace, llama.cpp
-- Built-in RAG system for project documentation search
-- Web UI for model management, chat, and configuration — no CLI required
-- MCP (Model Context Protocol) server for Claude Desktop integration
+- Run local AI models without cloud dependency
+- Unified API across 4 different AI backends
+- Built-in RAG for context-aware responses using FAISS vector search
+- Web UI for model management, chat, and monitoring — no CLI required
+- MCP (Model Context Protocol) server integration for Claude Desktop
 
 ## Key Features
-- **Text Generation** — `/api/v1/generate` endpoint for prompt-based generation
-- **Interactive Chat** — session-aware chat with conversation history
-- **RAG System** — FAISS-based vector search over indexed project docs
-- **Multi-backend Models** — Foundry, HuggingFace (`hf::` prefix), llama.cpp (`llama::` prefix)
-- **Batch Processing** — multiple requests in a single API call
-- **API Key Security** — key-based auth + CORS protection
-- **Health Monitoring** — `/api/v1/health` and model status endpoints
-- **Docker Support** — containerized deployment via `docker-compose.yml`
-- **Web Interface** — tabbed SPA at `http://localhost:9696` (chat, models, RAG, logs, settings, etc.)
-- **MCP Server** — PowerShell-based MCP servers for Claude Desktop / MCP clients
-- **Foundry Management** — start/stop/monitor Foundry service via web UI
-- **GGUF → ONNX Converter** — convert GGUF models to ONNX format
-- **Translation** — built-in translation module
-- **Agent System** — PowerShell agent integration
+
+### AI Backends
+- **Microsoft Foundry Local** — ONNX-based inference (DeepSeek, Qwen, Mistral, Llama)
+- **HuggingFace Transformers** — download and run models from Hub (PyTorch)
+- **llama.cpp** — GGUF model inference on CPU/GPU (Windows x64 binaries included)
+- **Ollama** — local Ollama server integration
+
+### API Capabilities
+- Text generation (single and batch)
+- Interactive chat with session history
+- RAG search and context injection
+- Model load/unload management
+- Health monitoring endpoints
+- API key security + CORS protection
+
+### Web Interface (SPA at port 9696)
+Tabs: Chat, Models, Foundry, HuggingFace, llama.cpp, Ollama, RAG, Agent, MCP, Config, Logs, Editor, Docs, Examples, Providers, Settings
+
+### Infrastructure
+- Docker support (`docker-compose.yml`)
+- MkDocs documentation server (port 9697)
+- Browser extensions (summarizer, locator-editor)
+- PowerShell MCP servers for Windows automation
+- GGUF → ONNX converter
 
 ## Target Users
-- Developers building AI-powered applications who want local inference
-- Teams needing a self-hosted AI API compatible with OpenAI-style endpoints
-- Users integrating AI into Claude Desktop via MCP
-- Researchers experimenting with local LLMs (DeepSeek, Qwen, Mistral, Gemma, Llama)
+- Developers building AI-powered applications locally
+- Researchers needing offline LLM inference
+- Teams wanting a self-hosted AI API with web management
+- Claude Desktop users needing MCP integration
 
 ## Use Cases
-1. Local AI chat assistant with web UI
-2. RAG-powered documentation Q&A
-3. AI API backend for internal tools
-4. Model evaluation and comparison
-5. Claude Desktop extension via MCP protocol
-6. Automated text generation pipelines
+- Local AI chat assistant with document context (RAG)
+- Batch text processing via REST API
+- Model evaluation and comparison across backends
+- AI agent workflows via PowerShell MCP servers
+- Browser-based AI summarization (extension)
 
-## Architecture Overview
-```
-Client (Browser / API) → FastAPI (port 9696)
-                              ↓
-              ┌───────────────┼───────────────┐
-         Foundry CLI     HuggingFace      llama.cpp
-         (port 50477)    Transformers     (local bin)
-              ↓
-         AI Models (ONNX/GGUF)
-```
+## Entry Points
+- `start.ps1` — full startup (installs deps, starts Foundry, launches server)
+- `run.py` — direct Python launch (assumes Foundry already running)
+- `docker-compose up` — containerized deployment
+- Web UI: http://localhost:9696
+- Swagger: http://localhost:9696/docs
+- Health: http://localhost:9696/api/v1/health
 
 ## Version
-Current: **0.4.1** (FastApiFoundry Docker)  
-License: CC BY-NC-SA 4.0  
-Author: hypo69 / AiStros Team  
+Current: **0.6.0** | Python 3.11+ | Windows primary platform

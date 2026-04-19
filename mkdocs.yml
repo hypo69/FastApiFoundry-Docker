@@ -58,6 +58,7 @@ nav:
   - Руководство пользователя:
     - Быстрый старт: user/getting_started.md
     - Установка: user/installation.md
+    - Конфигурация: user/configuration.md
     - Работа с моделями: user/models_guide.md
     - Веб-интерфейс: user/web_interface.md
     - Логирование: user/logging.md

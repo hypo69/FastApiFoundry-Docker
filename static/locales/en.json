@@ -1,4 +1,7 @@
 {
+  "banner": {
+    "no_model": "No model loaded"
+  },
   "nav": {
     "connecting": "Connecting...",
     "connected": "Connected",

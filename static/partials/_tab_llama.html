@@ -151,4 +151,90 @@
         </div>
 
     </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         Ollama section — same engine as llama.cpp, but with its own manager
+         ══════════════════════════════════════════════════════════════════════ -->
+    <hr class="my-4">
+    <div class="row">
+
+        <!-- ── Left: Ollama models + pull ── -->
+        <div class="col-md-7">
+
+            <!-- Local Ollama models -->
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-box-seam"></i> Ollama — Local Models</h6>
+                    <button class="btn btn-sm btn-outline-primary" onclick="ollamaLoadModels()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div id="ollama-models-list" style="max-height:200px;overflow-y:auto">
+                        <div class="text-muted text-center p-3"><small>Click Refresh to load</small></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pull model -->
+            <div class="card mb-3">
+                <div class="card-header"><h6 class="mb-0"><i class="bi bi-cloud-download"></i> Pull Model from Ollama Hub</h6></div>
+                <div class="card-body">
+                    <div class="input-group mb-2">
+                        <input type="text" id="ollama-pull-input" class="form-control"
+                               placeholder="qwen2.5:0.5b">
+                        <button class="btn btn-primary" onclick="ollamaPullModel()">
+                            <i class="bi bi-download"></i> Pull
+                        </button>
+                    </div>
+                    <div id="ollama-pull-status" style="display:none"></div>
+                    <small class="text-muted">
+                        Popular: <code>qwen2.5:0.5b</code> · <code>qwen2.5:1.5b</code> ·
+                        <code>llama3.2:1b</code> · <code>mistral:7b</code> · <code>deepseek-r1:1.5b</code><br>
+                        Full catalog: <a href="https://ollama.com/library" target="_blank">ollama.com/library</a>
+                    </small>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ── Right: Ollama status + usage ── -->
+        <div class="col-md-5">
+
+            <!-- Status -->
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-activity"></i> Ollama Status</h6>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="ollamaCheckStatus()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+                <div class="card-body" id="ollama-status-body">
+                    <div class="text-muted text-center"><small>Click refresh</small></div>
+                </div>
+            </div>
+
+            <!-- Usage -->
+            <div class="card">
+                <div class="card-header"><h6 class="mb-0"><i class="bi bi-info-circle"></i> Usage</h6></div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <p>Ollama runs as a separate service (like Foundry).<br>
+                        After starting, use it as a <strong>Custom</strong> provider:</p>
+                        <code id="ollama-openai-url">http://localhost:11434/v1</code>
+                        <button class="btn btn-sm btn-outline-secondary ms-2" onclick="ollamaCopyUrl()">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                        <hr>
+                        <p class="mb-1">Install:</p>
+                        <code>winget install Ollama.Ollama</code>
+                        <p class="mt-2 mb-1">Start (runs automatically after install):</p>
+                        <code>ollama serve</code>
+                    </small>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
 </div>

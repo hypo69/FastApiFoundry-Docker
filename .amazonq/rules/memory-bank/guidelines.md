@@ -1,28 +1,78 @@
 # FastAPI Foundry — Development Guidelines
 
-## File Header Standard
-Every Python file MUST start with this header:
+## File Header Standard (ALL files)
+
+Every file must start with this header block:
+
+### Python
 ```python
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Process Name: <Descriptive name of the module's function>
+# Process Name: <Short descriptive name>
 # =============================================================================
 # Description:
-#   <What this module does, what APIs it uses>
+#   <What the module does, what APIs it uses>
 #
 # File: <filename.py>
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - <description of changes>
 # Author: hypo69
-# Copyright: © 2026 hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
 ```
-JavaScript files use JSDoc block comment at top. HTML files use `<!-- ... -->` block.
 
-## Python Code Patterns
+### JavaScript
+```javascript
+/**
+ * <module-name>.js — <Short description>
+ *
+ * <Detailed description of purpose, conventions, and behavior>
+ */
+```
 
-### Singleton Pattern (used in Config, FoundryClient, RAGSystem)
+### PowerShell
+```powershell
+# -*- coding: utf-8 -*-
+# =============================================================================
+# Process Name: <Short descriptive name>
+# =============================================================================
+# Description:
+#   <What the script does>
+#
+# Examples:
+#   powershell -ExecutionPolicy Bypass -File .\script.ps1
+#
+# File: script.ps1
+# Project: FastApiFoundry (Docker)
+# Version: 0.6.0
+# Author: hypo69
+# Copyright: © 2026 hypo69
+# =============================================================================
+```
+
+---
+
+## Python Coding Patterns
+
+### Module-level logger (always)
+```python
+import logging
+logger = logging.getLogger(__name__)
+```
+Never use `print()` for application output — use `logger.info/warning/error`.
+
+### Global singleton pattern
+Every client/service module exposes a module-level singleton:
+```python
+# At bottom of module
+foundry_client = FoundryClient()
+rag_system = RAGSystem()
+translator = Translator()
+```
+
+### Singleton class pattern (Config)
 ```python
 class Config:
     _instance = None
@@ -32,105 +82,143 @@ class Config:
             cls._instance = super().__new__(cls)
             cls._instance._load_config()
         return cls._instance
-
-# Module-level global instance
-config = Config()
 ```
 
-### Async HTTP Client (aiohttp pattern)
+### Consistent return dict pattern
+All service methods return a dict with `success` key:
 ```python
-class SomeClient:
-    def __init__(self):
-        self.session = None
-        self.timeout = aiohttp.ClientTimeout(total=30)
+# Success
+return {"success": True, "content": result, "model": model_id, "usage": {}}
 
-    async def _get_session(self):
-        if self.session is None or self.session.closed:
-            self.session = aiohttp.ClientSession(timeout=self.timeout)
-        return self.session
-
-    async def close(self):
-        if self.session and not self.session.closed:
-            await self.session.close()
+# Failure
+return {"success": False, "error": "Description of what went wrong"}
 ```
+Never raise exceptions from public API methods — catch and return `{"success": False, "error": ...}`.
 
-### Error Return Pattern (no exceptions for expected failures)
+### Guard clause / early return
 ```python
-async def some_operation(self) -> dict:
-    try:
-        # ... operation
-        return {"success": True, "data": result}
-    except Exception as e:
-        logger.error(f"❌ Operation failed: {e}")
-        return {"success": False, "error": str(e)}
-```
-All API-facing methods return `{"success": bool, ...}` dicts, never raise to callers.
+if not text or not text.strip():
+    return self._err("Empty text")
 
-### Logging Convention
+if not self.loaded:
+    return []
+```
+Prefer early returns over nested if-blocks.
+
+### Async HTTP session management
 ```python
-logger = logging.getLogger(__name__)
+async def _get_session(self) -> aiohttp.ClientSession:
+    if self._session is None or self._session.closed:
+        self._session = aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=60)
+        )
+    return self._session
 
-# Emoji prefixes for log levels:
-logger.info("✅ Success message")
-logger.info("📋 List/info message")
-logger.info("🔍 Search/discovery message")
-logger.info("📥 Load/download message")
-logger.warning("⚠️ Warning message")
-logger.error("❌ Error message")
-logger.debug("Detailed debug info")
+async def close(self) -> None:
+    if self._session and not self._session.closed:
+        await self._session.close()
 ```
-Never use `print()` in production code (except `config_manager.py` startup prints).
+Always lazy-create and reuse sessions. Close in lifespan shutdown.
 
-### Async CPU-bound Operations (run_in_executor pattern)
+### Optional dependency guard
+```python
+RAG_AVAILABLE = False
+try:
+    from sentence_transformers import SentenceTransformer
+    import faiss
+    RAG_AVAILABLE = True
+except ImportError:
+    logger.warning('⚠️ RAG dependencies not installed. Run: pip install ...')
+```
+Use feature flags for optional heavy dependencies (torch, faiss, onnx).
+
+### Async + blocking code
 ```python
 loop = asyncio.get_event_loop()
-result = await loop.run_in_executor(None, blocking_function, arg1, arg2)
+result = await loop.run_in_executor(None, blocking_function, arg)
 ```
-Used for FAISS operations, SentenceTransformer encoding, file I/O in async context.
+Always offload blocking I/O (FAISS, model loading) to executor.
 
-### Async Lock for Shared State
+### Async lock for shared state
 ```python
 self._lock = asyncio.Lock()
 
-async def initialize(self):
+async def initialize(self) -> bool:
     async with self._lock:
         return await self._load_index()
 ```
 
-### Config Access Pattern
+### Type annotations
 ```python
-from ..core.config import config  # within src/
-from config_manager import config  # at root level
+from typing import Any, Dict, List, Optional
 
-# Access via properties:
-port = config.api_port
-model = config.foundry_default_model
+async def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+async def translate(self, text: str, *, provider: str = "llm") -> dict:
+def find_free_port(start_port: int = 9696, end_port: int = 9796) -> int | None:
 ```
-Never read `config.json` directly — always use the `Config` singleton.
+Use `int | None` union syntax (Python 3.10+). Use `Optional[X]` for older compat.
 
-### Optional Dependency Guard
+### Docstring format
 ```python
-FEATURE_AVAILABLE = False
-try:
-    import some_optional_lib
-    FEATURE_AVAILABLE = True
-except ImportError:
-    logger.warning("Feature not available. Install: pip install some_optional_lib")
+async def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    """Find relevant chunks for a query.
 
-# Then guard usage:
-if not FEATURE_AVAILABLE:
+    Args:
+        query: Search query text.
+        top_k: Number of results to return.
+
+    Returns:
+        List of matching chunks with score field added.
+    """
+```
+
+### Exception handling with context
+```python
+try:
+    self.model = await loop.run_in_executor(None, SentenceTransformer, self.model_name)
+except Exception as e:
+    # Model name wrong, no internet, or transformers version mismatch
+    logger.error(f'❌ Failed to load embedding model "{self.model_name}": {e}')
     return False
 ```
+Always add a comment explaining WHY the exception can occur.
 
-### FastAPI Router Registration
+### Emoji in log messages (project convention)
 ```python
-# In app.py — all routers use /api/v1 prefix
-app.include_router(health.router, prefix="/api/v1")
-app.include_router(models.router, prefix="/api/v1")
+logger.info('✅ RAG loaded: 100 vectors')
+logger.warning('⚠️ RAG not available — missing dependencies')
+logger.error('❌ Failed to load model: ...')
+logger.info('🔍 Searching for Foundry...')
+logger.info('📥 Loading model: ...')
 ```
 
-### Lifespan for Startup/Shutdown
+### __init__.py exports
 ```python
+# -*- coding: utf-8 -*-
+from .translator import Translator, translator
+__all__ = ["Translator", "translator"]
+```
+Keep `__init__.py` minimal — just re-export the public API.
+
+---
+
+## FastAPI Patterns
+
+### Router structure
+```python
+from fastapi import APIRouter
+router = APIRouter()
+
+@router.get("/health")
+async def health_check():
+    ...
+```
+One router per domain file. All registered in `create_app()` with `/api/v1` prefix.
+
+### Lifespan for startup/shutdown
+```python
+from contextlib import asynccontextmanager
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup
@@ -138,166 +226,223 @@ async def lifespan(app: FastAPI):
     yield
     # shutdown
     await foundry_client.close()
-
-app = FastAPI(lifespan=lifespan)
 ```
 
-## JavaScript Patterns
-
-### Module Exports (ES6 modules)
-```javascript
-// Named exports only — no default exports
-export async function loadModels() { ... }
-export function showAlert(message, type = 'info') { ... }
-
-// Import from sibling modules
-import { showAlert, updateChatModelBadge } from './ui.js';
+### Global exception handler
+```python
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    logger.error(f"Error: {exc}")
+    return JSONResponse(status_code=500, content={"error": "Internal Server Error", "detail": str(exc)})
 ```
 
-### API Call Pattern
+### Request logging middleware
+```python
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    logger.info(f"{request.method} {request.url.path} -> {response.status_code} ({process_time:.3f}s)")
+    return response
+```
+
+---
+
+## Configuration Patterns
+
+### Accessing config
+```python
+from ..core.config import config  # inside src/
+from src.core.config import config  # from root
+```
+Never read `config.json` directly — always use the `config` singleton.
+
+### Config properties use `.get()` with defaults
+```python
+@property
+def api_port(self) -> int:
+    return self._config_data.get('fastapi_server', {}).get('port') or 9696
+```
+
+### Environment variable override pattern
+```python
+foundry_url = os.getenv('FOUNDRY_BASE_URL')
+if foundry_url:
+    return foundry_url
+# fall through to auto-discovery
+```
+Env vars always take priority over config.json values.
+
+### Uvicorn reload guard
+```python
+_in_reloader_child = os.getenv('_UVICORN_CHILD') == '1'
+if not _in_reloader_child:
+    os.environ['_UVICORN_CHILD'] = '1'
+    print("startup message")  # only once
+```
+Prevents duplicate output when `reload=True`.
+
+---
+
+## JavaScript Patterns (Web UI)
+
+### ES module exports
 ```javascript
-// Always use window.API_BASE for base URL
-const data = await fetch(`${window.API_BASE}/endpoint`, {
-    method: 'POST',
+export async function initI18n(lang) { ... }
+export async function switchLang(lang) { ... }
+export function applyTranslations() { ... }
+```
+All JS files use ES module syntax. Imported in `app.js`.
+
+### i18n attribute conventions
+```html
+<button data-i18n="btn.save">Save</button>
+<input data-i18n-placeholder="input.search">
+<span data-i18n-title="tooltip.help">?</span>
+```
+Never hardcode user-visible text in HTML — always use `data-i18n` attributes.
+
+### i18n in JavaScript
+```javascript
+const val = i18next.t('key.name');
+```
+
+### API calls pattern
+```javascript
+fetch(`${window.API_BASE}/config`, {
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key: value })
-}).then(r => r.json());
+    body: JSON.stringify({ 'app.language': lang }),
+}).catch(() => {});  // silent fail for non-critical calls
+```
+Use `window.API_BASE` for all API URLs (set in `app.js`).
 
-if (data.success) {
-    showAlert('Success message', 'success');
-} else {
-    showAlert(`Failed: ${data.error}`, 'danger');
+### Inline comments in English
+```javascript
+// Initialize menu toggle on DOM ready
+function initMenuToggle() { ... }
+
+// Lazy-load locale bundle if not yet loaded
+if (!i18next.hasResourceBundle(lang, 'translation')) { ... }
+```
+All code comments in English. User-facing strings via i18n keys.
+
+### RTL support
+```javascript
+const RTL_LANGS = new Set(['he', 'ar', 'fa']);
+document.documentElement.setAttribute('dir', RTL_LANGS.has(lang) ? 'rtl' : 'ltr');
+```
+
+---
+
+## PowerShell Patterns
+
+### Error handling at top
+```powershell
+$ErrorActionPreference = 'Stop'
+```
+
+### Constants in UPPER_SNAKE_CASE
+```powershell
+$PROJECT_PATH = 'D:\repos\project'
+$CONFIG_FILE = Join-Path $env:TEMP 'config.wsb'
+```
+
+### Function docstrings
+```powershell
+function Test-Virtualization {
+    <#
+    .SYNOPSIS
+        Checks whether hardware virtualization is enabled.
+    .OUTPUTS
+        bool — True if enabled.
+    #>
+    ...
 }
 ```
 
-### DOM Safety Pattern
-```javascript
-// Always null-check before DOM access
-const el = document.getElementById('some-id');
-if (!el) return;
+### User-facing output with emoji
+```powershell
+Write-Host '🔍 Проверка окружения...'
+Write-Host '✅ Готово'
+Write-Host '⚠️ Требуется перезагрузка.'
 ```
 
-### Parallel API Requests
-```javascript
-const [res1, res2, res3] = await Promise.all([
-    fetch(`${window.API_BASE}/endpoint1`).then(r => r.json()),
-    fetch(`${window.API_BASE}/endpoint2`).then(r => r.json()),
-    fetch(`${window.API_BASE}/endpoint3`).then(r => r.json()),
-]);
+### Main block separator
+```powershell
+# --- main ---
+Write-Host '🚀 Запуск...'
+$result = Start-Service
 ```
 
-### Model Prefix Routing (frontend)
-```javascript
-if (modelId.startsWith('hf::')) {
-    // HuggingFace model
-} else if (modelId.startsWith('llama::')) {
-    // llama.cpp model
-} else {
-    // Foundry model
-}
+---
+
+## Versioning Rules
+
+- Current version: **0.6.0**
+- Format: `Major.Minor.Patch`
+- Update version in file header on every change
+- Add entry to `CHANGELOG.md` with format:
+  ```
+  ## [0.6.0] - YYYY-MM-DD
+  ### Changed
+  - <description>
+  ```
+
+---
+
+## Git Commit Conventions
+
+| Type | Prefix | Example |
+|---|---|---|
+| New feature | `feat:` | `feat: add RAG search endpoint` |
+| Bug fix | `fix:` | `fix: duplicate startup output` |
+| Config change | `config:` | `config: update default model` |
+| Documentation | `docs:` | `docs: update API reference` |
+| Tests | `test:` | `test: add health check test` |
+
+---
+
+## Documentation Sync Rule
+
+After changing any code file:
+1. Update docstring of changed function/class
+2. Add entry to `CHANGELOG.md`
+3. Update `docs/ru/dev/api_reference.md` if endpoint changed
+4. Update `README.md` if architecture or config changed
+
+---
+
+## Model Prefix Conventions
+
+Model IDs use prefixes to route to the correct backend:
+```
+hf::<model-id>      → HuggingFace client
+llama::<model-id>   → llama.cpp client
+ollama::<model-id>  → Ollama client
+<model-id>          → Foundry Local (no prefix)
 ```
 
-### Bootstrap Alert Helper
-```javascript
-export function showAlert(message, type = 'info') {
-    const container = document.getElementById('alert-container');
-    if (!container) return;
-    const el = document.createElement('div');
-    el.className = `alert alert-${type} alert-dismissible fade show`;
-    el.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-    container.appendChild(el);
-    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 150); }, 5000);
-}
-```
-
-### DOMContentLoaded Initialization
-```javascript
-document.addEventListener('DOMContentLoaded', () => {
-    loadModels();
-    loadConnectedModels();
-    // attach event listeners
-});
-```
-
-### Polling Pattern (wait for async operation)
-```javascript
-async function waitForModelLoaded(modelId, timeoutMs = 90000) {
-    const startedAt = Date.now();
-    while (Date.now() - startedAt < timeoutMs) {
-        const data = await fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json());
-        if (data.success && data.models.some(m => m.id === modelId)) return true;
-        await new Promise(resolve => setTimeout(resolve, 3000));
-    }
-    return false;
-}
-```
-
-## Naming Conventions
-
-### Python
-- Classes: `PascalCase` — `FoundryClient`, `RAGSystem`, `Config`
-- Functions/methods: `snake_case` — `generate_text`, `list_available_models`
-- Module-level singletons: `snake_case` — `foundry_client`, `rag_system`, `config`
-- Private methods: `_leading_underscore` — `_get_session`, `_load_index`, `_update_base_url`
-- Constants: `UPPER_SNAKE_CASE` — `RAG_AVAILABLE`, `REQUESTS_AVAILABLE`
-
-### JavaScript
-- Functions: `camelCase` — `loadModels`, `showAlert`, `updateModelSelect`
-- DOM IDs referenced: `kebab-case` — `chat-model`, `models-list`, `log-output`
-- Global state: `window._savedChatModel`, `window.API_BASE`, `window.CONFIG`
-
-## API Response Contract
-All API endpoints return JSON with consistent structure:
-```json
-// Success
-{"success": true, "data": ..., "count": N}
-
-// Error
-{"success": false, "error": "Human-readable message"}
-
-// Health check
-{"status": "healthy|unhealthy|disconnected", "timestamp": "ISO8601"}
-```
-
-## Configuration Rules
-- Public settings → `config.json` (port, host, model names, RAG params)
-- Secrets → `.env` only (`API_KEY`, `SECRET_KEY`, `HF_TOKEN`, `GITHUB_PAT`)
-- Never hardcode ports — use `config.api_port` or `FOUNDRY_DYNAMIC_PORT` env var
-- Config sections: `fastapi_server`, `foundry_ai`, `rag_system`, `port_management`, `directories`
-
-## Windows / UTF-8 Handling
+Check before auto-loading:
 ```python
-# Always set at top of entry point scripts
-os.environ['PYTHONIOENCODING'] = 'utf-8'
-if sys.platform == 'win32':
-    import codecs
-    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
-    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
+if model_id.startswith(("hf::", "llama::", "ollama::")):
+    logger.info(f"Skip auto-loading non-Foundry model: {model_id}")
 ```
-All file operations use `encoding='utf-8'` explicitly.
 
-## Foundry Port Discovery Order
-1. `FOUNDRY_BASE_URL` env var
-2. `FOUNDRY_DYNAMIC_PORT` env var (legacy)
-3. Auto-scan ports `[62171, 50477, 58130]` via HTTP GET `/v1/models`
-4. Windows process scan via `tasklist` + `netstat`
+---
 
-## RAG System Usage
+## Logging Levels
+
+| Level | When to use |
+|---|---|
+| `DEBUG` | Port checks, URL updates, per-request details |
+| `INFO` | Startup events, model loads, successful operations |
+| `WARNING` | Missing optional deps, Foundry not found, degraded mode |
+| `ERROR` | Failed operations, exceptions caught, HTTP errors |
+
+Suppress noisy libraries:
 ```python
-# Initialize (called in lifespan)
-await rag_system.initialize()
-
-# Search
-results = await rag_system.search(query, top_k=5)
-context = rag_system.format_context(results)
-
-# Status
-status = await rag_system.get_status()
-# Returns: {available, enabled, loaded, chunks_count, vectors_count}
+for noisy in ('watchfiles', 'watchfiles.main', 'uvicorn.access'):
+    logging.getLogger(noisy).setLevel(logging.WARNING)
 ```
-
-## Logging Files
-- `logs/app.log` — main application log
-- `logs/<module>-errors.log` — error-only log per module
-- `logs/<module>-structured.jsonl` — structured JSON log per module
-- Suppress noisy libraries: `logging.getLogger('watchfiles').setLevel(logging.WARNING)`

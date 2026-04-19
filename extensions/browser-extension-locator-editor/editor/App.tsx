@@ -115,6 +115,12 @@ const App: React.FC = () => {
         }
     };
 
+    const getBackupFilename = () => {
+        const now = new Date();
+        const ts = now.toISOString().slice(2, 16).replace(/[-T:]/g, (c) => c === 'T' ? '_' : c === '-' ? '' : '');
+        return `aiassist_config_backup_${ts}.json`;
+    };
+
     const handleFileDownload = () => {
         if (!locatorsData) return;
         const {locators, ...rest} = locatorsData;
@@ -124,7 +130,7 @@ const App: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${locatorsData.supplier_prefix || 'locators'}.json`;
+        a.download = getBackupFilename();
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

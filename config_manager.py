@@ -8,7 +8,10 @@
 #
 # File: config_manager.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.5.5
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - Suppress duplicate print() in _load_config when running as uvicorn child
+#     process (reload=True). Checks _UVICORN_CHILD env var set by run.py.
 # Changes in 0.5.5:
 #   - Added try/except with logging in _load_config and update_config
 #   - Replaced bare print() with logger calls on errors
@@ -18,6 +21,7 @@
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict
 
@@ -45,12 +49,15 @@ class Config:
             # Config file missing — cannot start; re-raise so caller sees it
             raise FileNotFoundError(f'config.json not found at {config_path.absolute()}')
 
-        print(f'Loading config from: {config_path.absolute()}')
+        _quiet = os.getenv('_UVICORN_CHILD') == '1'
+        if not _quiet:
+            print(f'Loading config from: {config_path.absolute()}')
 
         try:
             with open(config_path, encoding='utf-8') as f:
                 self._config_data = json.load(f)
-            print(f'Config loaded with sections: {list(self._config_data.keys())}')
+            if not _quiet:
+                print(f'Config loaded with sections: {list(self._config_data.keys())}')
         except json.JSONDecodeError as e:
             # Malformed JSON — log and re-raise; server cannot start with broken config
             logger.error(f'❌ config.json contains invalid JSON: {e}')

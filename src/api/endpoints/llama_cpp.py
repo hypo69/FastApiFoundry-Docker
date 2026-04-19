@@ -34,6 +34,7 @@ router = APIRouter(prefix="/llama", tags=["llama-cpp"])
 # Текущий процесс llama.cpp сервера.
 # Хранится на уровне модуля — один сервер на весь процесс FastAPI.
 _server_process: subprocess.Popen | None = None
+_last_error: str | None = None  # Last start/stop error, shown in /status
 
 # Настройки по умолчанию — переопределяются через .env или тело запроса
 DEFAULT_HOST    = "127.0.0.1"
@@ -77,12 +78,23 @@ async def llama_status() -> dict:
     except Exception:
         reachable = False
 
+    # Capture stderr from a crashed process
+    process_error: str | None = None
+    if _server_process and _server_process.poll() is not None:
+        try:
+            stderr_out = _server_process.stderr.read() if _server_process.stderr else ""
+            if stderr_out:
+                process_error = stderr_out.strip()[-500:]  # last 500 chars
+        except Exception:
+            pass
+
     return {
         "success": True,
         "running": reachable,
         "pid": running_pid,
         "url": url,
         "openai_url": f"{url}/v1",
+        "last_error": process_error or _last_error,
     }
 
 
@@ -136,7 +148,7 @@ async def llama_start(request: dict) -> dict:
         n_gpu_layers: Слоёв на GPU, 0 = только CPU (default: 0)
         host:        Хост (default: 127.0.0.1)
     """
-    global _server_process
+    global _server_process, _last_error
 
     model_path = request.get("model_path", "")
     if not model_path:
@@ -179,10 +191,8 @@ async def llama_start(request: dict) -> dict:
     # Ищем llama-server в PATH и стандартных местах
     server_bin = _find_llama_server()
     if not server_bin:
-        return {
-            "success": False,
-            "error": "llama-server не найден. Установите llama.cpp: https://github.com/ggerganov/llama.cpp/releases"
-        }
+        _last_error = "llama-server binary not found. Install llama.cpp: https://github.com/ggerganov/llama.cpp/releases"
+        return {"success": False, "error": _last_error}
 
     cmd = [
         server_bin,
@@ -196,6 +206,7 @@ async def llama_start(request: dict) -> dict:
     ]
 
     try:
+        _last_error = None
         _server_process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
@@ -212,8 +223,9 @@ async def llama_start(request: dict) -> dict:
             "status": "starting"
         }
     except Exception as e:
+        _last_error = str(e)
         logger.error(f"Ошибка запуска llama.cpp: {e}")
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": _last_error}
 
 
 @router.post("/stop")
@@ -278,70 +290,63 @@ async def llama_scan_models(extra_dir: str = "") -> dict:
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _find_llama_server() -> str | None:
-    """! Найти исполняемый файл llama-server в PATH и стандартных местах.
+    """! Find llama-server executable.
 
-    Порядок поиска:
-        1. LLAMA_SERVER_PATH из .env (явный путь к бинарнику)
+    Search order:
+        1. LLAMA_SERVER_PATH env var (explicit path)
         2. PATH (shutil.which)
-        3. Директория рядом с LLAMA_MODEL_PATH из .env
-        4. Директории из GGUF_SEARCH_DIRS из .env
-        5. Стандартные места установки на Windows
+        3. bin/<bin_version>/ from config.json
+        4. Any subdirectory of bin/ (fallback scan)
+        5. Standard Windows install locations
 
     Returns:
-        str | None: Полный путь к бинарнику или None если не найден.
+        str | None: Full path to binary or None.
     """
     import shutil
 
-    # 1. Явный путь из .env
+    # 1. Explicit path from .env
     explicit = os.getenv("LLAMA_SERVER_PATH", "")
     if explicit and Path(explicit).exists():
         return explicit
 
     # 2. PATH
-    for name in ("llama-server", "llama-server.exe", "server", "server.exe"):
+    for name in ("llama-server", "llama-server.exe"):
         found = shutil.which(name)
         if found:
             return found
 
-    # 3. Директория рядом с моделью из LLAMA_MODEL_PATH
-    model_path = os.getenv("LLAMA_MODEL_PATH", "")
-    if model_path:
-        model_dir = Path(model_path).parent
-        for name in ("llama-server.exe", "server.exe", "llama-server", "server"):
-            candidate = model_dir / name
-            if candidate.exists():
-                return str(candidate)
-
-    # 4. Директории из GGUF_SEARCH_DIRS
-    search_dirs = os.getenv("GGUF_SEARCH_DIRS", "")
-    for d in search_dirs.split(","):
-        d = d.strip()
-        if not d:
-            continue
-        for name in ("llama-server.exe", "server.exe", "llama-server", "server"):
-            candidate = Path(d) / name
-            if candidate.exists():
-                return str(candidate)
-
-    # 5. bin/ рядом с проектом
+    # 3. bin/<bin_version>/ from config.json (primary — version-aware)
     bin_dir = Path(__file__).parents[3] / "bin"
+    try:
+        from ...core.config import config as _cfg
+        bin_version = _cfg.get_section("llama_cpp").get("bin_version", "")
+        if bin_version:
+            versioned_dir = bin_dir / bin_version
+            for name in ("llama-server.exe", "llama-server"):
+                candidate = versioned_dir / name
+                if candidate.exists():
+                    logger.info(f"✅ llama-server found via config bin_version: {candidate}")
+                    return str(candidate)
+    except Exception:
+        pass
+
+    # 4. Fallback: scan all subdirs of bin/
     if bin_dir.exists():
-        for d in bin_dir.iterdir():
+        for d in sorted(bin_dir.iterdir(), reverse=True):  # newest first by name
             if not d.is_dir():
                 continue
-            for name in ("llama-server.exe", "server.exe", "llama-server", "server"):
+            for name in ("llama-server.exe", "llama-server"):
                 candidate = d / name
                 if candidate.exists():
+                    logger.info(f"✅ llama-server found via bin/ scan: {candidate}")
                     return str(candidate)
 
-    # 6. Стандартные места установки на Windows
-    candidates = [
+    # 5. Standard Windows locations
+    for c in [
         Path("C:/llama.cpp/llama-server.exe"),
-        Path("C:/llama.cpp/server.exe"),
         Path("C:/Program Files/llama.cpp/llama-server.exe"),
         Path(os.getenv("LOCALAPPDATA", "")) / "llama.cpp" / "llama-server.exe",
-    ]
-    for c in candidates:
+    ]:
         if c.exists():
             return str(c)
 

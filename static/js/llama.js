@@ -9,14 +9,16 @@ export async function toggleLlamaService(on) {
     const label = document.getElementById('llama-toggle-label');
     const sw    = document.getElementById('llama-toggle-switch');
     if (on) {
-        if (label) label.textContent = 'Starting…';
+        if (label) label.textContent = 'Starting\u2026';
+        if (sw) sw.disabled = true;  // lock toggle during startup
         await llamaStart();
+        // llamaStart() handles its own polling — status updated there
+        if (sw) sw.disabled = false;
     } else {
-        if (label) label.textContent = 'Stopping…';
+        if (label) label.textContent = 'Stopping\u2026';
         await llamaStop();
+        await llamaCheckStatus();
     }
-    // Sync switch state with actual status
-    await llamaCheckStatus();
 }
 
 export async function llamaCheckStatus() {
@@ -27,14 +29,14 @@ export async function llamaCheckStatus() {
         if (!response.ok) throw new Error('Network response was not ok');
         const d = await response.json();
 
-        // Восстанавливаем порт из config.json если поле пустое
+        // Restore port from config.json if field is empty
         const portEl = document.getElementById('llama-port');
         if (portEl && !portEl.value) {
             const cfg = await fetch(`${window.API_BASE}/config`).then(r => r.json());
             portEl.value = cfg.config?.llama_cpp?.port || 9780;
         }
 
-        // Обновляем URL в блоке Usage
+        // Update URL in Usage block
         const port = portEl?.value || 9780;
         const urlCode = document.getElementById('llama-openai-url');
         if (urlCode) urlCode.textContent = d.openai_url || `http://127.0.0.1:${port}/v1`;
@@ -48,11 +50,19 @@ export async function llamaCheckStatus() {
             ? '<span class="badge bg-success">Running</span>'
             : '<span class="badge bg-secondary">Stopped</span>';
 
+        const errorRow = d.last_error
+            ? `<tr><td colspan="2"><div class="alert alert-danger mb-0 mt-2 p-2" style="font-size:.8rem">
+                   <i class="bi bi-exclamation-triangle-fill me-1"></i><strong>Error:</strong><br>
+                   <code style="white-space:pre-wrap;word-break:break-all">${d.last_error}</code>
+               </div></td></tr>`
+            : '';
+
         el.innerHTML = `
             <table class="table table-sm mb-0">
                 <tr><td>Status</td><td>${badge}</td></tr>
-                <tr><td>PID</td><td>${d.pid || '—'}</td></tr>
+                <tr><td>PID</td><td>${d.pid || '\u2014'}</td></tr>
                 <tr><td>URL</td><td><code>${d.url || 'N/A'}</code></td></tr>
+                ${errorRow}
             </table>`;
     } catch(e) {
         console.error('Llama status check failed:', e);
@@ -81,53 +91,107 @@ export async function llamaStart() {
     const modelPath = document.getElementById('llama-model-path')?.value.trim();
     const port      = parseInt(document.getElementById('llama-port')?.value || '9780');
     const statusEl  = document.getElementById('llama-start-status');
+
     if (!modelPath) {
         showAlert('Select a model first', 'warning');
         return;
     }
-    // Сохраняем порт в config.json
+
+    // Save port to config.json
     fetch(`${window.API_BASE}/config`, {
         method: 'PATCH',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ 'llama_cpp.port': port })
     }).catch(() => {});
-    if (statusEl) {
+
+    const showStatus = (html) => {
+        if (!statusEl) return;
         statusEl.style.display = '';
-        statusEl.innerHTML = '<div class="alert alert-info p-2"><div class="spinner-border spinner-border-sm me-2"></div>Starting (model will be copied to ~/models if needed)...</div>';
-    }
+        statusEl.innerHTML = html;
+    };
+
+    showStatus('<div class="alert alert-info p-2"><div class="spinner-border spinner-border-sm me-2"></div>Sending start request...</div>');
+
+    let startData;
     try {
         const response = await fetch(`${LLAMA_API}/start`, {
             method: 'POST',
-            headers: {'Content-Type':'application/json'},
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                model_path:      modelPath,
-                copy_to_models:  true,
-                port:            parseInt(document.getElementById('llama-port')?.value || '0'),
-                ctx_size:        parseInt(document.getElementById('llama-ctx')?.value || '4096'),
-                threads:         parseInt(document.getElementById('llama-threads')?.value || '0'),
-                n_gpu_layers:    parseInt(document.getElementById('llama-ngl')?.value || '0'),
+                model_path:   modelPath,
+                copy_to_models: true,
+                port,
+                ctx_size:     parseInt(document.getElementById('llama-ctx')?.value     || '4096'),
+                threads:      parseInt(document.getElementById('llama-threads')?.value || '0'),
+                n_gpu_layers: parseInt(document.getElementById('llama-ngl')?.value     || '0'),
             })
         });
-        const d = await response.json();
-        if (d.success) {
-            if (statusEl) {
-                statusEl.innerHTML = `<div class="alert alert-success p-2">✅ Started (PID: ${d.pid})<br><small>Model: <code>${d.model}</code><br>OpenAI URL: <code>${d.openai_url}</code></small></div>`;
-            }
-            const openaiUrlEl = document.getElementById('llama-openai-url');
-            if (openaiUrlEl) openaiUrlEl.textContent = d.openai_url;
-            setTimeout(llamaCheckStatus, 2000);
-            if (window.loadModels) setTimeout(window.loadModels, 2500); // Call global loadModels
-        } else {
-            if (statusEl) {
-                statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${d.error}</div>`;
-            }
-        }
+        startData = await response.json();
     } catch(e) {
-        if (statusEl) {
-            statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${e.message}</div>`;
-        }
-        console.error('Llama start failed:', e);
+        showStatus(`<div class="alert alert-danger p-2">❌ Network error: ${e.message}</div>`);
+        await llamaCheckStatus();
+        return;
     }
+
+    if (!startData.success) {
+        showStatus(`<div class="alert alert-danger p-2">❌ ${startData.error}</div>`);
+        await llamaCheckStatus();
+        return;
+    }
+
+    // Process launched — now poll /health until server is ready
+    const pid        = startData.pid;
+    const openaiUrl  = startData.openai_url;
+    const modelName  = startData.model;
+    const timeoutMs  = 60_000;
+    const startedAt  = Date.now();
+    let   elapsed    = 0;
+
+    showStatus(`<div class="alert alert-info p-2"><div class="spinner-border spinner-border-sm me-2"></div>
+        Waiting for llama-server to become ready (PID: ${pid})...<br>
+        <small>Model: <code>${modelName}</code> &nbsp; This may take up to 60s</small>
+    </div>`);
+
+    while (elapsed < timeoutMs) {
+        await new Promise(r => setTimeout(r, 2000));
+        elapsed = Date.now() - startedAt;
+
+        const st = await fetch(`${LLAMA_API}/status`).then(r => r.json()).catch(() => ({}));
+
+        if (st.running) {
+            // Success
+            showStatus(`<div class="alert alert-success p-2">✅ Running (PID: ${pid})<br>
+                <small>Model: <code>${modelName}</code><br>OpenAI URL: <code>${openaiUrl}</code></small>
+            </div>`);
+            const urlEl = document.getElementById('llama-openai-url');
+            if (urlEl) urlEl.textContent = openaiUrl;
+            await llamaCheckStatus();
+            if (window.loadModels) window.loadModels();
+            return;
+        }
+
+        // Process died — show error immediately
+        if (st.last_error) {
+            showStatus(`<div class="alert alert-danger p-2">❌ Server failed to start:<br>
+                <code style="white-space:pre-wrap;font-size:.8rem">${st.last_error}</code>
+            </div>`);
+            await llamaCheckStatus();
+            return;
+        }
+
+        // Still starting — update elapsed
+        const sec = Math.round(elapsed / 1000);
+        showStatus(`<div class="alert alert-info p-2"><div class="spinner-border spinner-border-sm me-2"></div>
+            Waiting for llama-server... ${sec}s / 60s<br>
+            <small>Model: <code>${modelName}</code></small>
+        </div>`);
+    }
+
+    // Timeout
+    showStatus(`<div class="alert alert-warning p-2">⚠️ Timeout: server did not respond in 60s.<br>
+        <small>Check logs or try starting manually.</small>
+    </div>`);
+    await llamaCheckStatus();
 }
 
 export async function llamaCopyToModels() {

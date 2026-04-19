@@ -11,18 +11,20 @@ import * as rag       from './js/rag.js';
 import * as editor    from './js/editor.js';
 import * as llama     from './js/llama.js';
 import * as hf        from './js/hf.js';
+import * as ollama    from './js/ollama.js';
 import * as agent     from './js/agent.js';
 import * as mcp       from './js/mcp.js';
 import * as sdk       from './js/sdk.js';
 import * as providers from './js/providers.js';
 import { initI18n, switchLang } from './js/i18n.js';
+import { initModelBanner, refreshModelBanner } from './js/model-badge.js';
 
 window.API_BASE = window.location.origin + '/api/v1';
 window.CONFIG   = { foundry_url: 'http://localhost:50477/v1/', default_model: null };
 
 window.switchLang = switchLang;
 
-Object.assign(window, ui, config, models, chat, foundry, rag, editor, llama, hf, agent, mcp, sdk, providers);
+Object.assign(window, ui, config, models, chat, foundry, rag, editor, llama, hf, ollama, agent, mcp, sdk, providers);
 
 window.providersRefresh = providers.initProviders;
 window.providersExport  = providers.exportToExtension;
@@ -97,6 +99,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     foundry.checkSystemStatus();
     setInterval(foundry.checkSystemStatus, 30_000);
 
+    initModelBanner();
+    window.refreshModelBanner = refreshModelBanner;
+
     models.loadModels();
     models.loadConnectedModels();
     models.initModelSelectListener();
@@ -111,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Lazy tab loading
     document.getElementById('foundry-tab')?.addEventListener('shown.bs.tab',     () => { window.listCachedFoundryModels?.(); });
     document.getElementById('editor-tab')?.addEventListener('shown.bs.tab',    () => { window.loadEnv?.(); window.loadConfigJson?.(); });
-    document.getElementById('llama-tab')?.addEventListener('shown.bs.tab',     () => { window.llamaCheckStatus?.(); window.llamaScanModels?.(); });
+    document.getElementById('llama-tab')?.addEventListener('shown.bs.tab',     () => { window.llamaCheckStatus?.(); window.llamaScanModels?.(); window.ollamaCheckStatus?.(); window.ollamaLoadModels?.(); });
     document.getElementById('hf-tab')?.addEventListener('shown.bs.tab',        () => { window.hfCheckStatus?.(); window.hfRefreshModels?.(); window.hfLoadHubModels?.(); });
     document.getElementById('rag-tab')?.addEventListener('shown.bs.tab',       () => { window.refreshRAGStatus?.(); window.ragLoadProfiles?.(); });
     document.getElementById('agent-tab')?.addEventListener('shown.bs.tab',     () => { window.agentLoadTools?.(); });

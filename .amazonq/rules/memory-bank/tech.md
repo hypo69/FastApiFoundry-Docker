@@ -1,139 +1,150 @@
 # FastAPI Foundry — Technology Stack
 
 ## Languages & Runtimes
-- **Python 3.11+** — primary backend language (path: `C:/python311`)
-- **JavaScript (ES6+)** — frontend SPA (no build step, vanilla JS)
-- **PowerShell 5+** — Windows scripts, MCP servers, launchers
-- **HTML5 / CSS3** — web UI templates (partials system)
+| Layer | Technology | Version |
+|---|---|---|
+| Backend | Python | 3.11+ (primary), 3.12 compatible |
+| Web UI | JavaScript (ES modules) | Vanilla JS, no framework |
+| Browser Extensions | JavaScript + TypeScript (React) | Vite build |
+| Scripts | PowerShell | 5.1+ / 7+ |
+| Containers | Docker | Compose v3 |
 
-## Core Framework
-- **FastAPI** `>=0.104.0` — async REST API framework
-- **Uvicorn** `>=0.24.0` with `[standard]` extras — ASGI server
-  - `timeout_keep_alive=300`, `timeout_graceful_shutdown=10`
-  - Reload mode enabled by default (dev); workers=1 when reload=True
+## Core Python Dependencies
+| Package | Version | Purpose |
+|---|---|---|
+| fastapi | 0.136.0 | Web framework |
+| uvicorn | 0.44.0 | ASGI server |
+| starlette | 1.0.0 | ASGI toolkit (FastAPI base) |
+| pydantic | 2.13.2 | Data validation / schemas |
+| aiohttp | 3.13.5 | Async HTTP client (Foundry, Ollama) |
+| requests | 2.33.1 | Sync HTTP (port discovery) |
+| python-dotenv | 1.2.2 | .env loading |
+| faiss-cpu | 1.13.2 | Vector search (RAG) |
+| sentence-transformers | 5.4.1 | Text embeddings (RAG) |
+| transformers | 4.57.6 | HuggingFace model inference |
+| torch | 2.11.0 | PyTorch backend |
+| huggingface_hub | 0.36.2 | Model downloads |
+| onnx + onnxruntime | 1.21.0 / 1.24.4 | ONNX inference |
+| optimum | 2.1.0 | HuggingFace ONNX optimization |
+| psutil | 7.2.2 | Process/system monitoring |
+| colorama + coloredlogs | 0.4.6 / 15.0.1 | Colored console output |
+| pytest + pytest-asyncio | 9.0.3 / 1.3.0 | Testing |
+| mkdocs-material | 9.7.6 | Documentation site |
 
-## HTTP & Async
-- **aiohttp** `>=3.9.0` — async HTTP client for Foundry API calls
-- **requests** `>=2.31.0` — sync HTTP for startup checks
-- **websockets** `>=11.0.0` — WebSocket support
-- **watchfiles** `>=0.20.0` — file watching for hot reload
+## AI Backends
+| Backend | Protocol | Port | Notes |
+|---|---|---|---|
+| Microsoft Foundry Local | OpenAI-compatible REST | dynamic (auto-discovered) | ONNX inference, Windows |
+| HuggingFace Transformers | In-process Python | — | PyTorch, local models |
+| llama.cpp | REST (llama-server.exe) | 9780 | GGUF models, CPU/GPU |
+| Ollama | REST | 11434 | Standard Ollama API |
 
-## AI / ML Stack
-- **sentence-transformers** `>=2.2.0` — embeddings for RAG
-- **faiss-cpu** `>=1.7.0` — vector similarity search
-- **torch** `>=2.0.0` — PyTorch (required by sentence-transformers)
-- **numpy** `>=1.24.0` — numerical operations
-- **transformers** `>=4.40.0` — HuggingFace model inference
-- **accelerate** `>=0.30.0` — HuggingFace acceleration
-- **huggingface_hub** `>=0.23.0` — model downloads
-- **optimum[onnxruntime]** `>=1.16.0` — GGUF→ONNX conversion
-- **onnxruntime** `>=1.17.0` — ONNX model inference
+## Configuration System
+- `config.json` — public settings (ports, models, RAG, logging)
+- `.env` — secrets (HF_TOKEN, FOUNDRY_BASE_URL, API keys)
+- `config_manager.py` — singleton `Config` class, reads both files
+- `src/core/config.py` — re-exports `config` for internal imports
+- Runtime override: `config.foundry_base_url` set dynamically by `run.py`
 
-## Configuration & Environment
-- **python-dotenv** `>=1.0.0` — `.env` file loading
-- **PyYAML** `>=6.0` — YAML config support
-- `config.json` — primary config file (JSON, loaded by `Config` singleton)
-- `config_manager.py` — `Config` class with `@property` accessors
+## Key config.json Sections
+```json
+{
+  "fastapi_server": { "host", "port": 9696, "workers", "mode" },
+  "foundry_ai":     { "base_url", "default_model", "temperature", "max_tokens", "auto_load_default" },
+  "rag_system":     { "enabled", "index_dir", "chunk_size" },
+  "security":       { "api_key", "https_enabled" },
+  "logging":        { "level", "file" },
+  "docs_server":    { "enabled", "port": 9697 },
+  "llama_cpp":      { "port": 9780, "host", "bin_version" },
+  "ollama":         { "base_url", "default_model" },
+  "huggingface":    { "models_dir", "device", "default_max_new_tokens" },
+  "directories":    { "models", "rag", "hf_models" }
+}
+```
 
-## Logging & Monitoring
-- **psutil** `>=5.9.0` — system resource monitoring
-- Python `logging` module — structured + plain text logs
-- Log files in `logs/` directory: `*.log`, `*-errors.log`, `*-structured.jsonl`
-- Log format: `%(asctime)s - %(name)s - %(levelname)s - %(message)s`
-
-## Testing
-- **pytest** `>=7.4.0`
-- **pytest-asyncio** `>=0.21.0`
-- Smoke tests: `check_engine/smoke_all_endpoints.py`
-- Diagnostic scripts: `check_engine/check_*.py`
-
-## Docker
-- `Dockerfile` — container image
-- `docker-compose.yml` — service definition
-  - Port: `${PORT:-8000}:8000`
-  - Volumes: `./logs`, `./rag_index`, `./.env`
-  - Health check: `GET /api/v1/health` every 30s
-
-## External Dependencies
-- **Microsoft Foundry Local CLI** — `foundry` command, runs AI models on port 50477 (dynamic)
-- **llama.cpp** — bundled binaries in `bin/llama-b8802-bin-win-cpu-x64/`
-  - `llama-server.exe` — local inference server
-- **HuggingFace Hub** — model downloads via `huggingface-cli` / `hf` CLI
+## Key .env Variables
+```env
+FOUNDRY_BASE_URL=http://localhost:50477/v1    # Override Foundry URL
+FOUNDRY_DYNAMIC_PORT=50477                    # Legacy port override
+HF_TOKEN=hf_...                               # HuggingFace token
+HF_MODELS_DIR=D:\models                       # HF models directory
+LLAMA_MODEL_PATH=D:\models\model.gguf         # llama.cpp model
+LLAMA_AUTO_START=false                        # Auto-start llama server
+LOG_LEVEL=INFO                                # Logging level
+API_KEY=                                      # Optional API key
+_UVICORN_CHILD=1                              # Set by run.py to suppress duplicate output
+```
 
 ## Development Commands
 
-### Start server
-```bash
-python run.py
-# or with venv
-venv\Scripts\python.exe run.py
-```
-
-### PowerShell launcher (interactive menu)
+### Start Server
 ```powershell
-.\launcher.ps1
-.\launcher.ps1 -Mode quick    # Quick start
-.\launcher.ps1 -Mode diag     # Diagnostics
-.\launcher.ps1 -Mode setup    # Configure .env
+# Full startup (recommended first run)
+powershell -ExecutionPolicy Bypass -File .\start.ps1
+
+# Direct Python launch
+venv\Scripts\python.exe run.py
+
+# Docker
+docker-compose up
 ```
 
-### Docker
-```bash
-docker-compose up -d
-docker-compose logs -f
-docker-compose down
-```
-
-### Install dependencies
-```bash
-pip install -r requirements.txt
+### Install Dependencies
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1
 # or
-.\install.ps1
+venv\Scripts\pip install -r requirements.txt
 ```
 
-### Check environment
-```bash
-python check_env.py
-python diagnose.py
+### Diagnostics
+```powershell
+venv\Scripts\python.exe check_env.py
+venv\Scripts\python.exe diagnose.py
+venv\Scripts\python.exe check_engine\smoke_all_endpoints.py
 ```
 
-### Verify API
-```bash
-curl http://localhost:9696/api/v1/health
-curl http://localhost:9696/api/v1/models
-curl http://localhost:9696/docs
+### Testing
+```powershell
+venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-### Run tests
-```bash
-python -m pytest tests/ -v
-python check_engine/smoke_all_endpoints.py
+### Documentation
+```powershell
+# Serve docs locally
+venv\Scripts\mkdocs serve -f mkdocs.yml --dev-addr 0.0.0.0:9697
+
+# Build docs
+venv\Scripts\mkdocs build
 ```
 
-## Key Environment Variables
-| Variable | Purpose | Default |
+### Syntax Check (pre-commit)
+```powershell
+python -m py_compile src/**/*.py
+python -m flake8 src/ --max-line-length=120
+```
+
+## Ports Reference
+| Service | Port | Notes |
 |---|---|---|
-| `API_KEY` | API authentication key | — |
-| `SECRET_KEY` | JWT secret | — |
-| `FOUNDRY_BASE_URL` | Foundry API URL | auto-detected |
-| `FOUNDRY_DYNAMIC_PORT` | Foundry port (legacy) | auto-detected |
-| `HF_TOKEN` / `HUGGING_FACE_TOKEN` | HuggingFace token | — |
-| `GITHUB_PAT` | GitHub personal access token | — |
-| `RAG_INDEX_PATH` | RAG index directory | `rag_index/` |
-| `LOG_LEVEL` | Logging level | `INFO` |
-| `ENVIRONMENT` | `development` / `production` | — |
+| FastAPI server | 9696 | Main API + Web UI |
+| MkDocs docs | 9697 | Optional, config-controlled |
+| llama.cpp server | 9780 | Optional, auto-start |
+| Ollama | 11434 | External process |
+| Foundry Local | dynamic | Auto-discovered (common: 50477, 62171) |
 
-## API Endpoints Summary
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/v1/health` | GET | Service health check |
-| `/api/v1/models` | GET | List available models |
-| `/api/v1/generate` | POST | Text generation |
-| `/api/v1/chat` | POST | Chat with history |
-| `/api/v1/rag/search` | POST | RAG vector search |
-| `/api/v1/foundry/*` | GET/POST | Foundry management |
-| `/api/v1/hf/*` | GET/POST | HuggingFace models |
-| `/api/v1/llama/*` | GET/POST | llama.cpp inference |
-| `/api/v1/config` | GET/POST | Config read/write |
-| `/api/v1/logs` | GET | Log viewer |
-| `/docs` | GET | Swagger UI |
+## Docker
+- `Dockerfile` — Python 3.11 base, installs requirements, runs `run.py`
+- `docker-compose.yml` — single service, port 9696 exposed
+- `docker-compose.docs.yml` — MkDocs documentation server
+- `.dockerignore` — excludes venv, logs, models, bin
+
+## CI/CD
+- `.github/workflows/deploy-docs.yml` — deploys MkDocs to GitHub Pages
+- `.github/workflows/docs.yml` — builds docs on PR
+- Published at: https://hypo69.github.io/FastApiFoundry-Docker/
+
+## llama.cpp Binaries
+Pre-built Windows x64 binaries in `bin/llama-b8802-bin-win-cpu-x64/`:
+- `llama-server.exe` — HTTP inference server
+- `llama-cli.exe` — CLI inference
+- Multiple CPU-optimized DLLs (AVX2, AVX512, Haswell, Skylake, etc.)

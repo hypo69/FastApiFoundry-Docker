@@ -1,4 +1,7 @@
 {
+  "banner": {
+    "no_model": "אין מודל טעון"
+  },
   "nav": {
     "connecting": "מתחבר...",
     "connected": "מחובר",
@@ -152,7 +155,11 @@
     "device_cpu": "CPU",
     "device_cuda": "CUDA (GPU)",
     "default_max_tokens": "מקסימום טוקנים ברירת מחדל",
-    "docs_server": "שרת Docs (MkDocs)",
+    "llama_model_path": "נתיב למודל (.gguf)",
+    "llama_autostart": "הפעל llama.cpp אוטומטית בהפעלה",
+    "llama_autostart_hint": "נשמר ב-config.json: llama_cpp.auto_start ו-llama_cpp.model_path",
+    "section_server": "שרת",
+    "port": "פורט",
     "enable_docs": "הפעל MkDocs בהפעלה",
     "development": "פיתוח",
     "debug_mode": "מצב ניפוי שגיאות",

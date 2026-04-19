@@ -23,7 +23,7 @@ param(
     [string]$ModelPath = "",
     # Порт для прослушивания входящих HTTP запросов
     [int]$Port         = 8080,
-    [string]$Host      = "127.0.0.1",
+    [string]$LlamaHost = "127.0.0.1",
     # Размер контекстного окна (токены)
     [int]$CtxSize      = 4096,
     # Количество потоков CPU. Обоснование: 0 — автоматическое определение всех ядер.
@@ -86,7 +86,7 @@ if ($ViaApi) {
         $body = @{
             model_path   = $ModelPath
             port         = $Port
-            host         = $Host
+            host         = $LlamaHost
             ctx_size     = $CtxSize
             threads      = $Threads
             n_gpu_layers = $NGL
@@ -148,7 +148,7 @@ Write-Host "🚀 Запуск процесса llama-server..." -ForegroundColor
 
 $args = @(
     "--model",        $ModelPath,
-    "--host",         $Host,
+    "--host",         $LlamaHost,
     "--port",         $Port,
     "--ctx-size",     $CtxSize,
     "--threads",      $Threads,
@@ -162,7 +162,7 @@ $args = @(
 $envPath = Join-Path $PSScriptRoot ".." ".env"
 if (Test-Path $envPath) {
     $content = Get-Content $envPath
-    $newLine = "LLAMA_BASE_URL=http://${Host}:${Port}/v1"
+    $newLine = "LLAMA_BASE_URL=http://${LlamaHost}:${Port}/v1"
     if ($content -match '^LLAMA_BASE_URL=') {
         $content = $content -replace '^LLAMA_BASE_URL=.*', $newLine
     } else {

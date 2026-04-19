@@ -10,7 +10,11 @@
 #
 # File: run.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.0
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - Guard duplicate startup output: set _UVICORN_CHILD=1 on first run so
+#     uvicorn reload child process skips env/config print messages
+#   - Foundry discovery prints replaced with logger calls
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # Copyright: © 2026 hypo69
@@ -55,12 +59,19 @@ if str(current_dir) not in sys.path:
 sys.path.append('C:/python311/Lib/site-packages')
 
 # Load environment variables before importing configuration
+# Guard against double-execution in uvicorn reload mode (reloader spawns a child process)
+_in_reloader_child = os.getenv('_UVICORN_CHILD') == '1'
+if not _in_reloader_child:
+    os.environ['_UVICORN_CHILD'] = '1'
+
 try:
     from src.utils.env_processor import load_env_variables, process_config
     load_env_variables()
-    print("Environment variables loaded")
+    if not _in_reloader_child:
+        print("Environment variables loaded")
 except ImportError:
-    print("Environment processor not available, using default config")
+    if not _in_reloader_child:
+        print("Environment processor not available, using default config")
 
 from src.core.config import config
 
@@ -185,7 +196,7 @@ def resolve_foundry_base_url() -> str | None:
     # Check FOUNDRY_BASE_URL environment variable
     foundry_url = os.getenv('FOUNDRY_BASE_URL')
     if foundry_url:
-        print(f'Foundry found via environment variable: {foundry_url}')
+        logger.info(f'Foundry found via environment variable: {foundry_url}')
         return foundry_url
     
     # Check FOUNDRY_DYNAMIC_PORT environment variable (legacy)
@@ -194,7 +205,7 @@ def resolve_foundry_base_url() -> str | None:
         try:
             port = int(foundry_port)
             foundry_url = f'http://localhost:{port}/v1/'
-            print(f'Foundry found via legacy environment variable, port: {foundry_url}')
+            logger.info(f'Foundry found via legacy environment variable, port: {foundry_url}')
             return foundry_url
         except ValueError:
             pass
@@ -203,10 +214,10 @@ def resolve_foundry_base_url() -> str | None:
     foundry_port = find_foundry_port()
     if foundry_port:
         foundry_url = f'http://localhost:{foundry_port}/v1/'
-        print(f'Foundry found on port: {foundry_url}')
+        logger.info(f'Foundry found on port: {foundry_url}')
         return foundry_url
 
-    print('Foundry not found')
+    logger.warning('Foundry not found')
     return None
 
 

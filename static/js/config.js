@@ -62,9 +62,13 @@ export async function loadConfigFields() {
         const chk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
 
         // Ports
-        set('config-api-port',   fastapi_server?.port || 9696);
-        set('config-llama-port', llama_cpp?.port      || 9780);
-        set('config-docs-port',  docs_server?.port    || 9697);
+        set('config-api-port',  fastapi_server?.port || 9696);
+        set('config-docs-port', docs_server?.port    || 9697);
+
+        // llama.cpp
+        set('config-llama-port',       llama_cpp?.port       || 9780);
+        set('config-llama-model-path', llama_cpp?.model_path || '');
+        chk('config-llama-autostart',  llama_cpp?.auto_start);
 
         // Directories
         set('config-dir-models', dirs.models    || '~/.models');
@@ -170,8 +174,10 @@ export async function saveConfigFields() {
                 port:    getN('config-docs-port', 9697),
             },
             llama_cpp: {
-                port: getN('config-llama-port', 9780),
-                host: '127.0.0.1',
+                port:       getN('config-llama-port', 9780),
+                host:       '127.0.0.1',
+                model_path: get('config-llama-model-path'),
+                auto_start: getC('config-llama-autostart'),
             },
             directories: {
                 models:    get('config-dir-models') || '~/.models',
@@ -210,7 +216,7 @@ export async function exportConfig() {
         const data = await fetch(`${window.API_BASE}/config/export`).then(r => r.json());
         const a = Object.assign(document.createElement('a'), {
             href:     URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })),
-            download: `foundry-config-${Date.now()}.json`,
+            download: `aiassist_config_backup_${new Date().toISOString().slice(2,16).replace(/[-T:]/g, (c) => c === 'T' ? '_' : c === '-' ? '' : '')}.json`,
         });
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         showAlert('Configuration exported', 'success');

@@ -144,19 +144,70 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 
 ??? note "Этап 5 — llama.cpp (опционально)"
 
+    ### Проверка и установка бинарника
+
+    При каждом запуске `start.ps1` вызывает `Ensure-LlamaBin`:
+
+    1. Ищет файлы `llama-*-bin-win-*.zip` в директории `bin/`
+    2. Берёт последний по имени (номер сборки растёт лексикографически)
+    3. Читает установленную версию из `config.json` → `llama_cpp.bin_version`
+    4. Если версия совпадает и `llama-server.exe` существует — пропускает
+    5. Если найдена **новая версия** — спрашивает:
+
+    ```
+    📦 New llama.cpp version available!
+       Installed : llama-b8000-bin-win-cpu-x64
+       Available : llama-b8802-bin-win-cpu-x64
+       Install now? [Y/n]
+    ```
+
+    При согласии (`Y` или Enter):
+    - Удаляет старую директорию
+    - Распаковывает zip в `bin/<version>/` (файлы из zip без корневой папки)
+    - Обновляет `config.json` → `llama_cpp.bin_version`
+
+    При отказе (`n`) — продолжает с уже установленным бинарником.
+
+    ### Поиск llama-server.exe
+
+    `_find_llama_server()` в Python ищет в следующем порядке:
+
+    1. `LLAMA_SERVER_PATH` из `.env` (явный путь)
+    2. `PATH` системы (`shutil.which`)
+    3. `bin/<bin_version>/llama-server.exe` — **основной путь**, версия из `config.json`
+    4. Любая поддиректория `bin/` (fallback, по убыванию имени)
+    5. Стандартные места Windows (`C:/llama.cpp/`, `%LOCALAPPDATA%/llama.cpp/`)
+
+    ### Автозапуск сервера
+
     Управляется через `.env`:
 
     ```env
     LLAMA_MODEL_PATH=D:\models\qwen2.5-0.5b-q4_k_m.gguf
     LLAMA_AUTO_START=true
-    LLAMA_PORT=8080
+    LLAMA_PORT=9780
     ```
 
-    Последовательность действий:
+    При `LLAMA_AUTO_START=true`:
 
-    1. `Get-NetTCPConnection -LocalPort 8080` — если порт занят, убивает процесс (`Stop-Process`)
-    2. Запускает `scripts\llama-start.ps1` в фоновом окне
-    3. Экспортирует `LLAMA_BASE_URL=http://127.0.0.1:8080/v1`
+    1. Останавливает предыдущий процесс на порту
+    2. Запускает `llama-server.exe` напрямую из `bin/<bin_version>/`
+    3. Ждёт до 10 сек пока `/health` ответит 200
+    4. При немедленном падении процесса — переизвлекает бинарник и повторяет (max 2 попытки)
+    5. Экспортирует `LLAMA_BASE_URL=http://127.0.0.1:<port>/v1`
+
+    !!! info "Версия бинарника в config.json"
+        ```json
+        {
+          "llama_cpp": {
+            "port": 9780,
+            "host": "127.0.0.1",
+            "bin_version": "llama-b8802-bin-win-cpu-x64"
+          }
+        }
+        ```
+        Поле `bin_version` обновляется автоматически при установке новой версии.
+        Чтобы добавить новую версию — положите zip в `bin/` и перезапустите `start.ps1`.
 
 ??? note "Этап 6 — Остановка предыдущего экземпляра"
 
@@ -244,7 +295,7 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 | `FOUNDRY_DYNAMIC_PORT` | `start.ps1` | Порт, найденный автоматически (приоритет 2) |
 | `LLAMA_MODEL_PATH` | `.env` | Путь к GGUF модели для llama.cpp |
 | `LLAMA_AUTO_START` | `.env` | `true` — запускать llama.cpp автоматически |
-| `LLAMA_PORT` | `.env` | Порт llama.cpp (по умолчанию 8080) |
+| `LLAMA_PORT` | `.env` | Порт llama.cpp (по умолчанию 9780) |
 | `HF_TOKEN` | `.env` | Токен HuggingFace для закрытых моделей |
 | `HF_MODELS_DIR` | `.env` | Директория для HF моделей |
 
