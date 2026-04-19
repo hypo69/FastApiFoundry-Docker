@@ -30,6 +30,13 @@ async def get_config():
     try:
         # Получаем полную конфигурацию из config.json
         raw_config = config.get_raw_config()
+
+        # Sanitize: remove HF token if it leaked into config.json
+        if "huggingface" in raw_config and "token" in raw_config["huggingface"]:
+            raw_config["huggingface"].pop("token")
+            with open("config.json", "w", encoding="utf-8") as f:
+                json.dump(raw_config, f, indent=2, ensure_ascii=False)
+            config.reload_config()
         
         return {
             "success": True,
@@ -72,6 +79,9 @@ async def patch_config(request: Request):
         raw = config.get_raw_config()
 
         for key, value in updates.items():
+            # Never store HF token in config.json — it belongs in .env
+            if key in ("huggingface.token", "huggingface.hf_token"):
+                continue
             parts = key.split(".")
             node = raw
             for part in parts[:-1]:
@@ -102,9 +112,14 @@ async def save_config(request: ConfigUpdateRequest):
             with open(backup_path, 'w', encoding='utf-8') as f:
                 f.write(backup_content)
         
+        # Strip HF token before saving — it belongs in .env only
+        cfg = request.config
+        if "huggingface" in cfg and "token" in cfg["huggingface"]:
+            cfg["huggingface"].pop("token")
+
         # Сохраняем новую конфигурацию
         with open(config_path, 'w', encoding='utf-8') as f:
-            json.dump(request.config, f, indent=2, ensure_ascii=False)
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
         
         # Обновляем глобальную конфигурацию
         config.reload_config()

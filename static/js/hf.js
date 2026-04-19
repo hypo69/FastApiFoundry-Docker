@@ -428,23 +428,33 @@ export async function saveHFToken() {
     }
 }
 
-// Загрузка HF настроек в Settings
-export function loadHFConfigFields(cfg) {
+// Load HF settings into Settings tab
+export async function loadHFConfigFields(cfg) {
     const hf = cfg?.huggingface || {};
     const el = id => document.getElementById(id);
-    if (el('config-hf-token'))      el('config-hf-token').value      = hf.token      || '';
     if (el('config-hf-models-dir')) el('config-hf-models-dir').value = hf.models_dir || './models/hf';
     if (el('config-hf-device'))     el('config-hf-device').value     = hf.device     || 'auto';
     if (el('config-hf-max-tokens')) el('config-hf-max-tokens').value = hf.default_max_new_tokens || 512;
+
+    // Load HF_TOKEN from .env (never from config.json)
+    try {
+        const envData = await fetch('/api/v1/config/env-raw').then(r => r.json());
+        if (envData.success && el('config-hf-token')) {
+            const match = envData.content.match(/^HF_TOKEN=(.*)$/m);
+            el('config-hf-token').value = match ? match[1].trim() : '';
+        }
+    } catch (e) {
+        console.error('Failed to load HF_TOKEN from .env:', e);
+    }
 }
 
 export function collectHFConfigFields() {
     const el = id => document.getElementById(id);
+    // token is intentionally excluded — it lives in .env only
     return {
-        token:                  el('config-hf-token')?.value      || '',
         models_dir:             el('config-hf-models-dir')?.value || './models/hf',
         device:                 el('config-hf-device')?.value     || 'auto',
         default_max_new_tokens: parseInt(el('config-hf-max-tokens')?.value || '512'),
-        default_temperature:    0.7 // Assuming a default temperature
+        default_temperature:    0.7
     };
 }

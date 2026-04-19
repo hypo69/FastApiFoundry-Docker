@@ -1,21 +1,21 @@
 # =============================================================================
-# 🧠 GENERAL / PROJECT
+# 🧠 GENERAL / PROJECT CONFIGURATION
 # =============================================================================
-# Кэш и временные артефакты (исключаются из версионного контроля)
+# Общие кэши и временные артефакты
 *.pickle
-*.cache.*
 .llmapi.bin
+*.cache.*
 tests_cache.pickle
-.local.*
+*.local.*
 outputs/
 .VSCodeCounter/
 
-# IDE
+# IDE settings
 .vscode/
 .idea/
 .vs/
 
-# OS artifacts
+# Системные файлы
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -29,58 +29,105 @@ __pycache__/
 *.so
 cython_debug/
 
-# Packaging
+# Distribution / packaging
+.Python
 build/
+develop-eggs/
 dist/
-*.egg-info/
+downloads/
+eggs/
 .eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
 wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
 *.egg
 MANIFEST
 
-# Testing / coverage
-.pytest_cache/
-.coverage*
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
 htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
 .hypothesis/
+.pytest_cache/
+cover/
 
-# Type checkers
+# Type checking / analyzers
 .mypy_cache/
-.pytype/
 .dmypy.json
+dmypy.json
+.pyre/
+.pytype/
 
-# Jupyter
+# Jupyter & IPython
 .ipynb_checkpoints/
+profile_default/
+ipython_config.py
 
-# Docs
+# Sphinx docs
 docs/_build/
 
+# PyBuilder
+.pybuilder/
+target/
+
 # =============================================================================
-# ⚙️ ENVIRONMENTS
+# ☣️ ENVIRONMENTS & DEPENDENCIES
 # =============================================================================
 .env
 .env.*
-!.env.example
+.env.local
+.env.*.local
+.venv
+.venv*
+env/
 venv/
-.venv/
 ENV/
+env.bak/
+venv.bak/
+.pyenv
 
-# Poetry / pipenv / pdm locks (обычно НЕ коммитятся)
-poetry.lock
-Pipfile.lock
-
+# pipenv / poetry / pdm
+#Pipfile.lock
+#poetry.lock
+.pdm.toml
+#pdm.lock
 __pypackages__/
 
 # =============================================================================
-# 🌐 FRAMEWORKS
+# ⚙️ FRAMEWORKS & LIBRARIES
 # =============================================================================
-# Logs
-*.log
 
-# Django / Celery / SQLite
+# --- Django / Flask / Scrapy ---
+*.log
+instance/
+.webassets-cache
+.scrapy/
 db.sqlite3*
 celerybeat-schedule
 celerybeat.pid
+
+# --- SageMath ---
+*.sage.py
+
+# --- MkDocs ---
+/site
 
 # =============================================================================
 # 🌐 WORDPRESS
@@ -89,98 +136,184 @@ wp-content/cache/
 wp-content/upgrade/
 wp-content/backups/
 wp-content/uploads/
+wp-content/ai1wm-backups/
+wp-content/advanced-cache.php
+wp-content/object-cache.php
+wp-content/wp-cache-config.php
 wp-content/debug.log
-
 wp-config.php
 wp-config-*.php
+wp-cli.local.yml
 
-# Разрешаем кастомные темы/плагины
+*.sql
+*.sql.gz
+*.tar
+*.gz
+*.zip
+*.bak
+*.tmp
+*.swp
+*.orig
+
 !wp-content/plugins/
+!wp-content/plugins/*/
 !wp-content/themes/
+!wp-content/themes/*/
+
+wp-content/plugins/*/vendor/
+wp-content/themes/*/node_modules/
+wp-content/themes/*/dist/
+wp-content/themes/*/assets/cache/
 
 # =============================================================================
 # 🛍️ PRESTASHOP
 # =============================================================================
+app/cache/
 var/cache/
 var/logs/
 var/sessions/
-app/cache/
+config/xml/
+config/settings.inc.php
+admin*/autoupgrade/
+admin*/backups/
+admin*/export/
+admin*/import/
 themes/*/cache/
+themes/*/assets/cache/
 modules/*/cache/
+override/
+img/tmp/
+log/
+tmp/
+cachefs/
+translations/cldr/
+composer.lock
+*.log
+*.bak
+*.tmp
 
 install-dev/
 upgrade-dev/
+autoload.php
+
+!themes/
+!themes/*/
+!modules/
+!modules/*/
 
 # =============================================================================
 # 🧩 NODE / FRONTEND
 # =============================================================================
 node_modules/
 npm-debug.log*
+yarn-debug.log*
 yarn-error.log*
 
-# =============================================================================
-# 🔐 SECRETS / SENSITIVE
-# =============================================================================
-# Все секреты исключаются строго явно
-secrets/
-secrets.*
-config/secrets.*
-*.kdbx
-*api_key*
-*token*
-*password*
-
-# Конфиги с чувствительными данными
-config.json
-*.secret.json
-
-# service account / keys
-*.json.key
+# Certificates
+*.crt
+*.key
 *.pem
 *.p12
 *.pfx
+certificates/
 
 # =============================================================================
-# 💾 STORAGE / DATA
+# ⚡️ POWERSHELL & WINDOWS
 # =============================================================================
-data/
+*.ps1xml
+C:\WINDOWS\TEMP
+
+# =============================================================================
+# 💾 DATABASES & STORAGE
+# =============================================================================
+*.db
+*.sqlite*
 storage/
-tmp/
-temp/
+data/
+statistic/
+materials/
 
 # =============================================================================
-# 📦 BACKUPS
+# 📦 BACKUPS & EXPORTS
 # =============================================================================
-backup/
-backups/
 *.bak
 *.backup
 *.bkp
-*.zip
-*.tar
-*.gz
+backup/
+backups/
+export/
 
 # =============================================================================
-# 🧾 LOGS
+# 🧾 LOGS & TEMP
 # =============================================================================
 logs/
 log/
+tmp/
+temp/
+*.tmp
 *.log
+*.log.*
 
 # =============================================================================
-# 🧱 BINARIES
+# 🧱 BINARIES & ARCHIVES
 # =============================================================================
+#bin/
 *.exe
-*.dll
+#*.zip
+#*.7z
+*.taz
 
 # =============================================================================
-# 🪟 WINDOWS SPECIFIC
+# 🔐 SECRETS & SENSITIVE FILES
 # =============================================================================
-# системные temp директории (исправлено)
-Windows/Temp/
-Windows/TEMP/
+secrets/
+secrets.json
+secrets.yaml
+config/secrets.*
+e-cat-346312-137284f4419e.json
+hypo69-c32c8736ca62.json
+password.txt
+*.kdbx
+*api_key*
+*token*
+*secret*
+*password*
+___*.*
+
+# =============================================================================
+# 🧰 PROJECT SPECIFIC
+# =============================================================================
+profiles/
+.chat_history/*
+~*.*
+
+# Разрешаем все config-файлы (JSON/YAML/TOML и т.п.)
+!config/
+!config/*.*
+!src/config.*
+!src/config/*.*
+!*.config
+!*.json
+!*.yaml
+!*.yml
+!*.toml
 
 # =============================================================================
 # 🚀 DEPLOYMENT
 # =============================================================================
-.vercel/
+.vercel
+
+# =============================================================================
+# 🗂️ KEEP FILES THAT MUST BE TRACKED
+# =============================================================================
+!.env.example
+!.gitignore
+!README*.md
+
+# распакованный сервер (оставлен как у тебя)
+bin/llama-b8802-bin-win-cpu-x64/
+!bin/llama-b8802-bin-win-cpu-x64.zip
+!bin/Python-3.11.9.zip
+
+config.json
+Математика

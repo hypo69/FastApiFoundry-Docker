@@ -101,8 +101,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     models.loadConnectedModels();
     models.initModelSelectListener();
 
-    document.getElementById('chat-input')?.addEventListener('keypress', e => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendMessage?.(); }
+    document.getElementById('mainTabsContent')?.addEventListener('keypress', e => {
+        if (e.target.id === 'chat-input' && e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            window.sendMessage?.();
+        }
     });
 
     // Lazy tab loading
