@@ -1,6 +1,7 @@
-# run-sandbox.ps1 — Запуск Windows Sandbox
+# Windows Sandbox — запуск проекта в изолированной среде
 
-Скрипт автоматически проверяет окружение, включает необходимые компоненты Windows и запускает **Windows Sandbox** с примонтированной папкой проекта.
+Файлы для работы с Windows Sandbox перенесены в директорию `microsoft_sandbox_operations/`.
+Pipeline состоит из трёх компонентов: лончер, маппер и `.wsb`-конфигурация.
 
 ---
 
@@ -24,118 +25,99 @@
 ## Использование
 
 ```powershell
-# Интерактивный режим — открывает PowerShell-консоль внутри sandbox
-powershell -ExecutionPolicy Bypass -File .\run-sandbox.ps1
-
-# Silent-режим — запускает autostart.ps1 в скрытом окне
-powershell -ExecutionPolicy Bypass -File .\run-sandbox.ps1 -Silent
+powershell -ExecutionPolicy Bypass -File .\microsoft_sandbox_operations\sandbox-launcher.ps1
 ```
 
-### Параметры
+### Параметры `sandbox-launcher.ps1`
 
 | Параметр | Тип | По умолчанию | Описание |
 |---|---|---|---|
-| `-Silent` | switch | `$false` | Запускает `autostart.ps1` в скрытом режиме вместо интерактивного `start.ps1` |
+| `-DelayMs` | int | `2000` | Задержка (мс) между синхронизацией и запуском Sandbox |
+
+---
+
+## Структура директории
+
+```
+microsoft_sandbox_operations/
+├── sandbox-launcher.ps1   # Точка входа — оркестрирует pipeline
+├── sandbox-mapper.ps1     # Синхронизация проекта через robocopy
+├── sandbox.wsb            # Конфигурация Sandbox (маппинг, сеть)
+└── sandbox-silent.wsb     # Конфигурация для silent-режима
+```
 
 ---
 
 ## Логика работы
 
 ```
-run-sandbox.ps1
+sandbox-launcher.ps1
     │
-    ├─ Test-Virtualization()
-    │       systeminfo → проверка "Virtualization Enabled In Firmware: Yes"
-    │       └─ если нет → throw (завершение)
+    ├─ [1] sandbox-mapper.ps1 (если файл существует)
+    │       robocopy $Source → $Target /MIR
+    │       исключает: venv, .git, __pycache__, node_modules, *.log
+    │       └─ код завершения ≥ 8 → pipeline прерывается
     │
-    ├─ Ensure-Sandbox()
-    │       ├─ Enable-Feature("Microsoft-Hyper-V")
-    │       ├─ Enable-Feature("VirtualMachinePlatform")
-    │       ├─ Enable-Feature("Containers-DisposableClientVM")
-    │       ├─ bcdedit /set hypervisorlaunchtype Auto
-    │       └─ возвращает $rebootRequired
+    ├─ [2] Start-Sleep -Milliseconds $DelayMs
+    │       ожидание сброса файловой системы
     │
-    ├─ если $rebootRequired → Restart-Computer
-    │
-    ├─ New-WSBConfig(-silent)
-    │       └─ генерирует %TEMP%\sandbox_auto.wsb
-    │
-    └─ Start-Sandbox()
-            └─ Start-Process sandbox_auto.wsb
+    └─ [3] Start-Process sandbox.wsb
+            Windows Sandbox монтирует staging-директорию как read-only
 ```
 
 ---
 
 ## Функции
 
-### `Test-Virtualization`
+### `sandbox-launcher.ps1` — `Invoke-SandboxScript`
 
-Проверяет вывод `systeminfo` на наличие строки `Virtualization Enabled In Firmware: Yes`.
-
-**Возвращает:** `bool`
-
----
-
-### `Enable-Feature`
-
-Включает опциональный компонент Windows через `Enable-WindowsOptionalFeature`.
+Запускает дочерний скрипт в изолированном процессе PowerShell.
 
 | Параметр | Тип | Описание |
 |---|---|---|
-| `$name` | string | Имя компонента (`Microsoft-Hyper-V`, `VirtualMachinePlatform`, `Containers-DisposableClientVM`) |
+| `-Path` | string | Полный путь к скрипту |
 
-**Возвращает:** `bool` — `$true` если компонент был только что включён (требуется перезагрузка)
-
----
-
-### `Ensure-Sandbox`
-
-Оркестрирует проверку виртуализации и включение всех трёх компонентов. Устанавливает `hypervisorlaunchtype Auto` через `bcdedit`.
-
-**Возвращает:** `bool` — `$true` если нужна перезагрузка
-
-**Исключение:** бросает строку `'Виртуализация отключена в BIOS'` если виртуализация недоступна
+**Возвращает:** `bool` — `$true` при успешном завершении
 
 ---
 
-### `New-WSBConfig`
+### `sandbox-launcher.ps1` — `Invoke-SandboxPipeline`
 
-Генерирует XML-файл `.wsb` в `%TEMP%\sandbox_auto.wsb`.
+Оркестрирует полный pipeline: маппер → задержка → запуск.
+
+**Возвращает:** `bool` — `$true` если Sandbox запущен успешно
+
+---
+
+### `sandbox-mapper.ps1` — `Sync-Project`
+
+Зеркалирует исходную директорию в staging через `robocopy /MIR`.
 
 | Параметр | Тип | Описание |
 |---|---|---|
-| `$silent` | bool | Режим запуска внутри sandbox |
+| `-Source` | string | Путь к проекту на хосте |
+| `-Target` | string | Staging-директория для монтирования |
 
-**Режимы LogonCommand:**
-
-```
-Silent = $false  →  powershell.exe -NoExit -ExecutionPolicy Bypass -Command "cd '...'; ./start.ps1"
-Silent = $true   →  powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -Command "cd '...'; ./autostart.ps1"
-```
-
-**Маппинг папок:**
-
-| Хост | Sandbox |
-|---|---|
-| `D:\repos\public_repositories\FastApiFoundry-Docker` | `C:\Users\WDAGUtilityAccount\Desktop\FastApiFoundry-Docker` |
+**Возвращает:** `bool` — `$true` если `robocopy` завершился с кодом ≤ 3
 
 ---
 
-### `Start-Sandbox`
+## Конфигурация sandbox.wsb
 
-Запускает `sandbox_auto.wsb` через `Start-Process`. Windows сам открывает файл в `WindowsSandbox.exe`.
-
----
-
-## Переменные конфигурации
-
-Заданы в начале скрипта — при необходимости изменить пути:
-
-```powershell
-$PROJECT_PATH = 'D:\repos\public_repositories\FastApiFoundry-Docker'
-$SANDBOX_PATH = 'C:\Users\WDAGUtilityAccount\Desktop\FastApiFoundry-Docker'
-$WSB_FILE     = Join-Path $env:TEMP 'sandbox_auto.wsb'
+```xml
+<Configuration>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>D:\sandbox_mount</HostFolder>
+      <SandboxFolder>C:\Users\WDAGUtilityAccount\Desktop\src</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <Networking>Enable</Networking>
+</Configuration>
 ```
+
+Измените `HostFolder` на путь к staging-директории (параметр `-Target` в `sandbox-mapper.ps1`).
 
 ---
 
@@ -143,9 +125,10 @@ $WSB_FILE     = Join-Path $env:TEMP 'sandbox_auto.wsb'
 
 | Симптом | Причина | Решение |
 |---|---|---|
-| `Виртуализация отключена в BIOS` | VT-x / AMD-V выключен | Проверить: Диспетчер задач → Производительность → ЦП → «Виртуализация». Включить в BIOS/UEFI если отключена |
+| `Sandbox script not found` | Неверный рабочий каталог | Запускать `sandbox-launcher.ps1` напрямую по полному пути |
+| `Sandbox sync failed` | `robocopy` код ≥ 8 | Проверить права на запись в `-Target` директорию |
 | Sandbox не появляется в списке компонентов | Windows Home edition | Нужна Pro / Enterprise / Education |
-| Скрипт завершается без ошибок, но sandbox не открывается | `.wsb` не ассоциирован | Установить Windows Sandbox через «Компоненты Windows» |
+| Sandbox не открывается | `.wsb` не ассоциирован | Установить Windows Sandbox через «Компоненты Windows» |
 | После включения компонентов требуется перезагрузка | Нормальное поведение | Перезапустить ПК, затем повторить скрипт |
 
 > 📖 Подробная инструкция по установке и включению Sandbox:  

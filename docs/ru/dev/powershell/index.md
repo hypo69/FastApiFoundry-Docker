@@ -16,4 +16,4 @@
 
 | Скрипт | Описание |
 |---|---|
-| [`run-sandbox.ps1`](run-sandbox.md) | Проверка, установка и запуск Windows Sandbox |
+| [`microsoft_sandbox_operations/`](run-sandbox.md) | Запуск Windows Sandbox (pipeline: launcher + mapper + .wsb) |
