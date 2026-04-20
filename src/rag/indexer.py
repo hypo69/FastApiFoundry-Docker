@@ -16,23 +16,26 @@
 #
 # File: indexer.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.6.1
-# Changes in 0.6.1:
+# Version: 0.6.4
+# Changes in 0.6.4:
 #   - MIT License update
-#   - Unified headers and versioning
+#   - Unified headers and versioning to 0.6.4
+#   - Explicit return type hints for all methods
 #   - Added checksum, relative path, and mtime to chunk metadata
+#   - Added incremental indexing support via checksum comparison
+#   - Enhanced create_embeddings to reuse vectors from existing FAISS index
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # License: MIT
 # =============================================================================
-
+import faiss
 import argparse
 import json
 import hashlib
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -58,6 +61,7 @@ class RAGIndexer:
         self.chunks: List[Dict[str, Any]] = []
         self.embeddings = None
         self.docs_root: Optional[Path] = None
+        self.has_changes: bool = False
 
     def load_model(self) -> None:
         """Load the sentence-transformer embedding model."""
@@ -135,16 +139,19 @@ class RAGIndexer:
                     chunks.append({**metadata, 'section': current_section, 'text': c, 'char_count': len(c)})
         return chunks
 
-    def process_file(self, file_path: Path,
-                     chunk_size: int = 1000, overlap: int = 50) -> List[Dict[str, Any]]:
+    def process_file(self, file_path: Path, # type: ignore
+                     chunk_size: int = 1000, overlap: int = 50,
+                     content: Optional[str] = None) -> List[Dict[str, Any]]:
         """Process a single file into chunks."""
-        content = self._read_file(file_path)
+        if content is None:
+            content = self._read_file(file_path)
+            
         if not content:
             return []
 
         # Relative path is better for citations than just filename
         rel_path = str(file_path.relative_to(self.docs_root)) if self.docs_root else file_path.name
-        
+
         metadata = {
             'source': file_path.name,
             'path': rel_path,
@@ -154,14 +161,15 @@ class RAGIndexer:
 
         if file_path.suffix.lower() == '.md':
             return self.process_markdown(content, metadata, chunk_size, overlap)
-            
+
         return [
             {**metadata, 'section': 'Content', 'text': c, 'char_count': len(c)}
             for c in self.chunk_text(content, chunk_size, overlap)
         ]
 
     def index_directory(self, docs_dir: Path,
-                        chunk_size: int = 1000, overlap: int = 50) -> None:
+                        chunk_size: int = 1000, overlap: int = 50,
+                        existing_chunks: Optional[List[Dict[str, Any]]] = None) -> None:
         """Recursively index all supported files in a directory."""
         logger.info(f'Indexing: {docs_dir}')
         if not docs_dir.exists():
@@ -169,40 +177,107 @@ class RAGIndexer:
             return
 
         self.docs_root = docs_dir
+        self.has_changes = False
+        
+        # Group existing chunks by path for quick comparison
+        existing_map: Dict[str, List[Dict[str, Any]]] = {}
+        if existing_chunks:
+            for i, c in enumerate(existing_chunks):
+                path = c.get('path')
+                if path:
+                    chunk_with_idx = c.copy()
+                    chunk_with_idx['_old_idx'] = i
+                    existing_map.setdefault(path, []).append(chunk_with_idx)
+
         files_processed = 0
+        found_paths = set()
+
         try:
             for file_path in docs_dir.rglob('*'):
                 if file_path.is_file() and file_path.suffix.lower() in SUPPORTED_EXTENSIONS:
-                    logger.info(f'Processing: {file_path}')
-                    self.chunks.extend(self.process_file(file_path, chunk_size, overlap))
-                    files_processed += 1
+                    rel_path = str(file_path.relative_to(self.docs_root))
+                    found_paths.add(rel_path)
+                    
+                    content = self._read_file(file_path)
+                    if not content:
+                        continue
+                        
+                    checksum = self._calculate_checksum(content)
+                    
+                    # Check if file changed
+                    if rel_path in existing_map and existing_map[rel_path][0].get('checksum') == checksum:
+                        self.chunks.extend(existing_map[rel_path])
+                    else:
+                        logger.info(f'Processing: {file_path}')
+                        self.chunks.extend(self.process_file(file_path, chunk_size, overlap, content=content))
+                        self.has_changes = True
+                        files_processed += 1
         except Exception as e:
-            # rglob can fail on permission-denied subdirectories
             logger.error(f'❌ Error scanning {docs_dir}: {e}')
+
+        # Check for deleted files
+        if existing_map and not self.has_changes:
+            if any(p not in found_paths for p in existing_map):
+                self.has_changes = True
 
         logger.info(f'✅ Files: {files_processed}, chunks: {len(self.chunks)}')
 
-    def create_embeddings(self) -> None:
-        """Encode all chunks into embedding vectors."""
+    def create_embeddings(self, existing_index: Optional[Any] = None) -> None:
+        """Encode all chunks into embedding vectors, reusing existing ones if possible.
+
+        Args:
+            existing_index: Optional FAISS index to reconstruct vectors from for unchanged chunks.
+        """
         if not self.chunks:
             raise ValueError('No chunks to embed — run index_directory() first')
 
         logger.info('Creating embeddings…')
-        texts = [c['text'] for c in self.chunks]
-        batch_size = 32
-        all_embeddings = []
 
-        try:
-            for i in range(0, len(texts), batch_size):
-                batch = self.model.encode(texts[i:i + batch_size], show_progress_bar=True)
-                all_embeddings.extend(batch)
-        except Exception as e:
-            # GPU OOM, model not loaded, or transformers internal error
-            logger.error(f'❌ Embedding creation failed at batch starting at {i}: {e}')
-            raise
+        dimension = self.model.get_sentence_embedding_dimension()
+        final_embeddings = np.zeros((len(self.chunks), dimension), dtype='float32')
 
-        self.embeddings = np.array(all_embeddings).astype('float32')
-        logger.info(f'✅ Embeddings shape: {self.embeddings.shape}')
+        to_encode_indices = []
+        to_encode_texts = []
+        reused_count = 0
+
+        for i, chunk in enumerate(self.chunks):
+            old_idx = chunk.get('_old_idx')
+            reused = False
+
+            if existing_index is not None and old_idx is not None and old_idx < existing_index.ntotal:
+                if existing_index.d == dimension:
+                    try:
+                        final_embeddings[i] = existing_index.reconstruct(old_idx)
+                        reused_count += 1
+                        reused = True
+                    except Exception:
+                        pass  # Fallback to encoding
+
+            if not reused:
+                to_encode_indices.append(i)
+                to_encode_texts.append(chunk['text'])
+
+        if to_encode_texts:
+            logger.info(f"Encoding {len(to_encode_texts)} new/changed chunks...")
+            batch_size = 32
+            try:
+                for start_idx in range(0, len(to_encode_texts), batch_size):
+                    end_idx = start_idx + batch_size
+                    batch_texts = to_encode_texts[start_idx:end_idx]
+                    batch_embeddings = self.model.encode(batch_texts, show_progress_bar=True)
+
+                    for j, emb in enumerate(batch_embeddings):
+                        final_embeddings[to_encode_indices[start_idx + j]] = emb
+            except Exception as e:
+                logger.error(f'❌ Embedding creation failed: {e}')
+                raise
+
+        # Cleanup temporary metadata to avoid saving it to chunks.json
+        for chunk in self.chunks:
+            chunk.pop('_old_idx', None)
+
+        self.embeddings = final_embeddings
+        logger.info(f'✅ Embeddings shape: {self.embeddings.shape} (Reused: {reused_count})')
 
     def save_index(self, output_dir: Path) -> None:
         """Build FAISS index and save all artifacts to output_dir."""
@@ -248,7 +323,7 @@ class RAGIndexer:
             raise
 
 
-def main() -> None:
+def main() -> None: # type: ignore
     parser = argparse.ArgumentParser(description='RAG Indexer for FastAPI Foundry')
     parser.add_argument('--docs-dir',   required=True,  help='Directory with documents')
     parser.add_argument('--output-dir', default='./rag_index', help='Output directory')

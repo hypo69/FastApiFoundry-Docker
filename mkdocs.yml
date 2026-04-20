@@ -71,6 +71,7 @@ nav:
     - Агенты: dev/agents.md
     - Логирование: dev/logging.md
     - CI/CD документации: dev/cicd_docs.md
+    - Скрипты: dev/scripts.md
     - Code Reference (Python):
       - Foundry Client: dev/code/foundry_client.md
       - Config: dev/code/config.md

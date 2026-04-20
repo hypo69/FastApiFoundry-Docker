@@ -231,7 +231,7 @@ venv\Scripts\python.exe check_engine\smoke_all_endpoints.py
 
 ## 📄 Лицензия
 
-CC BY-NC-SA 4.0 — https://creativecommons.org/licenses/by-nc-sa/4.0/
+MIT License — https://opensource.org/licenses/MIT
 
 ---
 

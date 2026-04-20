@@ -15,6 +15,7 @@
 | `hf-models.ps1` | Поиск и просмотр моделей на HuggingFace |
 | `service-status.ps1` | Проверка статуса Foundry и FastAPI сервисов |
 | `build_exes.ps1` | Сборка `install.exe` и `launcher.exe` из PowerShell скриптов |
+| `restart-mkdocs.ps1` | Перезапуск сервера документации MkDocs |
 
 ## Использование
 
@@ -30,6 +31,9 @@
 
 # Проверить статус сервисов
 .\scripts\service-status.ps1
+
+# Перезапустить сервер документации
+.\scripts\restart-mkdocs.ps1
 ```
 
 ## Правила

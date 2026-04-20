@@ -26,8 +26,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - `docs/ru/dev/utils.md` — документация разработчика для `src/utils/`
 - `examples/translator_example.py` — пример использования переводчика
 
+### Added
+- `LICENSE` — замена CC BY-NC-SA 4.0 на MIT License
+- `README.md` — обновлена ссылка на лицензию (порт из `config.json → docs_server.port`)
+- `scripts/restart-mkdocs.ps1` — скрипт перезапуска MkDocs: читает порт из `config.json`, убивает процесс через `netstat`, запускает новый в отдельном окне
+- `docs/ru/dev/scripts.md` — новая страница документации с описанием всех операционных скриптов
+
 ### Changed
-- `src/rag/text_extractor_4_rag/config.py` — интегрирован с проектным синглтоном `Config`: удалён самостоятельный `json.load()`, настройки читаются через `config.get_section("text_extractor")` из `config_manager.py`; `DEBUG` берёт fallback из секции `development.debug`
+- `scripts/README.md` — добавлен `restart-mkdocs.ps1` в таблицу и примеры использования
+- `mkdocs.yml` — добавлен раздел «Скрипты» в навигацию для разработчиков: удалён самостоятельный `json.load()`, настройки читаются через `config.get_section("text_extractor")` из `config_manager.py`; `DEBUG` берёт fallback из секции `development.debug`
 - `docs/ru/dev/code/config.md` — расширена документация: добавлена полная глава по конфигурации (синглтон, структура `config.json`, секция `text_extractor`, приоритет env vars, рантаймовое обновление)
 - `src/rag/text_extractor_4_rag/extractors.py` — исправлены импорты (`from app.*` → относительные), добавлен заголовок
 - `src/rag/text_extractor_4_rag/main.py` — исправлены импорты, добавлен заголовок

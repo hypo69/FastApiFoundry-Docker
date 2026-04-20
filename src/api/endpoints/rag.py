@@ -13,9 +13,11 @@
 #
 # File: src/api/endpoints/rag.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.6.0
-# Changes in 0.6.0:
-#   - Added missing imports: api_response_handler, sanitize_for_filesystem
+# Version: 0.6.3
+# Changes in 0.6.3:
+#   - MIT License update
+#   - Unified headers and return type hints
+#   - Added an endpoint to trigger RAG profile cleanup
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
@@ -26,6 +28,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+import faiss
 from pydantic import BaseModel
 
 from ...utils.api_utils import api_response_handler
@@ -329,12 +332,11 @@ async def build_rag_index(request: RAGBuildRequest) -> dict:
         return {"success": False, "error": f"Directory not found: {docs_dir}"}
 
     safe_name = sanitize_for_filesystem(docs_dir.name)
-    output_dir = _profile_index_dir(safe_name)
-
-    if (output_dir / "faiss.index").exists() and not request.force:
-        return {"success": True, "already_indexed": True, "message": f"Index for '{docs_dir.name}' already exists", "index_dir": str(output_dir), "name": safe_name}
-
+    output_dir: Path = rag_system._profile_index_dir(safe_name) # type: ignore
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    index_path = output_dir / "faiss.index"
+    index_exists = index_path.exists()
 
     try:
         from ...rag.indexer import RAGIndexer
@@ -344,22 +346,67 @@ async def build_rag_index(request: RAGBuildRequest) -> dict:
     try:
         loop = asyncio.get_event_loop()
 
-        def _run():
+        def _run() -> tuple[int, bool]:
             indexer = RAGIndexer(model_name=request.model)
+            
+            # Load existing chunks for incremental check
+            existing_chunks = None
+            chunks_path = output_dir / "chunks.json"
+            if chunks_path.exists() and not request.force:
+                try:
+                    existing_chunks = json.loads(chunks_path.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
+
             indexer.load_model()
-            indexer.index_directory(docs_dir, chunk_size=request.chunk_size, overlap=request.overlap)
+            indexer.index_directory(
+                docs_dir, 
+                chunk_size=request.chunk_size, 
+                overlap=request.overlap,
+                existing_chunks=existing_chunks
+            )
+            
             if not indexer.chunks:
                 raise ValueError("No indexable documents found")
-            indexer.create_embeddings()
-            indexer.save_index(output_dir)
-            return len(indexer.chunks)
 
-        chunks = await loop.run_in_executor(None, _run)
+            # Only rebuild if files changed, force is true, or index missing
+            rebuilt = False
+            if indexer.has_changes or request.force or not index_exists:
+                # Attempt to load existing index to reuse vectors for unchanged chunks
+                existing_index = None
+                if index_exists and not request.force:
+                        import faiss
+                        existing_index = faiss.read_index(str(index_path))
+                    except Exception:
+                        pass
+                
+                indexer.create_embeddings(existing_index=existing_index)
+                indexer.save_index(output_dir)
+                rebuilt = True
+            
+            return len(indexer.chunks), rebuilt
 
-        meta = {"name": docs_dir.name, "safe_name": safe_name, "source_dir": str(docs_dir), "index_dir": str(output_dir), "chunks": chunks, "model": request.model}
+        chunks_count, was_rebuilt = await loop.run_in_executor(None, _run)
+
+        meta = {
+            "name": docs_dir.name, 
+            "safe_name": safe_name, 
+            "source_dir": str(docs_dir), 
+            "index_dir": str(output_dir), 
+            "chunks": chunks_count, 
+            "model": request.model,
+            "updated_at": datetime.now().isoformat()
+        }
         (output_dir / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
 
-        return {"success": True, "chunks": chunks, "index_dir": str(output_dir), "name": safe_name}
+        return {
+            "success": True, 
+            "chunks": chunks_count, 
+            "rebuilt": was_rebuilt,
+            "index_dir": str(output_dir), 
+            "name": safe_name,
+            "message": "Index rebuilt" if was_rebuilt else "Index is up to date"
+        }
     except Exception as e:
         return {"success": False, "error": str(e)}
 
