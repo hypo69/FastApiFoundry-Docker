@@ -1,7 +1,17 @@
 /**
- * Название процесса: Модуль управления чатом
- * Описание: Отправка сообщений, отображение истории, сохранение настроек в config.json.
+ * =============================================================================
+ * Название процесса: Управление интерактивным чатом
+ * =============================================================================
+ * Описание:
+ *   Обеспечение отправки сообщений, ведение истории диалога и интеграция
+ *   настроек в config.json. Включение обработки асинхронных генераций ответов.
+ *
+ * File: chat.js
+ * Project: AiStros
+ * Author: hypo69
+ * Copyright: © 2026 hypo69
  * Version: 0.4.1
+ * =============================================================================
  */
 
 import { showAlert, updateChatModelBadge } from './ui.js';
@@ -15,10 +25,14 @@ let _chatHistoryMessages = [];
 let _historySessionId = null;
 
 function _getOrCreateHistorySessionId() {
+    // Возврат существующего ID сессии при наличии
+    // Return of the existing session ID if present
     if (_historySessionId) return _historySessionId;
     try {
         _historySessionId = localStorage.getItem('aiAssistantChatHistorySessionId');
     } catch {}
+    // Генерация нового UUID при отсутствии сохраненного
+    // Generation of a new UUID if no stored one exists
     if (!_historySessionId) {
         try {
             _historySessionId = crypto.randomUUID();
@@ -34,11 +48,14 @@ function _getOrCreateHistorySessionId() {
 
 function setStopButtonEnabled(enabled) {
     const btn = document.getElementById('chat-stop-btn');
+    // Изменение состояния активности кнопки остановки
+    // Alteration of the stop button activity state
     if (btn) btn.disabled = !enabled;
 }
 
 async function saveChatHistory({ aborted = false, error = null, model = '' } = {}) {
-    // Сохраняем только если есть история
+    // Прекращение выполнения при пустой истории сообщений
+    // Termination of execution if the message history is empty
     if (!_chatHistoryMessages.length) return;
 
     try {
@@ -56,6 +73,8 @@ async function saveChatHistory({ aborted = false, error = null, model = '' } = {
             body: JSON.stringify(payload),
         });
         const data = await resp.json();
+        // Уведомление об успешном сохранении истории
+        // Notification of successful history saving
         if (data.success) {
             if (error) showAlert(`History saved (${data.file})`, 'warning');
             else showAlert(`History saved (${data.file})`, 'success');
@@ -79,6 +98,8 @@ function patchConfig(patch) {
 
 // Вызывается из config.js после loadConfig() — восстанавливает поля чата
 export function applyChatConfig(foundryAi) {
+    // Отмена операции при отсутствии объекта настроек
+    // Cancellation of the operation if the settings object is missing
     if (!foundryAi) return;
     const tempEl  = document.getElementById('temperature');
     const tempVal = document.getElementById('temp-value');
@@ -89,10 +110,12 @@ export function applyChatConfig(foundryAi) {
     if (tempVal && foundryAi.temperature != null) { tempVal.textContent = foundryAi.temperature; }
     if (tokEl   && foundryAi.max_tokens  != null) { tokEl.value   = foundryAi.max_tokens; }
 
-    // Модель — восстанавливаем после того как список загружен
+    // Восстановление выбранной модели после загрузки списка
+    // Restoration of the selected model after the list loading
     if (foundryAi.default_model) {
         window._savedChatModel = foundryAi.default_model;
-        // Если select уже заполнен — выбираем сразу
+        // Немедленный выбор значения при заполненном селекте
+        // Immediate selection of the value if the select is populated
         if (modelEl) {
             const opt = [...modelEl.options].find(o => o.value === foundryAi.default_model);
             if (opt) modelEl.value = foundryAi.default_model;
