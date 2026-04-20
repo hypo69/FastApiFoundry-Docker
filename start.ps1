@@ -14,8 +14,10 @@
 #
 # File: start.ps1
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
-# Автор: hypo69
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - Added update check via scripts/Update-Project.ps1 (git tag-based)
+# Author: hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
 
@@ -30,6 +32,22 @@ $Root = $PSScriptRoot
 
 Write-Host '🚀 FastAPI Foundry Smart Launcher - Запуск' -ForegroundColor Cyan
 Write-Host ('=' * 60) -ForegroundColor Cyan
+
+# -----------------------------------------------------------------------------
+# Этап 0: Проверка обновлений по git-тегам
+# Запускается только при наличии .git и git в PATH.
+# Пропускается автоматически при отсутствии сети или git.
+# -----------------------------------------------------------------------------
+$UpdateScript = "$Root\scripts\Update-Project.ps1"
+if (Test-Path $UpdateScript) {
+    try {
+        & $UpdateScript
+    } catch {
+        Write-Host "⚠️ Проверка обновлений завершилась с ошибкой: $_" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host '💡 scripts/Update-Project.ps1 не найден — проверка обновлений пропущена.' -ForegroundColor Gray
+}
 
 # -----------------------------------------------------------------------------
 # Этап 1: Проверка зависимостей и автоматическая установка
