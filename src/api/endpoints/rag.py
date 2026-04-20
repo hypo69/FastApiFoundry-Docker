@@ -375,7 +375,7 @@ async def build_rag_index(request: RAGBuildRequest) -> dict:
                 # Attempt to load existing index to reuse vectors for unchanged chunks
                 existing_index = None
                 if index_exists and not request.force:
-                        import faiss
+                    try:
                         existing_index = faiss.read_index(str(index_path))
                     except Exception:
                         pass

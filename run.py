@@ -1,19 +1,21 @@
 #!/usr/bin/env python311
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Process Name: Launching FastApiFoundry server
+# Название процесса: Запуск сервера FastApiFoundry
 # =============================================================================
-# Description:
-#   Simple launch of the FastAPI server.
-#   If Foundry is already running, AI will be available.
-#   For a full launch (Foundry + env), use start.ps1
+# Описание:
+#   Упрощенный запуск сервера FastAPI.
+#   Если Foundry уже запущен, функции ИИ будут доступны автоматически.
+#   Для полного запуска со всеми зависимостями используйте start.ps1.
 #
 # File: run.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.6.0
-# Changes in 0.6.0:
-#   - MIT License update
-#   - Unified headers and return type hints
+# Version: 0.6.5
+# Изменения в 0.6.5:
+#   - Полная русификация документации и комментариев
+#   - MIT Лицензия (автор: hypo69)
+#   - Добавлены строгие аннотации типов возвращаемых значений
+#   - Комментарии к проверкам `if` в стиле "Проверка ..."
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # License: MIT
@@ -23,43 +25,43 @@
 import os
 import sys
 import locale
+from typing import Optional
 
-# Set UTF-8 for the entire Python process
+# Принудительная настройка кодировки UTF-8 для всего процесса Python
 os.environ['PYTHONIOENCODING'] = 'utf-8'
-if sys.platform == 'win32':
+if sys.platform == 'win32': # Проверка платформы Windows
     import codecs
     try:
         sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
         sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
     except:
-        pass  # If already set
-    # Attempt to set UTF-8 locale
+        pass  # Проверка: если кодировка уже установлена
+    # Попытка установить UTF-8 локаль
     try:
         locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
     except:
         try:
             locale.setlocale(locale.LC_ALL, 'C.UTF-8')
         except:
-            pass  # Use system locale
-
+            pass  # Проверка: использование системной локали по умолчанию
 
 import json
 import socket
 import logging
 from pathlib import Path
 
-# Add current directory to sys.path for importing modules
+# Добавление текущей директории в sys.path для импорта модулей
 current_dir = Path(__file__).parent
-if str(current_dir) not in sys.path:
+if str(current_dir) not in sys.path: # Проверка наличия пути в sys.path
     sys.path.insert(0, str(current_dir))
 
-# Add site-packages for python311
-# Only append if the specific path exists and we are on Windows
-if sys.platform == 'win32' and Path('C:/python311/Lib/site-packages').exists():
+# Добавление site-packages для python311
+# Проверка: добавлять только если путь существует и это Windows
+if sys.platform == 'win32' and Path('C:/python311/Lib/site-packages').exists(): 
     sys.path.append('C:/python311/Lib/site-packages')
 
-# Load environment variables before importing configuration
-# Guard against double-execution in uvicorn reload mode (reloader spawns a child process)
+# Загрузка переменных окружения перед импортом конфигурации
+# Проверка: защита от двойного выполнения в режиме перезагрузки uvicorn
 _in_reloader_child = os.getenv('_UVICORN_CHILD') == '1'
 if not _in_reloader_child:
     os.environ['_UVICORN_CHILD'] = '1'
@@ -67,31 +69,31 @@ if not _in_reloader_child:
 try:
     from src.utils.env_processor import load_env_variables, process_config
     load_env_variables()
-    if not _in_reloader_child:
-        print("Environment variables loaded")
+    if not _in_reloader_child: # Проверка: вывод только для основного процесса
+        print("Переменные окружения загружены")
 except ImportError:
-    if not _in_reloader_child:
-        print("Environment processor not available, using default config")
+    if not _in_reloader_child: # Проверка отсутствия процессора окружения
+        print("Процессор окружения недоступен, используется конфигурация по умолчанию")
 
 from src.core.config import config
 
-# Import requests only if available
+# Импорт requests только если библиотека доступна
 try:
     import requests
     REQUESTS_AVAILABLE = True
 except ImportError:
-    print("Warning: requests is unavailable, some features are disabled")
+    print("Предупреждение: библиотека requests недоступна, некоторые функции отключены")
     REQUESTS_AVAILABLE = False
 
 try:
     import uvicorn
     UVICORN_AVAILABLE = True
 except ImportError:
-    print("Error: uvicorn is unavailable, server cannot be started")
+    print("Ошибка: библиотека uvicorn недоступна, запуск сервера невозможен")
     UVICORN_AVAILABLE = False
     sys.exit(1)
 
-# Initialize logging subsystem (handlers wired in src/logger/__init__.py)
+# Инициализация подсистемы логирования
 from src.logger import logger as _root_logger  # noqa: E402 — must follow sys.path setup
 from src.utils.logging_config import setup_logging
 setup_logging(os.getenv('LOG_LEVEL', 'INFO'))
@@ -100,59 +102,79 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# Utils
+# Утилиты
 # =============================================================================
-def find_free_port(start_port: int = 9696, end_port: int = 9796) -> int | None:
-    """Find a free port in range"""
-    logger.debug(f"Searching for a free port in range {start_port}-{end_port}")
+def find_free_port(start_port: int = 9696, end_port: int = 9796) -> Optional[int]:
+    """Поиск свободного порта в заданном диапазоне.
+
+    Args:
+        start_port (int): Начальный порт диапазона. По умолчанию 9696.
+        end_port (int): Конечный порт диапазона. По умолчанию 9796.
+
+    Returns:
+        Optional[int]: Номер свободного порта или None, если порты заняты.
+
+    Raises:
+        OSError: При системных ошибках работы с сокетами.
+    """
+    logger.debug(f"Поиск свободного порта в диапазоне {start_port}-{end_port}")
     
     for port in range(start_port, end_port + 1):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             try:
                 sock.bind(('localhost', port))
-                logger.info(f"Free port found: {port}")
+                logger.info(f"Найден свободный порт: {port}")
                 return port
             except OSError:
-                logger.debug(f"Port {port} is occupied")
+                logger.debug(f"Порт {port} занят")
                 continue
     
-    logger.warning(f"No free port found in range {start_port}-{end_port}")
+    logger.warning(f"Не удалось найти свободный порт в диапазоне {start_port}-{end_port}")
     return None
 
 
 # =============================================================================
-# Port management
+# Управление портами
 # =============================================================================
 def get_server_port() -> int:
-    """FastAPI server port is being determined"""
+    """Определение порта для запуска сервера FastAPI.
+
+    Returns:
+        int: Номер порта для сервера.
+    """
     default_port = config.api_port
     auto_find = config.port_auto_find_free
     
-    logger.info(f"Determining FastAPI server port...")
-    logger.debug(f"Default port: {default_port}")
-    logger.debug(f"Auto-find free port: {auto_find}")
+    logger.info(f"Определение порта сервера FastAPI...")
+    logger.debug(f"Порт по умолчанию: {default_port}")
+    logger.debug(f"Автоматический поиск порта: {auto_find}")
 
-    if not auto_find:
-        logger.info(f'Using fixed port: {default_port}')
+    if not auto_find: # Проверка: если автопоиск отключен, используем фиксированный порт
+        logger.info(f'Использование фиксированного порта: {default_port}')
         return default_port
 
     start_port = config.port_range_start
     end_port = config.port_range_end
 
     free_port = find_free_port(start_port, end_port)
-    if free_port:
-        logger.info(f'Found free port: {free_port}')
+    if free_port: # Проверка: если свободный порт найден
+        logger.info(f'Найден свободный порт: {free_port}')
         return free_port
 
-    logger.warning(f'Free port not found, using port {default_port}')
+    logger.warning(f'Свободный порт не найден, используется порт по умолчанию {default_port}')
     return default_port
 
 
 # =============================================================================
 # Foundry
 # =============================================================================
-def find_foundry_port() -> int | None:
-    if not REQUESTS_AVAILABLE:
+def find_foundry_port() -> Optional[int]:
+    """Поиск порта работающего сервиса Foundry.
+
+    Returns:
+        Optional[int]: Номер порта Foundry или None, если сервис не найден.
+    """
+    if not REQUESTS_AVAILABLE: # Проверка доступности библиотеки requests
         return None
     
     try:
@@ -160,28 +182,28 @@ def find_foundry_port() -> int | None:
         result = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq Inference.Service.Agent*'], 
                               capture_output=True, text=True, shell=True)
         
-        if 'Inference.Service.Agent' not in result.stdout:
+        if 'Inference.Service.Agent' not in result.stdout: # Проверка наличия процесса в списке
             return None
             
         for line in result.stdout.split('\n'):
-            if 'Inference.Service.Agent' in line:
+            if 'Inference.Service.Agent' in line: # Проверка строки на соответствие имени агента
                 parts = line.split()
-                if len(parts) >= 2:
+                if len(parts) >= 2: # Проверка структуры строки для получения PID
                     pid = parts[1]
                     netstat_result = subprocess.run(['netstat', '-ano'], 
                                                    capture_output=True, text=True)
                     
                     for netline in netstat_result.stdout.split('\n'):
-                        if 'LISTENING' in netline and pid in netline:
+                        if 'LISTENING' in netline and pid in netline: # Проверка активного прослушивания портов PID-ом
                             parts = netline.split()
-                            if len(parts) >= 2:
+                            if len(parts) >= 2: # Проверка структуры строки netstat
                                 addr = parts[1]
-                                if ':' in addr:
+                                if ':' in addr: # Проверка наличия порта в адресе
                                     try:
                                         port = int(addr.split(':')[-1])
                                         response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=1)
-                                        if response.status_code == 200:
-                                            logger.info(f"Foundry API confirmed on port: {port}")
+                                        if response.status_code == 200: # Проверка подтверждения API Foundry
+                                            logger.info(f"API Foundry подтвержден на порту: {port}")
                                             return port
                                     except Exception:
                                         continue
@@ -191,39 +213,50 @@ def find_foundry_port() -> int | None:
     return None
 
 
-def resolve_foundry_base_url() -> str | None:
-    """Foundry base_url is being determined (dynamically)"""
-    # Check FOUNDRY_BASE_URL environment variable
+def resolve_foundry_base_url() -> Optional[str]:
+    """Динамическое определение базового URL для Foundry.
+
+    Returns:
+        Optional[str]: Полный URL сервиса Foundry или None.
+    """
+    # Проверка переменной окружения FOUNDRY_BASE_URL
     foundry_url = os.getenv('FOUNDRY_BASE_URL')
-    if foundry_url:
-        logger.info(f'Foundry found via environment variable: {foundry_url}')
+    if foundry_url: # Проверка: если URL задан явно
+        logger.info(f'Foundry найден через переменную окружения: {foundry_url}')
         return foundry_url
     
-    # Check FOUNDRY_DYNAMIC_PORT environment variable (legacy)
+    # Проверка устаревшей переменной FOUNDRY_DYNAMIC_PORT
     foundry_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
-    if foundry_port:
+    if foundry_port: # Проверка наличия порта в окружении
         try:
             port = int(foundry_port)
             foundry_url = f'http://localhost:{port}/v1/'
-            logger.info(f'Foundry found via legacy environment variable, port: {foundry_url}')
+            logger.info(f'Foundry найден через системную переменную порта: {foundry_url}')
             return foundry_url
         except ValueError:
             pass
     
-    # Automatic port detection
+    # Автоматическое определение порта
     foundry_port = find_foundry_port()
-    if foundry_port:
+    if foundry_port: # Проверка: если порт успешно обнаружен
         foundry_url = f'http://localhost:{foundry_port}/v1/'
-        logger.info(f'Foundry found on port: {foundry_url}')
+        logger.info(f'Foundry автоматически обнаружен на порту: {foundry_url}')
         return foundry_url
 
-    logger.warning('Foundry not found')
+    logger.warning('Foundry не обнаружен')
     return None
 
 
-def check_foundry(foundry_base_url: str | None) -> bool:
-    """Checking Foundry availability"""
-    if not foundry_base_url or not REQUESTS_AVAILABLE:
+def check_foundry(foundry_base_url: Optional[str]) -> bool:
+    """Проверка доступности Foundry API по HTTP.
+
+    Args:
+        foundry_base_url (Optional[str]): Базовый URL для проверки.
+
+    Returns:
+        bool: True, если API ответило кодом 200.
+    """
+    if not foundry_base_url or not REQUESTS_AVAILABLE: # Проверка входных данных и зависимостей
         return False
 
     try:
@@ -231,58 +264,62 @@ def check_foundry(foundry_base_url: str | None) -> bool:
             f'{foundry_base_url}models',
             timeout=3,
         )
-        return response.status_code == 200
+        return response.status_code == 200 # Проверка успешности HTTP запроса
     except Exception:
         return False
 
 
 # =============================================================================
-# Main
+# Основная функция
 # =============================================================================
 def main() -> bool:
-    """Main server launch function"""
+    """Главная функция запуска сервера.
+
+    Returns:
+        bool: True при успешном запуске и работе сервера.
+    """
     try:
         logger.info('FastAPI Foundry')
         logger.info('=' * 50)
 
         # -------------------------------------------------------------------------
-        # Foundry
+        # Поиск и инициализация Foundry
         # -------------------------------------------------------------------------
-        logger.info("Searching for Foundry...")
+        logger.info("Поиск Foundry...")
         foundry_base_url = resolve_foundry_base_url()
 
-        if foundry_base_url and check_foundry(foundry_base_url):
-            # Update Config property with found URL
+        if foundry_base_url and check_foundry(foundry_base_url): # Проверка работоспособности Foundry
+            # Обновление настроек найденным URL
             config.foundry_base_url = foundry_base_url
-            logger.info(f'Foundry is available: {foundry_base_url}')
+            logger.info(f'Foundry доступен: {foundry_base_url}')
         else:
-            logger.warning('Foundry is unavailable - AI features are disabled')
+            logger.warning('Foundry недоступен - функции ИИ будут отключены')
 
         # -------------------------------------------------------------------------
-        # FastAPI
+        # Параметры и запуск FastAPI
         # -------------------------------------------------------------------------
         host = config.api_host
         reload_enabled = config.api_reload
         log_level = config.api_log_level.lower()
         workers = config.api_workers
 
-        if reload_enabled:
+        if reload_enabled: # Проверка режима перезагрузки: в нем может быть только 1 воркер
             workers = 1
 
         port = get_server_port()
 
-        logger.info('\nLaunching FastAPI server')
-        logger.info(f'   Host: {host}')
-        logger.info(f'   Port: {port}')
-        logger.info(f'   Reload: {reload_enabled}')
-        logger.info(f'   Workers: {workers}')
+        logger.info('\nЗапуск сервера FastAPI')
+        logger.info(f'   Хост: {host}')
+        logger.info(f'   Порт: {port}')
+        logger.info(f'   Перезагрузка: {reload_enabled}')
+        logger.info(f'   Процессы (Workers): {workers}')
         logger.info('-' * 50)
-        logger.info(f'UI:     http://localhost:{port}')
-        logger.info(f'Docs:   http://localhost:{port}/docs')
-        logger.info(f'Health: http://localhost:{port}/api/v1/health')
+        logger.info(f'Интерфейс: http://localhost:{port}')
+        logger.info(f'Документация: http://localhost:{port}/docs')
+        logger.info(f'Проверка: http://localhost:{port}/api/v1/health')
         logger.info('-' * 50)
 
-        # FIXED: Added full error control for uvicorn launch
+        # Запуск uvicorn с полным контролем ошибок
         try:
             uvicorn.run(
                 'src.api.main:app',
@@ -296,19 +333,19 @@ def main() -> bool:
             )
             return True
         except KeyboardInterrupt:
-            logger.info('\nStopped by user')
+            logger.info('\nСервер остановлен пользователем')
             return True
         except ImportError as e:
-            logger.error(f'Import error - missing dependencies: {e}')
-            logger.error('Try: venv\\Scripts\\python.exe -m pip install -r requirements.txt')
+            logger.error(f'Ошибка импорта - отсутствуют зависимости: {e}')
+            logger.error('Попробуйте: venv\\Scripts\\python.exe -m pip install -r requirements.txt')
             return False
         except Exception as exc:
-            logger.error(f'Server launch error: {exc}')
-            logger.error('Check if the port is occupied and if all dependencies are installed')
+            logger.error(f'Ошибка запуска сервера: {exc}')
+            logger.error('Проверьте, не занят ли порт и установлены ли все зависимости')
             return False
             
     except Exception as e:
-        logger.error(f'Critical error in main function: {e}')
+        logger.error(f'Критическая ошибка в функции main: {e}')
         return False
 
 

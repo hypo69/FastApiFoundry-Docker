@@ -1,4 +1,3 @@
-/* Badge "код" next to the collapse arrow on all details/summary blocks */
 details summary::after {
     content: 'код';
     display: inline-block;

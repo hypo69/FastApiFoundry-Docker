@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Process Name: Unified Configuration Class (Refactored)
+# Название процесса: Унифицированный класс конфигурации
 # =============================================================================
-# Description:
-#   Simplified Config class for the entire FastApiFoundry project.
-#   Loads settings from config.json and provides a unified interface.
+# Описание:
+#   Класс Config для всего проекта FastApiFoundry.
+#   Загружает настройки из config.json и предоставляет единый интерфейс доступа.
 #
 # File: config_manager.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.6.0
-# Changes in 0.6.0:
-#   - MIT License update
-#   - Unified headers and return type hints
+# Version: 0.6.5
+# Изменения в 0.6.5:
+#   - Полная русификация документации
+#   - Добавлены строгие аннотации типов возвращаемых значений
+#   - Комментарии к проверкам `if` в стиле "Проверка ..."
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # License: MIT
@@ -27,20 +28,20 @@ logger = logging.getLogger(__name__)
 
 
 class Config:
-    """Unified configuration class for the entire project."""
+    """Единый класс конфигурации для всего проекта."""
 
     _instance = None
     _config_data: Dict[str, Any] = {}
     _foundry_base_url = None  # Dynamically set in run.py
 
     def __new__(cls):
-        if cls._instance is None:
+        if cls._instance is None: # Проверка существования экземпляра (Singleton)
             cls._instance = super().__new__(cls)
             cls._instance._load_config()
         return cls._instance
 
     def _load_config(self) -> None:
-        """Load configuration from config.json.
+        """Загрузка конфигурации из файла config.json.
 
         Raises:
             FileNotFoundError: If config.json does not exist.
@@ -49,36 +50,36 @@ class Config:
         """
         config_path = Path('config.json')
 
-        if not config_path.is_file():
-            # Config file missing — cannot start; re-raise so caller sees it
-            raise FileNotFoundError(f'config.json not found at {config_path.absolute()}')
+        if not config_path.is_file(): # Проверка наличия файла конфигурации
+            # Файл отсутствует — запуск невозможен; выбрасываем исключение
+            raise FileNotFoundError(f'Файл config.json не найден: {config_path.absolute()}')
 
         _quiet = os.getenv('_UVICORN_CHILD') == '1'
-        if not _quiet:
-            print(f'Loading config from: {config_path.absolute()}')
+        if not _quiet: # Проверка необходимости вывода логов загрузки
+            print(f'Загрузка конфигурации: {config_path.absolute()}')
 
         try:
-            with open(config_path, encoding='utf-8') as f:
+            with open(config_path, 'r', encoding='utf-8') as f:
                 self._config_data = json.load(f)
-            if not _quiet:
-                print(f'Config loaded with sections: {list(self._config_data.keys())}')
+            if not _quiet: # Проверка вывода структуры секций
+                print(f'Конфигурация загружена, секции: {list(self._config_data.keys())}')
         except json.JSONDecodeError as e:
-            # Malformed JSON — log and re-raise; server cannot start with broken config
-            logger.error(f'❌ config.json contains invalid JSON: {e}')
+            # Ошибка парсинга JSON — логируем и выбрасываем исключение
+            logger.error(f'❌ config.json содержит некорректный JSON: {e}')
             raise
         except OSError as e:
-            logger.error(f'❌ Cannot read config.json: {e}')
+            logger.error(f'❌ Не удалось прочитать config.json: {e}')
             raise
 
     def reload_config(self) -> None:
-        """Reload configuration from disk.
+        """Перезагрузка конфигурации с диска.
 
         Raises:
             Same as _load_config().
         """
         self._load_config()
 
-    # ── FastAPI Server ────────────────────────────────────────────────────
+    # ── Сервер FastAPI ────────────────────────────────────────────────────
 
     @property
     def api_host(self) -> str:
@@ -100,7 +101,7 @@ class Config:
     def api_log_level(self) -> str:
         return self._config_data.get('fastapi_server', {}).get('log_level', 'INFO')
 
-    # ── Foundry AI ────────────────────────────────────────────────────────
+    # ── ИИ Foundry ────────────────────────────────────────────────────────
 
     @property
     def foundry_base_url(self) -> str:
@@ -134,7 +135,7 @@ class Config:
     def foundry_top_k(self) -> int:
         return self._config_data.get('foundry_ai', {}).get('top_k', 50)
 
-    # ── Port Management ───────────────────────────────────────────────────
+    # ── Управление портами ────────────────────────────────────────────────
 
     @property
     def port_auto_find_free(self) -> bool:
@@ -148,7 +149,7 @@ class Config:
     def port_range_end(self) -> int:
         return self._config_data.get('port_management', {}).get('port_range_end', 8100)
 
-    # ── RAG System ────────────────────────────────────────────────────────
+    # ── Система RAG ───────────────────────────────────────────────────────
 
     @property
     def rag_enabled(self) -> bool:
@@ -171,7 +172,7 @@ class Config:
     def rag_top_k(self) -> int:
         return self._config_data.get('rag_system', {}).get('top_k', 5)
 
-    # ── Directories ───────────────────────────────────────────────────────
+    # ── Директории ────────────────────────────────────────────────────────
 
     @property
     def dir_models(self) -> str:
@@ -188,35 +189,35 @@ class Config:
         raw = self._config_data.get('directories', {}).get('hf_models') or '~/.hf_models'
         return str(Path(raw).expanduser())
 
-    # ── Helpers ───────────────────────────────────────────────────────────
+    # ── Помощники ─────────────────────────────────────────────────────────
 
     def get_section(self, section: str) -> Dict[str, Any]:
-        """Return an entire configuration section.
+        """Получение всей секции конфигурации целиком.
 
         Args:
-            section: Section name, e.g. 'fastapi_server', 'foundry_ai'.
+            section (str): Название секции (например, 'fastapi_server').
 
         Returns:
-            dict: Section content, or empty dict if section does not exist.
+            Dict[str, Any]: Содержимое секции или пустой словарь.
         """
         return self._config_data.get(section, {})
 
     def get_raw_config(self) -> Dict[str, Any]:
-        """Return a copy of the entire configuration.
+        """Получение копии всей конфигурации.
 
         Returns:
-            dict: Full config.json content as a dict.
+            Dict[str, Any]: Полное содержимое config.json в виде словаря.
         """
         return self._config_data.copy()
 
     def update_config(self, new_config: Dict[str, Any]) -> None:
-        """Update configuration in memory and persist to config.json.
+        """Обновление конфигурации в памяти и сохранение в файл config.json.
 
         Args:
-            new_config: New configuration dict to replace current config.
+            new_config (Dict[str, Any]): Новый словарь настроек.
 
         Raises:
-            OSError: If config.json cannot be written (disk full, permissions).
+            OSError: При ошибке записи на диск.
         """
         self._config_data = new_config
         config_path = Path('config.json')
@@ -224,8 +225,8 @@ class Config:
             with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(new_config, f, indent=2, ensure_ascii=False)
         except OSError as e:
-            # Disk write failed — config updated in memory but not persisted
-            logger.error(f'❌ Failed to write config.json: {e}')
+            # Запись на диск не удалась — настройки обновлены в памяти, но не сохранены
+            logger.error(f'❌ Не удалось записать в config.json: {e}')
             raise
 
 

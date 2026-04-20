@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Process Name: Generate Endpoint
+# Название процесса: Эндпоинт генерации
 # =============================================================================
-# Description:
-#   API endpoint for text generation via Foundry, HuggingFace, or llama.cpp.
+# Описание:
+#   API эндпоинт для генерации текста через Foundry, HuggingFace или llama.cpp.
 #
 # File: generate.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.6.0
-# Changes in 0.6.0:
-#   - MIT License update
-#   - Unified headers and return type hints
+# Version: 0.6.5
+# Изменения в 0.6.5:
+#   - Полная русификация документации и комментариев
+#   - MIT Лицензия (автор: hypo69)
+#   - Добавлены строгие аннотации типов возвращаемых значений
+#   - Комментарии к проверкам `if` в стиле "Проверка ..."
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # License: MIT
@@ -78,7 +80,7 @@ async def generate_text(request: dict) -> dict:
                 temperature=temperature, 
                 max_new_tokens=max_tokens
             )
-            if hf_result.get("content"):
+            if hf_result.get("content"): # Проверка успешности генерации HF
                 content = hf_result.get("content", "")
                 return {
                     "success": True,
@@ -90,12 +92,12 @@ async def generate_text(request: dict) -> dict:
                         "total_tokens": count_tokens_approx(prompt) + count_tokens_approx(content),
                     },
                 }
-            return {"success": False, "error": hf_result.get("error") or hf_result.get("detail") or "HF generation failed"}
+            return {"success": False, "error": hf_result.get("error") or hf_result.get("detail") or "Ошибка генерации HF"}
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    # llama.cpp models
-    if model and str(model).startswith("llama::"):
+    # Модели llama.cpp
+    if model and str(model).startswith("llama::"): # Проверка префикса для llama.cpp
         try:
             st = await llama_status()
             openai_url = st.get("openai_url")
@@ -118,7 +120,7 @@ async def generate_text(request: dict) -> dict:
                         return {"success": False, "error": f"llama.cpp HTTP {resp.status}: {err_text}"}
                     data = await resp.json()
 
-            choices = data.get("choices") or []
+            choices = data.get("choices") or [] # Проверка наличия вариантов ответа
             if not choices:
                 return {"success": False, "error": "llama.cpp returned no choices"}
 
@@ -134,6 +136,7 @@ async def generate_text(request: dict) -> dict:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    # По умолчанию: Foundry API
     try:
         result = await foundry_client.generate_text(
             prompt,
@@ -141,7 +144,7 @@ async def generate_text(request: dict) -> dict:
             temperature=temperature,
             max_tokens=max_tokens
         )
-        if "content" in result:
+        if "content" in result: # Проверка успешности генерации Foundry
             content = result["content"]
             raw_usage = result.get("usage") or {}
             usage = {

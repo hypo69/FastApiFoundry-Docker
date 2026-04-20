@@ -112,6 +112,10 @@ FastApiFoundry-Docker/
 | AI: HuggingFace | transformers + huggingface_hub |
 | AI: GGUF | llama.cpp |
 | RAG | FAISS + sentence-transformers |
+| OCR | Tesseract + pytesseract + Pillow |
+| PDF | pdfplumber + PyPDF2 |
+| Office документы | python-docx + python-pptx + openpyxl + pandas |
+| HTML/XML | BeautifulSoup4 + lxml |
 | Контейнеризация | Docker |
 | Язык | Python 3.11+ |
 

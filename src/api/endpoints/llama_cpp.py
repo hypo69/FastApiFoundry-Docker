@@ -49,7 +49,7 @@ DEFAULT_THREADS = os.cpu_count() or 4
 
 
 def _get_server_url() -> str:
-    """! Собрать URL llama.cpp сервера из config.json или переменных окружения.
+    """! Собрать URL llama.cpp сервера из config.json.
 
     Returns:
         str: URL вида http://host:port
@@ -59,8 +59,8 @@ def _get_server_url() -> str:
         port = config.get_section("llama_cpp").get("port", DEFAULT_PORT)
         host = config.get_section("llama_cpp").get("host", DEFAULT_HOST)
     except Exception:
-        port = int(os.getenv("LLAMA_PORT", str(DEFAULT_PORT)))
-        host = os.getenv("LLAMA_HOST", DEFAULT_HOST)
+        port = DEFAULT_PORT
+        host = DEFAULT_HOST
     return f"http://{host}:{port}"
 
 

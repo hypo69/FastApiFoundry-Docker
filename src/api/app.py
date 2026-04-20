@@ -62,7 +62,12 @@ async def lifespan(app: FastAPI):
                 logger.info(f"✅ Auto-loading default model: {model_id}")
             except Exception as e:
                 logger.warning(f"⚠️ Could not auto-load model {model_id}: {e}")
-    
+
+    print("\n" + "═" * 60)
+    print("  ✅  FastAPI Foundry — startup complete")
+    print("  🌐  http://localhost:9696")
+    print("═" * 60 + "\n")
+
     yield
     
     logger.info("Stopping FastAPI Foundry...")

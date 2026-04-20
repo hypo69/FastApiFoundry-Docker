@@ -180,15 +180,19 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 
     ### Автозапуск сервера
 
-    Управляется через `.env`:
+    Управляется через `config.json`:
 
-    ```env
-    LLAMA_MODEL_PATH=D:\models\qwen2.5-0.5b-q4_k_m.gguf
-    LLAMA_AUTO_START=true
-    LLAMA_PORT=9780
+    ```json
+    {
+      "llama_cpp": {
+        "model_path": "D:\\models\\qwen2.5-0.5b-q4_k_m.gguf",
+        "auto_start": true,
+        "port": 9780
+      }
+    }
     ```
 
-    При `LLAMA_AUTO_START=true`:
+    При `auto_start: true`:
 
     1. Останавливает предыдущий процесс на порту
     2. Запускает `llama-server.exe` напрямую из `bin/<bin_version>/`
@@ -289,17 +293,53 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 
 ## Ключевые переменные окружения
 
-| Переменная | Источник | Описание |
-|---|---|---|
-| `FOUNDRY_BASE_URL` | `.env` / `start.ps1` | URL Foundry API (приоритет 1) |
-| `FOUNDRY_DYNAMIC_PORT` | `start.ps1` | Порт, найденный автоматически (приоритет 2) |
-| `LLAMA_MODEL_PATH` | `.env` | Путь к GGUF модели для llama.cpp |
-| `LLAMA_AUTO_START` | `.env` | `true` — запускать llama.cpp автоматически |
-| `LLAMA_PORT` | `.env` | Порт llama.cpp (по умолчанию 9780) |
-| `HF_TOKEN` | `.env` | Токен HuggingFace для закрытых моделей |
-| `HF_MODELS_DIR` | `.env` | Директория для HF моделей |
+!!! info "Актуальность"
+    Таблица отражает текущее состояние. Правило проекта: **`.env` хранит только секреты**.
+    Все пути, порты, флаги и настройки поведения — в `config.json`.
+    Состав может меняться по мере развития проекта. Актуальный эталон — в [`.env.example`](https://github.com/hypo69/FastApiFoundry-Docker/blob/main/.env.example).
 
-Полный список — в `.env.example`.
+### Секреты — хранятся в `.env`
+
+| Переменная | Описание |
+|---|---|
+| `HF_TOKEN` | Токен HuggingFace для закрытых моделей (Gemma, Llama, Mistral) |
+| `API_KEY` | Ключ для защиты FastAPI эндпоинтов (optional) |
+| `SECRET_KEY` | JWT секрет (optional) |
+| `FOUNDRY_API_KEY` | Ключ Foundry API (optional) |
+| `OPENAI_API_KEY` | Ключ OpenAI |
+| `ANTHROPIC_API_KEY` | Ключ Anthropic |
+| `GEMINI_API_KEY` | Ключ Google Gemini |
+| `OPENROUTER_API_KEY` | Ключ OpenRouter |
+| `MISTRAL_API_KEY` | Ключ Mistral |
+| `GROQ_API_KEY` | Ключ Groq |
+| `DEEPSEEK_API_KEY` | Ключ DeepSeek |
+| `XAI_API_KEY` | Ключ xAI (Grok) |
+| `GITHUB_PAT` | GitHub Personal Access Token |
+| `SMTP_PASSWORD` | Пароль SMTP сервера |
+| `REDIS_PASSWORD` | Пароль Redis |
+
+### Служебные — выставляются `start.ps1` автоматически
+
+Эти переменные **не нужно задавать вручную** — `start.ps1` выставляет их сам в процесс после обнаружения сервисов:
+
+| Переменная | Кто выставляет | Описание |
+|---|---|---|
+| `FOUNDRY_BASE_URL` | `start.ps1` | Полный URL Foundry API |
+| `FOUNDRY_DYNAMIC_PORT` | `start.ps1` | Порт, найденный автоматически |
+| `LLAMA_BASE_URL` | `start.ps1` | URL llama.cpp после запуска |
+| `LLAMA_SERVER_PATH` | `.env` (optional) | Явный путь к `llama-server.exe` |
+
+### Настройки поведения — хранятся в `config.json`
+
+| Параметр | Секция | Описание |
+|---|---|---|
+| `port`, `host` | `fastapi_server` | Порт и хост FastAPI |
+| `default_model`, `auto_load_default` | `foundry_ai` | Модель по умолчанию и автозагрузка |
+| `port`, `host`, `model_path`, `auto_start` | `llama_cpp` | Настройки llama.cpp |
+| `hf_models` | `directories` | Директория HuggingFace моделей |
+| `models`, `rag` | `directories` | Директории GGUF и RAG индексов |
+| `enabled`, `index_dir`, `chunk_size` | `rag_system` | Настройки RAG |
+| `level`, `file` | `logging` | Уровень и файл логов |
 
 ---
 

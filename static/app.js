@@ -27,6 +27,7 @@ window.switchLang = switchLang;
 Object.assign(window, ui, config, models, chat, foundry, rag, editor, llama, hf, ollama, agent, mcp, sdk, providers);
 
 window.providersRefresh = providers.initProviders;
+window.systemRestartService = foundry.systemRestartService;
 window.providersExport  = providers.exportToExtension;
 window.providersImport  = (e) => { const f = e.target.files?.[0]; if (f) providers.importFromExtension(f); e.target.value = ''; };
 

@@ -120,21 +120,74 @@ export async function checkSystemStatus() {
     }
 }
 
-// Обновление текстовой информации о системе в UI
+// Update system info block in Settings tab
 export function updateSystemInfo(data) {
     const container = document.getElementById('system-status');
     if (!container) return;
 
-    const foundryStatusText = data.foundry_status === 'healthy' ? 'Connected' : 'Disconnected';
-    const foundryBadgeClass = data.foundry_status === 'healthy' ? 'bg-success' : 'bg-warning';
-    
+    const badge = (ok, labelOk, labelFail) =>
+        `<span class="badge ${ok ? 'bg-success' : 'bg-secondary'}">${ok ? labelOk : labelFail}</span>`;
+
+    const restartBtn = (service, disabled = false) =>
+        `<button class="btn btn-outline-secondary btn-sm py-0 px-1 ms-2" style="font-size:.7rem;line-height:1.4"
+            title="Restart" ${disabled ? 'disabled' : ''}
+            onclick="systemRestartService('${service}')">
+            <i class="bi bi-arrow-clockwise"></i>
+        </button>`;
+
+    const foundryOk = data.foundry_status === 'healthy';
+    const llamaOk   = data.llama_status   === 'running';
+    const docsOk    = data.docs_status    === 'running';
+    const ragOk     = data.rag_status     === 'enabled';
+    const ragLabel  = data.rag_status === 'no index' ? 'No index' : (ragOk ? 'Enabled' : 'Disabled');
+
+    // Hints shown when service is not running
+    const hints = {
+        foundry: foundryOk ? '' : '<small class="text-muted d-block">Run: foundry service start</small>',
+        llama:   llamaOk   ? '' : '<small class="text-muted d-block">Set model_path in Settings → llama.cpp</small>',
+        docs:    docsOk    ? '' : '<small class="text-muted d-block">Enable in Settings → Development</small>',
+        rag:     ragOk     ? '' : (data.rag_status === 'no index'
+            ? '<small class="text-muted d-block">Build index in RAG tab first</small>'
+            : '<small class="text-muted d-block">Enable in Settings → RAG System</small>'),
+    };
+
+    const row = (label, badgeHtml, btnHtml, hint) => `
+        <div class="mb-2">
+            <div class="d-flex justify-content-between align-items-center">
+                <strong>${label}</strong>
+                <div>${badgeHtml}${btnHtml}</div>
+            </div>
+            ${hint}
+        </div>`;
+
     container.innerHTML = `
-        <div class="row">
-            <div class="col-6"><strong>API:</strong> <span class="badge ${data.status === 'healthy' ? 'bg-success' : 'bg-danger'}">${data.status}</span></div>
-            <div class="col-6"><strong>Foundry:</strong> <span class="badge ${foundryBadgeClass}">${foundryStatusText}</span></div>
-            <div class="col-12 mt-2"><small class="text-muted">URL: ${data.foundry_details?.url || 'N/A'}</small></div>
-        </div>
+        ${row('API',       badge(data.status === 'healthy', 'healthy', data.status), '', '')}
+        ${row('Foundry',   badge(foundryOk, 'Connected', 'Disconnected'), restartBtn('foundry'), hints.foundry)}
+        ${row('llama.cpp', badge(llamaOk, 'Running', 'Stopped'),          restartBtn('llama'),   hints.llama)}
+        ${row('Docs',      badge(docsOk, 'Running', 'Stopped'),           restartBtn('docs'),    hints.docs)}
+        ${row('RAG',       badge(ragOk, ragLabel, ragLabel),              restartBtn('rag'),     hints.rag)}
+        <div class="mt-2"><small class="text-muted">URL: ${data.foundry_details?.url || 'N/A'}</small></div>
     `;
+}
+
+// Restart a background service from the Settings tab
+export async function systemRestartService(service) {
+    const btn = event?.currentTarget;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; }
+    try {
+        const res = await fetch(`${window.API_BASE}/restart/${service}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            // Re-check status after a short delay
+            setTimeout(() => checkSystemStatus(), 3000);
+        } else {
+            alert(`❌ ${data.error || data.message}`);
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>'; }
+        }
+    } catch (e) {
+        alert(`❌ ${e.message}`);
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>'; }
+    }
 }
 
 // Проверка доступности модели по умолчанию
