@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: llama.cpp Server Management API
+# Process Name: llama.cpp Server Management API
 # =============================================================================
-# Описание:
-#   Endpoints для запуска/остановки llama.cpp сервера с GGUF моделями.
+# Description:
+#   Endpoints for launching and stopping llama.cpp server with GGUF models.
 #   llama.cpp поднимает OpenAI-совместимый API (/v1/chat/completions),
 #   поэтому FastAPI Foundry подключается к нему как к обычному провайдеру.
 #
@@ -15,10 +15,13 @@
 #
 # File: src/api/endpoints/llama_cpp.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - MIT License update
+#   - Unified headers and return type hints
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
+# License: MIT
 # =============================================================================
 
 import subprocess
@@ -27,6 +30,8 @@ import os
 import aiohttp
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
+from ...utils.process_utils import DEFAULT_SUBPROCESS_KWARGS
+from ...utils.api_utils import api_response_handler
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/llama", tags=["llama-cpp"])
@@ -60,6 +65,7 @@ def _get_server_url() -> str:
 
 
 @router.get("/status")
+@api_response_handler
 async def llama_status() -> dict:
     """! Статус llama.cpp сервера."""
     global _server_process
@@ -99,6 +105,7 @@ async def llama_status() -> dict:
 
 
 @router.post("/models/copy")
+@api_response_handler
 async def llama_copy_model(request: dict) -> dict:
     """! Скопировать .gguf модель в ~/.models.
 
@@ -137,6 +144,7 @@ async def llama_copy_model(request: dict) -> dict:
 
 
 @router.post("/start")
+@api_response_handler
 async def llama_start(request: dict) -> dict:
     """! Запустить llama.cpp сервер с указанной GGUF моделью.
 
@@ -211,7 +219,7 @@ async def llama_start(request: dict) -> dict:
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            **DEFAULT_SUBPROCESS_KWARGS
         )
         logger.info(f"llama.cpp запущен: {Path(model_path).name} (PID: {_server_process.pid})")
         return {
@@ -229,6 +237,7 @@ async def llama_start(request: dict) -> dict:
 
 
 @router.post("/stop")
+@api_response_handler
 async def llama_stop() -> dict:
     """! Остановить llama.cpp сервер."""
     global _server_process
@@ -245,6 +254,7 @@ async def llama_stop() -> dict:
 
 
 @router.get("/models")
+@api_response_handler
 async def llama_scan_models(extra_dir: str = "") -> dict:
     """! Сканировать .gguf файлы в ~/.models, ~/.lmstudio/models и опциональном extra_dir.
 

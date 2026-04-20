@@ -61,11 +61,13 @@ nav:
     - Конфигурация: user/configuration.md
     - Работа с моделями: user/models_guide.md
     - Веб-интерфейс: user/web_interface.md
+    - Извлечение текста: user/text_extraction.md
     - Логирование: user/logging.md
   - Для разработчиков:
     - Архитектура: dev/architecture.md
     - API Reference: dev/api_reference.md
     - Система RAG: dev/rag_system.md
+    - Text Extractor: dev/text_extractor.md
     - Агенты: dev/agents.md
     - Логирование: dev/logging.md
     - CI/CD документации: dev/cicd_docs.md

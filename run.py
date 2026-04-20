@@ -12,13 +12,11 @@
 # Project: FastApiFoundry (Docker)
 # Version: 0.6.0
 # Changes in 0.6.0:
-#   - Guard duplicate startup output: set _UVICORN_CHILD=1 on first run so
-#     uvicorn reload child process skips env/config print messages
-#   - Foundry discovery prints replaced with logger calls
+#   - MIT License update
+#   - Unified headers and return type hints
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
-# Date: 9 декабря 2025
+# License: MIT
 # =============================================================================
 
 # FORCED UTF-8 ENCODING SETUP
@@ -56,7 +54,9 @@ if str(current_dir) not in sys.path:
     sys.path.insert(0, str(current_dir))
 
 # Add site-packages for python311
-sys.path.append('C:/python311/Lib/site-packages')
+# Only append if the specific path exists and we are on Windows
+if sys.platform == 'win32' and Path('C:/python311/Lib/site-packages').exists():
+    sys.path.append('C:/python311/Lib/site-packages')
 
 # Load environment variables before importing configuration
 # Guard against double-execution in uvicorn reload mode (reloader spawns a child process)
@@ -181,7 +181,7 @@ def find_foundry_port() -> int | None:
                                         port = int(addr.split(':')[-1])
                                         response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=1)
                                         if response.status_code == 200:
-                                            print(f"Foundry API confirmed on port: {port}")
+                                            logger.info(f"Foundry API confirmed on port: {port}")
                                             return port
                                     except Exception:
                                         continue

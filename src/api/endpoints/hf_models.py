@@ -37,6 +37,10 @@ async def list_hub_models() -> dict:
 
     Использует HF_TOKEN из .env.
     Возвращает модели пользователя + популярные открытые text-generation модели.
+
+    Returns:
+        dict: success, username, user_models (list), public_models (list);
+              success=False, error, user_models=[], public_models if no token.
     """
     import os
     token = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")
@@ -115,7 +119,11 @@ def _get_popular_public_models() -> list:
 
 @router.get("/models")
 async def list_hf_models() -> dict:
-    """! Список скачанных и загруженных HF моделей."""
+    """! Список скачанных и загруженных HF моделей.
+
+    Returns:
+        dict: success, downloaded (list), loaded (list).
+    """
     return {
         "success": True,
         "downloaded": hf_client.list_downloaded(),
@@ -127,11 +135,20 @@ async def list_hf_models() -> dict:
 async def download_hf_model(request: dict) -> dict:
     """! Скачать модель с HuggingFace Hub.
 
-    Body: {"model_id": "google/gemma-2b", "token": "hf_..."}
-
     Для закрытых моделей (Gemma, Llama) нужно:
     1. Принять лицензию на huggingface.co/<model_id>
     2. Передать HF токен или установить HF_TOKEN в .env
+
+    Args:
+        request: JSON body с полями:
+            model_id (str): HuggingFace model ID (обязательно).
+            token (str):    HF токен (optional, переопределяет HF_TOKEN).
+
+    Returns:
+        dict: success, model_id, path on success; success=False, error on failure.
+
+    Raises:
+        HTTPException 400: model_id не передан.
     """
     model_id: str = request.get("model_id", "")
     token: str = request.get("token", "")
@@ -152,7 +169,16 @@ async def download_hf_model(request: dict) -> dict:
 async def load_hf_model(request: dict) -> dict:
     """! Загрузить скачанную модель в память для inference.
 
-    Body: {"model_id": "google/gemma-2b", "device": "auto"}
+    Args:
+        request: JSON body с полями:
+            model_id (str): HuggingFace model ID (обязательно).
+            device (str):   'auto', 'cpu', 'cuda' (default: 'auto').
+
+    Returns:
+        dict: success, model_id, device on success; success=False, error on failure.
+
+    Raises:
+        HTTPException 400: model_id не передан.
     """
     model_id: str = request.get("model_id", "")
     device: str = request.get("device", "auto")
@@ -168,7 +194,18 @@ async def load_hf_model(request: dict) -> dict:
 
 @router.post("/models/unload")
 async def unload_hf_model(request: dict) -> dict:
-    """! Выгрузить модель из памяти (освободить RAM/VRAM)."""
+    """! Выгрузить модель из памяти (освободить RAM/VRAM).
+
+    Args:
+        request: JSON body с полями:
+            model_id (str): HuggingFace model ID (обязательно).
+
+    Returns:
+        dict: success, model_id on success; success=False, error on failure.
+
+    Raises:
+        HTTPException 400: model_id не передан.
+    """
     model_id: str = request.get("model_id", "")
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
@@ -179,11 +216,18 @@ async def unload_hf_model(request: dict) -> dict:
 async def hf_generate(request: dict) -> dict:
     """! Генерация текста через локальную HF модель.
 
-    Body:
-        model_id:       ID модели (должна быть загружена или скачана)
-        prompt:         Входной текст
-        max_new_tokens: Максимум новых токенов (default: 512)
-        temperature:    Температура (default: 0.7)
+    Args:
+        request: JSON body с полями:
+            model_id (str):       ID модели (должна быть загружена или скачана).
+            prompt (str):         Входной текст.
+            max_new_tokens (int): Максимум новых токенов (default: 512).
+            temperature (float):  Температура (default: 0.7).
+
+    Returns:
+        dict: success, content, model on success; success=False, error on failure.
+
+    Raises:
+        HTTPException 400: model_id или prompt не переданы.
     """
     model_id: str = request.get("model_id", "")
     prompt: str = request.get("prompt", "")
@@ -200,7 +244,14 @@ async def hf_generate(request: dict) -> dict:
 
 @router.get("/status")
 async def hf_status() -> dict:
-    """! Статус HuggingFace интеграции — доступность библиотек."""
+    """! Статус HuggingFace интеграции — доступность библиотек.
+
+    Returns:
+        dict: success, transformers ({available, version}),
+              huggingface_hub ({available, version}),
+              torch ({available, version, cuda}),
+              hf_token_set (bool), models_dir (str), install_cmd (str).
+    """
     try:
         import transformers
         transformers_ok = True

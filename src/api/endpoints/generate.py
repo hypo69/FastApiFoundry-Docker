@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Generate Endpoint (Refactored)
+# Process Name: Generate Endpoint
 # =============================================================================
-# Описание:
-#   Упрощенный endpoint для генерации текста через Foundry API
+# Description:
+#   API endpoint for text generation via Foundry, HuggingFace, or llama.cpp.
 #
 # File: generate.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - MIT License update
+#   - Unified headers and return type hints
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
+# License: MIT
 # =============================================================================
 
 from fastapi import APIRouter
@@ -19,12 +22,31 @@ from ...models.foundry_client import foundry_client
 from ...models.hf_client import hf_client
 from ...rag.rag_system import rag_system
 from ...core.config import config as app_config
+from ...utils.text_utils import count_tokens_approx
+from ...utils.api_utils import api_response_handler
+from .llama_cpp import llama_status
 
 router = APIRouter()
 
 @router.post("/generate")
-async def generate_text(request: dict):
-    """Генерация текста через Foundry API"""
+@api_response_handler
+async def generate_text(request: dict) -> dict:
+    """Генерация текста через Foundry, HuggingFace или llama.cpp.
+
+    Args:
+        request: JSON body с полями:
+            prompt (str):       Входной текст (обязательно).
+            model (str):        ID модели. Префикс 'hf::' → HF, 'llama::' → llama.cpp,
+                                без префикса → Foundry.
+            temperature (float): Температура генерации (default: 0.7).
+            max_tokens (int):   Максимум токенов (default: 1000).
+            use_rag (bool):     Добавить RAG-контекст к промпту (default: False).
+            top_k (int):        Количество RAG-результатов (default: из config).
+
+    Returns:
+        dict: success, content, model, usage (prompt_tokens, completion_tokens,
+              total_tokens) on success; success=False, error on failure.
+    """
     prompt = request.get("prompt", "")
     model = request.get("model")
     temperature = request.get("temperature", 0.7)
@@ -43,47 +65,38 @@ async def generate_text(request: dict):
     if use_rag:
         rag_results = await rag_system.search(prompt, top_k=top_k)
         if rag_results:
-            # Почему: форматирование контекста через `rag_system.format_context()` для сохранения структуры источников.
             context = rag_system.format_context(rag_results)
             prompt = f"Context:\n{context}\n\nQuestion: {prompt}"
 
-    def _count_tokens(text: str) -> int:
-        """Approximate token count: ~4 chars per token."""
-        return max(1, len(text) // 4)
-
-    # HF models are addressed as `hf::<model_id>` from UI.
+    # HuggingFace models
     if model and str(model).startswith("hf::"):
-        hf_model_id = str(model)[4:]
         try:
-            hf_result = await hf_client.generate(
-                prompt,
-                hf_model_id,
-                max_new_tokens=max_tokens,
-                temperature=temperature,
+            hf_model_id = str(model)[4:]
+            hf_result = await hf_client.generate_text(
+                prompt, 
+                model=hf_model_id, 
+                temperature=temperature, 
+                max_new_tokens=max_tokens
             )
-            if hf_result.get("success"):
+            if hf_result.get("content"):
                 content = hf_result.get("content", "")
                 return {
                     "success": True,
                     "content": content,
                     "model": model,
                     "usage": {
-                        "prompt_tokens": _count_tokens(prompt),
-                        "completion_tokens": _count_tokens(content),
-                        "total_tokens": _count_tokens(prompt) + _count_tokens(content),
+                        "prompt_tokens": count_tokens_approx(prompt),
+                        "completion_tokens": count_tokens_approx(content),
+                        "total_tokens": count_tokens_approx(prompt) + count_tokens_approx(content),
                     },
                 }
-            return {
-                "success": False,
-                "error": hf_result.get("error") or hf_result.get("detail") or "HF generation failed",
-            }
+            return {"success": False, "error": hf_result.get("error") or hf_result.get("detail") or "HF generation failed"}
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    # llama.cpp models are addressed as `llama::<gguf_path>` from UI.
+    # llama.cpp models
     if model and str(model).startswith("llama::"):
         try:
-            from .llama_cpp import llama_status
             st = await llama_status()
             openai_url = st.get("openai_url")
             if not openai_url:
@@ -113,9 +126,9 @@ async def generate_text(request: dict):
             # Use real usage from llama.cpp if available, else estimate
             raw_usage = data.get("usage") or {}
             usage = {
-                "prompt_tokens":     raw_usage.get("prompt_tokens")     or _count_tokens(prompt),
-                "completion_tokens": raw_usage.get("completion_tokens") or _count_tokens(content),
-                "total_tokens":      raw_usage.get("total_tokens")      or _count_tokens(prompt) + _count_tokens(content),
+                "prompt_tokens":     raw_usage.get("prompt_tokens")     or count_tokens_approx(prompt),
+                "completion_tokens": raw_usage.get("completion_tokens") or count_tokens_approx(content),
+                "total_tokens":      raw_usage.get("total_tokens")      or count_tokens_approx(prompt) + count_tokens_approx(content),
             }
             return {"success": True, "content": content, "model": model, "usage": usage}
         except Exception as e:
@@ -128,15 +141,13 @@ async def generate_text(request: dict):
             temperature=temperature,
             max_tokens=max_tokens
         )
-
-        if result["success"]:
+        if "content" in result:
             content = result["content"]
-            # Use real usage from Foundry if available, else estimate
             raw_usage = result.get("usage") or {}
             usage = {
-                "prompt_tokens":     raw_usage.get("prompt_tokens")     or _count_tokens(prompt),
-                "completion_tokens": raw_usage.get("completion_tokens") or _count_tokens(content),
-                "total_tokens":      raw_usage.get("total_tokens")      or _count_tokens(prompt) + _count_tokens(content),
+                "prompt_tokens":     raw_usage.get("prompt_tokens")     or count_tokens_approx(prompt),
+                "completion_tokens": raw_usage.get("completion_tokens") or count_tokens_approx(content),
+                "total_tokens":      raw_usage.get("total_tokens")      or count_tokens_approx(prompt) + count_tokens_approx(content),
             }
             return {
                 "success": True,

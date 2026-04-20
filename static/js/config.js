@@ -117,6 +117,16 @@ export async function loadConfigFields() {
         chk('config-dev-debug',   dev.debug);
         chk('config-dev-verbose', dev.verbose);
 
+        // Text Extractor
+        const ext = data.config?.text_extractor || {};
+        set('config-extractor-max-size',    ext.max_file_size_mb              ?? 20);
+        set('config-extractor-timeout',     ext.processing_timeout_seconds    ?? 300);
+        set('config-extractor-ocr-langs',   ext.ocr_languages                 ?? 'rus+eng');
+        set('config-extractor-web-timeout', ext.web_page_timeout              ?? 30);
+        set('config-extractor-max-images',  ext.max_images_per_page           ?? 20);
+        chk('config-extractor-js',          ext.enable_javascript             ?? false);
+        chk('config-extractor-limits',      ext.enable_resource_limits        ?? true);
+
         showAlert('Settings loaded', 'success');
     } catch (error) {
         showAlert('Failed to load config fields', 'danger');
@@ -169,6 +179,14 @@ export async function saveConfigFields() {
                 debug:   getC('config-dev-debug'),
                 verbose: getC('config-dev-verbose'),
             },
+            translator: {
+                default_provider:           get('config-translator-provider')       || 'mymemory',
+                request_timeout_sec:        getN('config-translator-timeout', 30),
+                mymemory_email:             get('config-translator-mymemory-email'),
+                libretranslate_url:         get('config-translator-libre-url')      || 'https://libretranslate.com',
+                libretranslate_fallback_url:get('config-translator-libre-fallback') || 'https://translate.argosopentech.com',
+                libretranslate_api_key:     get('config-translator-libre-key'),
+            },
             docs_server: {
                 enabled: getC('config-docs-enabled'),
                 port:    getN('config-docs-port', 9697),
@@ -183,6 +201,15 @@ export async function saveConfigFields() {
                 models:    get('config-dir-models') || '~/.models',
                 rag:       get('config-dir-rag')    || '~/.rag',
                 hf_models: get('config-dir-hf')     || '~/.hf_models',
+            },
+            text_extractor: {
+                max_file_size_mb:            getN('config-extractor-max-size', 20),
+                processing_timeout_seconds:  getN('config-extractor-timeout', 300),
+                ocr_languages:               get('config-extractor-ocr-langs') || 'rus+eng',
+                web_page_timeout:            getN('config-extractor-web-timeout', 30),
+                max_images_per_page:         getN('config-extractor-max-images', 20),
+                enable_javascript:           getC('config-extractor-js'),
+                enable_resource_limits:      getC('config-extractor-limits'),
             },
         };
 
@@ -212,6 +239,14 @@ export async function saveConfigFields() {
 // ── Export / Import ───────────────────────────────────────────────────────────
 
 export async function exportConfig() {
+    // Security warning — the export includes the full .env with all secrets
+    const confirmed = confirm(
+        '⚠️ ВНИМАНИЕ: Экспорт содержит ПОЛНОЕ содержимое .env файла, включая все токены и ключи API.\n\n' +
+        'Храните файл бэкапа в безопасном месте и никому не передавайте.\n\n' +
+        'Продолжить экспорт?'
+    );
+    if (!confirmed) return;
+
     try {
         const data = await fetch(`${window.API_BASE}/config/export`).then(r => r.json());
         const a = Object.assign(document.createElement('a'), {

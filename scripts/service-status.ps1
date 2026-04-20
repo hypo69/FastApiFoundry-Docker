@@ -12,9 +12,13 @@
 #
 # File: scripts/service-status.ps1
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - MIT License update
+#   - Unified headers
 # Author: hypo69
 # Copyright: © 2026 hypo69
+# License: MIT
 # =============================================================================
 
 Write-Host "Checking Foundry service status..." -ForegroundColor Yellow

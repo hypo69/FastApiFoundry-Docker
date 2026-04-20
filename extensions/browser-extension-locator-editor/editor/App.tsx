@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+# =============================================================================
+# File: extensions/browser-extension-locator-editor/editor/App.tsx
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - Added fetchApi helper to handle standardized {success, error} responses
+# =============================================================================
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Locator, LocatorsData } from './types';
 import { DEFAULT_LOCATORS } from './constants';
@@ -7,6 +15,26 @@ import LocatorForm from './components/LocatorForm';
 import { PlusCircleIcon, CodeBracketIcon, ArrowPathIcon } from './components/Icons';
 
 const App: React.FC = () => {
+    // Standardized API request helper for the 0.6.0 backend format
+    const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
+        try {
+            const response = await fetch(`http://localhost:9696/api/v1${endpoint}`, {
+                ...options,
+                headers: { 'Content-Type': 'application/json', ...options.headers },
+            });
+            const data = await response.json();
+            if (!data.success) {
+                console.error(`Backend Error: ${data.error}`);
+                alert(`Error: ${data.error}`);
+                return null;
+            }
+            return data;
+        } catch (err) {
+            console.error("Network or parsing error:", err);
+            return null;
+        }
+    };
+
     const [locatorsData, setLocatorsData] = useState<LocatorsData | null>(null);
     const [selectedLocatorKey, setSelectedLocatorKey] = useState<string | null>(null);
     const [isCreatingNew, setIsCreatingNew] = useState(false);

@@ -16,17 +16,19 @@
 #
 # File: indexer.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.5.5
-# Changes in 0.5.5:
-#   - Added try/except with logging in read_file, create_embeddings, save_index,
-#     load_model, index_directory
-#   - Each except block explains why the error can occur
+# Version: 0.6.1
+# Changes in 0.6.1:
+#   - MIT License update
+#   - Unified headers and versioning
+#   - Added checksum, relative path, and mtime to chunk metadata
 # Author: hypo69
 # Copyright: © 2026 hypo69
+# License: MIT
 # =============================================================================
 
 import argparse
 import json
+import hashlib
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -55,6 +57,7 @@ class RAGIndexer:
         self.model = None
         self.chunks: List[Dict[str, Any]] = []
         self.embeddings = None
+        self.docs_root: Optional[Path] = None
 
     def load_model(self) -> None:
         """Load the sentence-transformer embedding model."""
@@ -67,7 +70,7 @@ class RAGIndexer:
             logger.error(f'❌ Failed to load model "{self.model_name}": {e}')
             raise
 
-    def read_file(self, file_path: Path) -> str:
+    def _read_file(self, file_path: Path) -> str:
         """Read a file and return its text content."""
         try:
             return file_path.read_text(encoding='utf-8')
@@ -79,6 +82,14 @@ class RAGIndexer:
             # File locked, permission denied, or path disappeared during scan
             logger.warning(f'⚠️ Cannot read {file_path}: {e}')
             return ''
+
+    def _calculate_checksum(self, content: str) -> str:
+        """Calculate MD5 checksum of string content.
+
+        Returns:
+            str: Hex digest of the MD5 hash.
+        """
+        return hashlib.md5(content.encode('utf-8')).hexdigest()
 
     def chunk_text(self, text: str, chunk_size: int = 1000, overlap: int = 50) -> List[str]:
         """Split text into overlapping chunks."""
@@ -98,8 +109,7 @@ class RAGIndexer:
             start = end - overlap
         return chunks
 
-    def process_markdown(self, content: str, source: str,
-                         chunk_size: int, overlap: int) -> List[Dict[str, Any]]:
+    def process_markdown(self, content: str, metadata: Dict[str, Any], chunk_size: int, overlap: int) -> List[Dict[str, Any]]:
         """Split Markdown content into section-aware chunks."""
         chunks: List[Dict[str, Any]] = []
         current_section = 'Introduction'
@@ -112,7 +122,7 @@ class RAGIndexer:
                     text = '\n'.join(current_lines).strip()
                     if text:
                         for c in self.chunk_text(text, chunk_size, overlap):
-                            chunks.append({'source': source, 'section': current_section, 'text': c})
+                            chunks.append({**metadata, 'section': current_section, 'text': c, 'char_count': len(c)})
                 current_section = line.lstrip('#').strip()
                 current_lines = []
             elif line:
@@ -122,20 +132,31 @@ class RAGIndexer:
             text = '\n'.join(current_lines).strip()
             if text:
                 for c in self.chunk_text(text, chunk_size, overlap):
-                    chunks.append({'source': source, 'section': current_section, 'text': c})
+                    chunks.append({**metadata, 'section': current_section, 'text': c, 'char_count': len(c)})
         return chunks
 
     def process_file(self, file_path: Path,
                      chunk_size: int = 1000, overlap: int = 50) -> List[Dict[str, Any]]:
         """Process a single file into chunks."""
-        content = self.read_file(file_path)
+        content = self._read_file(file_path)
         if not content:
             return []
-        source = file_path.name
+
+        # Relative path is better for citations than just filename
+        rel_path = str(file_path.relative_to(self.docs_root)) if self.docs_root else file_path.name
+        
+        metadata = {
+            'source': file_path.name,
+            'path': rel_path,
+            'checksum': self._calculate_checksum(content),
+            'mtime': file_path.stat().st_mtime if file_path.exists() else 0
+        }
+
         if file_path.suffix.lower() == '.md':
-            return self.process_markdown(content, source, chunk_size, overlap)
+            return self.process_markdown(content, metadata, chunk_size, overlap)
+            
         return [
-            {'source': source, 'section': 'Content', 'text': c}
+            {**metadata, 'section': 'Content', 'text': c, 'char_count': len(c)}
             for c in self.chunk_text(content, chunk_size, overlap)
         ]
 
@@ -147,6 +168,7 @@ class RAGIndexer:
             logger.error(f'❌ Docs directory not found: {docs_dir}')
             return
 
+        self.docs_root = docs_dir
         files_processed = 0
         try:
             for file_path in docs_dir.rglob('*'):

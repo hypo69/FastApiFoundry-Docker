@@ -8,11 +8,13 @@
 #
 # File: diagnose.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.0
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - MIT License update
+#   - Unified headers and return type hints
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
-# Date: December 9, 2025
+# License: MIT
 # =============================================================================
 
 import sys
@@ -23,14 +25,14 @@ import requests
 import subprocess
 from pathlib import Path
 
-def check_python():
+def check_python() -> None:
     """Python Check"""
     print("🐍 Python:")
     print(f"   Version: {sys.version}")
     print(f"   Path: {sys.executable}")
     print(f"   Platform: {sys.platform}")
 
-def check_dependencies():
+def check_dependencies() -> None:
     """Dependency Check"""
     print("\n📦 Dependencies:")
     
@@ -42,7 +44,7 @@ def check_dependencies():
         except ImportError:
             print(f"   ❌ {package} - NOT INSTALLED")
 
-def check_config():
+def check_config() -> None:
     """Configuration Check"""
     print("\n⚙️ Configuration:")
     
@@ -67,7 +69,7 @@ def check_config():
     else:
         print("   ⚠️ config.json not found")
 
-def check_ports():
+def check_ports() -> None:
     """Port Check"""
     print("\n🔌 Ports:")
     
@@ -97,18 +99,18 @@ def check_ports():
                 except:
                     print(f"      ⚠️ Port busy, but HTTP unavailable")
 
-def check_processes():
+def check_processes() -> None:
     """Process Check"""
     print("\n🔄 Processes:")
     
     try:
         # Search for Foundry processes
-        result = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq foundry.exe'], 
+        result = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq Inference.Service.Agent*'], 
                               capture_output=True, text=True, shell=True)
-        if 'foundry.exe' in result.stdout:
-            print("   ✅ Foundry process found")
+        if 'Inference.Service.Agent' in result.stdout:
+            print(f"   ✅ Foundry Agent process found (Port check: {find_foundry_port() or 'Not responsive'})")
         else:
-            print("   ❌ Foundry process not found")
+            print("   ❌ Foundry Agent process not found")
             
         # Search for Python processes with uvicorn
         result = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq python.exe'], 
@@ -121,7 +123,7 @@ def check_processes():
     except Exception as e:
         print(f"   ❌ Error checking processes: {e}")
 
-def check_files():
+def check_files() -> None:
     """File Check"""
     print("\n📁 Files:")
     
@@ -139,7 +141,7 @@ def check_files():
         else:
             print(f"   ❌ {file_path} - NOT FOUND")
 
-def check_environment():
+def check_environment() -> None:
     """Environment Variable Check"""
     print("\n🌍 Environment Variables:")
     
@@ -151,7 +153,7 @@ def check_environment():
         else:
             print(f"   ⚠️ {var} not set")
 
-def main():
+def main() -> None:
     """Main Diagnostics Function"""
     print("🔍 FastAPI Foundry - Diagnostics")
     print("=" * 50)

@@ -107,7 +107,16 @@ class ModelManager:
     # ── CRUD ──────────────────────────────────────────────────────────────
 
     async def connect_model(self, model_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Connect a new model."""
+        """Connect a new model.
+
+        Args:
+            model_data: Dict with keys: model_id, provider, model_name (opt),
+                        endpoint_url (opt), api_key (opt), parameters (opt),
+                        default_temperature (opt), default_max_tokens (opt), enabled (opt).
+
+        Returns:
+            dict: success, model_id, status on success; success=False, error on failure.
+        """
         model_id = model_data['model_id']
         if model_id in self.connected_models:
             return {'success': False, 'model_id': model_id, 'error': 'Model already connected'}
@@ -145,7 +154,14 @@ class ModelManager:
             return {'success': False, 'model_id': model_id, 'error': str(e)}
 
     async def disconnect_model(self, model_id: str) -> Dict[str, Any]:
-        """Disconnect a model."""
+        """Disconnect a model.
+
+        Args:
+            model_id: ID of the model to disconnect.
+
+        Returns:
+            dict: success, model_id on success; success=False, error on failure.
+        """
         if model_id not in self.connected_models:
             return {'success': False, 'model_id': model_id, 'error': 'Model not found'}
         try:
@@ -158,7 +174,16 @@ class ModelManager:
             return {'success': False, 'model_id': model_id, 'error': str(e)}
 
     async def update_model(self, model_id: str, update_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Update model settings."""
+        """Update model settings.
+
+        Args:
+            model_id: ID of the model to update.
+            update_data: Dict with any of: model_name, enabled, default_temperature,
+                         default_max_tokens, api_key, parameters.
+
+        Returns:
+            dict: success, model_id, status on success; success=False, error on failure.
+        """
         if model_id not in self.connected_models:
             return {'success': False, 'model_id': model_id, 'error': 'Model not found'}
         try:
@@ -186,7 +211,16 @@ class ModelManager:
 
     async def test_model_connection(self, model_cfg: Dict[str, Any],
                                     test_prompt: str = 'Hello') -> Dict[str, Any]:
-        """Test connectivity to a model endpoint."""
+        """Test connectivity to a model endpoint.
+
+        Args:
+            model_cfg: Model configuration dict (must contain model_id, provider, endpoint_url).
+            test_prompt: Short prompt to send as a connectivity test.
+
+        Returns:
+            dict: success, model_id, response_text, response_time on success;
+                  success=False, error, response_time on failure.
+        """
         start = time.time()
         provider = model_cfg.get('provider', 'custom')
         _test_map = {
@@ -319,7 +353,12 @@ class ModelManager:
         self.save_config()
 
     def get_connected_models(self) -> Dict[str, Any]:
-        """Return list of connected models with status."""
+        """Return list of connected models with status.
+
+        Returns:
+            dict: success, models (list), total_count, online_count,
+                  default_model, timestamp.
+        """
         models_list = []
         online_count = 0
         for model_id, cfg in self.connected_models.items():
@@ -342,7 +381,11 @@ class ModelManager:
                 'timestamp': datetime.now()}
 
     def get_providers(self) -> Dict[str, Any]:
-        """Return list of available providers."""
+        """Return list of available providers.
+
+        Returns:
+            dict: success, providers (list of provider dicts), timestamp.
+        """
         return {
             'success': True,
             'providers': [
@@ -353,11 +396,23 @@ class ModelManager:
         }
 
     def get_model_config(self, model_id: str) -> Optional[Dict[str, Any]]:
-        """Return configuration for a specific model."""
+        """Return configuration for a specific model.
+
+        Args:
+            model_id: Model identifier.
+
+        Returns:
+            dict | None: Model config dict, or None if not found.
+        """
         return self.connected_models.get(model_id)
 
     def increment_usage(self, model_id: str, response_time: Optional[float] = None) -> None:
-        """Increment usage counter and update average response time."""
+        """Increment usage counter and update average response time.
+
+        Args:
+            model_id: Model identifier.
+            response_time: Response time in seconds to include in rolling average.
+        """
         if model_id not in self.connected_models:
             return
         cfg = self.connected_models[model_id]

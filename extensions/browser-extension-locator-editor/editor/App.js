@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+# =============================================================================
+# File: extensions/browser-extension-locator-editor/editor/App.js
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - Added fetchApi helper for standardized response handling
+# =============================================================================
+
 import { DEFAULT_LOCATORS } from './constants.js';
 import Header from './components/Header.js';
 import LocatorList from './components/LocatorList.js';
@@ -7,6 +15,25 @@ import { PlusCircleIcon, CodeBracketIcon, ArrowPathIcon } from './components/Ico
 const { useState, useCallback, useEffect, useRef } = React;
 
 const App = () => {
+    // Helper to handle the new backend response format consistently
+    const fetchApi = async (endpoint, options = {}) => {
+        try {
+            const response = await fetch(`http://localhost:9696/api/v1${endpoint}`, {
+                ...options,
+                headers: { 'Content-Type': 'application/json', ...options.headers },
+            });
+            const data = await response.json();
+            if (!data.success) {
+                alert(chrome.i18n.getMessage("apiError", [data.error]) || data.error);
+                return null;
+            }
+            return data;
+        } catch (err) {
+            console.error("API Call failed:", err);
+            return null;
+        }
+    };
+
     const [locatorsData, setLocatorsData] = useState(null);
     const [selectedLocatorKey, setSelectedLocatorKey] = useState(null);
     const [isCreatingNew, setIsCreatingNew] = useState(false);

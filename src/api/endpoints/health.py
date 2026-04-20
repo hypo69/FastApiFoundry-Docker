@@ -28,7 +28,12 @@ router = APIRouter()
 
 @router.get("/health")
 async def health_check():
-    """Проверка здоровья сервиса"""
+    """Проверка здоровья сервиса.
+
+    Returns:
+        dict: status (always 'healthy'), foundry_status, foundry_details,
+              models_count, timestamp.
+    """
     try:
         foundry_health = await foundry_client.health_check()
         foundry_status = foundry_health.get('status', 'disconnected')

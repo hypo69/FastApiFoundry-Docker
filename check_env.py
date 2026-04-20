@@ -12,11 +12,13 @@
 #
 # File: check_env.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.0
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - MIT License update
+#   - Unified headers and return type hints
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
-# Date: 9 декабря 2025
+# License: MIT
 # =============================================================================
 
 import os
@@ -26,7 +28,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import re
 
-def load_env_file():
+def load_env_file() -> bool:
     """Loading variables from .env file"""
     env_path = Path('.env')
     
@@ -39,7 +41,7 @@ def load_env_file():
     print(f"✅ Loaded .env from {env_path.absolute()}")
     return True
 
-def check_github_config(show_secrets=False):
+def check_github_config(show_secrets: bool = False) -> None:
     """Checking GitHub configuration"""
     print("\n🐙 GitHub Configuration:")
     
@@ -76,7 +78,7 @@ def check_github_config(show_secrets=False):
     else:
         print("  ❌ GITHUB_PAT: not set (required for API access)")
 
-def check_api_config(show_secrets=False):
+def check_api_config(show_secrets: bool = False) -> None:
     """Checking API configuration"""
     print("\n🔑 API Configuration:")
     
@@ -107,7 +109,7 @@ def check_api_config(show_secrets=False):
     else:
         print("  ⚠️  CORS_ORIGINS: not set (using defaults)")
 
-def check_foundry_config():
+def check_foundry_config() -> None:
     """Checking Foundry configuration"""
     print("\n🤖 Foundry AI Configuration:")
     
@@ -134,7 +136,7 @@ def check_foundry_config():
     except ValueError:
         print(f"  ❌ FOUNDRY_TIMEOUT: invalid value '{timeout}'")
 
-def check_database_config():
+def check_database_config() -> None:
     """Checking Database configuration"""
     print("\n💾 Database Configuration:")
     
@@ -156,7 +158,7 @@ def check_database_config():
     else:
         print("  ⚠️  DATABASE_URL: not set (using defaults)")
 
-def check_external_apis(show_secrets=False):
+def check_external_apis(show_secrets: bool = False) -> None:
     """Checking external APIs"""
     print("\n🌍 External APIs:")
     
@@ -177,7 +179,7 @@ def check_external_apis(show_secrets=False):
         else:
             print(f"  ⚠️  {key}: not set")
 
-def check_environment():
+def check_environment() -> None:
     """Checking environment mode"""
     print("\n🌍 Environment Mode:")
     
@@ -195,7 +197,7 @@ def check_environment():
     if env == 'development' and log_level == 'ERROR':
         print("  ⚠️  LOG_LEVEL=ERROR in development (consider INFO or DEBUG)")
 
-def generate_secure_keys():
+def generate_secure_keys() -> None:
     """Generating secure keys"""
     print("\n🔐 Generate Secure Keys:")
     print("Run these commands to generate secure keys:")
@@ -203,7 +205,7 @@ def generate_secure_keys():
     print("python311 -c \"import secrets; print(f'API_KEY={secrets.token_urlsafe(32)}')\"")
     print("python311 -c \"import secrets; print(f'SECRET_KEY={secrets.token_urlsafe(64)}')\"")
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description='Check environment variables')
     parser.add_argument('--show-secrets', action='store_true', 
                        help='Show actual secret values (use with caution)')

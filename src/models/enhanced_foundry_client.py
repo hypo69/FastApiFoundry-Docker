@@ -33,7 +33,11 @@ class EnhancedFoundryClient:
         self.model_cache = {}
         
     def _find_foundry_url(self) -> str:
-        """Найти URL Foundry сервиса"""
+        """Найти URL Foundry сервиса.
+
+        Returns:
+            str: Base URL like 'http://127.0.0.1:<port>/v1', or fallback URL.
+        """
         import socket
         
         # Популярные порты Foundry
@@ -63,18 +67,31 @@ class EnhancedFoundryClient:
         return "http://localhost:50477/v1"
         
     async def _get_session(self):
-        """Получить HTTP сессию"""
+        """Получить HTTP сессию.
+
+        Returns:
+            aiohttp.ClientSession: Active HTTP session.
+        """
         if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession(timeout=self.timeout)
         return self.session
     
     async def close(self):
-        """Закрыть HTTP сессию"""
+        """Закрыть HTTP сессию.
+
+        Returns:
+            None
+        """
         if self.session and not self.session.closed:
             await self.session.close()
     
     async def health_check(self) -> Dict:
-        """Проверка здоровья Foundry"""
+        """Проверка здоровья Foundry.
+
+        Returns:
+            dict: status (healthy/unhealthy/disconnected), models_count,
+                  response_time_ms, url, timestamp.
+        """
         try:
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/models"
@@ -112,7 +129,12 @@ class EnhancedFoundryClient:
             }
     
     async def list_models(self) -> Dict:
-        """Получить список доступных моделей с детальной информацией"""
+        """Получить список доступных моделей с детальной информацией.
+
+        Returns:
+            dict: success, models (list with type/size/capabilities/recommended_settings),
+                  count, timestamp on success; success=False, error, models=[] on failure.
+        """
         try:
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/models"
@@ -155,7 +177,18 @@ class EnhancedFoundryClient:
             }
     
     async def generate_text(self, prompt: str, **kwargs) -> Dict:
-        """Генерация текста с расширенными параметрами"""
+        """Генерация текста с расширенными параметрами.
+
+        Args:
+            prompt: User input text.
+            **kwargs: model (str), temperature (float), max_tokens (int),
+                      top_p (float), top_k (int), stop (list),
+                      presence_penalty (float), frequency_penalty (float).
+
+        Returns:
+            dict: success, content, model, usage, performance, timestamp on success;
+                  success=False, error on failure.
+        """
         try:
             # Проверяем доступность Foundry
             health = await self.health_check()
@@ -223,7 +256,16 @@ class EnhancedFoundryClient:
             }
     
     async def generate_stream(self, prompt: str, **kwargs) -> AsyncGenerator[Dict, None]:
-        """Стриминговая генерация текста"""
+        """Стриминговая генерация текста.
+
+        Args:
+            prompt: User input text.
+            **kwargs: model (str), temperature (float), max_tokens (int).
+
+        Yields:
+            dict: success, content, model, finished on each token chunk;
+                  success=False, error on failure.
+        """
         try:
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/chat/completions"
@@ -279,7 +321,14 @@ class EnhancedFoundryClient:
             }
     
     async def load_model(self, model_id: str) -> Dict:
-        """Загрузить модель в память"""
+        """Загрузить модель в память.
+
+        Args:
+            model_id: Foundry model identifier.
+
+        Returns:
+            dict: success, message on success; success=False, error on failure.
+        """
         try:
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/models/{model_id}/load"
@@ -302,7 +351,14 @@ class EnhancedFoundryClient:
             }
     
     async def unload_model(self, model_id: str) -> Dict:
-        """Выгрузить модель из памяти"""
+        """Выгрузить модель из памяти.
+
+        Args:
+            model_id: Foundry model identifier.
+
+        Returns:
+            dict: success, message on success; success=False, error on failure.
+        """
         try:
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/models/{model_id}/unload"
@@ -325,7 +381,14 @@ class EnhancedFoundryClient:
             }
     
     def _detect_model_type(self, model_id: str) -> str:
-        """Определить тип модели по ID"""
+        """Определить тип модели по ID.
+
+        Args:
+            model_id: Model identifier string.
+
+        Returns:
+            str: One of 'reasoning', 'coding', 'general'.
+        """
         model_id_lower = model_id.lower()
         if 'deepseek' in model_id_lower:
             return 'reasoning'
@@ -341,7 +404,14 @@ class EnhancedFoundryClient:
             return 'general'
     
     def _estimate_model_size(self, model_id: str) -> str:
-        """Оценить размер модели"""
+        """Оценить размер модели.
+
+        Args:
+            model_id: Model identifier string.
+
+        Returns:
+            str: Size label like '7B', '14B', '70B', or 'unknown'.
+        """
         if '7b' in model_id.lower():
             return '7B'
         elif '14b' in model_id.lower():
@@ -354,7 +424,14 @@ class EnhancedFoundryClient:
             return 'unknown'
     
     def _get_model_capabilities(self, model_id: str) -> List[str]:
-        """Получить возможности модели"""
+        """Получить возможности модели.
+
+        Args:
+            model_id: Model identifier string.
+
+        Returns:
+            List[str]: Capability tags, e.g. ['text_generation', 'reasoning', 'multilingual'].
+        """
         capabilities = ['text_generation']
         model_id_lower = model_id.lower()
         
@@ -368,7 +445,14 @@ class EnhancedFoundryClient:
         return capabilities
     
     def _get_recommended_settings(self, model_id: str) -> Dict:
-        """Получить рекомендуемые настройки для модели"""
+        """Получить рекомендуемые настройки для модели.
+
+        Args:
+            model_id: Model identifier string.
+
+        Returns:
+            dict: temperature, top_p, max_tokens tuned for the model type.
+        """
         model_type = self._detect_model_type(model_id)
         
         if model_type == 'reasoning':
@@ -391,7 +475,13 @@ class EnhancedFoundryClient:
             }
     
     def _select_optimal_model(self) -> str:
-        """Выбрать оптимальную модель"""
+        """Выбрать оптимальную модель.
+
+        Priority: DeepSeek 14B → any Qwen → first available → fallback 'deepseek-r1:14b'.
+
+        Returns:
+            str: Model ID of the best available model.
+        """
         if self.available_models:
             # Приоритет: DeepSeek > Qwen > Llama > другие
             for model in self.available_models:

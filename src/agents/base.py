@@ -83,11 +83,23 @@ class BaseAgent(ABC):
 
     @abstractmethod
     async def _execute_tool(self, name: str, arguments: Dict[str, Any]) -> str:
-        """Выполнить инструмент и вернуть результат как строку"""
+        """Выполнить инструмент и вернуть результат как строку.
+
+        Args:
+            name: Tool name as defined in TOOLS.
+            arguments: Parsed JSON arguments from the model's tool_call.
+
+        Returns:
+            str: Tool execution result as a string passed back to the model.
+        """
         ...
 
     def tools_openai(self) -> List[Dict]:
-        return [t.to_openai() for t in self.tools]
+        """Convert tool definitions to OpenAI function-calling format.
+
+        Returns:
+            List[Dict]: List of tool dicts in OpenAI {type, function} schema.
+        """
 
     async def run(
         self,
@@ -97,7 +109,18 @@ class BaseAgent(ABC):
         max_tokens: int = 2048,
         max_iterations: int = 5,
     ) -> AgentResult:
-        """Запустить агентный цикл"""
+        """Запустить агентный цикл.
+
+        Args:
+            user_message: User's input message.
+            model: Foundry model ID to use.
+            temperature: Sampling temperature.
+            max_tokens: Maximum tokens per model response.
+            max_iterations: Maximum tool-call iterations before stopping.
+
+        Returns:
+            AgentResult: success, answer, tool_calls log, iterations count, error.
+        """
         await self.foundry_client._update_base_url()
         if not self.foundry_client.base_url:
             return AgentResult(success=False, error="Foundry недоступен")

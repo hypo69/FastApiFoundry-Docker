@@ -9,18 +9,20 @@
 #
 # File: stop.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.0
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - MIT License update
+#   - Unified headers and return type hints
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
-# Date: December 9, 2025
+# License: MIT
 # =============================================================================
 
 import subprocess
 import platform
 import sys
 
-def kill_processes_on_ports(ports):
+def kill_processes_on_ports(ports: list) -> int:
     """Terminate processes on specified ports"""
     print(f"Checking ports: {ports}")
     system = platform.system().lower()
@@ -90,7 +92,7 @@ def kill_processes_on_ports(ports):
     print(f"Total unique processes killed: {killed_count}")
     return killed_count
 
-def main():
+def main() -> int:
     print("🛑 FastAPI Foundry Stop Script")
     print("=" * 40)
     

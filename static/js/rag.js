@@ -327,6 +327,105 @@ export function handleRAGToggle(checkbox) {
     showAlert(`RAG system ${checkbox.checked ? 'enabled' : 'disabled'}. Save configuration to apply.`, 'info');
 }
 
+// ── Text Extractor ──────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Renders extraction results into the preview textarea.
+ * @param {Array} files - array of {filename, text, size, type} objects
+ * @param {string} sourceName - display name (filename or URL)
+ */
+function showExtractionPreview(files, sourceName) {
+    const resultEl  = document.getElementById('ext-result');
+    const textEl    = document.getElementById('ext-result-text');
+    const metaEl    = document.getElementById('ext-result-meta');
+    if (!resultEl || !textEl) return;
+
+    const totalChars = files.reduce((s, f) => s + (f.text || '').length, 0);
+    const combined   = files.map(f => {
+        const header = files.length > 1 ? `=== ${f.filename} ===\n` : '';
+        return header + (f.text || '');
+    }).join('\n\n');
+
+    if (metaEl) metaEl.textContent = `${sourceName} — ${files.length} file(s), ${totalChars.toLocaleString()} chars`;
+    textEl.value = combined;
+    resultEl.style.display = '';
+}
+
+/**
+ * Extracts text from the selected file via POST /api/v1/rag/extract/file.
+ */
+export async function extractFromFile() {
+    const input = document.getElementById('ext-file-input');
+    const btn   = document.getElementById('ext-file-btn');
+    if (!input?.files?.length) { showAlert('Select a file first', 'warning'); return; }
+
+    const file = input.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+
+    if (btn) btn.disabled = true;
+    try {
+        const data = await fetch(`${RAG_API}/extract/file`, { method: 'POST', body: formData }).then(r => r.json());
+        if (data.success) {
+            showExtractionPreview(data.files, file.name);
+            showAlert(`✅ Extracted ${data.total_chars?.toLocaleString() || 0} chars from ${file.name}`, 'success');
+        } else {
+            showAlert(`❌ ${data.error}`, 'danger');
+        }
+    } catch (e) {
+        showAlert(`❌ ${e.message}`, 'danger');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+/**
+ * Extracts text from a URL via POST /api/v1/rag/extract/url.
+ */
+export async function extractFromURL() {
+    const urlInput = document.getElementById('ext-url-input');
+    const btn      = document.getElementById('ext-url-btn');
+    const url      = urlInput?.value.trim();
+    if (!url) { showAlert('Enter a URL first', 'warning'); return; }
+
+    const jsEnabled     = document.getElementById('ext-js-enabled')?.checked || false;
+    const imagesEnabled = document.getElementById('ext-images-enabled')?.checked || false;
+
+    if (btn) btn.disabled = true;
+    try {
+        const data = await fetch(`${RAG_API}/extract/url`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url,
+                enable_javascript: jsEnabled,
+                process_images: imagesEnabled,
+                web_page_timeout: 30,
+            }),
+        }).then(r => r.json());
+
+        if (data.success) {
+            showExtractionPreview(data.files, url);
+            showAlert(`✅ Extracted ${data.total_chars?.toLocaleString() || 0} chars from URL`, 'success');
+        } else {
+            showAlert(`❌ ${data.error}`, 'danger');
+        }
+    } catch (e) {
+        showAlert(`❌ ${e.message}`, 'danger');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+/** Copies extracted text to clipboard. */
+export function copyExtractedText() {
+    const textEl = document.getElementById('ext-result-text');
+    if (!textEl?.value) return;
+    navigator.clipboard.writeText(textEl.value)
+        .then(() => showAlert('✅ Copied to clipboard', 'success'))
+        .catch(() => showAlert('❌ Clipboard access denied', 'danger'));
+}
+
 // ── Инициализация ─────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {

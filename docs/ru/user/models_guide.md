@@ -97,10 +97,22 @@ RAM / VRAM (_loaded_models dict)
 ### Настройка
 
 ```env
-# .env
-HF_TOKEN=hf_ваш_токен          # обязателен для закрытых моделей (Gemma, Llama)
-HF_MODELS_DIR=D:\models         # куда скачивать (по умолчанию ~/.models)
+# .env — только токен
+HF_TOKEN=hf_ваш_токен   # обязателен для закрытых моделей (Gemma, Llama)
 ```
+
+Директория для скачивания моделей задаётся в `config.json`:
+
+```json
+{
+  "directories": {
+    "hf_models": "D:\\models"
+  }
+}
+```
+
+!!! tip
+    Изменить директорию можно через веб-интерфейс: **Settings** → секция **Directories** → поле **HF Models**.
 
 Токен создаётся на [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) с ролью `Read`.
 

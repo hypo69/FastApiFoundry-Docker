@@ -28,9 +28,26 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Directory for saving models: ~/.models/hf
-# Read directly from environment, ignoring config.json to avoid ${VAR} substitution
+# Directory for saving models — read from config.json first, HF_MODELS_DIR env as legacy fallback
 def _get_models_dir() -> Path:
+    """Return HuggingFace models directory.
+
+    Priority:
+        1. ``directories.hf_models`` from config.json
+        2. ``HF_MODELS_DIR`` environment variable (legacy)
+        3. ``~/.models`` default
+
+    Returns:
+        Path: Resolved absolute path to the models directory.
+    """
+    try:
+        from ..core.config import config
+        cfg_dir = config.dir_hf_models
+        if cfg_dir and not cfg_dir.startswith("${"):
+            return Path(cfg_dir).expanduser()
+    except Exception:
+        pass
+    # Legacy fallback: HF_MODELS_DIR env var
     raw = os.environ.get("HF_MODELS_DIR", "")
     if raw and not raw.startswith("${"):
         return Path(raw).expanduser()

@@ -31,7 +31,15 @@ chat_sessions: Dict[str, List[Dict]] = {}
 
 @router.post("/chat/start")
 async def start_chat_session(request: dict):
-    """Начать новую сессию чата"""
+    """Начать новую сессию чата.
+
+    Args:
+        request: JSON body с полями:
+            model (str): ID модели (default: 'default').
+
+    Returns:
+        dict: success, session_id (UUID), model, message.
+    """
     session_id = str(uuid.uuid4())
     model = request.get("model", "default")
     
@@ -46,7 +54,23 @@ async def start_chat_session(request: dict):
 
 @router.post("/chat/message")
 async def send_chat_message(request: dict):
-    """Отправить сообщение в чат"""
+    """Отправить сообщение в чат.
+
+    Args:
+        request: JSON body с полями:
+            session_id (str):    ID сессии (обязательно).
+            message (str):       Текст сообщения (обязательно).
+            model (str):         ID модели (optional).
+            temperature (float): Температура (default: 0.7).
+            max_tokens (int):    Максимум токенов (default: 2048).
+
+    Returns:
+        dict: success, response, session_id.
+
+    Raises:
+        HTTPException 400: Неверный session_id или пустое сообщение.
+        HTTPException 500: Ошибка генерации.
+    """
     session_id = request.get("session_id")
     message = request.get("message", "")
     
@@ -87,7 +111,22 @@ async def send_chat_message(request: dict):
 
 @router.post("/chat/stream")
 async def send_chat_message_stream(request: dict):
-    """Отправить сообщение в чат с стримингом"""
+    """Отправить сообщение в чат с стримингом.
+
+    Args:
+        request: JSON body с полями:
+            session_id (str):    ID сессии (обязательно).
+            message (str):       Текст сообщения (обязательно).
+            model (str):         ID модели (optional).
+            temperature (float): Температура (default: 0.7).
+            max_tokens (int):    Максимум токенов (default: 2048).
+
+    Returns:
+        StreamingResponse: SSE-поток с чанками {chunk} и финальным {done: True}.
+
+    Raises:
+        HTTPException 400: Неверный session_id или пустое сообщение.
+    """
     session_id = request.get("session_id")
     message = request.get("message", "")
     
@@ -135,7 +174,17 @@ async def send_chat_message_stream(request: dict):
 
 @router.get("/chat/history/{session_id}")
 async def get_chat_history(session_id: str):
-    """Получить историю разговора"""
+    """Получить историю разговора.
+
+    Args:
+        session_id: UUID сессии чата.
+
+    Returns:
+        dict: success, session_id, history (list of {role, content}).
+
+    Raises:
+        HTTPException 404: Сессия не найдена.
+    """
     if session_id not in chat_sessions:
         raise HTTPException(status_code=404, detail="Сессия не найдена")
     
@@ -147,7 +196,17 @@ async def get_chat_history(session_id: str):
 
 @router.delete("/chat/session/{session_id}")
 async def delete_chat_session(session_id: str):
-    """Удалить сессию чата"""
+    """Удалить сессию чата.
+
+    Args:
+        session_id: UUID сессии чата.
+
+    Returns:
+        dict: success, message.
+
+    Raises:
+        HTTPException 404: Сессия не найдена.
+    """
     if session_id in chat_sessions:
         del chat_sessions[session_id]
         return {"success": True, "message": "Сессия удалена"}
@@ -160,6 +219,20 @@ async def save_chat_history(request: dict) -> dict:
     """! Сохраняет историю чата на диск.
 
     Содержимое сохраняется в: ~/.ai-assistant-chat-history/
+
+    Args:
+        request: JSON body с полями:
+            messages (list):    Список сообщений {role, content} (обязательно).
+            session_id (str):   UUID сессии (optional, генерируется если пусто).
+            model (str):        ID модели (optional).
+            title (str):        Заголовок чата (optional).
+            aborted (bool):     Был ли чат прерван (default: False).
+
+    Returns:
+        dict: success, file (path to saved JSON), session_id.
+
+    Raises:
+        HTTPException 400: messages отсутствуют или пусты.
     """
     messages: List[Dict] = request.get("messages") or []
     if not messages:
@@ -194,7 +267,11 @@ async def save_chat_history(request: dict) -> dict:
 
 @router.get("/chat/models")
 async def get_available_models():
-    """Получить список доступных моделей"""
+    """Получить список доступных моделей.
+
+    Returns:
+        dict: success, models (list of {id, name, type, size}), count.
+    """
     try:
         models_response = await foundry_client.list_available_models()
         

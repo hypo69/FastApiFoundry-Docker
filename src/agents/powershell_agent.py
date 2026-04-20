@@ -153,6 +153,15 @@ class PowerShellAgent(BaseAgent):
         ]
 
     async def _execute_tool(self, name: str, arguments: Dict[str, Any]) -> str:
+        """Execute a tool by name.
+
+        Args:
+            name: Tool name ('run_powershell', 'run_wp_cli', 'http_get').
+            arguments: Parsed JSON arguments from the model's tool_call.
+
+        Returns:
+            str: Tool execution result as a string.
+        """
         if name == "run_powershell":
             return await self._run_powershell(arguments)
         if name == "run_wp_cli":
@@ -162,6 +171,14 @@ class PowerShellAgent(BaseAgent):
         return f"❌ Неизвестный инструмент: {name}"
 
     async def _run_powershell(self, args: Dict) -> str:
+        """Execute PowerShell script via McpSTDIOServer.
+
+        Args:
+            args: Dict with keys: script (str), working_directory (str, optional).
+
+        Returns:
+            str: Script output or error message.
+        """
         script_path = _find_server_script("McpSTDIOServer")
         if not script_path:
             return "❌ McpSTDIOServer.ps1 не найден"
@@ -192,6 +209,14 @@ class PowerShellAgent(BaseAgent):
         return _extract_content(response)
 
     async def _run_wp_cli(self, args: Dict) -> str:
+        """Execute WP-CLI command via McpWPCLIServer.
+
+        Args:
+            args: Dict with keys: command (str), working_directory (str, optional).
+
+        Returns:
+            str: WP-CLI output or error message.
+        """
         script_path = _find_server_script("McpWPCLIServer")
         if not script_path:
             return "❌ McpWPCLIServer.ps1 не найден"
@@ -220,6 +245,14 @@ class PowerShellAgent(BaseAgent):
         return _extract_content(response)
 
     async def _http_get(self, args: Dict) -> str:
+        """Execute HTTP GET request.
+
+        Args:
+            args: Dict with key: url (str).
+
+        Returns:
+            str: HTTP status and response body (first 2000 chars) or error message.
+        """
         url = args.get("url", "")
         try:
             async with aiohttp.ClientSession() as session:

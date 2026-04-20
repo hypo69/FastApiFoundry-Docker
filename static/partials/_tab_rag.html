@@ -95,4 +95,97 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Text Extractor section -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-file-earmark-text"></i> <span data-i18n="rag.extractor_title">Text Extractor</span></h6>
+                                <span class="badge bg-secondary" data-i18n="rag.extractor_badge">40+ formats</span>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small mb-3" data-i18n="rag.extractor_hint">
+                                    Extract text from files or URLs to preview content before indexing.
+                                    Supports PDF, DOCX, XLSX, PPTX, images (OCR), HTML, archives and more.
+                                </p>
+
+                                <!-- Tabs: File / URL -->
+                                <ul class="nav nav-tabs nav-sm mb-3" id="extractorTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="ext-file-tab" data-bs-toggle="tab"
+                                                data-bs-target="#ext-file-pane" type="button" role="tab">
+                                            <i class="bi bi-file-earmark-arrow-up"></i>
+                                            <span data-i18n="rag.extractor_file">File</span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="ext-url-tab" data-bs-toggle="tab"
+                                                data-bs-target="#ext-url-pane" type="button" role="tab">
+                                            <i class="bi bi-globe"></i>
+                                            <span data-i18n="rag.extractor_url">URL</span>
+                                        </button>
+                                    </li>
+                                </ul>
+
+                                <div class="tab-content">
+                                    <!-- File extraction -->
+                                    <div class="tab-pane fade show active" id="ext-file-pane" role="tabpanel">
+                                        <div class="input-group mb-2">
+                                            <input type="file" id="ext-file-input" class="form-control"
+                                                   accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.html,.htm,.md,.json,.xml,.yaml,.yml,.csv,.odt,.rtf,.epub,.eml,.msg,.zip,.rar,.7z,.tar,.gz,.jpg,.jpeg,.png,.tiff,.bmp,.gif,.py,.js,.ts,.php,.rb,.go,.rs,.cs,.java,.cpp,.c,.sh,.ps1">
+                                            <button class="btn btn-primary" onclick="extractFromFile()" id="ext-file-btn">
+                                                <i class="bi bi-play-fill"></i>
+                                                <span data-i18n="rag.extractor_extract">Extract</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- URL extraction -->
+                                    <div class="tab-pane fade" id="ext-url-pane" role="tabpanel">
+                                        <div class="input-group mb-2">
+                                            <input type="text" id="ext-url-input" class="form-control"
+                                                   placeholder="https://example.com/document.pdf"
+                                                   data-i18n-placeholder="rag.extractor_url_placeholder">
+                                            <button class="btn btn-primary" onclick="extractFromURL()" id="ext-url-btn">
+                                                <i class="bi bi-play-fill"></i>
+                                                <span data-i18n="rag.extractor_extract">Extract</span>
+                                            </button>
+                                        </div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-auto">
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="ext-js-enabled">
+                                                    <label class="form-check-label small" for="ext-js-enabled"
+                                                           data-i18n="rag.extractor_js">JavaScript</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="ext-images-enabled">
+                                                    <label class="form-check-label small" for="ext-images-enabled"
+                                                           data-i18n="rag.extractor_images">OCR images</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Result -->
+                                <div id="ext-result" style="display:none">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <small class="text-muted" id="ext-result-meta"></small>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="copyExtractedText()">
+                                            <i class="bi bi-clipboard"></i>
+                                            <span data-i18n="rag.extractor_copy">Copy</span>
+                                        </button>
+                                    </div>
+                                    <textarea id="ext-result-text" class="form-control font-monospace"
+                                              rows="8" readonly
+                                              style="font-size:.8rem;resize:vertical"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>

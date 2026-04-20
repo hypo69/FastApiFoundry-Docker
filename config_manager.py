@@ -10,13 +10,11 @@
 # Project: FastApiFoundry (Docker)
 # Version: 0.6.0
 # Changes in 0.6.0:
-#   - Suppress duplicate print() in _load_config when running as uvicorn child
-#     process (reload=True). Checks _UVICORN_CHILD env var set by run.py.
-# Changes in 0.5.5:
-#   - Added try/except with logging in _load_config and update_config
-#   - Replaced bare print() with logger calls on errors
+#   - MIT License update
+#   - Unified headers and return type hints
 # Author: hypo69
 # Copyright: © 2026 hypo69
+# License: MIT
 # =============================================================================
 
 import json
@@ -42,10 +40,16 @@ class Config:
         return cls._instance
 
     def _load_config(self) -> None:
-        """Load configuration from config.json."""
+        """Load configuration from config.json.
+
+        Raises:
+            FileNotFoundError: If config.json does not exist.
+            json.JSONDecodeError: If config.json contains invalid JSON.
+            OSError: If config.json cannot be read (permissions, lock).
+        """
         config_path = Path('config.json')
 
-        if not config_path.exists():
+        if not config_path.is_file():
             # Config file missing — cannot start; re-raise so caller sees it
             raise FileNotFoundError(f'config.json not found at {config_path.absolute()}')
 
@@ -67,7 +71,11 @@ class Config:
             raise
 
     def reload_config(self) -> None:
-        """Reload configuration from disk."""
+        """Reload configuration from disk.
+
+        Raises:
+            Same as _load_config().
+        """
         self._load_config()
 
     # ── FastAPI Server ────────────────────────────────────────────────────
@@ -183,15 +191,33 @@ class Config:
     # ── Helpers ───────────────────────────────────────────────────────────
 
     def get_section(self, section: str) -> Dict[str, Any]:
-        """Return an entire configuration section."""
+        """Return an entire configuration section.
+
+        Args:
+            section: Section name, e.g. 'fastapi_server', 'foundry_ai'.
+
+        Returns:
+            dict: Section content, or empty dict if section does not exist.
+        """
         return self._config_data.get(section, {})
 
     def get_raw_config(self) -> Dict[str, Any]:
-        """Return a copy of the entire configuration."""
+        """Return a copy of the entire configuration.
+
+        Returns:
+            dict: Full config.json content as a dict.
+        """
         return self._config_data.copy()
 
     def update_config(self, new_config: Dict[str, Any]) -> None:
-        """Update configuration in memory and persist to config.json."""
+        """Update configuration in memory and persist to config.json.
+
+        Args:
+            new_config: New configuration dict to replace current config.
+
+        Raises:
+            OSError: If config.json cannot be written (disk full, permissions).
+        """
         self._config_data = new_config
         config_path = Path('config.json')
         try:

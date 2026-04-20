@@ -29,7 +29,14 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage application lifecycle"""
+    """Manage application lifecycle.
+
+    Startup: initializes RAG system, auto-loads default Foundry model.
+    Shutdown: closes aiohttp session of foundry_client.
+
+    Args:
+        app: FastAPI application instance.
+    """
     logger.info("Starting FastAPI Foundry...")
     
     rag_initialized = await rag_system.initialize()
@@ -62,7 +69,14 @@ async def lifespan(app: FastAPI):
     await foundry_client.close()
 
 def create_app() -> FastAPI:
-    """Create and configure the FastAPI application"""
+    """Create and configure the FastAPI application.
+
+    Mounts static files, adds CORS and request-logging middleware,
+    registers global exception handler, and includes all API routers.
+
+    Returns:
+        FastAPI: Configured application instance ready for uvicorn.
+    """
     
     app = FastAPI(
         title="FastAPI Foundry",

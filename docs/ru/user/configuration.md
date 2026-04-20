@@ -10,6 +10,27 @@
 
 ---
 
+## Первый запуск
+
+`install.ps1` автоматически создаёт `.env` из `.env.example`. Если по какой-то причине файл отсутствует:
+
+```powershell
+Copy-Item .env.example .env
+notepad .env
+```
+
+Минимальный `.env` для старта:
+
+```env
+# HuggingFace токен (только для закрытых моделей: Gemma, Llama)
+HF_TOKEN=hf_ваш_токен
+
+# Foundry URL — только если автоопределение не работает
+# FOUNDRY_BASE_URL=http://localhost:50477/v1
+```
+
+---
+
 ## Два файла конфигурации
 
 | Файл | Назначение | В git? |
@@ -94,7 +115,7 @@
 
 ### Редактирование
 
-Через веб-интерфейс: **Settings** → заполнить поля → **Save All**
+Через веб-интерфейс: **Settings** → заполнить поля → **Save All** (доступно по адресу **http://localhost:9696**)
 
 Или напрямую в редакторе: **Editor** → вкладка `config.json`
 
@@ -157,7 +178,9 @@ notepad .env
 | Файл логов | `logging.file` | Пусто = только консоль |
 | MkDocs включён | `docs_server.enabled` | Документация на порту 9697 |
 | Язык интерфейса | `app.language` | en / ru / he |
-| Директория моделей | `directories.models` | ~/.models |
+| Директория моделей | `directories.models` | ~/.models — GGUF для llama.cpp |
+| Директория HF моделей | `directories.hf_models` | ~/.hf_models — HuggingFace модели |
+| Директория RAG | `directories.rag` | ~/.rag — FAISS индексы |
 
 ### 🔐 .env
 
@@ -186,6 +209,14 @@ notepad .env
 1. Переменная окружения (.env или системная)
 2. config.json
 3. Значение по умолчанию в коде
+```
+
+**Пример — директория HuggingFace моделей:**
+
+```
+directories.hf_models в config.json  ← приоритет 1
+HF_MODELS_DIR в .env (legacy)        ← приоритет 2
+~/.models (по умолчанию)             ← приоритет 3
 ```
 
 **Пример — URL Foundry:**
@@ -245,7 +276,24 @@ bin/<bin_version>/llama-server.exe ← приоритет 3 (из config.json)
 
 ### Экспорт всех настроек
 
-**Settings** → **Export** — скачивает JSON с содержимым `config.json` и `.env` (без секретов провайдеров).
+**Settings** → **Export** — скачивает полный JSON-бэкап, включающий:
+
+| Источник | Что сохраняется |
+|---|---|
+| `config.json` | Все настройки приложения |
+| `.env` | **Все переменные окружения, включая токены и ключи API** |
+| `mcp-powershell-servers/settings.json` | Настройки MCP серверов |
+| `mcp-servers/.../claude-desktop-config.json` | Конфиг Claude Desktop |
+| `.foundry_url`, `.llama_url` | Сохранённые URL сервисов |
+
+!!! danger "Файл бэкапа содержит секреты"
+    Экспортированный файл содержит **полное содержимое `.env`**, включая все токены и ключи API.
+    Перед экспортом браузер покажет предупреждение.
+
+    - Храните файл бэкапа в защищённом месте
+    - Не передавайте его третьим лицам
+    - Не загружайте в облачные хранилища без шифрования
+    - Не коммитьте в git-репозиторий
 
 ### Ручной бэкап
 

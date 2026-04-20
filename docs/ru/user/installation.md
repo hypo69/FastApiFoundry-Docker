@@ -5,6 +5,7 @@
 - Windows 10/11
 - Python 3.11+ (или будет установлен автоматически из `bin/Python-3.11.9.zip`)
 - PowerShell 5+
+- Интернет-соединение (для загрузки Tesseract OCR и Foundry Local)
 
 ---
 
@@ -21,11 +22,12 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 3. Обновляет `pip`
 4. Устанавливает зависимости из `requirements.txt`
 5. Опционально устанавливает RAG-зависимости (`sentence-transformers`, `faiss-cpu`) — можно пропустить флагом `-SkipRag`
-6. Создаёт `.env` из `.env.example` (если `.env` ещё не существует)
-7. Создаёт папку `logs\`
-8. Если в `bin\` найден архив `llama-*-bin-win-*.zip` — распаковывает и прописывает путь в `.env`
-9. Если `foundry` не найден в PATH — предлагает установить через `winget`
-10. Опционально загружает модели по умолчанию через `install\install-models.ps1`
+6. **Устанавливает Tesseract OCR** — необходим для OCR изображений при индексации RAG
+7. Создаёт `.env` из `.env.example` (если `.env` ещё не существует)
+8. Создаёт папку `logs\`
+9. Если в `bin\` найден архив `llama-*-bin-win-*.zip` — распаковывает и прописывает путь в `.env`
+10. Если `foundry` не найден в PATH — предлагает установить через `winget`
+11. Опционально загружает модели по умолчанию через `install\install-models.ps1`
 
 ### Параметры install.ps1
 
@@ -38,31 +40,86 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 
 # Без RAG зависимостей (экономит ~2 GB)
 .\install.ps1 -SkipRag
+
+# Без установки Tesseract OCR
+.\install.ps1 -SkipTesseract
+
+# Комбинация флагов
+.\install.ps1 -SkipRag -SkipTesseract
 ```
 
 ---
 
-## Настройка конфигурации
+!!! tip "Настройка после установки"
+    `install.ps1` автоматически создаёт `.env` из `.env.example`.  
+    Все настройки (ключи, токены, порты) доступны через вкладку **Settings** в веб-интерфейсе: **http://localhost:9696**  
+    Подробное описание всех параметров: [Конфигурация](configuration.md).
 
-После установки скопируйте `.env.example` в `.env` и заполните секреты:
+---
+
+## Tesseract OCR
+
+Tesseract OCR — системная программа для распознавания текста на изображениях.  
+Используется в RAG-системе при индексации директорий: PNG, JPG, TIFF и изображения внутри PDF-файлов проходят через OCR перед добавлением в FAISS-индекс.
+
+### Автоматическая установка (через install.ps1)
+
+`install.ps1` автоматически вызывает `install\install-tesseract.ps1`, который:
+
+1. Скачивает установщик Tesseract 5.x с GitHub (UB-Mannheim)
+2. Устанавливает в `C:\Program Files\Tesseract-OCR` в тихом режиме
+3. Добавляет путь в системный PATH
+4. Прописывает `TESSERACT_CMD` в файл `.env`
+
+### Ручная установка
+
+Если автоматическая установка не сработала:
 
 ```powershell
-Copy-Item .env.example .env
-notepad .env
+# Запустить установщик Tesseract отдельно
+powershell -ExecutionPolicy Bypass -File .\install\install-tesseract.ps1
 ```
 
-Минимальный `.env` для старта:
+Или вручную:
+
+1. Скачать установщик: <https://github.com/UB-Mannheim/tesseract/wiki>  
+   Файл: `tesseract-ocr-w64-setup-5.x.x.exe`
+2. При установке отметить языковые пакеты **Russian** и **English**
+3. Путь установки: `C:\Program Files\Tesseract-OCR`
+4. Добавить в PATH вручную:
+
+```powershell
+[Environment]::SetEnvironmentVariable(
+    'Path',
+    $env:Path + ';C:\Program Files\Tesseract-OCR',
+    [EnvironmentVariableTarget]::Machine
+)
+```
+
+5. Перезапустить PowerShell и проверить:
+
+```powershell
+tesseract --version
+```
+
+### Переменная TESSERACT_CMD
+
+`install-tesseract.ps1` автоматически добавляет в `.env`:
 
 ```env
-# HuggingFace токен (только для закрытых моделей: Gemma, Llama)
-HF_TOKEN=hf_ваш_токен
-
-# Foundry URL — только если автоопределение не работает
-# FOUNDRY_BASE_URL=http://localhost:50477/v1
+TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
 ```
 
-Все остальные настройки (порты, пути к моделям, флаги автозапуска) — в `config.json`.
-Подробнее: [Конфигурация](configuration.md)
+Эта переменная используется `pytesseract` как явный путь к бинарнику — на случай если Tesseract не попал в PATH текущей сессии.
+
+### Что происходит без Tesseract
+
+Если Tesseract не установлен:
+
+- PDF, DOCX, HTML, Markdown, JSON, YAML, исходный код — **индексируются нормально**
+- PNG, JPG, TIFF и другие изображения — **пропускаются** при индексации директории
+- Изображения внутри PDF — **пропускаются** (текст страниц извлекается)
+- В логах появится предупреждение: `⚠️ TextExtractor not available`
 
 ---
 
@@ -116,6 +173,9 @@ venv\Scripts\python.exe check_env.py
 
 # Диагностика системы
 venv\Scripts\python.exe diagnose.py
+
+# Проверить Tesseract
+tesseract --version
 
 # Запустить сервер
 .\start.ps1

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Foundry Models Management API
+# Process Name: Foundry Models Management API
 # =============================================================================
-# Описание:
-#   API endpoints для управления моделями Foundry:
+# Description:
+#   API endpoints for managing Foundry models:
 #   список доступных, загруженных, скачанных, загрузка, выгрузка, статус.
 #
 # Примеры:
@@ -17,10 +17,13 @@
 #
 # File: src/api/endpoints/foundry_models.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - MIT License update
+#   - Unified headers and return type hints
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
+# License: MIT
 # =============================================================================
 
 import subprocess
@@ -30,6 +33,9 @@ import re
 import aiohttp
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
+from ...utils.foundry_utils import is_foundry_model_cached, FOUNDRY_CACHE_DIR
+from ...utils.process_utils import run_command, DEFAULT_SUBPROCESS_KWARGS
+from ...utils.api_utils import api_response_handler
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/foundry/models", tags=["foundry-models"])
@@ -65,24 +71,8 @@ AVAILABLE_MODELS: list = [
     },
 ]
 
-# Директория кэша Foundry.
-# Переопределяется через FOUNDRY_CACHE_DIR в .env.
-# Структура: ~\.foundry\cache\models\Microsoft\<model-dir>\v<version>
-FOUNDRY_CACHE_DIR = Path(os.getenv(
-    "FOUNDRY_CACHE_DIR",
-    os.path.expanduser(r"~\.foundry\cache\models\Microsoft")
-))
-
 # Активные фоновые процессы скачивания: {pid: {"model_id": str, "process": Popen}}
 _download_processes: dict = {}
-
-
-SUBPROCESS_TEXT_KWARGS = {
-    "text": True,
-    "encoding": "utf-8",
-    "errors": "replace",
-}
-
 
 def _get_foundry_base_url() -> str:
     """! Получить base URL Foundry сервиса.
@@ -109,17 +99,18 @@ def _run_foundry(args: list, timeout: int = 30) -> subprocess.CompletedProcess:
         FileNotFoundError: Если foundry CLI не установлен.
         subprocess.TimeoutExpired: При превышении таймаута.
     """
-    return subprocess.run(
-        ["foundry"] + args,
-        capture_output=True,
-        **SUBPROCESS_TEXT_KWARGS,
-        timeout=timeout
-    )
+    return run_command(["foundry"] + args, timeout=timeout)
 
 
 @router.post("/auto-load-default")
+@api_response_handler
 async def auto_load_default_model() -> dict:
-    """! Загрузить модель по умолчанию из config.json (foundry_ai.default_model)."""
+    """! Загрузить модель по умолчанию из config.json (foundry_ai.default_model).
+
+    Returns:
+        dict: success, model_id, message, pid on success;
+              success=False, message/error on failure.
+    """
     import os
     from ...core.config import config as app_config
 
@@ -130,33 +121,37 @@ async def auto_load_default_model() -> dict:
     if not app_config.foundry_auto_load_default:
         return {"success": False, "message": "auto_load_default is disabled in config"}
 
-    try:
-        process = subprocess.Popen(
-            ["foundry", "model", "load", model_id],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            **SUBPROCESS_TEXT_KWARGS,
-        )
-        logger.info(f"Загрузка модели по умолчанию {model_id} (PID: {process.pid})")
-        return {"success": True, "model_id": model_id, "message": f"Загрузка {model_id} запущена", "pid": process.pid}
-    except FileNotFoundError:
-        return {"success": False, "error": "Foundry CLI не найден"}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+    process = subprocess.Popen(
+        ["foundry", "model", "load", model_id],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        **DEFAULT_SUBPROCESS_KWARGS,
+    )
+    logger.info(f"Загрузка модели по умолчанию {model_id} (PID: {process.pid})")
+    return {"success": True, "model_id": model_id, "message": f"Загрузка {model_id} запущена", "pid": process.pid}
 
 
 @router.get("")
 @router.get("/")
 async def list_models_root() -> dict:
-    """! Алиас для /available — список моделей из каталога Foundry."""
+    """! Алиас для /available — список моделей из каталога Foundry.
+
+    Returns:
+        dict: Same as list_available_models().
+    """
     return await list_available_models()
 
 
 @router.get("/available")
+@api_response_handler
 async def list_available_models() -> dict:
     """! Список моделей из каталога Foundry (foundry model ls).
 
     Если CLI недоступен — возвращает хардкод из AVAILABLE_MODELS.
+
+    Returns:
+        dict: success, models (list with id/name/alias/device/type/size/cached),
+              count, source ('foundry-cli' or 'hardcoded').
     """
     try:
         result = _run_foundry(["model", "ls"], timeout=15)
@@ -164,21 +159,24 @@ async def list_available_models() -> dict:
             models = _parse_foundry_ls(result.stdout)
             if models:
                 return {"success": True, "models": [
-                    {**m, "cached": _is_model_cached(m["id"])} for m in models
+                    {**m, "cached": is_foundry_model_cached(m["id"])} for m in models
                 ], "count": len(models), "source": "foundry-cli"}
     except Exception as e:
         logger.warning(f"foundry model ls недоступен: {e}")
 
     # Fallback на хардкод
-    models = [{**m, "cached": _is_model_cached(m["id"])} for m in AVAILABLE_MODELS]
+    models = [{**m, "cached": is_foundry_model_cached(m["id"])} for m in AVAILABLE_MODELS]
     return {"success": True, "models": models, "count": len(models), "source": "hardcoded"}
 
 
 @router.get("/cached")
+@api_response_handler
 async def list_cached_models() -> dict:
     """! Список моделей скачанных в кэш Foundry на диске.
 
-    Возвращает model_id моделей, которые присутствуют в локальном кэше Foundry.
+    Returns:
+        dict: success, models (list of model_id strings), items (full model dicts),
+              count, cache_dir.
     """
     if not FOUNDRY_CACHE_DIR.exists():
         return {
@@ -190,7 +188,7 @@ async def list_cached_models() -> dict:
 
     available = await list_available_models()
     all_models = available.get("models", []) if available.get("success") else []
-    cached_models = [m for m in all_models if _is_model_cached(m["id"])]
+    cached_models = [m for m in all_models if is_foundry_model_cached(m["id"])]
 
     logger.info(f"Найдено {len(cached_models)} моделей в кэше: {FOUNDRY_CACHE_DIR}")
     return {
@@ -203,61 +201,77 @@ async def list_cached_models() -> dict:
 
 
 @router.get("/loaded")
+@api_response_handler
 async def list_loaded_models() -> dict:
-    """! Список моделей загруженных в Foundry сервис."""
+    """! Список моделей загруженных в Foundry сервис.
+
+    Returns:
+        dict: success, models (list of {id, name, status}), count;
+              success=False, error on failure.
+    """
     base_url: str = _get_foundry_base_url().rstrip("/")
     url: str = f"{base_url}/models"
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as response:
-                if response.status != 200:
-                    return {"success": False, "models": [], "error": f"HTTP {response.status}"}
-                data: dict = await response.json()
-                models: list = [
-                    {"id": m.get("id", ""), "name": m.get("id", ""), "status": "loaded"}
-                    for m in data.get("data", [])
-                ]
-                return {"success": True, "models": models, "count": len(models)}
-    except Exception as e:
-        logger.error(f"Ошибка получения загруженных моделей: {e}")
-        return {"success": False, "models": [], "error": str(e)}
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as response:
+            if response.status != 200:
+                return {"success": False, "models": [], "error": f"HTTP {response.status}"}
+            data: dict = await response.json()
+            models: list = [
+                {"id": m.get("id", ""), "name": m.get("id", ""), "status": "loaded"}
+                for m in data.get("data", [])
+            ]
+            return {"success": True, "models": models, "count": len(models)}
 
 
 @router.post("/download")
+@api_response_handler
 async def download_model(request: dict) -> dict:
     """! Скачивание модели в кэш Foundry (foundry model download).
 
     Запускает загрузку в фоне — возвращает PID не дожидаясь завершения.
+
+    Args:
+        request: JSON body с полями:
+            model_id (str): Идентификатор модели (обязательно).
+
+    Returns:
+        dict: success, model_id, status ('downloading'/'already_cached'), pid.
+
+    Raises:
+        HTTPException 400: model_id не передан.
     """
     model_id: str = request.get("model_id", "")
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
 
     # Проверить — уже скачана?
-    if _is_model_cached(model_id):
+    if is_foundry_model_cached(model_id):
         return {"success": True, "model_id": model_id, "status": "already_cached"}
 
-    try:
-        process = subprocess.Popen(
-            ["foundry", "model", "download", model_id],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            **SUBPROCESS_TEXT_KWARGS,
-        )
-        _download_processes[process.pid] = {"model_id": model_id, "process": process}
-        logger.info(f"Скачивание модели {model_id} запущено (PID: {process.pid})")
-        return {"success": True, "model_id": model_id, "status": "downloading", "pid": process.pid}
-    except FileNotFoundError:
-        return {"success": False, "error": "Foundry CLI не найден в PATH"}
-    except Exception as e:
-        logger.error(f"Ошибка запуска скачивания {model_id}: {e}")
-        return {"success": False, "error": str(e)}
+    process = subprocess.Popen(
+        ["foundry", "model", "download", model_id],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        **DEFAULT_SUBPROCESS_KWARGS,
+    )
+    _download_processes[process.pid] = {"model_id": model_id, "process": process}
+    logger.info(f"Скачивание модели {model_id} запущено (PID: {process.pid})")
+    return {"success": True, "model_id": model_id, "status": "downloading", "pid": process.pid}
 
 
 @router.get("/download/status/{pid}")
+@api_response_handler
 async def get_download_status(pid: int) -> dict:
-    """! Статус процесса скачивания по PID."""
+    """! Статус процесса скачивания по PID.
+
+    Args:
+        pid: PID процесса скачивания, полученный из /download.
+
+    Returns:
+        dict: success, pid, model_id, status ('downloading'/'done'/'error'),
+              cached (bool) on done; success=False, error if PID not found.
+    """
     entry = _download_processes.get(pid)
     if not entry:
         return {"success": False, "error": f"PID {pid} не найден"}
@@ -275,7 +289,7 @@ async def get_download_status(pid: int) -> dict:
     stderr = stderr or ""
     del _download_processes[pid]
 
-    cached = _is_model_cached(model_id)
+    cached = is_foundry_model_cached(model_id)
     if retcode == 0 or cached:
         logger.info(f"Скачивание {model_id} завершено успешно")
         return {"success": True, "pid": pid, "model_id": model_id, "status": "done", "cached": cached}
@@ -291,56 +305,75 @@ async def get_download_status(pid: int) -> dict:
 
 
 @router.post("/load")
+@api_response_handler
 async def load_model(request: dict) -> dict:
-    """! Загрузка модели в Foundry сервис (foundry model load)."""
+    """! Загрузка модели в Foundry сервис (foundry model load).
+
+    Args:
+        request: JSON body с полями:
+            model_id (str): Идентификатор модели (обязательно).
+
+    Returns:
+        dict: success, model_id, status ('loading'), pid.
+
+    Raises:
+        HTTPException 400: model_id не передан.
+    """
     model_id: str = request.get("model_id", "")
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
 
-    try:
-        process = subprocess.Popen(
-            ["foundry", "model", "load", model_id],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            **SUBPROCESS_TEXT_KWARGS,
-        )
-        logger.info(f"Загрузка модели {model_id} в сервис запущена (PID: {process.pid})")
-        return {"success": True, "model_id": model_id, "status": "loading", "pid": process.pid}
-    except FileNotFoundError:
-        return {"success": False, "error": "Foundry CLI не найден в PATH"}
-    except Exception as e:
-        logger.error(f"Ошибка загрузки модели {model_id}: {e}")
-        return {"success": False, "error": str(e)}
+    process = subprocess.Popen(
+        ["foundry", "model", "load", model_id],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        **DEFAULT_SUBPROCESS_KWARGS,
+    )
+    logger.info(f"Загрузка модели {model_id} в сервис запущена (PID: {process.pid})")
+    return {"success": True, "model_id": model_id, "status": "loading", "pid": process.pid}
 
 
 @router.post("/unload")
+@api_response_handler
 async def unload_model(request: dict) -> dict:
-    """! Выгрузка модели из Foundry сервиса (foundry model unload)."""
+    """! Выгрузка модели из Foundry сервиса (foundry model unload).
+
+    Args:
+        request: JSON body с полями:
+            model_id (str): Идентификатор модели (обязательно).
+
+    Returns:
+        dict: success, model_id, message on success; success=False, error on failure.
+
+    Raises:
+        HTTPException 400: model_id не передан.
+    """
     model_id: str = request.get("model_id", "")
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
 
-    try:
-        result = _run_foundry(["model", "unload", model_id])
-        if result.returncode != 0:
-            return {"success": False, "error": result.stderr.strip() or "Ошибка выгрузки"}
-        logger.info(f"Модель {model_id} выгружена")
-        return {"success": True, "model_id": model_id, "message": f"Модель {model_id} выгружена"}
-    except FileNotFoundError:
-        return {"success": False, "error": "Foundry CLI не найден в PATH"}
-    except subprocess.TimeoutExpired:
-        return {"success": False, "error": "Таймаут операции выгрузки"}
-    except Exception as e:
-        logger.error(f"Ошибка выгрузки модели {model_id}: {e}")
-        return {"success": False, "error": str(e)}
+    result = _run_foundry(["model", "unload", model_id])
+    if result.returncode != 0:
+        return {"success": False, "error": result.stderr.strip() or "Ошибка выгрузки"}
+    logger.info(f"Модель {model_id} выгружена")
+    return {"success": True, "model_id": model_id, "message": f"Модель {model_id} выгружена"}
 
 
 @router.get("/status/{model_id:path}")
+@api_response_handler
 async def get_model_status(model_id: str) -> dict:
-    """! Статус модели: загружена в сервис и/или скачана в кэш."""
+    """! Статус модели: загружена в сервис и/или скачана в кэш.
+
+    Args:
+        model_id: Идентификатор модели (path parameter).
+
+    Returns:
+        dict: success, model_id, loaded (bool), cached (bool),
+              status ('loaded'/'cached'/'not_downloaded').
+    """
     loaded = await list_loaded_models()
     is_loaded = loaded.get("success") and any(m["id"] == model_id for m in loaded["models"])
-    is_cached = _is_model_cached(model_id)
+    is_cached = is_foundry_model_cached(model_id)
     return {
         "success": True,
         "model_id": model_id,
@@ -414,36 +447,3 @@ def _parse_foundry_ls(output: str) -> list:
         })
 
     return models
-
-
-def _model_id_to_dir(model_id: str) -> str:
-    """! Преобразовать model_id в имя директории кэша.
-
-    Foundry сохраняет модели как: <name>-<version>/v<version>
-    Пример: qwen2.5-0.5b-instruct-generic-cpu:4 → qwen2.5-0.5b-instruct-generic-cpu-4
-
-    Args:
-        model_id: Идентификатор модели в формате 'name:version'.
-
-    Returns:
-        str: Имя директории в кэше.
-    """
-    if ":" in model_id:
-        name, version = model_id.rsplit(":", 1)
-        return f"{name}-{version}"
-    return model_id
-
-
-def _is_model_cached(model_id: str) -> bool:
-    """Проверить наличие модели в кэше — директория существует и содержит v<version>."""
-    if not FOUNDRY_CACHE_DIR.exists():
-        return False
-    dir_name = _model_id_to_dir(model_id)
-    model_dir = FOUNDRY_CACHE_DIR / dir_name
-    if not model_dir.exists():
-        return False
-    # Проверяем наличие подпапки v<version>
-    if ":" in model_id:
-        version = model_id.rsplit(":", 1)[1]
-        return (model_dir / f"v{version}").exists()
-    return True

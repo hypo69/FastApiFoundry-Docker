@@ -1,105 +1,625 @@
 # API Справочник FastAPI Foundry
 
-FastAPI Foundry предоставляет RESTful API для программного взаимодействия с моделями ИИ, чатом, RAG системой, управлением конфигурацией и другими функциями. Все API-эндпоинты доступны по базовому префиксу `/api/v1/`.
+Все эндпоинты доступны по базовому префиксу `/api/v1/`. Интерактивная документация: `/docs`.
 
-Полная интерактивная документация API доступна по адресу `/docs` после запуска сервера FastAPI Foundry.
+**Базовый URL:** `http://localhost:9696/api/v1`  
+**Формат ответа:** JSON  
+**Формат ошибки:** `{"success": false, "error": "описание"}`
 
-## 🗺️ Общие сведения
+---
 
-*   **Базовый URL**: `http://localhost:9696/api/v1` (порт может отличаться)
-*   **Формат ответа**: JSON.
-*   **Обработка ошибок**: В случае ошибки возвращается JSON-объект с ключом `"success": False` и `"error": "Сообщение об ошибке"`.
+## Health
 
-    ```json
-    // Успешный ответ
-    {"success": true, "data": { ... }}
+### `GET /health`
+Проверка состояния сервиса.
 
-    // Ответ с ошибкой
-    {"success": false, "error": "Подробное описание ошибки"}
-    ```
+**Ответ:**
+```json
+{
+  "status": "healthy",
+  "foundry_status": "healthy",
+  "foundry_details": {"port": 50477, "url": "http://localhost:50477/v1", "error": null},
+  "models_count": 3,
+  "timestamp": "..."
+}
+```
 
-## ⚡ Эндпоинты по функциональным областям
+---
 
-Ниже представлен список основных API эндпоинтов, сгруппированных по файлам в директории `src/api/endpoints/`:
+## Generate
 
-### `/api/v1/health` (src/api/endpoints/health.py)
+### `POST /generate`
+Генерация текста через Foundry, HuggingFace или llama.cpp.
 
-*   **GET `/health`**: Проверка состояния сервиса. Возвращает статус работы FastAPI Foundry и подключенных бэкендов ИИ.
+Маршрутизация по префиксу `model`:
+- `hf::<model_id>` → HuggingFace
+- `llama::<path>` → llama.cpp
+- без префикса → Foundry Local
 
-### `/api/v1/generate` (src/api/endpoints/generate.py)
+**Тело запроса:**
+```json
+{
+  "prompt": "Ваш запрос",
+  "model": "qwen2.5-0.5b-instruct-generic-cpu:4",
+  "temperature": 0.7,
+  "max_tokens": 1000,
+  "use_rag": false,
+  "top_k": 5
+}
+```
 
-*   **POST `/generate`**: Однократная генерация текста ИИ-моделью.
-    *   **Тело запроса**: `{"prompt": "Ваш запрос", "model": "имя_модели", "temperature": 0.7, "max_tokens": 2048}`
+**Ответ:**
+```json
+{
+  "success": true,
+  "content": "Ответ модели",
+  "model": "qwen2.5-0.5b-instruct-generic-cpu:4",
+  "usage": {"prompt_tokens": 10, "completion_tokens": 50, "total_tokens": 60}
+}
+```
 
-### `/api/v1/chat` (src/api/endpoints/chat_endpoints.py / chat_endpoints_new.py)
+---
 
-*   **POST `/chat/send`**: Отправка сообщения в чат с поддержанием истории.
-    *   **Тело запроса**: `{"message": "Ваше сообщение", "model": "имя_модели", "session_id": "id_сессии"}`
+## Chat
 
-### `/api/v1/models` (src/api/endpoints/models.py / models_extra.py)
+### `POST /chat/start`
+Начать новую сессию чата.
 
-*   **GET `/models`**: Получить список всех доступных моделей, обнаруженных FastAPI Foundry.
-*   **GET `/models/foundry`**: Получить список моделей, доступных через Foundry Local.
+**Тело:** `{"model": "qwen2.5-0.5b-instruct-generic-cpu:4"}`  
+**Ответ:** `{"success": true, "session_id": "uuid", "model": "...", "message": "..."}`
 
-### `/api/v1/foundry` (src/api/endpoints/foundry.py / foundry_management.py)
+### `POST /chat/message`
+Отправить сообщение в сессию.
 
-*   **GET `/foundry/status`**: Проверить статус сервиса Foundry Local.
-*   **POST `/foundry/service/start`**: Запустить сервис Foundry Local.
-*   **POST `/foundry/service/stop`**: Остановить сервис Foundry Local.
+**Тело:**
+```json
+{
+  "session_id": "uuid",
+  "message": "Привет",
+  "model": "...",
+  "temperature": 0.7,
+  "max_tokens": 2048
+}
+```
 
-### `/api/v1/foundry/models` (src/api/endpoints/foundry_models.py)
+### `POST /chat/stream`
+Стриминговый ответ (SSE). Те же поля что и `/chat/message`.  
+**Ответ:** `text/event-stream` — чанки `{"chunk": "..."}`, финал `{"done": true}`.
 
-*   **POST `/foundry/models/load`**: Загрузить модель в Foundry Local.
-    *   **Тело запроса**: `{"model_id": "имя_модели"}`
-*   **POST `/foundry/models/unload`**: Выгрузить модель из Foundry Local.
-    *   **Тело запроса**: `{"model_id": "имя_модели"}`
+### `GET /chat/history/{session_id}`
+История сессии.  
+**Ответ:** `{"success": true, "session_id": "...", "history": [{"role": "user", "content": "..."}]}`
 
-### `/api/v1/rag` (src/api/endpoints/rag.py)
+### `DELETE /chat/session/{session_id}`
+Удалить сессию.
 
-*   **GET `/rag/status`**: Получить статус системы RAG (включена ли, модель, количество чанков).
-*   **PUT `/rag/config`**: Обновить конфигурацию RAG в `config.json`.
-*   **POST `/rag/clear`**: Удалить все файлы индекса RAG.
-*   **POST `/rag/search`**: Поиск релевантных документов по запросу (возвращает заглушку).
-*   **POST `/rag/rebuild`**: Перестроить индекс RAG (возвращает заглушку).
+### `POST /chat/history/save`
+Сохранить историю на диск (`~/.ai-assistant-chat-history/`).
 
-### `/api/v1/translation` (src/api/endpoints/translation.py)
+**Тело:**
+```json
+{
+  "messages": [{"role": "user", "content": "..."}],
+  "session_id": "uuid",
+  "model": "...",
+  "title": "...",
+  "aborted": false
+}
+```
 
-*   **POST `/translation/translate`**: Перевод текста с использованием LLM, DeepL, Google или Helsinki.
-    *   **Тело запроса**: `{"text": "Текст для перевода", "target_lang": "ru", "source_lang": "en", "provider": "llm"}`
+### `GET /chat/models`
+Список моделей доступных для чата (из Foundry).
 
-### `/api/v1/config` (src/api/endpoints/config.py)
+---
 
-*   **GET `/config`**: Получить текущую конфигурацию `config.json`.
-*   **PUT `/config`**: Обновить часть или всю конфигурацию `config.json`.
-*   **GET `/config/env`**: Получить текущие переменные окружения.
-*   **PUT `/config/env`**: Обновить переменные окружения в файле `.env`.
+## Models
 
-### `/api/v1/logs` (src/api/endpoints/logs.py)
+### `GET /models`
+Все доступные модели (Foundry + llama.cpp).
 
-*   **GET `/logs`**: Получить последние записи логов приложения.
+**Ответ:** `{"success": true, "models": [...], "count": 5}`
 
-### `/api/v1/hf` (src/api/endpoints/hf_models.py)
+### `GET /models/connected`
+Подключённые модели с деталями (`provider`, `status`, `max_tokens`).
 
-*   **POST `/hf/download`**: Скачать модель с HuggingFace.
-*   **POST `/hf/generate`**: Генерация текста с использованием HuggingFace моделей.
+### `GET /models/providers`
+Список провайдеров (`foundry`, `ollama`, `openai`) и их статус.
 
-### `/api/v1/llama` (src/api/endpoints/llama_cpp.py)
+### `POST /models/health-check`
+Проверка здоровья всех моделей.
 
-*   **GET `/llama/status`**: Статус llama.cpp сервера.
-*   **POST `/llama/start`**: Запустить llama.cpp сервер.
-*   **POST `/llama/stop`**: Остановить llama.cpp сервер.
+### `POST /batch-generate`
+Пакетная генерация текста.
 
-### `/api/v1/mcp-powershell` (src/api/endpoints/mcp_powershell.py)
+**Тело:** `{"prompts": ["запрос 1", "запрос 2"]}`  
+**Ответ:** `{"success": true, "results": [{"success": true, "content": "..."}]}`
 
-*   **POST `/mcp-powershell/run`**: Выполнить команду PowerShell через MCP сервер.
+---
 
-### `/api/v1/agent` (src/api/endpoints/agent.py)
+## Foundry
 
-*   **GET `/agent/list`**: Список всех доступных ИИ-агентов.
-*   **GET `/agent/{name}/tools`**: Получить список инструментов для указанного агента.
-*   **POST `/agent/run`**: Запустить ИИ-агента с заданным сообщением и моделью.
-    *   **Тело запроса**: `{"message": "Сообщение для агента", "agent": "имя_агента", "model": "имя_модели"}`
+### `GET /foundry/status`
+Статус сервиса Foundry Local.
 
-### `/api/v1/converter` (src/api/endpoints/converter.py)
+**Ответ:** `{"success": true, "running": true, "status": "healthy", "port": 50477, "url": "..."}`
 
-*   **POST `/converter/gguf-to-onnx`**: Конвертировать модель из формата GGUF в ONNX.
+### `GET /foundry/models/list`
+Список всех моделей через Foundry клиент.
+
+### `GET /foundry/start`
+Запустить сервис Foundry через CLI.
+
+### `GET /foundry/stop`
+Остановить сервис Foundry через CLI.
+
+---
+
+## Foundry Models
+
+### `GET /foundry/models` / `GET /foundry/models/available`
+Список моделей из каталога Foundry (`foundry model ls`). При недоступности CLI — хардкод.
+
+**Ответ:** `{"success": true, "models": [...], "count": 4, "source": "foundry-cli"}`
+
+Поля модели: `id`, `name`, `alias`, `device`, `type`, `task`, `size`, `license`, `cached`.
+
+### `GET /foundry/models/cached`
+Модели скачанные в локальный кэш (`~/.foundry/cache/models/Microsoft`).
+
+### `GET /foundry/models/loaded`
+Модели загруженные в Foundry сервис (запрос к `/v1/models`).
+
+### `GET /foundry/models/status/{model_id}`
+Статус конкретной модели: `loaded`, `cached`, `not_downloaded`.
+
+### `POST /foundry/models/download`
+Скачать модель в кэш (фоновый процесс).
+
+**Тело:** `{"model_id": "qwen2.5-0.5b-instruct-generic-cpu:4"}`  
+**Ответ:** `{"success": true, "model_id": "...", "status": "downloading", "pid": 1234}`
+
+### `GET /foundry/models/download/status/{pid}`
+Статус процесса скачивания по PID.
+
+**Ответ:** `{"success": true, "pid": 1234, "model_id": "...", "status": "done", "cached": true}`
+
+### `POST /foundry/models/load`
+Загрузить модель в Foundry сервис.
+
+**Тело:** `{"model_id": "qwen2.5-0.5b-instruct-generic-cpu:4"}`  
+**Ответ:** `{"success": true, "model_id": "...", "status": "loading", "pid": 1234}`
+
+### `POST /foundry/models/unload`
+Выгрузить модель из Foundry сервиса.
+
+**Тело:** `{"model_id": "qwen2.5-0.5b-instruct-generic-cpu:4"}`
+
+### `POST /foundry/models/auto-load-default`
+Загрузить модель по умолчанию из `config.json` (`foundry_ai.default_model`).
+
+---
+
+## HuggingFace
+
+### `GET /hf/status`
+Статус HuggingFace интеграции: версии `transformers`, `torch`, `huggingface_hub`, наличие `HF_TOKEN`.
+
+### `GET /hf/models`
+Список скачанных и загруженных в память HF моделей.
+
+### `GET /hf/hub/models`
+Модели пользователя с HuggingFace Hub + список популярных публичных моделей.  
+Требует `HF_TOKEN` в `.env`.
+
+### `POST /hf/models/download`
+Скачать модель с HuggingFace Hub.
+
+**Тело:** `{"model_id": "google/gemma-2-2b-it", "token": "hf_..."}`
+
+### `POST /hf/models/load`
+Загрузить скачанную модель в память.
+
+**Тело:** `{"model_id": "google/gemma-2-2b-it", "device": "auto"}`
+
+### `POST /hf/models/unload`
+Выгрузить модель из памяти (освободить RAM/VRAM).
+
+**Тело:** `{"model_id": "google/gemma-2-2b-it"}`
+
+### `POST /hf/generate`
+Генерация текста через локальную HF модель.
+
+**Тело:**
+```json
+{
+  "model_id": "google/gemma-2-2b-it",
+  "prompt": "Привет",
+  "max_new_tokens": 512,
+  "temperature": 0.7
+}
+```
+
+---
+
+## llama.cpp
+
+### `GET /llama/status`
+Статус llama.cpp сервера: `running`, `pid`, `url`, `openai_url`, `last_error`.
+
+### `GET /llama/models`
+Сканировать `.gguf` файлы в `~/.models`, `~/.lmstudio/models` и опциональном `extra_dir`.
+
+**Query:** `?extra_dir=D:\models`  
+**Ответ:** `{"success": true, "models": [{"name": "...", "path": "...", "size_gb": 4.2}], "count": 3}`
+
+### `POST /llama/start`
+Запустить llama.cpp сервер.
+
+**Тело:**
+```json
+{
+  "model_path": "D:/models/gemma-2-2b-it-Q6_K.gguf",
+  "port": 9780,
+  "ctx_size": 4096,
+  "threads": 8,
+  "n_gpu_layers": 0,
+  "host": "127.0.0.1",
+  "copy_to_models": true
+}
+```
+
+**Ответ:** `{"success": true, "pid": 1234, "model": "...", "url": "...", "openai_url": "...", "status": "starting"}`
+
+### `POST /llama/stop`
+Остановить llama.cpp сервер.
+
+### `POST /llama/models/copy`
+Скопировать `.gguf` файл в `~/.models`.
+
+**Тело:** `{"model_path": "D:/gemma-2-2b-it-Q6_K.gguf"}`
+
+---
+
+## Ollama
+
+### `GET /ollama/status`
+Статус Ollama сервера: `running`, `version`, `url`.
+
+### `GET /ollama/models`
+Список локально доступных Ollama моделей.
+
+### `POST /ollama/models/pull`
+Скачать модель из Ollama Hub.
+
+**Тело:** `{"model": "qwen2.5:0.5b"}`
+
+### `POST /ollama/models/delete`
+Удалить локальную Ollama модель.
+
+**Тело:** `{"model": "qwen2.5:0.5b"}`
+
+### `POST /ollama/generate`
+Генерация текста через Ollama.
+
+**Тело:** `{"model": "qwen2.5:0.5b", "prompt": "Привет", "max_tokens": 512, "temperature": 0.7}`
+
+---
+
+## RAG
+
+### `GET /rag/status`
+Статус RAG системы: `enabled`, `index_dir`, `model`, `chunk_size`, `top_k`, `total_chunks`.
+
+### `PUT /rag/config`
+Обновить конфигурацию RAG в `config.json`.
+
+**Тело:**
+```json
+{
+  "enabled": true,
+  "index_dir": "./rag_index",
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "chunk_size": 1000,
+  "top_k": 5
+}
+```
+
+### `POST /rag/search`
+Поиск в RAG индексе.
+
+**Тело:** `{"query": "текст запроса", "top_k": 5}`  
+**Ответ:** `{"success": true, "results": [{"content": "...", "score": 0.95, "metadata": {...}}], "total": 2}`
+
+### `POST /rag/rebuild`
+Перестроить RAG индекс.
+
+### `POST /rag/clear`
+Удалить все файлы индекса из `index_dir`.
+
+### `GET /rag/dirs`
+Список директорий проекта пригодных для индексации (содержат `.md`, `.txt`, `.html`, `.rst`).
+
+### `GET /rag/cwd`
+Рабочая директория сервера (для разрешения путей).
+
+### `GET /rag/browse`
+Браузер файловой системы для выбора папки.
+
+**Query:** `?path=C:\Users\user`  
+**Ответ:** `{"success": true, "current": "...", "parent": "...", "dirs": [{"name": "...", "path": "..."}]}`
+
+### `GET /rag/profiles`
+Список всех RAG баз в `~/.rag/`.
+
+### `POST /rag/profiles/load`
+Переключить активную RAG базу (обновляет `config.json` и перезагружает индекс).
+
+**Тело:** `{"name": "docs"}`
+
+### `DELETE /rag/profiles/{name}`
+Удалить RAG базу из `~/.rag/<name>/`.
+
+### `POST /rag/build`
+Собрать RAG индекс из директории.
+
+**Тело:**
+```json
+{
+  "docs_dir": "./docs",
+  "model": "sentence-transformers/all-mpnet-base-v2",
+  "chunk_size": 1000,
+  "overlap": 50,
+  "force": false
+}
+```
+
+**Ответ:** `{"success": true, "chunks": 142, "index_dir": "~/.rag/docs", "name": "docs"}`
+
+### `POST /rag/extract/file`
+Извлечь текст из загруженного файла для индексации.
+
+**Тело:** `multipart/form-data` с полем `file`.  
+Поддерживаемые форматы: PDF, DOCX, XLSX, PPTX, TXT, HTML, MD, JSON, XML, YAML, изображения (OCR), архивы (ZIP/RAR/7Z/TAR), EML, EPUB, ODT, RTF.
+
+**Ответ:** `{"success": true, "filename": "...", "count": 3, "total_chars": 15000, "files": [...]}`
+
+### `POST /rag/extract/url`
+Извлечь текст с веб-страницы для индексации.
+
+**Тело:**
+```json
+{
+  "url": "https://example.com",
+  "enable_javascript": false,
+  "process_images": false,
+  "web_page_timeout": 30
+}
+```
+
+### `GET /rag/extract/formats`
+Список поддерживаемых форматов файлов для извлечения текста.
+
+---
+
+## Agent
+
+### `GET /agent/list`
+Список зарегистрированных агентов.
+
+**Ответ:** `{"success": true, "agents": [{"name": "powershell", "description": "..."}]}`
+
+### `GET /agent/{agent_name}/tools`
+Список инструментов агента.
+
+### `POST /agent/run`
+Запустить агента.
+
+**Тело:**
+```json
+{
+  "message": "Покажи список процессов",
+  "agent": "powershell",
+  "model": "qwen2.5-0.5b-instruct-generic-cpu:4",
+  "temperature": 0.7,
+  "max_tokens": 2048,
+  "max_iterations": 5
+}
+```
+
+**Ответ:**
+```json
+{
+  "success": true,
+  "answer": "...",
+  "tool_calls": [{"tool": "run_powershell", "arguments": {...}, "result": "..."}],
+  "iterations": 2,
+  "agent": "powershell"
+}
+```
+
+---
+
+## MCP PowerShell
+
+### `GET /mcp-powershell/servers`
+Список всех MCP серверов из `mcp-powershell-servers/settings.json` со статусом.
+
+### `POST /mcp-powershell/servers/{name}/start`
+Запустить MCP сервер по имени.
+
+### `POST /mcp-powershell/servers/{name}/stop`
+Остановить MCP сервер по имени.
+
+### `GET /mcp-powershell/servers/{name}/status`
+Статус конкретного MCP сервера: `running` / `stopped`, `pid`.
+
+### `GET /mcp-powershell/settings`
+Содержимое `mcp-powershell-servers/settings.json`.
+
+### `POST /mcp-powershell/settings`
+Сохранить `mcp-powershell-servers/settings.json`.
+
+**Тело:** `{"settings": {"mcpServers": {...}}}`
+
+---
+
+## Config
+
+### `GET /config`
+Полная конфигурация из `config.json` + runtime значения Foundry.
+
+### `PATCH /config`
+Частичное обновление конфигурации. Поддерживает dot-notation.
+
+**Тело:** `{"foundry_ai.default_model": "qwen2.5-0.5b-instruct-generic-cpu:4"}`
+
+### `POST /config`
+Полная замена `config.json` (создаёт бэкап).
+
+**Тело:** `{"config": {...полный объект конфигурации...}}`
+
+### `GET /config/raw`
+Содержимое `config.json` как сырой текст (для редактора).
+
+### `POST /config/raw`
+Запись `config.json` из редактора (валидирует JSON).
+
+**Тело:** `{"content": "{...}"}`
+
+### `GET /config/env-raw`
+Содержимое `.env` как сырой текст.
+
+### `POST /config/env-raw`
+Запись `.env` из редактора.
+
+**Тело:** `{"content": "KEY=value\n..."}`
+
+### `POST /config/env`
+Сохранить одну переменную окружения в `.env`.
+
+**Тело:** `{"key": "HF_TOKEN", "value": "hf_..."}`
+
+### `GET /config/provider-keys`
+Ключи API провайдеров из `.env` (Gemini, OpenAI, Anthropic, Mistral, Groq и др.).
+
+### `POST /config/provider-keys`
+Сохранить ключи провайдеров в `.env`.
+
+**Тело:** `{"keys": {"openai": "sk-...", "gemini": "AIza..."}}`
+
+### `GET /config/export`
+Экспорт всех настроек в один JSON: `config.json` + `.env` + MCP конфиги.  
+Возвращает файл для скачивания.
+
+### `POST /config/import`
+Импорт полного бэкапа настроек.
+
+**Тело:** `{"config": {...экспортированный объект...}, "merge": false}`
+
+### `GET /config/extension-export`
+Экспорт ключей провайдеров в формат браузерного расширения.
+
+### `POST /config/extension-import`
+Импорт ключей из формата браузерного расширения (v1/v2).
+
+---
+
+## Logs
+
+### `GET /logs`
+Отфильтрованные строки лога.
+
+**Query параметры:**
+- `file` — имя файла (default: `fastapi-foundry.log`)
+- `lines` — количество строк (default: 200, max: 5000)
+- `level` — фильтр уровня: `DEBUG`, `INFO`, `WARNING`, `ERROR`
+- `search` — текстовый поиск (case-insensitive)
+- `offset` — пропустить последние N строк (пагинация)
+
+**Ответ:** `{"success": true, "lines": [...], "returned": 50, "filtered_total": 200, "total_lines": 1500, "has_more": true}`
+
+### `GET /logs/files`
+Список доступных лог-файлов с размерами.
+
+### `POST /logs/clear`
+Очистить лог-файл.
+
+**Query:** `?file=fastapi-foundry.log`
+
+### `GET /logs/download`
+Скачать лог-файл.
+
+**Query:** `?file=fastapi-foundry.log`
+
+### `GET /logs/recent`
+Последние 100 записей из всех лог-файлов (парсинг формата `timestamp | level | logger | message`).
+
+### `POST /logs/web`
+Записать сообщение с веб-интерфейса в лог.
+
+**Тело:** `{"message": "...", "level": "info"}`
+
+---
+
+## Converter
+
+### `GET /converter/status`
+Доступность зависимостей конвертера (`optimum`, `onnxruntime-tools`).
+
+### `POST /converter/convert`
+Конвертировать `.gguf` файл в ONNX.
+
+**Тело:**
+```json
+{
+  "gguf_path": "D:/models/model.gguf",
+  "output_dir": "./artifacts/onnx",
+  "model_type": "gpt2",
+  "opset": 17,
+  "optimize": true
+}
+```
+
+---
+
+## AI (расширенные)
+
+### `POST /ai/generate`
+Генерация с расширенными параметрами (`top_p`, `top_k`, `presence_penalty`, `frequency_penalty`, `stop`, `use_rag`).
+
+### `POST /ai/generate/stream`
+Стриминговая генерация (SSE).
+
+### `GET /ai/models`
+Список моделей с детальной информацией.
+
+### `GET /ai/models/recommended`
+Рекомендуемые модели по категориям: `reasoning`, `coding`, `general`, `fast`, `quality`.
+
+### `POST /ai/models/{model_id}/load`
+Загрузить модель в память.
+
+### `POST /ai/models/{model_id}/unload`
+Выгрузить модель из памяти.
+
+### `GET /ai/health`
+Проверка здоровья AI сервиса.
+
+### `POST /ai/chat`
+Чат с историей сообщений (OpenAI-совместимый формат ответа).
+
+**Тело:** `{"messages": [{"role": "user", "content": "..."}], "model": "...", "temperature": 0.7}`
+
+### `POST /ai/optimize`
+Подбор оптимальной модели и параметров для задачи.
+
+**Тело:** `{"task_type": "coding", "model_preference": "balanced"}`
+
+---
+
+## System
+
+### `GET /system/stats`
+Использование RAM и CPU (требует `psutil`).
+
+**Ответ:** `{"success": true, "ram_used_mb": 4096.0, "ram_total_mb": 16384.0, "cpu_pct": 12.5}`

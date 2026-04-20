@@ -47,18 +47,30 @@ class FoundryClient:
             logger.info("Foundry client: waiting for URL...")
     
     async def _get_session(self):
-        """Получить HTTP сессию"""
+        """Получить HTTP сессию.
+
+        Returns:
+            aiohttp.ClientSession: Active HTTP session.
+        """
         if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession(timeout=self.timeout)
         return self.session
     
     async def close(self):
-        """Закрыть HTTP сессию"""
+        """Закрыть HTTP сессию.
+
+        Returns:
+            None
+        """
         if self.session and not self.session.closed:
             await self.session.close()
     
     async def _find_foundry_port(self) -> int | None:
-        """Найти порт запущенного Foundry"""
+        """Найти порт запущенного Foundry.
+
+        Returns:
+            int | None: Port number if Foundry responds with HTTP 200, None otherwise.
+        """
         test_ports = [62171, 50477, 58130]
         logger.info(f"🔍 Поиск Foundry на портах: {test_ports}")
         
@@ -80,7 +92,13 @@ class FoundryClient:
         return None
     
     async def _update_base_url(self):
-        """Обновить base_url из переменной окружения или Config"""
+        """Обновить base_url из переменной окружения или Config.
+
+        Priority: FOUNDRY_DYNAMIC_PORT env var → config.foundry_base_url → port scan.
+
+        Returns:
+            None
+        """
         # Сначала проверяем переменную окружения
         foundry_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
         if foundry_port:
@@ -110,7 +128,12 @@ class FoundryClient:
             logger.error("❌ Не удалось найти Foundry")
     
     async def health_check(self):
-        """Проверка состояния Foundry"""
+        """Проверка состояния Foundry.
+
+        Returns:
+            dict: status (healthy/unhealthy/disconnected), url, port, timestamp,
+                  models_count (on healthy), error (on failure).
+        """
         logger.debug("🏥 Проверка состояния Foundry...")
         
         try:
@@ -175,7 +198,15 @@ class FoundryClient:
             }
     
     async def generate_text(self, prompt: str, **kwargs):
-        """Генерация текста. Если модель не загружена — загружает её автоматически."""
+        """Генерация текста. Если модель не загружена — загружает её автоматически.
+
+        Args:
+            prompt: User input text.
+            **kwargs: model (str), temperature (float), max_tokens (int).
+
+        Returns:
+            dict: success, content, model, usage on success; success=False, error on failure.
+        """
         model = kwargs.get('model') or None
         
         try:
@@ -242,7 +273,16 @@ class FoundryClient:
             return {"success": False, "error": f"Ошибка: {str(e)}"}
 
     async def generate_stream(self, prompt: str, **kwargs):
-        """Генерация текста с потоковой передачей"""
+        """Генерация текста с потоковой передачей.
+
+        Args:
+            prompt: User input text.
+            **kwargs: model (str), temperature (float), max_tokens (int).
+
+        Yields:
+            dict: success, content, finished on each token chunk;
+                  success=False, error on failure.
+        """
         try:
             # Переменные решения о модели
             model = kwargs.get('model') or ""
@@ -310,7 +350,12 @@ class FoundryClient:
             }
 
     async def list_available_models(self):
-        """Получить список доступных моделей"""
+        """Получить список доступных моделей.
+
+        Returns:
+            dict: success, models (list of model dicts), count on success;
+                  success=False, error, models=[] on failure.
+        """
         logger.debug("📋 Получение списка моделей...")
         
         try:
@@ -354,7 +399,14 @@ class FoundryClient:
             }
 
     async def load_model(self, model_id: str):
-        """Загрузить модель"""
+        """Загрузить модель.
+
+        Args:
+            model_id: Foundry model identifier, e.g. 'qwen3-0.6b-generic-cpu:4'.
+
+        Returns:
+            dict: success, message on success; success=False, error on failure.
+        """
         logger.info(f"📥 Загрузка модели: {model_id}")
         
         try:
@@ -375,7 +427,14 @@ class FoundryClient:
             return {"success": False, "error": f"Ошибка загрузки модели: {str(e)}"}
 
     async def unload_model(self, model_id: str):
-        """Выгрузить модель"""
+        """Выгрузить модель.
+
+        Args:
+            model_id: Foundry model identifier.
+
+        Returns:
+            dict: success, message on success; success=False, error on failure.
+        """
         logger.info(f"📤 Выгрузка модели: {model_id}")
         
         try:
@@ -396,7 +455,11 @@ class FoundryClient:
             return {"success": False, "error": f"Ошибка выгрузки модели: {str(e)}"}
 
     async def list_models(self):
-        """Получить список моделей"""
+        """Получить список моделей (alias for list_available_models).
+
+        Returns:
+            dict: Same as list_available_models().
+        """
         return await self.list_available_models()
 
 # Глобальный экземпляр клиента

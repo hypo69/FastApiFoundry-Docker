@@ -1,0 +1,159 @@
+# -*- coding: utf-8 -*-
+# =============================================================================
+# Process Name: Foundry Utilities
+# =============================================================================
+# Description:
+#   Shared utility functions for Foundry service interaction.
+#
+# File: src/utils/foundry_utils.py
+# Project: FastApiFoundry (Docker)
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - MIT License update
+#   - Unified headers and return type hints
+# Author: hypo69
+# Copyright: © 2026 hypo69
+# License: MIT
+# =============================================================================
+
+import os
+import re
+from pathlib import Path
+import subprocess
+from .process_utils import run_command
+import logging
+from typing import Optional
+
+# Import requests only if available to avoid crashing during early startup checks
+try:
+    import requests
+except ImportError:
+    requests = None
+
+logger = logging.getLogger(__name__)
+
+# Known ports often used by Foundry or local LLM proxies
+_KNOWN_PORTS = [62171, 50477, 58130]
+
+# Default cache location
+FOUNDRY_CACHE_DIR = Path(os.getenv(
+    "FOUNDRY_CACHE_DIR",
+    os.path.expanduser(r"~\.foundry\cache\models\Microsoft")
+))
+
+def test_foundry_port(port: int) -> bool:
+    """Check whether Foundry is responding on the given port.
+
+    Args:
+        port: TCP port to probe.
+
+    Returns:
+        bool: True if Foundry API responds with HTTP 200.
+    """
+    if requests is None:
+        return False
+    try:
+        logger.debug(f'Probing port {port}...')
+        resp = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=2)
+        if resp.status_code == 200:
+            return True
+        logger.debug(f'Port {port}: HTTP {resp.status_code}')
+        return False
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        return False
+    except Exception as e:
+        logger.warning(f'⚠️ Unexpected error probing port {port}: {e}')
+        return False
+
+def find_foundry_port() -> Optional[int]:
+    """Locate the port of a running Foundry service.
+    Order: 1. FOUNDRY_DYNAMIC_PORT env, 2. tasklist+netstat, 3. known ports.
+
+    Returns:
+        int | None: Port number if found, None otherwise.
+    """
+    # 1. Check environment variable override
+    raw_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
+    if raw_port and raw_port.isdigit() and test_foundry_port(int(raw_port)):
+        return int(raw_port)
+
+    # 2. Search via process and network connections
+    if requests is None:
+        logger.warning("requests library not available, cannot confirm Foundry port via API")
+        return None
+
+    try:
+        # Search for the Foundry process by its specific name
+        result = run_command(
+            ['tasklist', '/FI', 'IMAGENAME eq Inference.Service.Agent*'],
+            shell=True
+        )
+
+        if 'Inference.Service.Agent' not in result.stdout:
+            return None
+
+        for line in result.stdout.splitlines():
+            if 'Inference.Service.Agent' in line:
+                parts = line.split()
+                if len(parts) >= 2:
+                    pid = parts[1]
+                    # Find network connections for the specific PID
+                    netstat_result = run_command(['netstat', '-ano'])
+
+                    for netline in netstat_result.stdout.splitlines():
+                        if 'LISTENING' in netline and pid in netline:
+                            parts = netline.split()
+                            if len(parts) >= 2:
+                                addr = parts[1]
+                                if ':' in addr:
+                                    try:
+                                        port_str = addr.split(':')[-1]
+                                        if port_str.isdigit():
+                                            port = int(port_str)
+                                            if test_foundry_port(port):
+                                                return port
+                                    except Exception:
+                                        continue
+                    break
+    except Exception as e:
+        logger.debug(f"Error during Foundry port detection: {e}")
+
+    # 3. Last resort: scan known default ports
+    for p in _KNOWN_PORTS:
+        if test_foundry_port(p):
+            return p
+
+    return None
+
+def find_foundry_url() -> Optional[str]:
+    """Return the base URL of a running Foundry service."""
+    port = find_foundry_port()
+    return f'http://localhost:{port}/v1/' if port else None
+
+def model_id_to_cache_dir(model_id: str) -> str:
+    """Convert a Foundry model ID to its filesystem directory name.
+    
+    Example: qwen2.5-0.5b-instruct-generic-cpu:4 -> qwen2.5-0.5b-instruct-generic-cpu-4
+    """
+    if ":" in model_id:
+        name, version = model_id.rsplit(":", 1)
+        return f"{name}-{version}"
+    return model_id
+
+def is_foundry_model_cached(model_id: str) -> bool:
+    """Check whether a model exists in the local Foundry cache directory."""
+    if not FOUNDRY_CACHE_DIR.exists():
+        return False
+    
+    dir_name = model_id_to_cache_dir(model_id)
+    model_dir = FOUNDRY_CACHE_DIR / dir_name
+    
+    if not model_dir.exists():
+        return False
+        
+    # Check for version subfolder (vX)
+    if ":" in model_id:
+        version = model_id.rsplit(":", 1)[1]
+        return (model_dir / f"v{version}").exists()
+    
+    return True

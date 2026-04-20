@@ -24,7 +24,6 @@
 # Version: 0.4.0
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
 # =============================================================================
 
 import subprocess

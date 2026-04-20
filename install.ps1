@@ -1,30 +1,35 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: FastAPI Foundry - Главный установщик
+# Process Name: FastAPI Foundry - Main Installer
 # =============================================================================
-# Описание:
-#   Инсталляция виртуального окружения Python, установка зависимостей,
-#   создание файла .env и подготовка директории логов.
-#   Установка Foundry / llama.cpp выполняется отдельно (см. INSTALL.md).
+# Description:
+#   Installs Python venv, pip dependencies, Tesseract OCR, llama.cpp,
+#   Foundry Local, creates .env and logs directory.
 #
-# Использование:
-#   .\install.ps1              # standard installation
-#   .\install.ps1 -Force       # reinstall venv
-#   .\install.ps1 -SkipRag     # without RAG dependencies
+# Examples:
+#   powershell -ExecutionPolicy Bypass -File .\install.ps1
+#   powershell -ExecutionPolicy Bypass -File .\install.ps1 -Force
+#   powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkipRag
+#   powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkipTesseract
 #
 # File: install.ps1
 # Project: FastApiFoundry (Docker)
-# Version: 0.3.4
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - Added Tesseract OCR installation step (step 5)
+#   - Added -SkipTesseract flag
+#   - Updated version and header format
 # Author: hypo69
-# Copyright: © 2026 hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
 
 param(
-    # Принудительная переустановка виртуального окружения
+    # Force venv recreation
     [switch]$Force,
-    # Пропуск установки библиотек для векторного поиска (RAG)
-    [switch]$SkipRag
+    # Skip RAG dependencies (sentence-transformers, faiss-cpu)
+    [switch]$SkipRag,
+    # Skip Tesseract OCR installation
+    [switch]$SkipTesseract
 )
 
 # Обоснование остановки при ошибках: предотвращение некорректной настройки системы при сбое на промежуточном этапе.
@@ -125,24 +130,41 @@ Write-Host "`nУстановка библиотек из requirements.txt..." -F
 & $python -m pip install -r (Join-Path $Root "requirements.txt")
 Write-Host "  Основные зависимости установлены" -ForegroundColor Green
 
-# --- 4. Установка зависимостей системы RAG (Retrieval Augmented Generation) ---
-# Обоснование: Библиотеки faiss и sentence-transformers имеют значительный объем
-# и вынесены в опциональный блок для ускорения базовой установки.
+# --- 4. RAG dependencies (sentence-transformers, faiss-cpu) ---
 if (-not $SkipRag) {
-    Write-Host "`nУстановка RAG компонентов (transformers, faiss)..." -ForegroundColor Yellow
-    Write-Host "  Это может занять некоторое время..." -ForegroundColor Gray
+    Write-Host "`nRAG components (transformers, faiss)..." -ForegroundColor Yellow
+    Write-Host "  This may take a while..." -ForegroundColor Gray
     try {
         & $python -m pip install sentence-transformers faiss-cpu --quiet
-        Write-Host "  RAG зависимости успешно установлены" -ForegroundColor Green
+        Write-Host "  RAG dependencies installed" -ForegroundColor Green
     } catch {
-        Write-Host "  Ошибка при установке RAG: $_" -ForegroundColor Yellow
-        Write-Host "  Попробуйте запустить позже: python install_rag_deps.py" -ForegroundColor Cyan
+        Write-Host "  RAG install error: $_" -ForegroundColor Yellow
+        Write-Host "  Retry later: pip install sentence-transformers faiss-cpu" -ForegroundColor Cyan
     }
 } else {
-    Write-Host "`nУстановка RAG пропущена (флаг -SkipRag)" -ForegroundColor Gray
+    Write-Host "`nRAG skipped (-SkipRag flag)" -ForegroundColor Gray
 }
 
-# --- 5. Подготовка конфигурации .env ---
+# --- 5. Tesseract OCR ---
+# Required for: OCR of images (PNG, JPG, TIFF) and embedded images in PDF
+# during RAG directory indexing via TextExtractor.
+if (-not $SkipTesseract) {
+    $tesseractScript = Join-Path $Root 'install\install-tesseract.ps1'
+    if (Test-Path $tesseractScript) {
+        try {
+            & $tesseractScript -EnvFile $envFile -SkipIfExists
+        } catch {
+            Write-Host "  Tesseract install error: $_" -ForegroundColor Yellow
+            Write-Host "  Install manually: https://github.com/UB-Mannheim/tesseract/wiki" -ForegroundColor Cyan
+        }
+    } else {
+        Write-Host "`nTesseract installer not found at $tesseractScript" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "`nTesseract skipped (-SkipTesseract flag)" -ForegroundColor Gray
+}
+
+# --- 6. .env configuration ---
 # Обоснование: Хранение ключей доступа и персональных настроек вне системы контроля версий.
 Write-Host "`nНастройка .env файла..." -ForegroundColor Yellow
 $envFile = Join-Path $Root ".env"
@@ -161,15 +183,7 @@ if (-not (Test-Path $envFile)) {
     Write-Host "  Файл .env уже существует" -ForegroundColor Gray
 }
 
-# --- 6. Создание директории логов ---
-# Обоснование: Гарантированное наличие папки для работы LOGGING-STANDARD.md.
-Write-Host "`nПодготовка папки логов..." -ForegroundColor Yellow
-$logsDir = Join-Path $Root "logs"
-if (-not (Test-Path $logsDir)) {
-    New-Item -ItemType Directory -Path $logsDir | Out-Null
-    Write-Host "  logs/ создана" -ForegroundColor Green
-}
-# --- 6. logs folder ---
+# --- 7. logs folder ---
 Write-Host "`nLogs folder..." -ForegroundColor Yellow
 $logsDir = Join-Path $Root "logs"
 if (-not (Test-Path $logsDir)) {
@@ -179,7 +193,7 @@ if (-not (Test-Path $logsDir)) {
     Write-Host "  logs/ already exists" -ForegroundColor Gray
 }
 
-# --- 7. llama.cpp ---
+# --- 8. llama.cpp ---
 Write-Host "`nllama.cpp server..." -ForegroundColor Yellow
 
 $binDir = Join-Path $Root "bin"
@@ -215,7 +229,7 @@ if (-not $llamaZip) {
     }
 }
 
-# --- 8. Foundry ---
+# --- 9. Foundry ---
 Write-Host "`nAI Backend (Foundry Local)..." -ForegroundColor Yellow
 
 # Check if foundry is in PATH
@@ -284,7 +298,7 @@ if ($foundryInstalled) {
     }
 }
 
-# --- 8. Загрузка моделей по умолчанию ---
+# --- 10. Default models ---
 $isFirstInstall = -not (Test-Path (Join-Path $Root "venv\.first_install_done"))
 if ($isFirstInstall) {
     $answer = Read-Host "`nЗагрузить модели по умолчанию? (y/N)"
@@ -294,7 +308,7 @@ if ($isFirstInstall) {
     "" | Out-File (Join-Path $Root "venv\.first_install_done") -Encoding UTF8
 }
 
-# --- 9. Создание ярлыков на рабочем столе ---
+# --- 11. Desktop shortcuts ---
 Write-Host "`nСоздание ярлыков..." -ForegroundColor Yellow
 $shortcutsScript = Join-Path $Root "install\install-shortcuts.ps1"
 if (Test-Path $shortcutsScript) {
@@ -308,7 +322,7 @@ if (Test-Path $shortcutsScript) {
     Write-Host "  install-shortcuts.ps1 не найден — пропуск" -ForegroundColor Gray
 }
 
-# --- 10. Итоговая сводка ---
+# --- 12. Summary ---
 Write-Host "`n$("=" * 50)" -ForegroundColor Green
 Write-Host "Установка завершена!" -ForegroundColor Green
 Write-Host ""

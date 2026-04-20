@@ -62,7 +62,7 @@ def substitute_env_vars(value: str) -> Union[str, int, float, bool, list]:
         value: String potentially containing ${...} placeholders.
 
     Returns:
-        Substituted and type-converted value.
+        Substituted and type-converted value (str, int, float, bool, or list).
 
     Raises:
         ValueError: If a required variable is not set.
@@ -96,7 +96,15 @@ def substitute_env_vars(value: str) -> Union[str, int, float, bool, list]:
 
 
 def convert_type(value: str) -> Union[str, int, float, bool, list]:
-    """Convert a string to the most appropriate Python type."""
+    """Convert a string to the most appropriate Python type.
+
+    Args:
+        value: String to convert.
+
+    Returns:
+        Converted value: bool for 'true'/'false', int/float for numbers,
+        list for comma-separated, str otherwise.
+    """
     if not isinstance(value, str):
         return value
     if value.lower() in ('true', 'yes', '1', 'on'):
@@ -113,7 +121,14 @@ def convert_type(value: str) -> Union[str, int, float, bool, list]:
 
 
 def process_dict(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Recursively substitute env vars in a config dict."""
+    """Recursively substitute env vars in a config dict.
+
+    Args:
+        data: Configuration dict to process.
+
+    Returns:
+        dict: Processed configuration with all ${...} placeholders substituted.
+    """
     result: Dict[str, Any] = {}
     for key, val in data.items():
         if isinstance(val, dict):
@@ -179,7 +194,7 @@ def validate_config(cfg: Dict[str, Any]) -> bool:
         cfg: Configuration dict to check.
 
     Returns:
-        bool: True if all required sections are present.
+        bool: True if all required sections (fastapi_server, foundry_ai, security) are present.
     """
     required = ['fastapi_server', 'foundry_ai', 'security']
     for section in required:

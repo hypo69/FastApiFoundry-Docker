@@ -9,11 +9,13 @@
 #
 # File: stop_precise.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.0
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - MIT License update
+#   - Unified headers and return type hints
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
-# Date: December 9, 2025
+# License: MIT
 # =============================================================================
 
 import subprocess
@@ -22,7 +24,7 @@ import sys
 import psutil
 import os
 
-def find_fastapi_processes():
+def find_fastapi_processes() -> list:
     """Find only FastAPI Foundry processes"""
     processes = []
     
@@ -52,7 +54,7 @@ def find_fastapi_processes():
     
     return processes
 
-def kill_process_by_pid(pid):
+def kill_process_by_pid(pid: int) -> bool:
     """Kill process by PID"""
     try:
         if platform.system().lower() == "windows":
@@ -75,7 +77,7 @@ def kill_process_by_pid(pid):
         print(f"Error killing PID {pid}: {e}")
         return False
 
-def main():
+def main() -> int:
     print("🛑 FastAPI Foundry Precise Stop")
     print("=" * 40)
     

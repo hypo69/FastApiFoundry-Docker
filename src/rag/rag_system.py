@@ -53,7 +53,11 @@ class RAGSystem:
         self._lock = asyncio.Lock()
 
     async def initialize(self) -> bool:
-        """Initialize the RAG system."""
+        """Initialize the RAG system.
+
+        Returns:
+            bool: True if index loaded successfully, False if unavailable or disabled.
+        """
         if not RAG_AVAILABLE:
             logger.warning('⚠️ RAG not available — missing dependencies')
             return False
@@ -64,7 +68,11 @@ class RAGSystem:
             return await self._load_index()
 
     async def _load_index(self) -> bool:
-        """Load FAISS index and chunk metadata from disk."""
+        """Load FAISS index and chunk metadata from disk.
+
+        Returns:
+            bool: True if both faiss.index and chunks.json loaded successfully.
+        """
         index_path = self.index_dir / 'faiss.index'
         meta_path  = self.index_dir / 'chunks.json'
 
@@ -143,19 +151,33 @@ class RAGSystem:
         return results
 
     def format_context(self, results: List[Dict[str, Any]]) -> str:
-        """Format search results as a context string for prompts."""
+        """Format search results as a context string for prompts.
+
+        Args:
+            results: List of chunk dicts returned by search().
+
+        Returns:
+            str: Formatted context block with source, section, relevance, and text.
+        """
         if not results:
             return 'No relevant context found.'
         parts = ['=== PROJECT CONTEXT START ===\n']
         for i, r in enumerate(results, 1):
-            parts.append(f"[{i}] Source: {r['source']} | Section: {r['section']} | Relevance: {r['score']:.2f}")
+            # Use 'path' if available in metadata for better file identification
+            source_id = r.get('path') or r.get('source', 'Unknown')
+            parts.append(f"[{i}] Source: {source_id} | Section: {r['section']} | Relevance: {r['score']:.2f}")
             parts.append(r['text'])
             parts.append('')
         parts.append('=== PROJECT CONTEXT END ===')
         return '\n'.join(parts)
 
     async def get_status(self) -> Dict[str, Any]:
-        """Return current RAG system status."""
+        """Return current RAG system status.
+
+        Returns:
+            dict: available, enabled, loaded, index_dir, model,
+                  chunks_count, vectors_count.
+        """
         return {
             'available':    RAG_AVAILABLE,
             'enabled':      config.rag_enabled,
@@ -167,7 +189,14 @@ class RAGSystem:
         }
 
     async def reload_index(self, index_dir: Optional[str] = None) -> bool:
-        """Reload RAG index, optionally from a new path."""
+        """Reload RAG index, optionally from a new path.
+
+        Args:
+            index_dir: New index directory path. None = use config.dir_rag.
+
+        Returns:
+            bool: True if reload succeeded.
+        """
         logger.info('Reloading RAG index…')
         self.loaded = False
         self.index  = None
@@ -188,7 +217,11 @@ class RAGSystem:
             return False
 
     async def clear_index(self) -> bool:
-        """Clear RAG index files and reset in-memory state."""
+        """Clear RAG index files and reset in-memory state.
+
+        Returns:
+            bool: True if all files removed successfully, False on OS error.
+        """
         logger.info('Clearing RAG index…')
         self.loaded = False
         self.index  = None
@@ -212,7 +245,12 @@ class RAGSystem:
         return True
 
     async def get_all_chunks(self) -> List[Dict[str, Any]]:
-        """Return all chunks with index metadata."""
+        """Return all chunks with index metadata.
+
+        Returns:
+            List[Dict]: Each chunk dict extended with chunk_id and text_length.
+                        Empty list if index not loaded.
+        """
         if not self.loaded:
             return []
         try:

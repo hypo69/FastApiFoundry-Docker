@@ -1,69 +1,45 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Foundry Management API
+# Process Name: Foundry Management API
 # =============================================================================
-# Описание:
-#   API endpoints для управления Foundry сервисом
-#   Старт/стоп сервиса и получение статуса
+# Description:
+#   API endpoints for controlling the Foundry service lifecycle.
 #
 # File: src/api/endpoints/foundry_management.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.2.1
+# Version: 0.6.0
+# Changes in 0.6.0:
+#   - MIT License update
+#   - Unified headers and return type hints
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
-# Date: 9 декабря 2025
+# License: MIT
 # =============================================================================
 
 import subprocess
-import requests
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
+from ...utils.foundry_utils import find_foundry_port
+from ...utils.process_utils import run_command
+from ...utils.api_utils import api_response_handler
 
 router = APIRouter(prefix="/foundry", tags=["foundry"])
 
 class FoundryStatus(BaseModel):
     running: bool
+    success: bool = True
     port: Optional[int] = None
     url: Optional[str] = None
 
-def find_foundry_port() -> Optional[int]:
-    try:
-        result = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq Inference.Service.Agent*'], 
-                              capture_output=True, text=True, shell=True)
-        
-        if 'Inference.Service.Agent' not in result.stdout:
-            return None
-            
-        for line in result.stdout.split('\n'):
-            if 'Inference.Service.Agent' in line:
-                parts = line.split()
-                if len(parts) >= 2:
-                    pid = parts[1]
-                    netstat_result = subprocess.run(['netstat', '-ano'], 
-                                                   capture_output=True, text=True)
-                    
-                    for netline in netstat_result.stdout.split('\n'):
-                        if 'LISTENING' in netline and pid in netline:
-                            parts = netline.split()
-                            if len(parts) >= 2:
-                                addr = parts[1]
-                                if ':' in addr:
-                                    try:
-                                        port = int(addr.split(':')[-1])
-                                        response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=1)
-                                        if response.status_code == 200:
-                                            return port
-                                    except Exception:
-                                        continue
-                    break
-    except Exception:
-        pass
-    return None
-
 @router.get("/status", response_model=FoundryStatus)
-async def get_foundry_status():
+@api_response_handler
+async def get_foundry_status() -> FoundryStatus:
+    """Get Foundry service status.
+
+    Returns:
+        FoundryStatus: running (bool), port (int|None), url (str|None).
+    """
     port = find_foundry_port()
     if port:
         return FoundryStatus(
@@ -71,24 +47,34 @@ async def get_foundry_status():
             port=port,
             url=f"http://localhost:{port}/v1/"
         )
-    return FoundryStatus(running=False)
+    return FoundryStatus(running=False, success=False)
 
 @router.post("/start")
-async def start_foundry():
-    try:
-        subprocess.run(['foundry', 'service', 'start'], check=True, capture_output=True)
-        return {"message": "Foundry start command executed"}
-    except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to start Foundry: {e}")
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Foundry CLI not found")
+@api_response_handler
+async def start_foundry() -> dict:
+    """Start the Foundry service via CLI.
+
+    Returns:
+        dict: message on success.
+
+    Raises:
+        HTTPException 500: If foundry CLI returns non-zero exit code.
+        HTTPException 404: If foundry CLI is not installed.
+    """
+    run_command(["foundry", "service", "start"])
+    return {"message": "Foundry start command executed"}
 
 @router.post("/stop")
-async def stop_foundry():
-    try:
-        subprocess.run(['foundry', 'service', 'stop'], check=True, capture_output=True)
-        return {"message": "Foundry stop command executed"}
-    except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to stop Foundry: {e}")
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Foundry CLI not found")
+@api_response_handler
+async def stop_foundry() -> dict:
+    """Stop the Foundry service via CLI.
+
+    Returns:
+        dict: message on success.
+
+    Raises:
+        HTTPException 500: If foundry CLI returns non-zero exit code.
+        HTTPException 404: If foundry CLI is not installed.
+    """
+    run_command(["foundry", "service", "stop"])
+    return {"message": "Foundry stop command executed"}
