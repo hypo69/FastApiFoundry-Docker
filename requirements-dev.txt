@@ -1,0 +1,17 @@
+# requirements-dev.txt — Docs, SDK, testing
+# pip install -r requirements-dev.txt
+mkdocs==1.6.1
+mkdocs-material==9.7.6
+mkdocs-material-extensions==1.3.1
+mkdocs-autorefs==1.4.4
+mkdocs-get-deps==0.2.2
+mkdocs-static-i18n==1.3.1
+mkdocstrings==1.0.4
+mkdocstrings-python==2.0.3
+ghp-import==2.1.0
+pymdown-extensions==10.21.2
+foundry-local-sdk
+# agent-framework-core        # uncomment if needed — installs without [all] extras
+# agent-framework-foundry-local
+pytest==9.0.3
+pytest-asyncio==1.3.0

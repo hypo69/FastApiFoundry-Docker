@@ -253,6 +253,8 @@ temp/
 *.tmp
 *.log
 *.log.*
+~*
+*~
 
 # =============================================================================
 # 🧱 BINARIES & ARCHIVES
@@ -311,7 +313,9 @@ profiles/
 !README*.md
 
 # распакованный сервер (оставлен как у тебя)
+
 bin/llama-b8802-bin-win-cpu-x64/
+bin/Python-3.11.9
 !bin/llama-b8802-bin-win-cpu-x64.zip
 !bin/Python-3.11.9.zip
 

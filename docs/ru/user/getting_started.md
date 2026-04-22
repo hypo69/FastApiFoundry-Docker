@@ -1,6 +1,11 @@
 # Быстрый старт
 
-## Запуск одной командой
+## Первый запуск — установка + старт
+
+Если `venv\` ещё не создан, `start.ps1` автоматически запустит `install.ps1`.
+`install.ps1` после установки базовых пакетов откроет браузер с GUI-установщиком на **http://localhost:9698**.
+
+После завершения установки в браузере — запустите сервер:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\start.ps1
@@ -8,11 +13,17 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 
 После запуска веб-интерфейс доступен по адресу **http://localhost:9696**
 
+!!! tip "Только установка (без запуска сервера)"
+    ```powershell
+    powershell -ExecutionPolicy Bypass -File .\install.ps1
+    ```
+    Подробнее: [Установка](installation.md)
+
 ---
 
 ## Что происходит при запуске
 
-`start.ps1` — единственная точка входа. Он последовательно проходит 7 этапов,
+`start.ps1` — единственная точка входа. Он последовательно проходит 8 этапов,
 затем передаёт управление `run.py`, который запускает FastAPI через Uvicorn.
 
 === "Для пользователя"
@@ -22,8 +33,9 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
     3. **Foundry AI** — ищет запущенный Foundry, при необходимости запускает его
     4. **Документация** — опционально собирает и запускает локальный сервер MkDocs
     5. **llama.cpp** — опционально запускает локальный inference сервер
-    6. **Очистка** — останавливает предыдущий экземпляр FastAPI (если был)
-    7. **Запуск** — стартует FastAPI сервер, открывается http://localhost:9696
+    6. **Installer** — останавливает GUI-установщик (если ещё работает)
+    7. **Очистка** — останавливает предыдущий экземпляр FastAPI (если был)
+    8. **Запуск** — стартует FastAPI сервер, открывается http://localhost:9696
 
 === "Для разработчика"
 
@@ -59,7 +71,10 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
       │      └─ true → scripts\llama-start.ps1 -ModelPath ... -Port ...
       │                 → LLAMA_BASE_URL=http://127.0.0.1:<port>/v1
       │
-      ├─[7] %TEMP%\fastapi-foundry.pid → Kill предыдущий процесс
+      ├─[6.5] install\.installer.pid → Kill installer-сервер (если жив)
+      │        └─ удалить install\.installer.pid
+      │
+      ├─[7] %TEMP%\fastapi-foundry.pid → Kill предыдущий процесс FastAPI
       │
       └─[8] Start-Process $venvPath run.py  ← блокирует до завершения
              └─ PID сохраняется в %TEMP%\fastapi-foundry.pid
@@ -213,7 +228,33 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
         Поле `bin_version` обновляется автоматически при установке новой версии.
         Чтобы добавить новую версию — положите zip в `bin/` и перезапустите `start.ps1`.
 
-??? note "Этап 6 — Остановка предыдущего экземпляра"
+??? note "Этап 6.5 — Остановка installer-сервера"
+
+    При первой установке `install.ps1` запускает `install/server.py` — временный
+    FastAPI-сервер с GUI-установщиком на порту 9698. Сервер записывает свой PID
+    в `install/.installer.pid`.
+
+    `start.ps1` проверяет этот файл и завершает процесс если он ещё жив:
+
+    ```powershell
+    $InstallerPidFile = Join-Path $Root 'install\.installer.pid'
+    if (Test-Path $InstallerPidFile) {
+        $installerPid = Get-Content $InstallerPidFile
+        Get-Process -Id $installerPid | Kill()   # игнорирует ошибку если уже завершён
+        Remove-Item $InstallerPidFile
+    }
+    ```
+
+    Installer-сервер также завершается сам при нажатии **Finish** в браузере
+    (UI вызывает `POST /api/shutdown` → сервер удаляет PID-файл и посылает `SIGTERM`).
+
+    | Сценарий | Что происходит |
+    |---|---|
+    | Пользователь нажал Finish | Сервер завершается сам, PID-файл удаляется |
+    | Пользователь закрыл браузер | Сервер продолжает работать до `start.ps1` |
+    | Перезагрузка ПК | PID-файл остался, `start.ps1` пробует Kill (процесс мёртв — игнорирует) |
+
+??? note "Этап 7 — Остановка предыдущего экземпляра FastAPI"
 
     PID запущенного FastAPI сохраняется в `%TEMP%\fastapi-foundry.pid`.
     При следующем запуске `start.ps1` читает этот файл и завершает старый процесс
@@ -272,9 +313,10 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 
 | Сервис | Уже запущен? | Действие |
 |---|---|---|
-| **FastAPI** | да | убивает по PID-файлу → запускает новый |
-| **MkDocs** | да | убивает по порту → `mkdocs build` → `mkdocs serve` |
-| **llama.cpp** | да | убивает по порту → запускает новый |
+| **Installer** (порт 9698) | жив | убивает по `install/.installer.pid` → удаляет файл |
+| **FastAPI** (порт 9696) | да | убивает по `%TEMP%/fastapi-foundry.pid` → запускает новый |
+| **MkDocs** (порт 9697) | да | убивает по порту → `mkdocs build` → `mkdocs serve` |
+| **llama.cpp** (порт 9780) | да | убивает по порту → запускает новый |
 | **Foundry** | да | не трогает — только читает порт |
 | **Foundry** | нет | запускает `foundry service start`, ждёт 20 сек |
 

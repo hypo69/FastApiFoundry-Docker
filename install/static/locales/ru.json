@@ -1,0 +1,43 @@
+{
+  "nav": { "installer": "Установщик" },
+  "ui": {
+    "title": "Мастер установки",
+    "run_all": "Установить всё",
+    "run": "Запустить",
+    "running": "Выполняется...",
+    "optional": "необязательно",
+    "finish": "Завершить и запустить",
+    "status_ok": "OK",
+    "status_err": "Ошибка"
+  },
+  "steps": {
+    "check_python":       "Проверка Python",
+    "check_python_desc":  "Проверить наличие Python 3.11+.",
+    "venv":               "Виртуальное окружение",
+    "venv_desc":          "Создать изолированное окружение Python в папке venv\\.",
+    "pip_upgrade":        "Обновление pip",
+    "pip_upgrade_desc":   "Обновить pip до последней версии.",
+    "requirements":       "Основные пакеты",
+    "requirements_desc":  "Установить FastAPI, uvicorn и все зависимости из requirements.txt.",
+    "rag":                "RAG / ML",
+    "rag_desc":           "Установить sentence-transformers и faiss-cpu (~2 ГБ). Нужно для RAG-поиска.",
+    "env":                "Файл .env",
+    "env_desc":           "Создать .env из .env.example. Добавьте API-ключи и токены.",
+    "foundry":            "Foundry Local",
+    "foundry_desc":       "Установить Microsoft Foundry Local через winget.",
+    "models":             "Загрузка моделей",
+    "models_desc":        "Скачать модели по умолчанию для Foundry и RAG.",
+    "shortcuts":          "Ярлыки на рабочем столе",
+    "shortcuts_desc":     "Создать ярлыки Запуск и Остановка на рабочем столе.",
+    "extras":             "Извлечение текста",
+    "extras_desc":        "PDF, DOCX, XLSX, PPTX, OCR изображений, архивы (40+ форматов).",
+    "extras_opt_skip":    "Пропустить (индексировать только текст и код)",
+    "dev":                "Документация / SDK / Тесты",
+    "dev_desc":           "Сервер MkDocs, Microsoft Agent SDK, pytest.",
+    "dev_opt_skip":       "Пропустить (рекомендуется для продакшна)",
+    "rag_opt_skip":       "Пропустить RAG (экономит ~2 ГБ, поиск по документам будет недоступен)",
+    "foundry_opt_skip":   "Пропустить Foundry (использовать llama.cpp или Ollama)",
+    "models_opt_skip":    "Пропустить загрузку моделей (скачать позже через веб-интерфейс)",
+    "shortcuts_opt_skip": "Пропустить создание ярлыков"
+  }
+}

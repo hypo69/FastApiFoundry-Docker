@@ -4,17 +4,95 @@
 
 import { t, applyTranslations } from './i18n.js';
 
-// Step descriptions shown in each tab panel
-const STEP_DESCRIPTIONS = {
-    check_python:  { desc_key: 'steps.check_python_desc',  optional: false },
-    venv:          { desc_key: 'steps.venv_desc',          optional: false },
-    pip_upgrade:   { desc_key: 'steps.pip_upgrade_desc',   optional: false },
-    requirements:  { desc_key: 'steps.requirements_desc',  optional: false },
-    rag:           { desc_key: 'steps.rag_desc',           optional: true  },
-    env:           { desc_key: 'steps.env_desc',           optional: false },
-    foundry:       { desc_key: 'steps.foundry_desc',       optional: true  },
-    models:        { desc_key: 'steps.models_desc',        optional: true  },
-    shortcuts:     { desc_key: 'steps.shortcuts_desc',     optional: true  },
+// Per-step metadata: description key, optional flag, extra options HTML
+const STEP_META = {
+    requirements: {
+        desc: 'steps.requirements_desc',
+        optional: false,
+    },
+    rag: {
+        desc: 'steps.rag_desc',
+        optional: true,
+        options: () => `
+            <div class="step-options">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="skip-rag">
+                    <label class="form-check-label text-muted small" for="skip-rag"
+                           data-i18n="steps.rag_opt_skip">Skip RAG</label>
+                </div>
+            </div>`,
+    },
+    extras: {
+        desc: 'steps.extras_desc',
+        optional: true,
+        options: () => `
+            <div class="step-options">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="skip-extras">
+                    <label class="form-check-label text-muted small" for="skip-extras"
+                           data-i18n="steps.extras_opt_skip">Skip text extraction</label>
+                </div>
+            </div>`,
+    },
+    dev: {
+        desc: 'steps.dev_desc',
+        optional: true,
+        options: () => `
+            <div class="step-options">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="skip-dev">
+                    <label class="form-check-label text-muted small" for="skip-dev"
+                           data-i18n="steps.dev_opt_skip">Skip docs/SDK/tests</label>
+                </div>
+            </div>`,
+    },
+    env: {
+        desc: 'steps.env_desc',
+        optional: false,
+        options: () => `
+            <div class="step-options">
+                <label class="form-label small fw-semibold">HuggingFace Token <span class="text-muted">(optional)</span></label>
+                <input id="opt-hf-token" type="password" class="form-control form-control-sm"
+                       placeholder="hf_...">
+                <div class="form-text">For gated models (Gemma, Llama). Leave empty to skip.</div>
+            </div>`,
+    },
+    foundry: {
+        desc: 'steps.foundry_desc',
+        optional: true,
+        options: () => `
+            <div class="step-options">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="skip-foundry">
+                    <label class="form-check-label text-muted small" for="skip-foundry"
+                           data-i18n="steps.foundry_opt_skip">Skip Foundry</label>
+                </div>
+            </div>`,
+    },
+    models: {
+        desc: 'steps.models_desc',
+        optional: true,
+        options: () => `
+            <div class="step-options">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="skip-models">
+                    <label class="form-check-label text-muted small" for="skip-models"
+                           data-i18n="steps.models_opt_skip">Skip model download</label>
+                </div>
+            </div>`,
+    },
+    shortcuts: {
+        desc: 'steps.shortcuts_desc',
+        optional: true,
+        options: () => `
+            <div class="step-options">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="skip-shortcuts">
+                    <label class="form-check-label text-muted small" for="skip-shortcuts"
+                           data-i18n="steps.shortcuts_opt_skip">Skip shortcuts</label>
+                </div>
+            </div>`,
+    },
 };
 
 export function buildTabs(steps) {
@@ -22,36 +100,44 @@ export function buildTabs(steps) {
     const content = document.getElementById('installTabsContent');
     if (!nav || !content) return;
 
-    // "Run All" header row
+    // Header with "Install All" button
     const header = document.createElement('div');
-    header.className = 'install-header d-flex align-items-center justify-content-between mb-0 p-3 border-bottom bg-light';
+    header.className = 'd-flex align-items-center justify-content-between p-3 bg-white border border-bottom-0 rounded-top';
     header.innerHTML = `
-        <span class="fw-semibold" data-i18n="ui.title">Installation Wizard</span>
+        <span class="fw-semibold fs-6">
+            <i class="bi bi-tools me-2 text-primary"></i>
+            <span data-i18n="ui.title">Installation Wizard</span>
+        </span>
         <button id="btn-run-all" class="btn btn-primary btn-sm">
-            <i class="bi bi-play-fill"></i>
-            <span data-i18n="ui.run_all">Run All Steps</span>
+            <i class="bi bi-play-fill me-1"></i>
+            <span data-i18n="ui.run_all">Install All</span>
         </button>`;
     nav.parentElement.insertBefore(header, nav);
 
     steps.forEach((step, idx) => {
-        const isFirst  = idx === 0;
-        const meta     = STEP_DESCRIPTIONS[step.id] || {};
-        const optional = meta.optional ? `<span class="badge bg-secondary ms-1" data-i18n="ui.optional">optional</span>` : '';
+        const isFirst = idx === 0;
+        const meta    = STEP_META[step.id] || {};
+        const optBadge = meta.optional
+            ? `<span class="badge bg-secondary ms-1 fw-normal" style="font-size:.65rem" data-i18n="ui.optional">optional</span>`
+            : '';
 
-        // Tab button
+        // Nav tab button
         const li = document.createElement('li');
         li.className = 'nav-item';
         li.innerHTML = `
-            <button class="nav-link ${isFirst ? 'active' : ''} d-flex align-items-center gap-1"
+            <button class="nav-link ${isFirst ? 'active' : ''} d-flex align-items-center gap-1 py-2 px-3"
                     id="tab-${step.id}"
                     data-bs-toggle="tab"
                     data-bs-target="#pane-${step.id}"
                     type="button">
                 <i class="bi ${step.icon} step-icon" id="icon-${step.id}"></i>
                 <span data-i18n="${step.label_key}">${step.id}</span>
-                ${optional}
+                ${optBadge}
             </button>`;
         nav.appendChild(li);
+
+        // Options block (checkboxes / inputs)
+        const optionsHtml = meta.options ? meta.options() : '';
 
         // Tab pane
         const pane = document.createElement('div');
@@ -65,36 +151,55 @@ export function buildTabs(steps) {
                             <i class="bi ${step.icon} me-2 text-primary"></i>
                             <span data-i18n="${step.label_key}">${step.id}</span>
                         </h5>
-                        <p class="text-muted small mb-0" data-i18n="${meta.desc_key || ''}"></p>
+                        <p class="text-muted small mb-0" data-i18n="${meta.desc || ''}"></p>
                     </div>
-                    <button class="btn btn-primary btn-sm" data-run-step="${step.id}" id="btn-${step.id}">
-                        <i class="bi bi-play-fill"></i>
+                    <button class="btn btn-primary btn-sm ms-3 flex-shrink-0"
+                            data-run-step="${step.id}" id="btn-${step.id}">
+                        <i class="bi bi-play-fill me-1"></i>
                         <span data-i18n="ui.run">Run</span>
                     </button>
                 </div>
+                ${optionsHtml}
                 <div id="log-${step.id}" class="step-log"></div>
-                <div id="result-${step.id}" class="mt-2"></div>
+                <div id="result-${step.id}" class="mt-2 small"></div>
             </div>`;
         content.appendChild(pane);
+    });
+
+    // Finish button after last tab pane
+    const finish = document.createElement('div');
+    finish.className = 'p-3 bg-white border border-top-0 rounded-bottom text-end';
+    finish.innerHTML = `
+        <button id="btn-finish" class="btn btn-success">
+            <i class="bi bi-rocket-takeoff me-1"></i>
+            <span data-i18n="ui.finish">Finish &amp; Launch</span>
+        </button>`;
+    content.after(finish);
+
+    document.getElementById('btn-finish')?.addEventListener('click', async () => {
+        await fetch(`${window.API_BASE}/shutdown`, { method: 'POST' }).catch(() => {});
+        document.body.innerHTML = `
+            <div class="d-flex flex-column align-items-center justify-content-center vh-100 text-center">
+                <i class="bi bi-check-circle-fill text-success" style="font-size:4rem"></i>
+                <h3 class="mt-3">Installation complete!</h3>
+                <p class="text-muted">Run <code>start.ps1</code> to launch FastAPI Foundry.</p>
+            </div>`;
     });
 
     applyTranslations();
 }
 
 export function setStepState(stepId, state) {
-    // state: 'idle' | 'running' | 'ok' | 'error'
     const icon = document.getElementById(`icon-${stepId}`);
     const btn  = document.getElementById(`btn-${stepId}`);
     if (!icon) return;
 
-    icon.className = 'bi step-icon ' + {
+    const map = {
         idle:    'bi-circle text-secondary',
         running: 'bi-arrow-repeat text-warning spin',
         ok:      'bi-check-circle-fill text-success',
         error:   'bi-x-circle-fill text-danger',
-    }[state];
-
-    if (btn) {
-        btn.disabled = state === 'running';
-    }
+    };
+    icon.className = `bi step-icon ${map[state] || map.idle}`;
+    if (btn) btn.disabled = state === 'running';
 }

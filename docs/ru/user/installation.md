@@ -3,181 +3,195 @@
 ## Системные требования
 
 - Windows 10/11
-- Python 3.11+ (или будет установлен автоматически из `bin/Python-3.11.9.zip`)
+- Python 3.11+ (или распаковывается из `bin/Python-3.11.9.zip`)
 - PowerShell 5+
-- Интернет-соединение (для загрузки Tesseract OCR и Foundry Local)
+- Интернет-соединение
 
 ---
 
-## Автоматическая установка
+## Три способа установки
+
+| | `install.bat` | `install.ps1` | Вручную |
+|---|---|---|---|
+| **Запуск** | Двойной клик | PowerShell | Командная строка |
+| **Python** | Из `bin\Python-3.11.9.zip` | Ищет в PATH | Любой |
+| **GUI** | ✅ Открывает браузер | ✅ Открывает браузер | ❌ Только консоль |
+| **Когда** | Первая установка | Первая установка | CI, Docker, опытные |
+
+---
+
+## GUI-установка (рекомендуется)
+
+### Через install.bat (двойной клик)
+
+```
+install.bat
+  ├─ Распаковывает bin\Python-3.11.9.zip → bin\Python-3.11.9\
+  ├─ Создаёт venv\
+  ├─ pip install fastapi uvicorn python-dotenv psutil
+  └─ python install\server.py  → браузер http://localhost:9698
+```
+
+### Через install.ps1 (PowerShell)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-`install.ps1` выполняет следующие шаги:
+```
+install.ps1
+  ├─ Проверяет Python 3.11+ в PATH
+  ├─ Создаёт venv\
+  ├─ pip install -r requirements.txt
+  └─ python install\server.py  → браузер http://localhost:9698
+```
 
-1. Ищет Python 3.11+ в системе. Если не найден — предлагает установить из `bin\Python-3.11.9.zip`
-2. Создаёт виртуальное окружение `venv\`
-3. Обновляет `pip`
-4. Устанавливает зависимости из `requirements.txt`
-5. Опционально устанавливает RAG-зависимости (`sentence-transformers`, `faiss-cpu`) — можно пропустить флагом `-SkipRag`
-6. **Устанавливает Tesseract OCR** — необходим для OCR изображений при индексации RAG
-7. Создаёт `.env` из `.env.example` (если `.env` ещё не существует)
-8. Создаёт папку `logs\`
-9. Если в `bin\` найден архив `llama-*-bin-win-*.zip` — распаковывает и прописывает путь в `.env`
-10. Если `foundry` не найден в PATH — предлагает установить через `winget`
-11. Опционально загружает модели по умолчанию через `install\install-models.ps1`
+### Интерфейс установщика (http://localhost:9698)
+
+| Вкладка | Что устанавливает | Опция |
+|---|---|---|
+| **Core Packages** | `requirements.txt` — FastAPI, uvicorn, aiohttp | — обязательно |
+| **RAG / ML** | `requirements-rag.txt` — torch, transformers, faiss (~3-5 GB) | ☑ Skip |
+| **Text Extraction** | `requirements-extras.txt` — PDF, DOCX, OCR, архивы | ☑ Skip |
+| **Docs / SDK / Tests** | `requirements-dev.txt` — MkDocs, foundry-local-sdk, pytest | ☑ Skip |
+| **.env File** | Создаёт `.env` из `.env.example` | поле HF Token |
+| **Foundry Local** | `install-foundry.ps1` — winget install | ☑ Skip |
+| **Download Models** | `install-models.ps1` — модели по умолчанию | ☑ Skip |
+| **Desktop Shortcuts** | `install-shortcuts.ps1` — ярлыки на рабочем столе | ☑ Skip |
+
+---
+
+## CLI-установка (без браузера)
+
+Для автоматизации, CI или если GUI не нужен — все шаги вручную:
+
+```powershell
+# 1. Создать venv (если нет)
+python -m venv venv
+
+# 2. Активировать
+venv\Scripts\Activate.ps1
+
+# 3. Обновить pip
+python -m pip install --upgrade pip
+
+# 4. Основные зависимости (обязательно)
+pip install -r requirements.txt
+
+# 5. RAG + ML (опционально, ~3-5 GB)
+pip install -r requirements-rag.txt
+
+# 6. Извлечение текста — PDF, DOCX, OCR (опционально)
+pip install -r requirements-extras.txt
+
+# 7. Docs + SDK + тесты (опционально)
+pip install -r requirements-dev.txt
+
+# 8. Создать .env
+copy .env.example .env
+notepad .env
+
+# 9. Установить Foundry (опционально)
+winget install Microsoft.FoundryLocal
+
+# 10. Запустить сервер
+.\start.ps1
+```
 
 ### Параметры install.ps1
 
 ```powershell
-# Стандартная установка
-.\install.ps1
-
-# Пересоздать venv (если что-то сломалось)
-.\install.ps1 -Force
-
-# Без RAG зависимостей (экономит ~2 GB)
-.\install.ps1 -SkipRag
-
-# Без установки Tesseract OCR
-.\install.ps1 -SkipTesseract
-
-# Комбинация флагов
-.\install.ps1 -SkipRag -SkipTesseract
+.\install.ps1              # стандартная установка + GUI
+.\install.ps1 -Force       # пересоздать venv
+.\install.ps1 -SkipRag     # без RAG (~2 GB экономии)
+.\install.ps1 -SkipTesseract  # без Tesseract OCR
 ```
 
 ---
 
-!!! tip "Настройка после установки"
-    `install.ps1` автоматически создаёт `.env` из `.env.example`.  
-    Все настройки (ключи, токены, порты) доступны через вкладку **Settings** в веб-интерфейсе: **http://localhost:9696**  
-    Подробное описание всех параметров: [Конфигурация](configuration.md).
+## PID-файлы процессов
+
+Все запущенные процессы отслеживаются через PID-файлы. `start.ps1` читает их при каждом запуске и завершает старые процессы перед стартом новых.
+
+| Процесс | PID-файл | Кто пишет | Кто читает и убивает |
+|---|---|---|---|
+| **FastAPI** (порт 9696) | `%TEMP%\fastapi-foundry.pid` | `start.ps1` | `start.ps1` при следующем запуске |
+| **Installer UI** (порт 9698) | `install\.installer.pid` | `install\server.py` | `start.ps1` (этап 6.5) или кнопка Finish |
+| **MkDocs** (порт 9697) | нет файла | — | `start.ps1` по порту через `Get-NetTCPConnection` |
+| **llama.cpp** (порт 9780) | нет файла | — | `start.ps1` по порту через `Get-NetTCPConnection` |
+| **Foundry** | нет файла | — | не трогается намеренно |
+
+### Жизненный цикл installer PID
+
+```
+install.bat / install.ps1
+  └─ python install\server.py
+       ├─ пишет PID → install\.installer.pid
+       ├─ открывает браузер
+       └─ ждёт...
+           ├─ пользователь нажал Finish
+           │    └─ POST /api/shutdown → удаляет .installer.pid → SIGTERM
+           └─ пользователь закрыл браузер (сервер жив)
+                └─ start.ps1 читает .installer.pid → Kill → удаляет файл
+```
+
+### Жизненный цикл FastAPI PID
+
+```
+start.ps1
+  ├─ читает %TEMP%\fastapi-foundry.pid
+  │    └─ Kill старый процесс → удалить файл
+  ├─ Start-Process python run.py → PassThru
+  └─ $proc.Id → %TEMP%\fastapi-foundry.pid
+       └─ finally: Remove-Item (при завершении start.ps1)
+```
+
+!!! info "Почему разные места хранения"
+    `%TEMP%\fastapi-foundry.pid` — стандартное место для временных файлов процессов,
+    доступно из любого скрипта без знания пути проекта.
+    `install\.installer.pid` — рядом со скриптом установщика, удаляется вместе с проектом.
+
+---
+
+## Файлы зависимостей
+
+| Файл | Размер | Назначение |
+|---|---|---|
+| `requirements.txt` | ~50 MB | Ядро: FastAPI, uvicorn, aiohttp, pydantic, mcp |
+| `requirements-rag.txt` | ~3-5 GB | RAG: torch, transformers, faiss, sentence-transformers |
+| `requirements-extras.txt` | ~200 MB | Текст: PDF, DOCX, OCR, архивы |
+| `requirements-dev.txt` | ~100 MB | Dev: MkDocs, foundry-local-sdk, pytest |
 
 ---
 
 ## Tesseract OCR
 
-Tesseract OCR — системная программа для распознавания текста на изображениях.  
-Используется в RAG-системе при индексации директорий: PNG, JPG, TIFF и изображения внутри PDF-файлов проходят через OCR перед добавлением в FAISS-индекс.
-
-### Автоматическая установка (через install.ps1)
-
-`install.ps1` автоматически вызывает `install\install-tesseract.ps1`, который:
-
-1. Скачивает установщик Tesseract 5.x с GitHub (UB-Mannheim)
-2. Устанавливает в `C:\Program Files\Tesseract-OCR` в тихом режиме
-3. Добавляет путь в системный PATH
-4. Прописывает `TESSERACT_CMD` в файл `.env`
-
-### Ручная установка
-
-Если автоматическая установка не сработала:
+Нужен для OCR изображений при RAG-индексации (PNG, JPG, TIFF, изображения в PDF).
 
 ```powershell
-# Запустить установщик Tesseract отдельно
-powershell -ExecutionPolicy Bypass -File .\install\install-tesseract.ps1
+# Автоматически через скрипт
+.\install\install-tesseract.ps1
+
+# Или вручную
+winget install UB-Mannheim.TesseractOCR
 ```
 
-Или вручную:
-
-1. Скачать установщик: <https://github.com/UB-Mannheim/tesseract/wiki>  
-   Файл: `tesseract-ocr-w64-setup-5.x.x.exe`
-2. При установке отметить языковые пакеты **Russian** и **English**
-3. Путь установки: `C:\Program Files\Tesseract-OCR`
-4. Добавить в PATH вручную:
-
-```powershell
-[Environment]::SetEnvironmentVariable(
-    'Path',
-    $env:Path + ';C:\Program Files\Tesseract-OCR',
-    [EnvironmentVariableTarget]::Machine
-)
-```
-
-5. Перезапустить PowerShell и проверить:
-
-```powershell
-tesseract --version
-```
-
-### Переменная TESSERACT_CMD
-
-`install-tesseract.ps1` автоматически добавляет в `.env`:
+После установки `install-tesseract.ps1` добавляет в `.env`:
 
 ```env
 TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
 ```
 
-Эта переменная используется `pytesseract` как явный путь к бинарнику — на случай если Tesseract не попал в PATH текущей сессии.
-
-### Что происходит без Tesseract
-
-Если Tesseract не установлен:
-
-- PDF, DOCX, HTML, Markdown, JSON, YAML, исходный код — **индексируются нормально**
-- PNG, JPG, TIFF и другие изображения — **пропускаются** при индексации директории
-- Изображения внутри PDF — **пропускаются** (текст страниц извлекается)
-- В логах появится предупреждение: `⚠️ TextExtractor not available`
-
----
-
-## Установка бэкендов ИИ
-
-### Microsoft Foundry Local (рекомендуется)
-
-```powershell
-# Через winget
-winget install Microsoft.FoundryLocal
-
-# Или через скрипт
-.\install\install-foundry.ps1
-```
-
-После установки Foundry запускается автоматически при старте `start.ps1`.
-
-### HuggingFace CLI
-
-```powershell
-.\install\install-huggingface-cli.ps1
-```
-
-Устанавливает `huggingface-hub` и запускает `hf auth login`.
-
-### llama.cpp
-
-Бинарники для Windows x64 уже включены в `bin\llama-b8802-bin-win-cpu-x64\`.
-`install.ps1` автоматически прописывает путь в `.env`.
-
----
-
-## Docker
-
-```powershell
-docker-compose build
-docker-compose up
-```
-
-Или через `docker-compose up -d` для фонового режима.
-
-Веб-интерфейс: **http://localhost:9696**
+Без Tesseract: изображения пропускаются при индексации, всё остальное работает нормально.
 
 ---
 
 ## Проверка установки
 
 ```powershell
-# Проверить конфигурацию
 venv\Scripts\python.exe check_env.py
-
-# Диагностика системы
 venv\Scripts\python.exe diagnose.py
-
-# Проверить Tesseract
 tesseract --version
-
-# Запустить сервер
 .\start.ps1
 ```
 

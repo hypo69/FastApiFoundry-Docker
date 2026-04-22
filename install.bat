@@ -1,38 +1,46 @@
 @echo off
 chcp 65001 >nul
+setlocal
 
-REM FastApiFoundry-Docker: Unified Installation
-REM Runs install.ps1 (venv, dependencies, .env, logs, RAG) and install-foundry.ps1 (AI backend)
+set "ROOT=%~dp0"
+set "ROOT=%ROOT:~0,-1%"
+set "PY_ZIP=%ROOT%\bin\Python-3.11.9.zip"
+set "PY_DIR=%ROOT%\bin\Python-3.11.9"
+set "PYTHON=%PY_DIR%\Python-3.11.9\python.exe"
+set "VENV_PY=%ROOT%\venv\Scripts\python.exe"
+set "VENV_PIP=%ROOT%\venv\Scripts\pip.exe"
 
-REM 1. Core Installation
-powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install.ps1' }"
-if %errorlevel% neq 0 (
-    echo Error executing install.ps1
+if exist "%PYTHON%" goto :venv
+
+if not exist "%PY_ZIP%" (
+    echo [ERROR] bin\Python-3.11.9.zip not found.
     pause
-    exit /b %errorlevel%
+    exit /b 1
 )
 
-REM 2. Install Foundry Local (optional, if not installed)
-powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install\install-foundry.ps1' }"
-if %errorlevel% neq 0 (
-    echo Error executing install-foundry.ps1
-    echo You can install Foundry manually using .\install\install-foundry.ps1 or choose another AI backend.
-    pause
-)
+echo [install] Extracting Python...
+powershell -NoProfile -Command "Expand-Archive -Path '%PY_ZIP%' -DestinationPath '%PY_DIR%' -Force"
+if errorlevel 1 ( echo [ERROR] Extraction failed. & pause & exit /b 1 )
 
-REM 3. Register autostart with Windows
-powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install\install-autostart.ps1' }"
-if %errorlevel% neq 0 (
-    echo Warning: autostart not registered. Run .\install\install-autostart.ps1 as administrator manually.
-)
+:venv
+if exist "%VENV_PY%" goto :pip
+echo [install] Creating venv...
+"%PYTHON%" -m venv "%ROOT%\venv"
+if errorlevel 1 ( echo [ERROR] venv failed. & pause & exit /b 1 )
 
-REM 4. Install HuggingFace CLI
-powershell -NoProfile -ExecutionPolicy Bypass -Command "& { [Console]::InputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '.\install\install-huggingface-cli.ps1' -SkipAuth }"
-if %errorlevel% neq 0 (
-    echo Warning: HuggingFace CLI not installed. Run .\install\install-huggingface-cli.ps1 manually.
-)
+:pip
+echo [install] Installing base packages...
+"%VENV_PIP%" install --quiet fastapi uvicorn python-dotenv psutil
+if errorlevel 1 ( echo [ERROR] pip failed. & pause & exit /b 1 )
+
+:run
+echo.
+echo Opening installer at http://localhost:9698
+echo.
+"%VENV_PY%" "%ROOT%\install\server.py"
 
 echo.
-echo Installation complete!
-echo Follow instructions in INSTALL.md
+echo Done. Run start.ps1 to launch FastAPI Foundry.
+echo.
 pause
+endlocal

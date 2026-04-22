@@ -51,35 +51,32 @@ def _ps(script: str) -> list[str]:
 
 STEPS: list[dict] = [
     {
-        "id": "check_python",
-        "label_key": "steps.check_python",
-        "icon": "bi-check-circle",
-        "cmd": lambda: [sys.executable, "-c",
-                        "import sys; print(f'Python {sys.version.split()[0]} — OK')"],
-    },
-    {
-        "id": "venv",
-        "label_key": "steps.venv",
-        "icon": "bi-box",
-        "cmd": lambda: [sys.executable, "-m", "venv", str(ROOT / "venv")],
-    },
-    {
-        "id": "pip_upgrade",
-        "label_key": "steps.pip_upgrade",
-        "icon": "bi-arrow-up-circle",
-        "cmd": lambda: [_venv_python(), "-m", "pip", "install", "--upgrade", "pip"],
-    },
-    {
+        # Core server — fast, no heavy ML deps
         "id": "requirements",
         "label_key": "steps.requirements",
         "icon": "bi-list-check",
         "cmd": lambda: [_venv_pip(), "install", "-r", str(ROOT / "requirements.txt")],
     },
     {
+        # RAG + ML: torch, transformers, faiss (~3-5 GB, slow)
         "id": "rag",
         "label_key": "steps.rag",
         "icon": "bi-search",
-        "cmd": lambda: [_venv_pip(), "install", "sentence-transformers", "faiss-cpu"],
+        "cmd": lambda: [_venv_pip(), "install", "-r", str(ROOT / "requirements-rag.txt")],
+    },
+    {
+        # Text extraction: PDF, DOCX, OCR, archives
+        "id": "extras",
+        "label_key": "steps.extras",
+        "icon": "bi-file-earmark-zip",
+        "cmd": lambda: [_venv_pip(), "install", "-r", str(ROOT / "requirements-extras.txt")],
+    },
+    {
+        # Docs + SDK + testing (optional)
+        "id": "dev",
+        "label_key": "steps.dev",
+        "icon": "bi-code-slash",
+        "cmd": lambda: [_venv_pip(), "install", "-r", str(ROOT / "requirements-dev.txt")],
     },
     {
         "id": "env",
