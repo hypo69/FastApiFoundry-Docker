@@ -73,50 +73,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate PowerShell docs (PlatyPS)
+      - name: Generate PowerShell docs
         shell: pwsh
-        run: |
-          Install-Module -Name PlatyPS -Force -Scope CurrentUser -ErrorAction Stop
-
-          $outDir = "docs/ru/dev/powershell"
-          New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-
-          # Собираем как серверы, так и основные операционные скрипты
-          $files = Get-ChildItem -Path "mcp-powershell-servers/src/servers", "scripts" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue
-
-          # Генерируем .md из comment-based help для каждого .ps1
-          foreach ($file in $files) {
-            try {
-            $name = $file.BaseName
-            $content = Get-Content $file.FullName -Raw
-
-            # Извлекаем .SYNOPSIS и .DESCRIPTION из comment-based help
-            # Улучшенные регулярные выражения для поддержки разных окончаний строк (Windows/Unix)
-            $synopsis = if ($content -match '\.SYNOPSIS\s*\r?\n\s*(.+)') { $Matches[1].Trim() } else { $name }
-            $description = if ($content -match '\.DESCRIPTION\s*\r?\n([\s\S]+?)(?=\r?\n\.[A-Z]|\r?\n#>)') { $Matches[1].Trim() } else { '' }
-            $notes = if ($content -match '\.NOTES\s*\r?\n([\s\S]+?)(?=\r?\n\.[A-Z]|\r?\n#>)') { $Matches[1].Trim() } else { '' }
-
-            $relativeSource = $file.FullName.Replace("$Root\", "").Replace("\", "/")
-
-            $md = "# $name`n`n$synopsis`n`n## Description`n`n$description`n"
-            if ($notes) { $md += "`n## Notes`n`n$notes`n" }
-            $md += "`n## Source`n`nFile: ``$relativeSource``"
-            $md | Set-Content -Path "$outDir/$name.md" -Encoding UTF8
-            } catch {
-                Write-Warning "Failed to process $($file.Name): $_"
-            }
-          }
-
-          # Индексная страница
-          $index = "# PowerShell MCP Servers`n`n"
-          foreach ($file in $files) {
-            $index += "- [$($file.BaseName)]($($file.BaseName).md)`n"
-          }
-          $index | Set-Content -Path "$outDir/index.md" -Encoding UTF8
-        } catch {
-           Write-Error "Critical error in PS docs generation: $_"
-           exit 1
-        }
+        run: powershell -ExecutionPolicy Bypass -File scripts/generate-ps-docs.ps1
 
       - uses: actions/upload-artifact@v4
         with:
