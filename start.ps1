@@ -536,6 +536,27 @@ if ($llamaModelPath -and $llamaAutoStart) {
 }
 
 # -----------------------------------------------------------------------------
+# Этап 6.5: Остановка installer-сервера (если запущен)
+# install/server.py пишет PID в install/.installer.pid
+# -----------------------------------------------------------------------------
+$InstallerPidFile = Join-Path $Root 'install\.installer.pid'
+if (Test-Path $InstallerPidFile) {
+    $installerPid = Get-Content $InstallerPidFile -ErrorAction SilentlyContinue
+    if ($installerPid) {
+        try {
+            $installerProc = Get-Process -Id $installerPid -ErrorAction Stop
+            Write-Host "⚠️  Installer server still running (PID: $installerPid) — stopping..." -ForegroundColor Yellow
+            $installerProc.Kill()
+            $installerProc.WaitForExit(3000)
+            Write-Host "✅ Installer server stopped" -ForegroundColor Green
+        } catch {
+            Write-Host "💡 Installer server (PID: $installerPid) already exited" -ForegroundColor Gray
+        }
+    }
+    Remove-Item $InstallerPidFile -Force -ErrorAction SilentlyContinue
+}
+
+# -----------------------------------------------------------------------------
 # Этап 7: Запуск сервера FastAPI (блокирующий вызов)
 # -----------------------------------------------------------------------------
 $PidFile = Join-Path $env:TEMP 'fastapi-foundry.pid'

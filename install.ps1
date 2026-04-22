@@ -130,6 +130,20 @@ Write-Host "`nУстановка библиотек из requirements.txt..." -F
 & $python -m pip install -r (Join-Path $Root "requirements.txt")
 Write-Host "  Основные зависимости установлены" -ForegroundColor Green
 
+# --- 3.5. Запуск интерактивного установщика (веб-интерфейс) ---
+# После установки базовых пакетов запускаем FastAPI installer UI на порту 9698.
+# Пользователь проходит оставшиеся шаги через браузер.
+$installerScript = Join-Path $Root "install\server.py"
+if (Test-Path $installerScript) {
+    Write-Host "`n🌐 Запуск интерфейса установщика..." -ForegroundColor Cyan
+    Write-Host "   http://localhost:9698" -ForegroundColor Green
+    # Запускаем в текущем окне — блокирует до завершения установки
+    & $python $installerScript
+    Write-Host "`n✅ Установщик завершён" -ForegroundColor Green
+} else {
+    Write-Host "`n⚠️ install\server.py не найден — продолжение в консольном режиме" -ForegroundColor Yellow
+}
+
 # --- 4. RAG dependencies (sentence-transformers, faiss-cpu) ---
 if (-not $SkipRag) {
     Write-Host "`nRAG components (transformers, faiss)..." -ForegroundColor Yellow
