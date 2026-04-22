@@ -98,21 +98,9 @@ jobs:
 
             $relativeSource = $file.FullName.Replace("$Root\", "").Replace("\", "/")
 
-            $md = @'
-# $name
-
-$synopsis
-
-## Description
-
-$description
-
-$(if ($notes) { "## Notes`n`n$notes" })
-
-## Source
-
-File: ``$relativeSource``
-'@
+            $md = "# $name`n`n$synopsis`n`n## Description`n`n$description`n"
+            if ($notes) { $md += "`n## Notes`n`n$notes`n" }
+            $md += "`n## Source`n`nFile: ``$relativeSource``"
             $md | Set-Content -Path "$outDir/$name.md" -Encoding UTF8
             } catch {
                 Write-Warning "Failed to process $($file.Name): $_"
