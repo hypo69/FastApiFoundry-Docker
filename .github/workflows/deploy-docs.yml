@@ -39,10 +39,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Generate JS docs (TypeDoc)
         working-directory: extensions/browser-extension-summarizer
@@ -72,6 +74,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Generate PowerShell docs
         shell: pwsh
@@ -90,6 +94,8 @@ jobs:
     needs: [docs-js, docs-powershell]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
