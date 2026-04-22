@@ -11,9 +11,20 @@
  *  - unloadModel()         — выгрузить модель из Foundry сервиса
  *  - addModel()            — добавить модель через модальное окно
  *  - refreshModels()       — обновить все списки моделей
+ *
+ * File: models.js
+ * Project: FastApiFoundry (Docker)
+ * Version: 0.6.0
+ * Changes in 0.6.0:
+ *   - After model switch in chat dropdown, refreshModelBanner() is called
+ *     immediately so the top navbar reflects the new active model without
+ *     waiting for the 10-second poll interval.
+ * Author: hypo69
+ * Copyright: © 2026 hypo69
  */
 
 import { showAlert, updateChatModelBadge } from './ui.js';
+import { refreshModelBanner } from './model-badge.js';
 
 async function waitForFoundryModelLoaded(modelId, timeoutMs = 90000) {
     const startedAt = Date.now();
@@ -151,12 +162,65 @@ export async function loadModels() {
         updateModelSelect(models);
         updateModelsList(models);
 
-        // Добавляем локальные HF-модели в тот же select.
+        // Add local HF models to the same select.
         if (window.hfUpdateChatModelSelect) {
             await window.hfUpdateChatModelSelect();
         }
     } catch (e) {
         console.error('Failed to load models:', e);
+    }
+}
+
+/**
+ * Detects the currently loaded model across all backends and sets it
+ * as the selected value in #chat-model dropdown.
+ * Priority: Foundry loaded > llama.cpp running > HF loaded.
+ */
+export async function syncChatModelToActive() {
+    const select = document.getElementById('chat-model');
+    if (!select) return;
+
+    try {
+        const [foundry, llama, hf] = await Promise.allSettled([
+            fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json()),
+            fetch(`${window.API_BASE}/llama/status`).then(r => r.json()),
+            fetch(`${window.API_BASE}/hf/models`).then(r => r.json()),
+        ]);
+
+        const foundryData = foundry.status === 'fulfilled' ? foundry.value : null;
+        if (foundryData?.success && foundryData.models?.length) {
+            const activeId = foundryData.models[0].id;
+            if ([...select.options].some(o => o.value === activeId)) {
+                select.value = activeId;
+                window._savedChatModel = activeId;
+                updateChatModelBadge(activeId);
+                return;
+            }
+        }
+
+        const llamaData = llama.status === 'fulfilled' ? llama.value : null;
+        if (llamaData?.running) {
+            // Find the llama:: option that matches the running model path
+            const llamaOpt = [...select.options].find(o => o.value.startsWith('llama::'));
+            if (llamaOpt) {
+                select.value = llamaOpt.value;
+                window._savedChatModel = llamaOpt.value;
+                updateChatModelBadge(llamaOpt.value);
+                return;
+            }
+        }
+
+        const hfData = hf.status === 'fulfilled' ? hf.value : null;
+        if (hfData?.loaded?.length) {
+            const hfId = `hf::${hfData.loaded[0].id}`;
+            if ([...select.options].some(o => o.value === hfId)) {
+                select.value = hfId;
+                window._savedChatModel = hfId;
+                updateChatModelBadge(hfId);
+            }
+        }
+    } catch (e) {
+        console.error('syncChatModelToActive failed:', e);
     }
 }
 
@@ -513,6 +577,7 @@ export function initModelSelectListener() {
                     await saveDefaultModel(modelId);
                     window._savedChatModel = modelId;
                     updateChatModelBadge(modelId);
+                    refreshModelBanner();
                     showAlert(`Chat model switched to HF: ${hfModelId}`, 'success');
                     return;
                 }
@@ -525,6 +590,7 @@ export function initModelSelectListener() {
                     await saveDefaultModel(modelId);
                     window._savedChatModel = modelId;
                     updateChatModelBadge(modelId);
+                    refreshModelBanner();
                     showAlert(`Chat model switched to llama.cpp`, 'success');
                     return;
                 }
@@ -535,6 +601,7 @@ export function initModelSelectListener() {
                 if (window.CONFIG) window.CONFIG.default_model = modelId;
                 window._savedChatModel = modelId;
                 updateChatModelBadge(modelId);
+                refreshModelBanner();
                 showAlert(`Chat model switched to ${modelId}`, 'success');
                 loadConnectedModels();
                 loadCatalog();

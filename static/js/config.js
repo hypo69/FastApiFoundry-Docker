@@ -88,6 +88,13 @@ export async function loadConfigFields() {
         set('config-foundry-tokens', foundry_ai?.max_tokens    || '');
         chk('config-foundry-autoload', foundry_ai?.auto_load_default);
 
+        // Startup model mode
+        const mode = foundry_ai?.startup_model_mode || 'default';
+        const modeEl = document.querySelector(`input[name="startup-model-mode"][value="${mode}"]`);
+        if (modeEl) modeEl.checked = true;
+        set('config-startup-custom-model', foundry_ai?.startup_custom_model || '');
+        document.getElementById('startup-custom-model-row').style.display = mode === 'custom' ? '' : 'none';
+
         // RAG
         const rag = data.config?.rag_system || {};
         chk('config-rag-enabled', rag.enabled);
@@ -156,11 +163,13 @@ export async function saveConfigFields() {
                 workers:             getN('config-api-workers', 1),
             },
             foundry_ai: {
-                base_url:          get('config-foundry-url'),
-                default_model:     get('config-foundry-model'),
-                temperature:       getF('config-foundry-temp', 0.7),
-                max_tokens:        getN('config-foundry-tokens', 2048),
-                auto_load_default: getC('config-foundry-autoload'),
+                base_url:             get('config-foundry-url'),
+                default_model:        get('config-foundry-model'),
+                temperature:          getF('config-foundry-temp', 0.7),
+                max_tokens:           getN('config-foundry-tokens', 2048),
+                auto_load_default:    getC('config-foundry-autoload'),
+                startup_model_mode:   document.querySelector('input[name="startup-model-mode"]:checked')?.value || 'default',
+                startup_custom_model: get('config-startup-custom-model'),
             },
             rag_system: {
                 enabled:   getC('config-rag-enabled'),

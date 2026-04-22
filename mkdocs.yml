@@ -70,6 +70,7 @@ nav:
     - Система RAG: dev/rag_system.md
     - Text Extractor: dev/text_extractor.md
     - Агенты: dev/agents.md
+    - SDK: dev/sdk.md
     - Логирование: dev/logging.md
     - CI/CD документации: dev/cicd_docs.md
     - Управление версиями: dev/versioning.md

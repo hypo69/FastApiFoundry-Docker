@@ -8,6 +8,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [0.6.0] - 2025-12-09 (updated)
 
+### Fixed
+- `static/js/models.js` — после переключения модели в дропдауне чата теперь немедленно вызывается `refreshModelBanner()`, чтобы верхняя панель отражала новую активную модель без ожидания 10-секундного интервала поллинга
+- `static/js/models.js` + `static/app.js` — при старте приложения дропдаун чата теперь показывает реально загруженную модель (Foundry/llama.cpp/HF), а не первую из списка кэша
+
+### Added
+- `static/partials/_tab_settings.html` — новая секция «Загрузить при старте» с тремя режимами: Активная / По умолчанию / Другая
+- `config.json` — поля `foundry_ai.startup_model_mode` и `foundry_ai.startup_custom_model`
+- `static/js/config.js` — чтение/сохранение новых полей в Settings
+- `static/app.js` — применение `startup_model_mode` при инициализации дропдауна чата
+
+---
+
+## [0.6.0] - 2025-12-09 (updated)
+
 ### Added
 - `scripts/Update-Project.ps1` — скрипт проверки обновлений по git-тегам: сравнивает локальную версию с последним тегом remote, предлагает обновление, выполняет `git checkout <tag>` и перезапускает `install.ps1`
 - `VERSION` — файл с текущей установленной версией (`v0.6.0`); читается `Update-Project.ps1` как fallback при отсутствии git

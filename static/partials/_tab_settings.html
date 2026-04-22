@@ -175,6 +175,50 @@
 
                     <hr class="my-3">
 
+                    <!-- ── 3.5. STARTUP MODEL ────────────────────────────── -->
+                    <div class="mb-1">
+                        <h6 class="text-success fw-semibold">
+                            <i class="bi bi-play-circle"></i> <span data-i18n="settings.startup_model">Load on startup</span>
+                        </h6>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="startup-model-mode"
+                                       id="startup-mode-active" value="active">
+                                <label class="form-check-label" for="startup-mode-active">
+                                    <i class="bi bi-lightning-charge text-warning me-1"></i>
+                                    <span data-i18n="settings.startup_active">Active model</span>
+                                    <small class="text-muted ms-1" data-i18n="settings.startup_active_hint">(last loaded before shutdown)</small>
+                                </label>
+                            </div>
+                            <div class="form-check mt-1">
+                                <input class="form-check-input" type="radio" name="startup-model-mode"
+                                       id="startup-mode-default" value="default" checked>
+                                <label class="form-check-label" for="startup-mode-default">
+                                    <i class="bi bi-star-fill text-primary me-1"></i>
+                                    <span data-i18n="settings.startup_default">Default model</span>
+                                    <small class="text-muted ms-1">(foundry_ai.default_model)</small>
+                                </label>
+                            </div>
+                            <div class="form-check mt-1">
+                                <input class="form-check-input" type="radio" name="startup-model-mode"
+                                       id="startup-mode-custom" value="custom">
+                                <label class="form-check-label" for="startup-mode-custom">
+                                    <i class="bi bi-pencil text-secondary me-1"></i>
+                                    <span data-i18n="settings.startup_custom">Custom model</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-12" id="startup-custom-model-row" style="display:none">
+                            <label class="form-label" data-i18n="settings.startup_custom_model">Model ID</label>
+                            <input type="text" id="config-startup-custom-model" class="form-control"
+                                   placeholder="deepseek-r1-distill-qwen-7b-generic-cpu:3">
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+
                     <!-- ── 4. HUGGINGFACE ─────────────────────────────────── -->
                     <div class="mb-1">
                         <h6 class="text-danger fw-semibold">

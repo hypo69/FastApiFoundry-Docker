@@ -111,3 +111,8 @@ striprtf
 rarfile
 py7zr
 Pillow
+
+# SDK dependencies (microsoft_foundry_sdk + fastapi_foundry_sdk)
+foundry-local-sdk
+agent-framework
+mcp

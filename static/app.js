@@ -97,13 +97,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     const lang = cfg?.config?.app?.language || '';
     await initI18n(lang);
 
+    // Show/hide custom model input when radio changes
+    document.addEventListener('change', e => {
+        if (e.target.name === 'startup-model-mode') {
+            const row = document.getElementById('startup-custom-model-row');
+            if (row) row.style.display = e.target.value === 'custom' ? '' : 'none';
+        }
+    });
+
     foundry.checkSystemStatus();
     setInterval(foundry.checkSystemStatus, 30_000);
 
     initModelBanner();
     window.refreshModelBanner = refreshModelBanner;
 
-    models.loadModels();
+    models.loadModels().then(async () => {
+        // Determine which model to select based on startup_model_mode
+        const startupMode = cfg?.config?.foundry_ai?.startup_model_mode || 'default';
+        if (startupMode === 'active') {
+            await models.syncChatModelToActive();
+        } else if (startupMode === 'custom') {
+            const customId = cfg?.config?.foundry_ai?.startup_custom_model || '';
+            const select = document.getElementById('chat-model');
+            if (customId && select && [...select.options].some(o => o.value === customId)) {
+                select.value = customId;
+                window._savedChatModel = customId;
+            } else {
+                await models.syncChatModelToActive();
+            }
+        } else {
+            // 'default' — use saved default_model from config, already set by applyChatConfig
+            // but still sync to active if nothing is selected
+            const select = document.getElementById('chat-model');
+            if (!select?.value) await models.syncChatModelToActive();
+        }
+    });
     models.loadConnectedModels();
     models.initModelSelectListener();
 
