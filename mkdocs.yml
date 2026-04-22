@@ -64,6 +64,7 @@ nav:
     - Веб-интерфейс: user/web_interface.md
     - Извлечение текста: user/text_extraction.md
     - Логирование: user/logging.md
+    - CLI Reference: user/cli_reference.md
   - Для разработчиков:
     - Архитектура: dev/architecture.md
     - API Reference: dev/api_reference.md

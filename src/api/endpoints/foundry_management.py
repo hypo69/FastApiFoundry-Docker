@@ -17,12 +17,15 @@
 # =============================================================================
 
 import subprocess
+import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from ...utils.foundry_utils import find_foundry_port
-from ...utils.process_utils import run_command
+from ...utils.process_utils import run_command, DEFAULT_SUBPROCESS_KWARGS
 from ...utils.api_utils import api_response_handler
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/foundry", tags=["foundry"])
 
@@ -52,17 +55,25 @@ async def get_foundry_status() -> FoundryStatus:
 @router.post("/start")
 @api_response_handler
 async def start_foundry() -> dict:
-    """Start the Foundry service via CLI.
+    """Start the Foundry service via CLI (non-blocking).
 
     Returns:
-        dict: message on success.
-
-    Raises:
-        HTTPException 500: If foundry CLI returns non-zero exit code.
-        HTTPException 404: If foundry CLI is not installed.
+        dict: success, message, pid on success; success=False, error on failure.
     """
-    run_command(["foundry", "service", "start"])
-    return {"message": "Foundry start command executed"}
+    try:
+        process = subprocess.Popen(
+            ["foundry", "service", "start"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            **DEFAULT_SUBPROCESS_KWARGS,
+        )
+        logger.info(f"Foundry service start launched (PID: {process.pid})")
+        return {"success": True, "message": "Foundry start command executed", "pid": process.pid}
+    except FileNotFoundError:
+        return {"success": False, "error": "foundry CLI not found — is Foundry Local installed?"}
+    except Exception as e:
+        logger.error(f"❌ Failed to start Foundry: {e}")
+        return {"success": False, "error": str(e)}
 
 @router.post("/stop")
 @api_response_handler

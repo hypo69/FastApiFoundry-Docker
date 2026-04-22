@@ -24,22 +24,29 @@ function getFoundryIncludeGpuFlag() {
 
 async function waitForFoundryModelLoaded(modelId, timeoutMs = 90000) {
     const startedAt = Date.now();
+    const statusEl = document.getElementById('foundry-load-status');
 
-    // Почему: endpoint `/foundry/models/load` запускает загрузку асинхронно.
-    // Ожидание появления модели в `/foundry/models/loaded` делает "Use" реальным,
-    // а не только визуальным выбором в UI.
     while (Date.now() - startedAt < timeoutMs) {
+        const elapsed = Math.round((Date.now() - startedAt) / 1000);
+        if (statusEl) statusEl.innerHTML =
+            `<span class="spinner-border spinner-border-sm me-2"></span>Loading ${modelId}... ${elapsed}s`;
+
         const response = await fetch(`${window.API_BASE}/foundry/models/loaded`);
         const data = await response.json();
         const loadedModels = (data.models || []).map(m => m.id);
 
         if (data.success && loadedModels.includes(modelId)) {
+            if (statusEl) statusEl.innerHTML =
+                `<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>${modelId} ready</span>`;
+            setTimeout(() => { if (statusEl) statusEl.innerHTML = ''; }, 3000);
             return true;
         }
 
         await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
+    if (statusEl) statusEl.innerHTML =
+        `<span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Timeout waiting for ${modelId}</span>`;
     return false;
 }
 

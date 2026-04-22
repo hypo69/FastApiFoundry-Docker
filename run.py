@@ -174,43 +174,8 @@ def find_foundry_port() -> Optional[int]:
     Returns:
         Optional[int]: Номер порта Foundry или None, если сервис не найден.
     """
-    if not REQUESTS_AVAILABLE: # Проверка доступности библиотеки requests
-        return None
-    
-    try:
-        import subprocess
-        result = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq Inference.Service.Agent*'], 
-                              capture_output=True, text=True, shell=True)
-        
-        if 'Inference.Service.Agent' not in result.stdout: # Проверка наличия процесса в списке
-            return None
-            
-        for line in result.stdout.split('\n'):
-            if 'Inference.Service.Agent' in line: # Проверка строки на соответствие имени агента
-                parts = line.split()
-                if len(parts) >= 2: # Проверка структуры строки для получения PID
-                    pid = parts[1]
-                    netstat_result = subprocess.run(['netstat', '-ano'], 
-                                                   capture_output=True, text=True)
-                    
-                    for netline in netstat_result.stdout.split('\n'):
-                        if 'LISTENING' in netline and pid in netline: # Проверка активного прослушивания портов PID-ом
-                            parts = netline.split()
-                            if len(parts) >= 2: # Проверка структуры строки netstat
-                                addr = parts[1]
-                                if ':' in addr: # Проверка наличия порта в адресе
-                                    try:
-                                        port = int(addr.split(':')[-1])
-                                        response = requests.get(f'http://127.0.0.1:{port}/v1/models', timeout=1)
-                                        if response.status_code == 200: # Проверка подтверждения API Foundry
-                                            logger.info(f"API Foundry подтвержден на порту: {port}")
-                                            return port
-                                    except Exception:
-                                        continue
-                    break
-    except Exception:
-        pass
-    return None
+    from src.utils.foundry_utils import find_foundry_port as _find_port
+    return _find_port()
 
 
 def resolve_foundry_base_url() -> Optional[str]:

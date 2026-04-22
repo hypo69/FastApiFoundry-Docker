@@ -66,29 +66,45 @@ class FoundryClient:
             await self.session.close()
     
     async def _find_foundry_port(self) -> int | None:
-        """Найти порт запущенного Foundry.
+        """Find running Foundry port via `foundry service status` output.
 
         Returns:
             int | None: Port number if Foundry responds with HTTP 200, None otherwise.
         """
-        test_ports = [62171, 50477, 58130]
-        logger.info(f"🔍 Поиск Foundry на портах: {test_ports}")
-        
+        import subprocess as _sp
+        import re as _re
+        try:
+            result = _sp.run(['foundry', 'service', 'status'],
+                             capture_output=True, text=True, timeout=10,
+                             encoding='utf-8', errors='replace')
+            output = (result.stdout or '') + (result.stderr or '')
+            match = _re.search(r'http://127\.0\.0\.1:(\d+)', output)
+            if match:
+                port = int(match.group(1))
+                session = await self._get_session()
+                try:
+                    async with session.get(f'http://127.0.0.1:{port}/v1/models',
+                                           timeout=aiohttp.ClientTimeout(total=2)) as r:
+                        if r.status == 200:
+                            logger.info(f'✅ Foundry found via status on port {port}')
+                            return port
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.debug(f'foundry service status failed: {e}')
+
+        # Fallback: scan known ports
+        known = [52632, 62171, 50477, 58130]
         session = await self._get_session()
-        
-        for port in test_ports:
+        for port in known:
             try:
-                logger.debug(f"Проверка порта {port}...")
-                async with session.get(f'http://127.0.0.1:{port}/v1/models', timeout=aiohttp.ClientTimeout(total=2)) as response:
-                    if response.status == 200:
-                        logger.info(f"✅ Foundry найден на порту: {port}")
+                async with session.get(f'http://127.0.0.1:{port}/v1/models',
+                                       timeout=aiohttp.ClientTimeout(total=2)) as r:
+                    if r.status == 200:
+                        logger.info(f'✅ Foundry found on known port {port}')
                         return port
-                    else:
-                        logger.debug(f"❌ Порт {port}: HTTP {response.status}")
-            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-                logger.debug(f"❌ Порт {port}: {e}")
-        
-        logger.warning("❌ Foundry не найден на известных портах")
+            except Exception:
+                continue
         return None
     
     async def _update_base_url(self):

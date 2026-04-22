@@ -200,8 +200,17 @@ export async function syncChatModelToActive() {
 
         const llamaData = llama.status === 'fulfilled' ? llama.value : null;
         if (llamaData?.running) {
-            // Find the llama:: option that matches the running model path
-            const llamaOpt = [...select.options].find(o => o.value.startsWith('llama::'));
+            // Try to match the exact running model path from llama /v1/models
+            let runningPath = null;
+            try {
+                const lm = await fetch(`${llamaData.openai_url}/models`).then(r => r.json());
+                if (lm.data?.[0]?.id) runningPath = lm.data[0].id;
+            } catch (_) {}
+
+            const llamaOpt = runningPath
+                ? [...select.options].find(o => o.value === `llama::${runningPath}`)
+                : [...select.options].find(o => o.value.startsWith('llama::'));
+
             if (llamaOpt) {
                 select.value = llamaOpt.value;
                 window._savedChatModel = llamaOpt.value;

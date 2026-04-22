@@ -105,7 +105,11 @@ class Config:
 
     @property
     def foundry_base_url(self) -> str:
-        return self._foundry_base_url
+        # Runtime override (set by run.py after discovery) takes priority.
+        # Falls back to static value from config.json.
+        if self._foundry_base_url:
+            return self._foundry_base_url
+        return self._config_data.get('foundry_ai', {}).get('base_url', '') or ''
 
     @foundry_base_url.setter
     def foundry_base_url(self, value: str) -> None:

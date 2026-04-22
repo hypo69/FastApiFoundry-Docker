@@ -33,7 +33,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 # Known ports often used by Foundry or local LLM proxies
-_KNOWN_PORTS = [62171, 50477, 58130]
+_KNOWN_PORTS = [52632, 62171, 50477, 58130]
 
 # Default cache location
 FOUNDRY_CACHE_DIR = Path(os.getenv(
@@ -67,7 +67,7 @@ def test_foundry_port(port: int) -> bool:
 
 def find_foundry_port() -> Optional[int]:
     """Locate the port of a running Foundry service.
-    Order: 1. FOUNDRY_DYNAMIC_PORT env, 2. tasklist+netstat, 3. known ports.
+    Order: 1. FOUNDRY_DYNAMIC_PORT env, 2. foundry service status output, 3. known ports.
 
     Returns:
         int | None: Port number if found, None otherwise.
@@ -77,46 +77,19 @@ def find_foundry_port() -> Optional[int]:
     if raw_port and raw_port.isdigit() and test_foundry_port(int(raw_port)):
         return int(raw_port)
 
-    # 2. Search via process and network connections
-    if requests is None:
-        logger.warning("requests library not available, cannot confirm Foundry port via API")
-        return None
-
+    # 2. Parse port from `foundry service status` output
+    # Output contains: "running on http://127.0.0.1:PORT/..."
     try:
-        # Search for the Foundry process by its specific name
-        result = run_command(
-            ['tasklist', '/FI', 'IMAGENAME eq Inference.Service.Agent*'],
-            shell=True
-        )
-
-        if 'Inference.Service.Agent' not in result.stdout:
-            return None
-
-        for line in result.stdout.splitlines():
-            if 'Inference.Service.Agent' in line:
-                parts = line.split()
-                if len(parts) >= 2:
-                    pid = parts[1]
-                    # Find network connections for the specific PID
-                    netstat_result = run_command(['netstat', '-ano'])
-
-                    for netline in netstat_result.stdout.splitlines():
-                        if 'LISTENING' in netline and pid in netline:
-                            parts = netline.split()
-                            if len(parts) >= 2:
-                                addr = parts[1]
-                                if ':' in addr:
-                                    try:
-                                        port_str = addr.split(':')[-1]
-                                        if port_str.isdigit():
-                                            port = int(port_str)
-                                            if test_foundry_port(port):
-                                                return port
-                                    except Exception:
-                                        continue
-                    break
+        result = run_command(['foundry', 'service', 'status'], timeout=10)
+        output = (result.stdout or '') + (result.stderr or '')
+        match = re.search(r'http://127\.0\.0\.1:(\d+)', output)
+        if match:
+            port = int(match.group(1))
+            if test_foundry_port(port):
+                logger.info(f'✅ Foundry found via status command on port {port}')
+                return port
     except Exception as e:
-        logger.debug(f"Error during Foundry port detection: {e}")
+        logger.debug(f'foundry service status failed: {e}')
 
     # 3. Last resort: scan known default ports
     for p in _KNOWN_PORTS:

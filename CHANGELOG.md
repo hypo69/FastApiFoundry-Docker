@@ -6,24 +6,25 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
-## [0.6.0] - 2025-12-09 (updated)
+## [0.6.0] - 2025-12-10 (updated)
 
 ### Fixed
-- `static/js/models.js` — после переключения модели в дропдауне чата теперь немедленно вызывается `refreshModelBanner()`, чтобы верхняя панель отражала новую активную модель без ожидания 10-секундного интервала поллинга
-- `static/js/models.js` + `static/app.js` — при старте приложения дропдаун чата теперь показывает реально загруженную модель (Foundry/llama.cpp/HF), а не первую из списка кэша
+- `start.ps1` — MkDocs и llama.cpp теперь останавливаются при выходе (Ctrl+C): PID сохраняется в `$script:MkDocsPid` / `$script:LlamaPid`, блок `finally` вызывает `Stop-Process`; Foundry намеренно не останавливается — это системный сервис
 
 ### Added
-- `static/partials/_tab_settings.html` — новая секция «Загрузить при старте» с тремя режимами: Активная / По умолчанию / Другая
-- `config.json` — поля `foundry_ai.startup_model_mode` и `foundry_ai.startup_custom_model`
-- `static/js/config.js` — чтение/сохранение новых полей в Settings
-- `static/app.js` — применение `startup_model_mode` при инициализации дропдауна чата
+- `docs/ru/user/cli_reference.md` — новый раздел CLI Reference: справочник команд Foundry Local CLI, llama.cpp, HuggingFace CLI, диагностика FastAPI Foundry, RAG API
+- `mkdocs.yml` — страница CLI Reference добавлена в навигацию раздела «Руководство пользователя»
 
----
+### Fixed
+- `config_manager.py` — `foundry_base_url` теперь читает статическое значение из `config.json → foundry_ai.base_url` когда runtime override не задан; ранее возвращал `None` и всегда запускал автообнаружение
+- `src/utils/foundry_utils.py` — `find_foundry_port()` переписан: вместо ненадёжного `tasklist + netstat` теперь парсит вывод `foundry service status` (содержит точный URL `http://127.0.0.1:PORT`)
+- `run.py` — `find_foundry_port()` делегирует в `foundry_utils.py`; убрана дублирующая реализация со старой логикой
+- `src/api/endpoints/foundry_models.py` — `list_loaded_models()` оборачивает HTTP-запрос в `try/except`; `TimeoutError`/`CancelledError` при недоступном Foundry возвращают `{success: false, models: []}` вместо исключения
+- `src/api/endpoints/foundry_management.py` — `start_foundry()` заменён с блокирующего `run_command` на неблокирующий `Popen`; добавлена обработка `FileNotFoundError`
+- `static/js/model-badge.js` — `refreshModelBanner()` принимает опциональный `modelInfo` для немедленного рендера без ожидания poll
+- `static/js/models.js` — `syncChatModelToActive()` при llama.cpp теперь сверяется с `/v1/models` для точного совпадения пути модели
 
-## [0.6.0] - 2025-12-09 (updated)
-
-### Added
-- `scripts/Update-Project.ps1` — скрипт проверки обновлений по git-тегам: сравнивает локальную версию с последним тегом remote, предлагает обновление, выполняет `git checkout <tag>` и перезапускает `install.ps1`
+: сравнивает локальную версию с последним тегом remote, предлагает обновление, выполняет `git checkout <tag>` и перезапускает `install.ps1`
 - `VERSION` — файл с текущей установленной версией (`v0.6.0`); читается `Update-Project.ps1` как fallback при отсутствии git
 - `docs/ru/dev/versioning.md` — новая глава документации: схема semver, файл VERSION, механизм автообновления, выпуск релиза, ручное обновление, откат
 - `mkdocs.yml` — страница «Управление версиями» добавлена в раздел «Для разработчиков»

@@ -212,16 +212,20 @@ async def list_loaded_models() -> dict:
     base_url: str = _get_foundry_base_url().rstrip("/")
     url: str = f"{base_url}/models"
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as response:
-            if response.status != 200:
-                return {"success": False, "models": [], "error": f"HTTP {response.status}"}
-            data: dict = await response.json()
-            models: list = [
-                {"id": m.get("id", ""), "name": m.get("id", ""), "status": "loaded"}
-                for m in data.get("data", [])
-            ]
-            return {"success": True, "models": models, "count": len(models)}
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as response:
+                if response.status != 200:
+                    return {"success": False, "models": [], "error": f"HTTP {response.status}"}
+                data: dict = await response.json()
+                models: list = [
+                    {"id": m.get("id", ""), "name": m.get("id", ""), "status": "loaded"}
+                    for m in data.get("data", [])
+                ]
+                return {"success": True, "models": models, "count": len(models)}
+    except Exception as e:
+        logger.debug(f"Foundry service unavailable at {url}: {e}")
+        return {"success": False, "models": [], "count": 0, "error": "Foundry service unavailable"}
 
 
 @router.post("/download")

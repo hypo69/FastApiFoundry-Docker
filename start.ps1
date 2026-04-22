@@ -303,11 +303,12 @@ if ($docsServerConfig -and $docsServerConfig.enabled) {
     Write-Host "🚀 Запуск сервера MkDocs на порту $docsPort..." -ForegroundColor Yellow
     try {
         # Запуск mkdocs serve в отдельном свернутом окне (hot-reload при изменениях docs/)
-        Start-Process powershell.exe -ArgumentList @(
+        $mkdocsProc = Start-Process powershell.exe -ArgumentList @(
             '-NonInteractive', '-NoProfile', '-ExecutionPolicy', 'Bypass',
             '-Command', "cd '$Root'; & '$venvPath' -m mkdocs serve -a 0.0.0.0:$docsPort"
-        ) -WindowStyle Minimized -PassThru | Out-Null
-        Write-Host "✅ Сервер MkDocs запущен на http://localhost:$docsPort" -ForegroundColor Green
+        ) -WindowStyle Minimized -PassThru
+        $script:MkDocsPid = $mkdocsProc.Id
+        Write-Host "✅ Сервер MkDocs запущен на http://localhost:$docsPort (PID: $($mkdocsProc.Id))" -ForegroundColor Green
     } catch {
         Write-Host "❌ Сбой при запуске сервера MkDocs: $_" -ForegroundColor Red
         Write-Host "⚠️ Продолжение работы без сервера документации." -ForegroundColor Yellow
@@ -521,6 +522,9 @@ if ($llamaModelPath -and $llamaAutoStart) {
         if ($started) {
             $env:LLAMA_BASE_URL = "http://127.0.0.1:$llamaPort/v1"
             Write-Host "🔗 LLAMA_BASE_URL = $env:LLAMA_BASE_URL" -ForegroundColor Green
+            # Save llama PID for cleanup on exit
+            $llamaRunning = Get-NetTCPConnection -LocalPort $llamaPort -State Listen -ErrorAction SilentlyContinue
+            if ($llamaRunning) { $script:LlamaPid = $llamaRunning.OwningProcess }
         }
     } else {
         Write-Host '❌ llama-server.exe not available, skipping auto-start.' -ForegroundColor Red
@@ -579,4 +583,22 @@ try {
     exit 1
 } finally {
     Remove-Item $PidFile -Force -ErrorAction SilentlyContinue
+
+    # Stop background processes started by this launcher
+    if ($script:MkDocsPid) {
+        try {
+            Stop-Process -Id $script:MkDocsPid -Force -ErrorAction Stop
+            Write-Host "✅ MkDocs остановлен (PID: $script:MkDocsPid)" -ForegroundColor Green
+        } catch {
+            Write-Host "💡 MkDocs (PID: $script:MkDocsPid) уже завершён" -ForegroundColor Gray
+        }
+    }
+    if ($script:LlamaPid) {
+        try {
+            Stop-Process -Id $script:LlamaPid -Force -ErrorAction Stop
+            Write-Host "✅ llama.cpp остановлен (PID: $script:LlamaPid)" -ForegroundColor Green
+        } catch {
+            Write-Host "💡 llama.cpp (PID: $script:LlamaPid) уже завершён" -ForegroundColor Gray
+        }
+    }
 }

@@ -28,16 +28,15 @@ async function _fetchActiveModel() {
         fetch(`${base}/health`).then(r => r.json()),
     ]);
 
-    // Foundry loaded model
+    // Foundry loaded model — only show if Foundry service is actually reachable
     const foundryData = foundry.status === 'fulfilled' ? foundry.value : null;
     if (foundryData?.success && foundryData.models?.length) {
         const m = foundryData.models[0];
-        // Try to get size from available models list (cached in window)
         const size = _lookupSize(m.id);
         return { name: m.id, size, backend: 'Foundry', ...await _sysStats(health) };
     }
 
-    // llama.cpp running
+    // llama.cpp running — check before falling through
     const llamaData = llama.status === 'fulfilled' ? llama.value : null;
     if (llamaData?.running) {
         // Get model name from llama /v1/models
@@ -130,7 +129,15 @@ export function initModelBanner() {
     _bannerTimer = setInterval(_poll, 10_000);
 }
 
-/** Force immediate refresh (call after model load/unload). */
-export function refreshModelBanner() {
+/**
+ * Force immediate refresh.
+ * If modelInfo is provided, renders it directly without polling.
+ * @param {{ name: string, backend: string, size?: string }|null} [modelInfo]
+ */
+export function refreshModelBanner(modelInfo) {
+    if (modelInfo) {
+        _renderBanner(modelInfo);
+        return;
+    }
     _poll();
 }
