@@ -98,6 +98,77 @@ venv\Scripts\python.exe run.py
 
 ---
 
+## Reloader (WatchFiles)
+
+Когда в `config.json` включён режим `dev` или явно задан `reload: true`, Uvicorn запускает **два процесса**:
+
+```
+Процесс 1 — reloader (WatchFiles)
+  └─ Процесс 2 — worker (фактический FastAPI сервер)
+```
+
+### Что это значит на практике
+
+```
+reloader process [33548] using WatchFiles   ← это нормально
+Started server process [33612]              ← это и есть сервер
+```
+
+- **Reloader** следит за изменениями файлов `*.py` в `src/` и перезапускает worker при каждом сохранении
+- **Worker** — реальный процесс, обрабатывающий HTTP запросы
+- Оба процесса видны в `tasklist` / диспетчере задач
+
+### Управляется через config.json
+
+```json
+{
+  "fastapi_server": {
+    "mode": "dev"
+  }
+}
+```
+
+| `mode` | `reload` | Поведение |
+|---|---|---|
+| `dev` | `true` | Reloader активен — два процесса, hot reload |
+| `prod` | `false` | Один процесс, без слежки за файлами |
+
+!!! warning "Workers при reload=true"
+    Uvicorn не поддерживает `workers > 1` совместно с `reload=true`.
+    `run.py` автоматически форсирует `workers=1` при включённом reload.
+
+### Защита от дублирования вывода
+
+При `reload=true` `run.py` запускается дважды — сначала как reloader, потом как worker.
+Чтобы стартовые сообщения не печатались дважды, используется флаг:
+
+```python
+_in_reloader_child = os.getenv('_UVICORN_CHILD') == '1'
+if not _in_reloader_child:
+    os.environ['_UVICORN_CHILD'] = '1'
+    # Вывод только в основном процессе
+```
+
+### Отключение reloader
+
+Если reloader мешает (например, в Docker или при профилировании):
+
+```json
+{
+  "fastapi_server": {
+    "mode": "prod"
+  }
+}
+```
+
+Или напрямую через переменную окружения:
+
+```env
+FASTAPI_RELOAD=false
+```
+
+---
+
 ## Конфигурация
 
 ### Приоритет источников

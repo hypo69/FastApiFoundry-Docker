@@ -243,6 +243,21 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
         await foundry_client.close()           # закрытие aiohttp сессии
     ```
 
+    ### Reloader (WatchFiles)
+
+    В режиме `mode: dev` Uvicorn запускает **два процесса**:
+
+    ```
+    reloader process [33548] using WatchFiles   ← следит за изменениями *.py
+    Started server process [33612]              ← фактический FastAPI сервер
+    ```
+
+    Это нормальное поведение. При сохранении любого `.py` файла worker перезапускается автоматически.
+
+    Чтобы стартовые сообщения не печатались дважды, `run.py` использует флаг `_UVICORN_CHILD`.
+
+    Для отключения reloader установите `mode: prod` в `config.json`.
+
 ---
 
 ## Повторный запуск (restart)

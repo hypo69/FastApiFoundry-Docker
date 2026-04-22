@@ -14,45 +14,60 @@
 let _bannerTimer = null;
 
 /**
- * Fetch the currently active model info from all backends.
- * Returns { name, size, backend, ram_mb, cpu_pct } or null.
+ * Fetch the currently active model info.
+ * Source of truth: #chat-model dropdown value.
+ * Falls back to first loaded backend model if dropdown is empty.
  */
 async function _fetchActiveModel() {
     const base = window.API_BASE;
+    const [health] = await Promise.allSettled([
+        fetch(`${base}/health`).then(r => r.json()),
+    ]);
+    const stats = await _sysStats(health);
 
-    // Run all probes in parallel; ignore individual failures
-    const [foundry, llama, hf, health] = await Promise.allSettled([
+    // Primary source: what the user selected in the chat dropdown
+    const selectedModel = document.getElementById('chat-model')?.value || '';
+
+    if (selectedModel.startsWith('llama::')) {
+        const name = selectedModel.slice('llama::'.length).split(/[\\/]/).pop() || 'llama.cpp model';
+        return { name, size: null, backend: 'llama.cpp', ...stats };
+    }
+
+    if (selectedModel.startsWith('hf::')) {
+        return { name: selectedModel.slice(4), size: null, backend: 'HuggingFace 🤗', ...stats };
+    }
+
+    if (selectedModel) {
+        return { name: selectedModel, size: _lookupSize(selectedModel), backend: 'Foundry', ...stats };
+    }
+
+    // Fallback: nothing selected yet — query backends
+    const [foundry, llama, hf] = await Promise.allSettled([
         fetch(`${base}/foundry/models/loaded`).then(r => r.json()),
         fetch(`${base}/llama/status`).then(r => r.json()),
         fetch(`${base}/hf/models`).then(r => r.json()),
-        fetch(`${base}/health`).then(r => r.json()),
     ]);
 
-    // Foundry loaded model — only show if Foundry service is actually reachable
     const foundryData = foundry.status === 'fulfilled' ? foundry.value : null;
     if (foundryData?.success && foundryData.models?.length) {
         const m = foundryData.models[0];
-        const size = _lookupSize(m.id);
-        return { name: m.id, size, backend: 'Foundry', ...await _sysStats(health) };
+        return { name: m.id, size: _lookupSize(m.id), backend: 'Foundry', ...stats };
     }
 
-    // llama.cpp running — check before falling through
     const llamaData = llama.status === 'fulfilled' ? llama.value : null;
     if (llamaData?.running) {
-        // Get model name from llama /v1/models
-        let llamaName = 'llama.cpp model';
+        let name = 'llama.cpp model';
         try {
             const lm = await fetch(`${llamaData.openai_url}/models`).then(r => r.json());
-            if (lm.data?.[0]?.id) llamaName = lm.data[0].id;
+            if (lm.data?.[0]?.id) name = lm.data[0].id;
         } catch (_) {}
-        return { name: llamaName, size: null, backend: 'llama.cpp', ...await _sysStats(health) };
+        return { name, size: null, backend: 'llama.cpp', ...stats };
     }
 
-    // HuggingFace loaded model
     const hfData = hf.status === 'fulfilled' ? hf.value : null;
     if (hfData?.loaded?.length) {
         const m = hfData.loaded[0];
-        return { name: m.id || m.name, size: null, backend: 'HuggingFace 🤗', ...await _sysStats(health) };
+        return { name: m.id || m.name, size: null, backend: 'HuggingFace 🤗', ...stats };
     }
 
     return null;
@@ -125,7 +140,6 @@ async function _poll() {
 
 /** Start polling. Call once after DOM is ready. */
 export function initModelBanner() {
-    _poll();
     _bannerTimer = setInterval(_poll, 10_000);
 }
 

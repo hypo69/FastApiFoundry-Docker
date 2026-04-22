@@ -362,6 +362,14 @@ export async function listCachedFoundryModels() {
             });
         }
 
+        // Fetch which models are currently loaded in RAM
+        let loadedIds = new Set();
+        try {
+            const loadedResp = await fetch(`${window.API_BASE}/foundry/models/loaded`);
+            const loadedData = await loadedResp.json();
+            if (loadedData.success) loadedIds = new Set((loadedData.models || []).map(m => m.id));
+        } catch (_) {}
+
         if (listEl) {
             if (!models.length) {
                 listEl.innerHTML = `
@@ -371,18 +379,32 @@ export async function listCachedFoundryModels() {
                     </div>
                 `;
             } else {
-                listEl.innerHTML = (items.length ? items : models.map(modelId => ({ id: modelId }))).map(model => `
-                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
-                        <div class="me-3">
-                            <strong style="font-size:.85rem">${model.alias || model.name || model.id}</strong>
-                            <small class="text-muted d-block">${model.device || model.type || 'n/a'}${model.size ? ` · ${model.size}` : ''}</small>
-                            <code style="font-size:.75rem">${model.id}</code>
-                        </div>
-                        <button class="btn btn-sm btn-outline-success" onclick="selectFoundryModel('${String(model.id).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')}')">
-                            Load &amp; Use
-                        </button>
-                    </div>
-                `).join('');
+                const esc = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+                listEl.innerHTML = (items.length ? items : models.map(id => ({ id }))).map(model => {
+                    const isLoaded = loadedIds.has(model.id);
+                    const statusBadge = isLoaded
+                        ? `<span class="badge bg-success me-2"><i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>In RAM</span>`
+                        : `<span class="badge bg-secondary me-2">On disk</span>`;
+                    const actionBtn = isLoaded
+                        ? `<button class="btn btn-sm btn-outline-danger" onclick="unloadFoundryModel('${esc(model.id)}')" title="Unload from RAM">
+                               <i class="bi bi-stop-fill"></i> Unload
+                           </button>`
+                        : `<button class="btn btn-sm btn-outline-success" onclick="selectFoundryModel('${esc(model.id)}')">
+                               <i class="bi bi-play-fill"></i> Load &amp; Use
+                           </button>`;
+                    return `
+                        <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom" id="cached-model-${esc(model.id)}">
+                            <div class="me-3">
+                                <div class="d-flex align-items-center">
+                                    ${statusBadge}
+                                    <strong style="font-size:.85rem">${esc(model.alias || model.name || model.id)}</strong>
+                                </div>
+                                <small class="text-muted">${esc(model.device || model.type || 'CPU')}${model.size ? ` · ${esc(model.size)}` : ''}</small>
+                                <code class="d-block" style="font-size:.75rem">${esc(model.id)}</code>
+                            </div>
+                            ${actionBtn}
+                        </div>`;
+                }).join('');
             }
         }
     } catch (error) {
@@ -666,13 +688,33 @@ export async function downloadFoundryModel(modelId) {
 export async function loadSelectedFoundryModel() {
     const selectEl = document.getElementById('foundry-downloaded-model-select');
     const modelId = selectEl?.value;
-
     if (!modelId) {
-        showAlert('Выберите уже скачанную модель для подключения.', 'warning');
+        showAlert('Select a downloaded model first.', 'warning');
         return;
     }
-
     await selectFoundryModel(modelId);
+}
+
+export async function unloadFoundryModel(modelId) {
+    if (!modelId) return;
+    try {
+        showAlert(`Unloading ${modelId} from RAM...`, 'info');
+        const data = await fetch(`${window.API_BASE}/foundry/models/unload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model_id: modelId })
+        }).then(r => r.json());
+
+        if (data.success) {
+            showAlert(`${modelId} unloaded from RAM`, 'success');
+            await listCachedFoundryModels();
+            refreshModelBanner();
+        } else {
+            showAlert(`Unload failed: ${data.error}`, 'danger');
+        }
+    } catch (e) {
+        showAlert(`Error: ${e.message}`, 'danger');
+    }
 }
 
 export function showModelInfo() {

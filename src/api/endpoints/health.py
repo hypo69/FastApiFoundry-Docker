@@ -34,25 +34,16 @@ router = APIRouter()
 
 
 def _check_rag_status() -> str:
-    """Check RAG index availability.
-
-    Returns:
-        'enabled' if FAISS index exists and RAG is enabled, 'disabled' otherwise.
-    """
-    rag_cfg = config.get('rag_system', {})
-    if not rag_cfg.get('enabled', False):
+    """Check RAG index availability."""
+    if not config.rag_enabled:
         return 'disabled'
-    index_dir = Path(rag_cfg.get('index_dir', './rag_index'))
+    index_dir = Path(config.rag_index_dir)
     return 'enabled' if (index_dir / 'faiss.index').exists() else 'no index'
 
 
 async def _check_llama_status() -> str:
-    """Check llama.cpp server availability.
-
-    Returns:
-        'running' if server responds, 'stopped' otherwise.
-    """
-    port = config.get('llama_cpp', {}).get('port', 9780)
+    """Check llama.cpp server availability."""
+    port = config.get_section('llama_cpp').get('port', 9780)
     url = f'http://127.0.0.1:{port}/health'
     try:
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=2)) as session:
@@ -63,12 +54,8 @@ async def _check_llama_status() -> str:
 
 
 async def _check_docs_status() -> str:
-    """Check MkDocs documentation server availability.
-
-    Returns:
-        'running' if server responds, 'stopped' otherwise.
-    """
-    port = config.get('docs_server', {}).get('port', 9697)
+    """Check MkDocs documentation server availability."""
+    port = config.get_section('docs_server').get('port', 9697)
     url = f'http://127.0.0.1:{port}/'
     try:
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=2)) as session:
@@ -95,7 +82,7 @@ async def restart_service(service: str) -> dict:
             return {'success': True, 'message': 'Foundry start command sent'}
 
         elif service == 'llama':
-            llama_cfg = config.get('llama_cpp', {})
+            llama_cfg = config.get_section('llama_cpp')
             model_path = llama_cfg.get('model_path', '')
             if not model_path or not Path(model_path).exists():
                 return {'success': False, 'error': 'No model_path set in config.json → llama_cpp.model_path'}
@@ -105,7 +92,7 @@ async def restart_service(service: str) -> dict:
             return result
 
         elif service == 'docs':
-            docs_cfg = config.get('docs_server', {})
+            docs_cfg = config.get_section('docs_server')
             port = docs_cfg.get('port', 9697)
             root = Path(__file__).parents[4]
             python = sys.executable
@@ -117,7 +104,7 @@ async def restart_service(service: str) -> dict:
             return {'success': True, 'message': f'MkDocs started on port {port}'}
 
         elif service == 'rag':
-            rag_cfg = config.get('rag_system', {})
+            rag_cfg = config.get_section('rag_system')
             if not rag_cfg.get('enabled', False):
                 return {'success': False, 'error': 'RAG is disabled in config.json → rag_system.enabled'}
             index_dir = Path(rag_cfg.get('index_dir', '~/.rag')).expanduser()

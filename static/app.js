@@ -68,7 +68,6 @@ async function loadAllPartials() {
             `${base}/_tab_rag.html`,
             `${base}/_tab_settings.html`,
             `${base}/_tab_editor.html`,
-            `${base}/_tab_examples.html`,
             `${base}/_tab_mcp.html`,
             `${base}/_tab_agent.html`,
             `${base}/_tab_providers.html`,
@@ -131,6 +130,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const select = document.getElementById('chat-model');
             if (!select?.value) await models.syncChatModelToActive();
         }
+        // Refresh banner AFTER dropdown is fully populated and synced
+        refreshModelBanner();
     });
     models.loadConnectedModels();
     models.initModelSelectListener();

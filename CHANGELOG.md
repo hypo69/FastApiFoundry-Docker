@@ -16,7 +16,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - `mkdocs.yml` — страница CLI Reference добавлена в навигацию раздела «Руководство пользователя»
 
 ### Fixed
-- `config_manager.py` — `foundry_base_url` теперь читает статическое значение из `config.json → foundry_ai.base_url` когда runtime override не задан; ранее возвращал `None` и всегда запускал автообнаружение
+- `src/api/endpoints/health.py` — `Config` object has no attribute `get`: заменены все вызовы `config.get(section, {})` на `config.get_section(section)` и `config.rag_enabled` / `config.rag_index_dir`; это было корневой причиной того, что `/health` возвращал `foundry_status: error` и бейдж и индикатор Foundry показывали offline
+- `src/models/foundry_client.py` — `_find_foundry_port()` переписан: теперь парсит `foundry service status` вместо сканирования только 3 захардкоденных портов; добавлен порт 52632 в fallback-список
+- `static/js/foundry.js` — `waitForFoundryModelLoaded()` показывает живой счётчик с спиннером во время загрузки модели
+- `static/partials/_tab_foundry.html` — добавлен `#foundry-load-status` для отображения статуса загрузки
+ теперь читает статическое значение из `config.json → foundry_ai.base_url` когда runtime override не задан; ранее возвращал `None` и всегда запускал автообнаружение
 - `src/utils/foundry_utils.py` — `find_foundry_port()` переписан: вместо ненадёжного `tasklist + netstat` теперь парсит вывод `foundry service status` (содержит точный URL `http://127.0.0.1:PORT`)
 - `run.py` — `find_foundry_port()` делегирует в `foundry_utils.py`; убрана дублирующая реализация со старой логикой
 - `src/api/endpoints/foundry_models.py` — `list_loaded_models()` оборачивает HTTP-запрос в `try/except`; `TimeoutError`/`CancelledError` при недоступном Foundry возвращают `{success: false, models: []}` вместо исключения

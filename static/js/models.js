@@ -143,26 +143,28 @@ async function switchLlamaChatModel(modelPath) {
  */
 export async function loadModels() {
     try {
-        const [foundryData, llamaData] = await Promise.all([
+        const [foundryData, llamaData, loadedData] = await Promise.all([
             fetch(`${window.API_BASE}/foundry/models/cached`).then(r => r.json()),
             fetch(`${window.API_BASE}/llama/models`).then(r => r.json()),
+            fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json()),
         ]);
+
+        const loadedIds = new Set((loadedData?.models || []).map(m => m.id));
 
         const foundryModels = (foundryData?.items || []).map(item => ({
             id: item.id,
-            name: item.alias || item.name || item.id,
+            name: (loadedIds.has(item.id) ? '🟢 ' : '') + (item.alias || item.name || item.id),
         }));
 
         const llamaModels = (llamaData?.models || []).map(m => ({
             id: `llama::${m.path}`,
-            name: m.name || m.path,
+            name: m.name || m.path.split(/[\\/]/).pop(),
         }));
 
         const models = [...foundryModels, ...llamaModels];
         updateModelSelect(models);
         updateModelsList(models);
 
-        // Add local HF models to the same select.
         if (window.hfUpdateChatModelSelect) {
             await window.hfUpdateChatModelSelect();
         }
@@ -242,18 +244,44 @@ export function updateModelSelect(models) {
     const select = document.getElementById('chat-model');
     if (!select) return;
 
-    // Сохраняем текущий выбор чтобы восстановить после перезаполнения
     const current = select.value;
+
+    // Separate by backend
+    const foundryModels = models.filter(m => !m.id.startsWith('llama::') && !m.id.startsWith('hf::'));
+    const llamaModels   = models.filter(m => m.id.startsWith('llama::'));
+
+    // Preserve existing hf:: optgroup added by hfUpdateChatModelSelect
+    const existingHfGroup = select.querySelector('optgroup[label*="HuggingFace"]');
+
     select.innerHTML = '<option value="">Select a model...</option>';
 
-    models.forEach(({ id, name }) => {
-        const opt = document.createElement('option');
-        opt.value = id;
-        opt.textContent = name || id;
-        select.appendChild(opt);
-    });
+    if (foundryModels.length) {
+        const group = document.createElement('optgroup');
+        group.label = '— Foundry —';
+        foundryModels.forEach(({ id, name }) => {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = name || id;
+            group.appendChild(opt);
+        });
+        select.appendChild(group);
+    }
 
-    // Восстанавливаем выбор или применяем сохранённую модель из config
+    if (llamaModels.length) {
+        const group = document.createElement('optgroup');
+        group.label = '— llama.cpp —';
+        llamaModels.forEach(({ id, name }) => {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = name || id;
+            group.appendChild(opt);
+        });
+        select.appendChild(group);
+    }
+
+    // Re-append HF group if it existed
+    if (existingHfGroup) select.appendChild(existingHfGroup);
+
     if (current) select.value = current;
     else if (window._savedChatModel) select.value = window._savedChatModel;
 }
