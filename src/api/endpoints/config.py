@@ -278,18 +278,19 @@ async def export_config():
 # ── Provider API Keys (stored in .env) ──────────────────────────────────────
 
 PROVIDER_KEY_MAP = {
-    "gemini":     "GEMINI_API_KEY",
-    "openai":     "OPENAI_API_KEY",
-    "openrouter": "OPENROUTER_API_KEY",
-    "anthropic":  "ANTHROPIC_API_KEY",
-    "mistral":    "MISTRAL_API_KEY",
-    "groq":       "GROQ_API_KEY",
-    "cohere":     "COHERE_API_KEY",
-    "deepseek":   "DEEPSEEK_API_KEY",
-    "xai":        "XAI_API_KEY",
-    "nvidia":     "NVIDIA_API_KEY",
-    "custom":     "CUSTOM_API_KEY",
-    "custom_url": "CUSTOM_BASE_URL",
+    "gemini":       "GEMINI_API_KEY",
+    "openai":       "OPENAI_API_KEY",
+    "openrouter":   "OPENROUTER_API_KEY",
+    "anthropic":    "ANTHROPIC_API_KEY",
+    "mistral":      "MISTRAL_API_KEY",
+    "groq":         "GROQ_API_KEY",
+    "cohere":       "COHERE_API_KEY",
+    "deepseek":     "DEEPSEEK_API_KEY",
+    "xai":          "XAI_API_KEY",
+    "nvidia":       "NVIDIA_API_KEY",
+    "huggingface":  "HF_TOKEN",
+    "custom":       "CUSTOM_API_KEY",
+    "custom_url":   "CUSTOM_BASE_URL",
 }
 
 
@@ -387,6 +388,40 @@ async def extension_import(request: ExtensionSyncRequest):
             imported.append(provider)
     _write_env_file(".env", env)
     return {"success": True, "imported": imported}
+
+
+# ── Provider Models Proxy (avoids CORS/auth issues from browser) ────────────
+
+import aiohttp
+
+@router.get("/config/provider-models/{provider}")
+async def get_provider_models(provider: str):
+    """Proxy: fetch model list from external provider API server-side to avoid CORS."""
+    env = _read_env_file(".env")
+    env_key = PROVIDER_KEY_MAP.get(provider)
+    api_key = env.get(env_key, "") if env_key else ""
+
+    PROXY_TARGETS = {
+        "openai":    ("https://api.openai.com/v1/models",    {"Authorization": f"Bearer {api_key}"}),
+        "anthropic": ("https://api.anthropic.com/v1/models", {"x-api-key": api_key, "anthropic-version": "2023-06-01"}),
+    }
+
+    if provider not in PROXY_TARGETS:
+        raise HTTPException(status_code=400, detail=f"Provider '{provider}' does not need proxying")
+
+    url, headers = PROXY_TARGETS[provider]
+    if not api_key:
+        raise HTTPException(status_code=400, detail=f"No API key configured for {provider}")
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+                data = await resp.json()
+                if resp.status != 200:
+                    raise HTTPException(status_code=resp.status, detail=data.get("error", {}).get("message", str(data)))
+                return {"success": True, "data": data}
+    except aiohttp.ClientError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 class ConfigImportRequest(BaseModel):

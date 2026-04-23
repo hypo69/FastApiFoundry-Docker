@@ -60,7 +60,9 @@ start.ps1
   │      └─ true → scripts\llama-start.ps1 -ModelPath ... -Port ...  (фоновое окно)
   │                 └─ LLAMA_BASE_URL = http://127.0.0.1:<port>/v1
   │
-  ├─[6] %TEMP%\fastapi-foundry.pid → убить предыдущий процесс
+  ├─[6] %TEMP%\fastapi-foundry-installer.pid → убить installer-сервер (если жив)
+  │
+  ├─[6.5] %TEMP%\fastapi-foundry.pid → убить предыдущий процесс FastAPI
   │
   └─[7] venv\Scripts\python.exe run.py  ← блокирующий вызов
           │

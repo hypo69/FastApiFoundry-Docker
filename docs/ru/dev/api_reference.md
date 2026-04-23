@@ -463,6 +463,82 @@
 
 ---
 
+## Local Models MCP Server
+
+> Файл: `mcp-powershell-servers/src/servers/local_models_mcp.py`  
+> Транспорт: STDIO (JSON-RPC 2.0)  
+> Требует: FastAPI Foundry запущен на `localhost:9696`
+
+MCP сервер для подключения Claude Desktop и других MCP клиентов к локальным AI моделям.
+
+### Маршрутизация моделей
+
+Выбор бэкенда определяется префиксом в поле `model`:
+
+| Префикс | Бэкенд |
+|---|---|
+| без префикса | Foundry Local (ONNX) |
+| `llama::<path>` | llama.cpp |
+| `ollama::<name>` | Ollama |
+| `hf::<model_id>` | HuggingFace Transformers |
+
+### `generate` — Генерация текста
+
+**Аргументы:**
+```json
+{
+  "prompt": "Ваш запрос",
+  "model": "",
+  "max_tokens": 512,
+  "temperature": 0.7
+}
+```
+
+**Ответ:** строка с ответом модели или `❌ <описание ошибки>`.
+
+### `chat` — Чат с историей
+
+**Аргументы:**
+```json
+{
+  "message": "Сообщение пользователя",
+  "model": "",
+  "session_id": "mcp-default",
+  "max_tokens": 512
+}
+```
+
+Поле `session_id` обеспечивает непрерывность истории между запросами. По умолчанию `mcp-default`.
+
+### `list_models` — Список моделей
+
+Аргументы не требуются. Возвращает JSON со всеми доступными моделями изо всех бэкендов.
+
+### `rag_search` — Поиск по RAG
+
+**Аргументы:**
+```json
+{
+  "query": "Текст запроса",
+  "top_k": 3
+}
+```
+
+**Ответ:** JSON со списком релевантных чанков с полями `content`, `score`, `metadata`.
+
+### `health` — Статус сервиса
+
+Аргументы не требуются. Возвращает JSON со статусом FastAPI Foundry и Foundry Local.
+
+### Переменные окружения
+
+| Переменная | По умолчанию | Описание |
+|---|---|---|
+| `FASTAPI_BASE_URL` | `http://localhost:9696` | Базовый URL FastAPI Foundry |
+| `MCP_HTTP_TIMEOUT` | `120` | Таймаут HTTP запросов (сек) |`
+
+---
+
 ## Config
 
 ### `GET /config`

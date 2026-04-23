@@ -1,0 +1,67 @@
+<!-- ── HUGGINGFACE ─────────────────────────────────────────────────────── -->
+<div class="settings-section settings-section--hf">
+    <div class="settings-section-header text-danger">
+        <i class="bi bi-boxes"></i> <span data-i18n="settings.huggingface">HuggingFace</span>
+    </div>
+    <div class="alert alert-info py-2 px-3 mb-3" style="font-size:.85rem">
+        <i class="bi bi-key me-1"></i>
+        <span data-i18n="settings.hf_token_moved">HuggingFace Token has been moved to the</span>
+        <a href="#" onclick="document.getElementById('providers-tab').click();return false;" data-i18n="settings.hf_token_moved_link">API Keys</a>
+        <span data-i18n="settings.hf_token_moved_tab">tab.</span>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label d-flex align-items-center gap-1">
+                <span data-i18n="settings.device">Device</span>
+                <i class="bi bi-question-circle text-muted" style="cursor:help" data-i18n-title="settings.tip_hf_device"></i>
+            </label>
+            <select id="config-hf-device" class="form-select">
+                <option value="auto" data-i18n="settings.device_auto">Auto</option>
+                <option value="cpu" data-i18n="settings.device_cpu">CPU</option>
+                <option value="cuda" data-i18n="settings.device_cuda">CUDA (GPU)</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label d-flex align-items-center gap-1">
+                <span data-i18n="settings.default_max_tokens">Default Max Tokens</span>
+                <i class="bi bi-question-circle text-muted" style="cursor:help" data-i18n-title="settings.tip_hf_max_tokens"></i>
+            </label>
+            <input type="number" id="config-hf-max-tokens" class="form-control" placeholder="512">
+        </div>
+    </div>
+</div>
+
+<!-- ── LLAMA.CPP ───────────────────────────────────────────────────────── -->
+<div class="settings-section settings-section--llama">
+    <div class="settings-section-header text-warning">
+        <i class="bi bi-cpu"></i> llama.cpp
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label d-flex align-items-center gap-1">
+                <span data-i18n="settings.port">Port</span>
+                <i class="bi bi-question-circle text-muted" style="cursor:help" data-i18n-title="settings.tip_llama_port"></i>
+            </label>
+            <input type="number" id="config-llama-port" class="form-control" placeholder="9780">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label d-flex align-items-center gap-1">
+                <span data-i18n="settings.llama_model_path">Model Path</span>
+                <i class="bi bi-question-circle text-muted" style="cursor:help" data-i18n-title="settings.tip_llama_model_path"></i>
+            </label>
+            <input type="text" id="config-llama-model-path" class="form-control font-monospace" placeholder="~/.models">
+        </div>
+        <div class="col-12">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="config-llama-autostart">
+                <label class="form-check-label d-flex align-items-center gap-1" for="config-llama-autostart">
+                    <span data-i18n="settings.llama_autostart">Auto-start llama.cpp on startup</span>
+                    <i class="bi bi-question-circle text-muted" style="cursor:help" data-i18n-title="settings.tip_llama_autostart"></i>
+                </label>
+            </div>
+            <div class="form-text" data-i18n="settings.llama_autostart_hint">
+                Saves to config.json: llama_cpp.auto_start and llama_cpp.model_path
+            </div>
+        </div>
+    </div>
+</div>

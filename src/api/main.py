@@ -13,10 +13,33 @@
 # Copyright: © 2026 hypo69
 # =============================================================================
 
+from fastapi import WebSocket, WebSocketDisconnect
 from .app import create_app
+from .websocket_manager import manager
+from src.logger import logger
 
 # Application creation
 app = create_app()
+
+@app.websocket("/ws/{room}")
+async def websocket_endpoint(websocket: WebSocket, room: str):
+    """! Эндпоинт для WebSocket соединений с распределением по комнатам.
+
+    Args:
+        websocket (WebSocket): Объект веб-сокета.
+        room (str): Название комнаты для подписки (foundry, rag, system).
+    """
+    await manager.connect(websocket, room)
+    try:
+        while True:
+            # Ожидание входящих данных для поддержания активности соединения
+            # Waiting for incoming data to keep connection alive
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, room)
+    except Exception as e:
+        logger.error(f"WebSocket error in room '{room}': {e}")
+        manager.disconnect(websocket, room)
 
 if __name__ == "__main__":
     import uvicorn

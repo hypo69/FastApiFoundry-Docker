@@ -1,78 +1,148 @@
 # FastAPI Foundry — Development Guidelines
 
-## File Header Standard (ALL files)
+**Version:** 0.6.1
 
-Every file must start with this header block:
+---
 
-### Python
+## 1. File Header (Mandatory for ALL files)
+
+Every Python, JS, CSS, HTML, PowerShell file must start with this header block:
+
 ```python
 # -*- coding: utf-8 -*-
 # =============================================================================
 # Process Name: <Short descriptive name>
 # =============================================================================
 # Description:
-#   <What the module does, what APIs it uses>
+#   <What this module does>
 #
-# File: <filename.py>
+# File: filename.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.6.0
-# Changes in 0.6.0:
-#   - <description of changes>
+# Version: 0.6.1
+# Changes in 0.6.1:
+#   - <what changed>
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
 ```
 
-### JavaScript
+JavaScript variant:
 ```javascript
 /**
- * <module-name>.js — <Short description>
+ * ui.js — Short description
  *
- * <Detailed description of purpose, conventions, and behavior>
+ * Contains:
+ *  - functionName() — what it does
  */
-```
-
-### PowerShell
-```powershell
-# -*- coding: utf-8 -*-
-# =============================================================================
-# Process Name: <Short descriptive name>
-# =============================================================================
-# Description:
-#   <What the script does>
-#
-# Examples:
-#   powershell -ExecutionPolicy Bypass -File .\script.ps1
-#
-# File: script.ps1
-# Project: FastApiFoundry (Docker)
-# Version: 0.6.0
-# Author: hypo69
-# Copyright: © 2026 hypo69
-# =============================================================================
 ```
 
 ---
 
-## Python Coding Patterns
+## 2. Python Code Standards
 
-### Module-level logger (always)
+### 2.1 Docstrings
+
+Use Google-style docstrings. Start the summary line with `"""` — no `!` prefix (deprecated):
+
 ```python
-import logging
+def find_free_port(start_port: int = 9696, end_port: int = 9796) -> Optional[int]:
+    """Find a free port in the given range.
+
+    Args:
+        start_port (int): Start of range. Default: 9696.
+        end_port (int): End of range. Default: 9796.
+
+    Returns:
+        Optional[int]: Free port number or None if all ports are occupied.
+
+    Raises:
+        OSError: On socket errors.
+    """
+```
+
+> ⚠️ `"""! text` — устаревший синтаксис, не использовать.
+
+### 2.2 Type Annotations
+
+Always annotate function signatures and declare local variables with types at the top of the function body:
+
+```python
+def get_server_port() -> int:
+    default_port: int = config.api_port
+    auto_find: bool = False
+    free_port: Optional[int] = None
+    ...
+```
+
+### 2.3 Guard Clauses (Early Return)
+
+Prefer early return over deep nesting:
+
+```python
+# ✅ Correct
+if not prompt:
+    return {"success": False, "error": "Prompt is required"}
+
+# ❌ Avoid
+if prompt:
+    # deep nested logic
+```
+
+### 2.4 Inline Comment Style
+
+Comments explain *why*, not *what*. Bilingual pattern: Russian description + English translation on the same line or adjacent:
+
+```python
+# Проверка существования экземпляра (Singleton)
+# Check for existing instance (Singleton)
+if cls._instance is None:
+    ...
+
+# Проверка: если автопоиск отключен, используем фиксированный порт
+if not auto_find:
+    return default_port
+```
+
+Comments starting with `# Проверка` (Check) are a recurring idiom for guard conditions.
+
+### 2.5 Exception Handling
+
+Wrap risky operations in try/except, log with context, re-raise or return error dict:
+
+```python
+try:
+    result = await foundry_client.generate_text(...)
+    if "content" not in result:
+        return {"success": False, "error": result.get("error", "Foundry error")}
+    return {"success": True, "content": result["content"], ...}
+except Exception as e:
+    return {"success": False, "error": str(e)}
+```
+
+For infrastructure code (config loading), re-raise after logging:
+```python
+except json.JSONDecodeError as e:
+    logger.error(f'❌ config.json содержит некорректный JSON: {e}')
+    raise
+```
+
+### 2.6 Logging
+
+Use `logging.getLogger(__name__)` — never `print()` in library code. Use emoji prefixes for visibility:
+
+```python
 logger = logging.getLogger(__name__)
-```
-Never use `print()` for application output — use `logger.info/warning/error`.
-
-### Global singleton pattern
-Every client/service module exposes a module-level singleton:
-```python
-# At bottom of module
-foundry_client = FoundryClient()
-rag_system = RAGSystem()
-translator = Translator()
+logger.info("✅ RAG system initialized")
+logger.warning("⚠️ RAG system not initialized")
+logger.error(f"❌ Ошибка создания папки архива: {e}")
 ```
 
-### Singleton class pattern (Config)
+`print()` is only used in `run.py` for startup banner output.
+
+### 2.7 Singleton Pattern
+
+Config and client singletons use `__new__` with `_instance` class variable:
+
 ```python
 class Config:
     _instance = None
@@ -82,367 +152,305 @@ class Config:
             cls._instance = super().__new__(cls)
             cls._instance._load_config()
         return cls._instance
+
+config = Config()  # module-level singleton
 ```
 
-### Consistent return dict pattern
-All service methods return a dict with `success` key:
+### 2.8 Config Access Pattern
+
+Always access config via the singleton, never read `config.json` directly in endpoints:
+
 ```python
-# Success
-return {"success": True, "content": result, "model": model_id, "usage": {}}
+from ...core.config import config as app_config
 
-# Failure
-return {"success": False, "error": "Description of what went wrong"}
-```
-Never raise exceptions from public API methods — catch and return `{"success": False, "error": ...}`.
-
-### Guard clause / early return
-```python
-if not text or not text.strip():
-    return self._err("Empty text")
-
-if not self.loaded:
-    return []
-```
-Prefer early returns over nested if-blocks.
-
-### Async HTTP session management
-```python
-async def _get_session(self) -> aiohttp.ClientSession:
-    if self._session is None or self._session.closed:
-        self._session = aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=60)
-        )
-    return self._session
-
-async def close(self) -> None:
-    if self._session and not self._session.closed:
-        await self._session.close()
-```
-Always lazy-create and reuse sessions. Close in lifespan shutdown.
-
-### Optional dependency guard
-```python
-RAG_AVAILABLE = False
-try:
-    from sentence_transformers import SentenceTransformer
-    import faiss
-    RAG_AVAILABLE = True
-except ImportError:
-    logger.warning('⚠️ RAG dependencies not installed. Run: pip install ...')
-```
-Use feature flags for optional heavy dependencies (torch, faiss, onnx).
-
-### Async + blocking code
-```python
-loop = asyncio.get_event_loop()
-result = await loop.run_in_executor(None, blocking_function, arg)
-```
-Always offload blocking I/O (FAISS, model loading) to executor.
-
-### Async lock for shared state
-```python
-self._lock = asyncio.Lock()
-
-async def initialize(self) -> bool:
-    async with self._lock:
-        return await self._load_index()
+temperature = request.get("temperature", app_config.foundry_temperature)
 ```
 
-### Type annotations
-```python
-from typing import Any, Dict, List, Optional
-
-async def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-async def translate(self, text: str, *, provider: str = "llm") -> dict:
-def find_free_port(start_port: int = 9696, end_port: int = 9796) -> int | None:
-```
-Use `int | None` union syntax (Python 3.10+). Use `Optional[X]` for older compat.
-
-### Docstring format
-```python
-async def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-    """Find relevant chunks for a query.
-
-    Args:
-        query: Search query text.
-        top_k: Number of results to return.
-
-    Returns:
-        List of matching chunks with score field added.
-    """
-```
-
-### Exception handling with context
-```python
-try:
-    self.model = await loop.run_in_executor(None, SentenceTransformer, self.model_name)
-except Exception as e:
-    # Model name wrong, no internet, or transformers version mismatch
-    logger.error(f'❌ Failed to load embedding model "{self.model_name}": {e}')
-    return False
-```
-Always add a comment explaining WHY the exception can occur.
-
-### Emoji in log messages (project convention)
-```python
-logger.info('✅ RAG loaded: 100 vectors')
-logger.warning('⚠️ RAG not available — missing dependencies')
-logger.error('❌ Failed to load model: ...')
-logger.info('🔍 Searching for Foundry...')
-logger.info('📥 Loading model: ...')
-```
-
-### __init__.py exports
-```python
-# -*- coding: utf-8 -*-
-from .translator import Translator, translator
-__all__ = ["Translator", "translator"]
-```
-Keep `__init__.py` minimal — just re-export the public API.
+Use `config.get_section("section_name")` for full sections, `config.get_raw_config()` for the full dict.
 
 ---
 
-## FastAPI Patterns
+## 3. API Endpoint Patterns
 
-### Router structure
+### 3.1 Router Structure
+
+Each feature area has its own file in `src/api/endpoints/`. Routers are registered in `app.py` with `/api/v1` prefix:
+
 ```python
-from fastapi import APIRouter
 router = APIRouter()
 
-@router.get("/health")
-async def health_check():
+@router.post("/generate")
+@api_response_handler
+async def generate_text(request: dict) -> dict:
     ...
 ```
-One router per domain file. All registered in `create_app()` with `/api/v1` prefix.
 
-### Lifespan for startup/shutdown
+### 3.2 Response Format
+
+All endpoints return a consistent dict:
+
 ```python
-from contextlib import asynccontextmanager
+# Success
+{"success": True, "content": "...", "model": "...", "usage": {...}}
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # startup
-    await rag_system.initialize()
-    yield
-    # shutdown
-    await foundry_client.close()
+# Error
+{"success": False, "error": "Description of error"}
 ```
 
-### Global exception handler
+### 3.3 Model Routing by Prefix
+
+Model selection is done by string prefix in the `model` field:
+
 ```python
-@app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
-    logger.error(f"Error: {exc}")
-    return JSONResponse(status_code=500, content={"error": "Internal Server Error", "detail": str(exc)})
+if model and str(model).startswith("hf::"):
+    # HuggingFace path
+elif model and str(model).startswith("llama::"):
+    # llama.cpp path
+elif model and str(model).startswith("ollama::"):
+    # Ollama path
+else:
+    # Default: Foundry
 ```
 
-### Request logging middleware
+### 3.4 @api_response_handler Decorator
+
+Wrap endpoint functions with `@api_response_handler` from `src/utils/api_utils.py` for consistent error handling. Place it directly above the route decorator:
+
 ```python
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
-    logger.info(f"{request.method} {request.url.path} -> {response.status_code} ({process_time:.3f}s)")
-    return response
+@router.post("/generate")
+@api_response_handler
+async def generate_text(request: dict) -> dict:
+```
+
+### 3.5 SSE Streaming Pattern
+
+For streaming endpoints, use `StreamingResponse` with an async generator:
+
+```python
+async def event_stream():
+    async for raw in proc.stdout:
+        line = raw.decode("utf-8", errors="replace").rstrip()
+        if line:
+            yield f"data: {json.dumps({'line': line})}\n\n"
+    await proc.wait()
+    yield f"data: {json.dumps({'done': True, 'code': proc.returncode})}\n\n"
+
+return StreamingResponse(event_stream(), media_type="text/event-stream")
 ```
 
 ---
 
-## Configuration Patterns
+## 4. Configuration System
 
-### Accessing config
-```python
-from ..core.config import config  # inside src/
-from src.core.config import config  # from root
-```
-Never read `config.json` directly — always use the `config` singleton.
+### 4.1 Config Properties
 
-### Config properties use `.get()` with defaults
+All config values are exposed as `@property` on the `Config` class with safe defaults:
+
 ```python
 @property
 def api_port(self) -> int:
     return self._config_data.get('fastapi_server', {}).get('port') or 9696
 ```
 
-### Environment variable override pattern
-```python
-foundry_url = os.getenv('FOUNDRY_BASE_URL')
-if foundry_url:
-    return foundry_url
-# fall through to auto-discovery
-```
-Env vars always take priority over config.json values.
+Pattern: `dict.get(section, {}).get(key) or default` — the `or default` handles both missing keys and falsy values (empty string, 0, None).
 
-### Uvicorn reload guard
+### 4.2 Adding New Config Values
+
+1. Add to `config.json` with a default value
+2. Add a `@property` to `Config` class in `config_manager.py`
+3. Access via `config.property_name` in code
+
+### 4.3 Runtime Config Override
+
+Some properties support runtime override (e.g., `foundry_base_url`):
+
 ```python
-_in_reloader_child = os.getenv('_UVICORN_CHILD') == '1'
-if not _in_reloader_child:
-    os.environ['_UVICORN_CHILD'] = '1'
-    print("startup message")  # only once
+@foundry_base_url.setter
+def foundry_base_url(self, value: str) -> None:
+    self._foundry_base_url = value
 ```
-Prevents duplicate output when `reload=True`.
 
 ---
 
-## JavaScript Patterns (Web UI)
+## 5. JavaScript / Frontend Patterns
 
-### ES module exports
+### 5.1 Module Exports
+
+All JS files use ES modules with named exports:
+
 ```javascript
-export async function initI18n(lang) { ... }
-export async function switchLang(lang) { ... }
-export function applyTranslations() { ... }
+export function showAlert(message, type = 'info') { ... }
+export async function refreshLogs(append = false) { ... }
+export function initLogViewer() { ... }
 ```
-All JS files use ES module syntax. Imported in `app.js`.
 
-### i18n attribute conventions
+### 5.2 DOM Safety Pattern
+
+Always check element existence before use with optional chaining:
+
+```javascript
+document.getElementById('log-file-select')?.addEventListener('change', resetAndRefresh);
+const file = document.getElementById('log-file-select')?.value || 'fastapi-foundry.log';
+```
+
+### 5.3 API Calls
+
+Use `fetch` with `window.API_BASE` prefix:
+
+```javascript
+const data = await fetch(`${window.API_BASE}/logs?${params}`).then(r => r.json());
+if (!data.success) throw new Error(data.detail || 'API error');
+```
+
+### 5.4 i18n
+
+All user-visible strings use `data-i18n` attributes in HTML and `i18n()` function in JS. Never hardcode UI text:
+
 ```html
 <button data-i18n="btn.save">Save</button>
-<input data-i18n-placeholder="input.search">
-<span data-i18n-title="tooltip.help">?</span>
-```
-Never hardcode user-visible text in HTML — always use `data-i18n` attributes.
-
-### i18n in JavaScript
-```javascript
-const val = i18next.t('key.name');
 ```
 
-### API calls pattern
 ```javascript
-fetch(`${window.API_BASE}/config`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 'app.language': lang }),
-}).catch(() => {});  // silent fail for non-critical calls
+showAlert(i18n('error.not_found'));
 ```
-Use `window.API_BASE` for all API URLs (set in `app.js`).
 
-### Inline comments in English
+Locale files: `static/locales/en.json`, `ru.json`, `he.json`.
+
+### 5.5 Debounce Pattern
+
+For search/filter inputs, debounce with `setTimeout`:
+
 ```javascript
-// Initialize menu toggle on DOM ready
-function initMenuToggle() { ... }
-
-// Lazy-load locale bundle if not yet loaded
-if (!i18next.hasResourceBundle(lang, 'translation')) { ... }
-```
-All code comments in English. User-facing strings via i18n keys.
-
-### RTL support
-```javascript
-const RTL_LANGS = new Set(['he', 'ar', 'fa']);
-document.documentElement.setAttribute('dir', RTL_LANGS.has(lang) ? 'rtl' : 'ltr');
+let _searchTimer;
+document.getElementById('log-search')?.addEventListener('input', () => {
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(resetAndRefresh, 400);
+});
 ```
 
 ---
 
-## PowerShell Patterns
+## 6. Security Patterns
 
-### Error handling at top
-```powershell
-$ErrorActionPreference = 'Stop'
+### 6.1 Filename Sanitization
+
+Always sanitize user-provided filenames before file operations:
+
+```python
+def sanitize_filename(filename: str) -> str:
+    filename = filename.replace("..", "").replace("/", "").replace("\\", "")
+    dangerous_chars = ["<", ">", ":", '"', "|", "?", "*", "\0"]
+    for char in dangerous_chars:
+        filename = filename.replace(char, "")
+    filename = "".join(char for char in filename if ord(char) >= 32)
+    filename = filename.strip(" .")
+    if len(filename) > 255:
+        name, ext = os.path.splitext(filename)
+        filename = name[:255 - len(ext)] + ext
+    return filename or "sanitized_file"
 ```
 
-### Constants in UPPER_SNAKE_CASE
-```powershell
-$PROJECT_PATH = 'D:\repos\project'
-$CONFIG_FILE = Join-Path $env:TEMP 'config.wsb'
+### 6.2 MIME Validation
+
+Validate file content against declared extension using `python-magic` when available, with graceful fallback:
+
+```python
+if magic is None:
+    return True, None  # Skip MIME check if library unavailable
 ```
 
-### Function docstrings
-```powershell
-function Test-Virtualization {
-    <#
-    .SYNOPSIS
-        Checks whether hardware virtualization is enabled.
-    .OUTPUTS
-        bool — True if enabled.
-    #>
-    ...
-}
-```
+### 6.3 Optional Imports
 
-### User-facing output with emoji
-```powershell
-Write-Host '🔍 Проверка окружения...'
-Write-Host '✅ Готово'
-Write-Host '⚠️ Требуется перезагрузка.'
-```
+Wrap optional heavy dependencies in try/except at module level:
 
-### Main block separator
-```powershell
-# --- main ---
-Write-Host '🚀 Запуск...'
-$result = Start-Service
+```python
+try:
+    import magic
+except ImportError:
+    magic = None
+
+try:
+    import resource  # Unix only
+except ImportError:
+    resource = None  # Windows — resource limits not available
 ```
 
 ---
 
-## Versioning Rules
+## 7. File & Log Management
 
-- Current version: **0.6.0**
-- Format: `Major.Minor.Patch`
-- Update version in file header on every change
-- Add entry to `CHANGELOG.md` with format:
-  ```
-  ## [0.6.0] - YYYY-MM-DD
-  ### Changed
-  - <description>
-  ```
+### 7.1 Archive Instead of Delete
+
+Never permanently delete files. Move to `archive/` with timestamp suffix:
+
+```python
+timestamp = datetime.fromtimestamp(file_mtime).strftime("%Y%m%d_%H%M%S")
+archive_name = f"{file_path.stem}_{timestamp}.tmp"
+shutil.move(str(file_path), str(archive_dir / archive_name))
+```
+
+### 7.2 Startup Cleanup
+
+Run cleanup routines at startup in `run.py`:
+
+```python
+cleanup_log_temp_files(log_dir)      # Archive .tmp files older than retention_hours
+cleanup_session_history(current_dir) # Rotate session_history.json if older than retention_days
+cleanup_archive_size(current_dir)    # FIFO delete if archive/ exceeds max_size_gb
+```
+
+### 7.3 Path Handling
+
+Always use `pathlib.Path` for file paths, never string concatenation:
+
+```python
+config_path = Path('config.json')
+archive_dir = log_dir.parent / "archive"
+archive_dir.mkdir(parents=True, exist_ok=True)
+```
 
 ---
 
-## Git Commit Conventions
+## 8. PowerShell Standards
 
-| Type | Prefix | Example |
-|---|---|---|
-| New feature | `feat:` | `feat: add RAG search endpoint` |
-| Bug fix | `fix:` | `fix: duplicate startup output` |
-| Config change | `config:` | `config: update default model` |
-| Documentation | `docs:` | `docs: update API reference` |
-| Tests | `test:` | `test: add health check test` |
+See `POWERSHELL_CODE_RULES.md` for full details. Key rules:
+
+- File header with `# -*- coding: utf-8 -*-` block
+- `$ErrorActionPreference = 'Stop'` at top
+- Constants in `UPPER_SNAKE_CASE`
+- Functions as `Verb-Noun` with `<# .SYNOPSIS ... #>` docblock
+- `Write-Host '🚀 Message'` for user-facing output (with emoji)
+- `# --- main ---` separator before entry point
+- Suppress side-effect output: `command | Out-Null`
 
 ---
 
-## Documentation Sync Rule
+## 9. Documentation Sync Rule
 
-After changing any code file:
+After every code change:
 1. Update docstring of changed function/class
-2. Add entry to `CHANGELOG.md`
+2. Add entry to `CHANGELOG.md` in format `## [version] - date / ### Changed / - description`
 3. Update `docs/ru/dev/api_reference.md` if endpoint changed
-4. Update `README.md` if architecture or config changed
+4. Commit: `git add . && git commit -m "docs: sync documentation"`
 
----
-
-## Model Prefix Conventions
-
-Model IDs use prefixes to route to the correct backend:
-```
-hf::<model-id>      → HuggingFace client
-llama::<model-id>   → llama.cpp client
-ollama::<model-id>  → Ollama client
-<model-id>          → Foundry Local (no prefix)
-```
-
-Check before auto-loading:
-```python
-if model_id.startswith(("hf::", "llama::", "ollama::")):
-    logger.info(f"Skip auto-loading non-Foundry model: {model_id}")
+CHANGELOG format:
+```markdown
+## [0.6.1] - 2025-MM-DD
+### Added
+- `src/module.py` — description
+### Changed
+- `src/other.py` — description
+### Fixed
+- `src/fix.py` — description
 ```
 
 ---
 
-## Logging Levels
+## 10. Versioning
 
-| Level | When to use |
-|---|---|
-| `DEBUG` | Port checks, URL updates, per-request details |
-| `INFO` | Startup events, model loads, successful operations |
-| `WARNING` | Missing optional deps, Foundry not found, degraded mode |
-| `ERROR` | Failed operations, exceptions caught, HTTP errors |
+Current version: **0.6.1**
 
-Suppress noisy libraries:
-```python
-for noisy in ('watchfiles', 'watchfiles.main', 'uvicorn.access'):
-    logging.getLogger(noisy).setLevel(logging.WARNING)
-```
+- All file headers must show `Version: 0.6.1`
+- Semantic versioning: Major.Minor.Patch
+- `VERSION` file in root contains current version string
+- Version bumped in: file headers, `app.py` FastAPI title, `docker-compose.yml` image tag

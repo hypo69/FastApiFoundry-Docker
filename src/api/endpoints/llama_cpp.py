@@ -149,27 +149,38 @@ async def llama_start(request: dict) -> dict:
     """! Запустить llama.cpp сервер с указанной GGUF моделью.
 
     Body:
-        model_path:  Путь к .gguf файлу (обязательно)
-        port:        Порт (default: 8080)
-        ctx_size:    Размер контекста (default: 4096)
-        threads:     Количество потоков CPU (default: auto)
+        model_path:   Путь к .gguf файлу или директории с моделями.
+                      Если не указан — берётся из config.json (llama_cpp.model_path → directories.models).
+                      Если указана директория — берётся первый .gguf файл в ней.
+        port:         Порт (default: 9780)
+        ctx_size:     Размер контекста (default: 4096)
+        threads:      Количество потоков CPU (default: auto)
         n_gpu_layers: Слоёв на GPU, 0 = только CPU (default: 0)
-        host:        Хост (default: 127.0.0.1)
+        host:         Хост (default: 127.0.0.1)
     """
     global _server_process, _last_error
 
-    model_path = request.get("model_path", "")
-    if not model_path:
-        raise HTTPException(status_code=400, detail="model_path is required")
+    from ...core.config import config as _config
+
+    # Resolve model_path: request body → config.llama_model_path
+    model_path = request.get("model_path", "").strip() or _config.llama_model_path
 
     src = Path(model_path)
-    if not src.exists():
-        raise HTTPException(status_code=404, detail=f"File not found: {model_path}")
 
-    # Копировать в ~/.models если модель не там и запрошено copy_to_models
+    # If a directory is given — pick the first .gguf inside it
+    if src.is_dir():
+        gguf_files = sorted(src.glob("*.gguf"))
+        if not gguf_files:
+            raise HTTPException(status_code=404, detail=f"No .gguf files found in: {src}")
+        src = gguf_files[0]
+        logger.info(f"📂 Директория моделей: выбран {src.name}")
+
+    if not src.exists():
+        raise HTTPException(status_code=404, detail=f"File not found: {src}")
+
+    # Copy to models dir if not already there
     copy_to_models = request.get("copy_to_models", True)
-    from ...core.config import config as _cfg
-    models_home = Path(_cfg.dir_models)
+    models_home = Path(_config.dir_models)
     dest = models_home / src.name
 
     if copy_to_models and not dest.exists():
@@ -178,8 +189,7 @@ async def llama_start(request: dict) -> dict:
         logger.info(f"Копирование {src.name} → {dest}")
         shutil.copy2(str(src), str(dest))
 
-    # Используем путь в ~/.models если файл там есть
-    model_path = str(dest) if dest.exists() else model_path
+    model_path = str(dest) if dest.exists() else str(src)
 
     # Остановить предыдущий если запущен
     if _server_process and _server_process.poll() is None:
@@ -187,7 +197,6 @@ async def llama_start(request: dict) -> dict:
         _server_process.wait(timeout=5)
         logger.info("Предыдущий llama.cpp сервер остановлен")
 
-    from ...core.config import config as _config
     _llama_cfg = _config.get_section("llama_cpp")
 
     port         = int(request.get("port") or _llama_cfg.get("port", DEFAULT_PORT))

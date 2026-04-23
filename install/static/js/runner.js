@@ -25,7 +25,18 @@ export function runStep(stepId, btn) {
         setStepState(stepId, 'running');
         if (btn) btn.disabled = true;
 
-        const es = new EventSource(`${window.API_BASE}/run/${stepId}`);
+        // For huggingface step — pass token as query param
+        let url = `${window.API_BASE}/run/${stepId}`;
+        if (stepId === 'huggingface') {
+            const token = document.getElementById('opt-hf-token-hf')?.value?.trim() || '';
+            if (token) url += `?token=${encodeURIComponent(token)}`;
+        }
+        if (stepId === 'llama') {
+            const dir = document.getElementById('opt-llama-models-dir')?.value?.trim() || '';
+            if (dir) url += `?models_dir=${encodeURIComponent(dir)}`;
+        }
+
+        const es = new EventSource(url);
 
         es.onmessage = e => {
             const data = JSON.parse(e.data);

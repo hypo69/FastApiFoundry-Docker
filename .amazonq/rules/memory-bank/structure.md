@@ -1,139 +1,171 @@
 # FastAPI Foundry — Project Structure
 
-## Directory Layout
+**Version:** 0.6.1
+
+---
+
+## Root Directory Layout
 
 ```
 FastApiFoundry-Docker/
-├── src/                        # Core Python application
-│   ├── api/                    # FastAPI layer
-│   │   ├── app.py              # Application factory (create_app)
-│   │   ├── main.py             # ASGI entry point (app instance)
-│   │   ├── models.py           # Pydantic request/response schemas
-│   │   └── endpoints/          # Route handlers (one file per domain)
-│   │       ├── health.py       # GET /api/v1/health
-│   │       ├── generate.py     # POST /api/v1/generate
-│   │       ├── chat_endpoints.py
-│   │       ├── foundry.py / foundry_management.py / foundry_models.py
-│   │       ├── hf_models.py    # HuggingFace endpoints
-│   │       ├── llama_cpp.py    # llama.cpp endpoints
-│   │       ├── ollama.py       # Ollama endpoints
-│   │       ├── rag.py          # RAG search endpoints
-│   │       ├── agent.py        # AI agent endpoints
-│   │       ├── mcp_powershell.py
-│   │       ├── converter.py    # GGUF→ONNX converter endpoints
-│   │       ├── config.py       # Config read/write endpoints
-│   │       └── logs.py         # Log streaming endpoints
-│   ├── models/                 # AI backend clients
-│   │   ├── foundry_client.py   # Microsoft Foundry Local (aiohttp, async)
-│   │   ├── enhanced_foundry_client.py
-│   │   ├── hf_client.py        # HuggingFace Transformers
-│   │   ├── ollama_client.py    # Ollama
-│   │   └── model_manager.py    # Unified model manager
-│   ├── rag/                    # RAG system
-│   │   ├── rag_system.py       # Main RAG orchestrator
-│   │   └── indexer.py          # FAISS indexing
-│   ├── agents/                 # AI agents
-│   │   ├── base.py             # Base agent class
-│   │   └── powershell_agent.py
-│   ├── converter/              # GGUF → ONNX conversion
-│   │   └── gguf_to_onnx.py
-│   ├── translator/             # Translation module
-│   │   └── translator.py
-│   ├── core/
-│   │   └── config.py           # Re-exports config from config_manager.py
-│   ├── logger/
-│   │   └── __init__.py         # Logger initialization
-│   └── utils/
-│       ├── env_processor.py    # .env loading
-│       ├── foundry_finder.py   # Foundry port discovery
-│       ├── logging_config.py   # Logging setup
-│       ├── logging_system.py
-│       └── log_analyzer.py
-├── static/                     # Web UI (SPA)
-│   ├── index.html              # Main SPA shell
-│   ├── app.js                  # SPA router/init
-│   ├── js/                     # Feature modules (one per tab)
-│   │   ├── chat.js, models.js, foundry.js, hf.js, llama.js
-│   │   ├── rag.js, agent.js, mcp.js, ollama.js
-│   │   ├── config.js, editor.js, i18n.js, ui.js
-│   │   └── providers.js, providers-registry.js, sdk.js
-│   ├── partials/               # HTML tab fragments (_tab_*.html)
-│   ├── locales/                # i18n JSON (en, ru, he)
-│   └── css/main.css
-├── mcp-powershell-servers/     # MCP server implementations
-│   ├── src/
-│   │   ├── servers/            # PowerShell MCP servers
-│   │   ├── clients/            # Python MCP clients
-│   │   └── config/             # MCP configuration
-│   └── Start-MCPServers.ps1
-├── extensions/                 # Browser extensions
-│   ├── browser-extension-summarizer/   # AI page summarizer
-│   └── browser-extension-locator-editor/ # Element locator (React/TS)
-├── docs/                       # MkDocs source (ru + en)
-├── site/                       # Built MkDocs static site
-├── check_engine/               # Diagnostic scripts
-├── scripts/                    # Operational PowerShell scripts
-├── install/                    # Installation scripts
-├── bin/                        # llama.cpp Windows x64 binaries
-├── rag_index/                  # FAISS index storage
-├── logs/                       # Application logs
-├── SANDBOX/                    # SDK experiments
-├── utils/                      # Standalone Python utilities
-├── examples/                   # API usage examples
-├── config_manager.py           # Central config class (reads config.json + .env)
-├── config.json                 # Public configuration
-├── .env / .env.example         # Secrets and environment variables
-├── run.py                      # Python entry point
-├── start.ps1                   # Windows full startup script
-├── install.ps1                 # Dependency installer
-├── docker-compose.yml          # Docker deployment
+├── src/                    # Core Python application
+├── static/                 # Web UI (SPA)
+├── docs/                   # MkDocs source (ru/ + en/)
+├── site/                   # MkDocs built output
+├── install/                # Guided installer (web UI + scripts)
+├── scripts/                # Operational PowerShell scripts
+├── check_engine/           # Diagnostic and smoke-test scripts
+├── mcp-powershell-servers/ # MCP servers (PowerShell STDIO)
+├── sdk/                    # Python SDKs (fastapi_foundry, microsoft_foundry)
+├── extensions/             # Browser extensions
+├── bin/                    # llama.cpp Windows x64 binaries
+├── rag_index/              # FAISS index storage
+├── logs/                   # Application logs
+├── SANDBOX/                # Experimental SDK examples
+├── utils/                  # Standalone utility scripts
+├── examples/               # API usage examples
+├── notebooks/              # Jupyter notebooks
+├── archive/                # Rotated log archives
+├── ~venv/                  # Python virtual environment
+├── run.py                  # Python entry point
+├── start.ps1               # Primary Windows launcher
+├── install.ps1             # Dependency installer
+├── config.json             # Public configuration
+├── config_manager.py       # Config loader (singleton)
+├── .env / .env.example     # Secrets and env vars
+├── docker-compose.yml      # Docker deployment
 ├── Dockerfile
-├── requirements.txt
-└── mkdocs.yml                  # Documentation config
+├── requirements.txt        # Core dependencies
+├── requirements-rag.txt    # RAG-specific deps
+├── requirements-extras.txt # Optional extras
+└── mkdocs.yml              # Documentation config
 ```
 
-## Core Architectural Patterns
+---
 
-### Application Factory
-`src/api/app.py` exports `create_app()` which wires all routers, middleware, and lifespan hooks. `src/api/main.py` calls it to produce the ASGI `app` object used by uvicorn.
+## src/ — Application Source
 
-### Configuration Flow
 ```
-config.json + .env
-      ↓
-config_manager.py (ConfigManager class, singleton `config`)
-      ↓
-src/core/config.py (re-exports `config`)
-      ↓
-All modules import from src.core.config
+src/
+├── api/
+│   ├── app.py              # FastAPI factory (create_app, lifespan)
+│   ├── main.py             # Uvicorn entry point
+│   ├── models.py           # Pydantic request/response models
+│   └── endpoints/          # One file per feature area
+│       ├── generate.py         # POST /api/v1/generate
+│       ├── ai_endpoints.py     # POST /api/v1/ai/generate, /ai/chat, /ai/chat/stream
+│       ├── chat_endpoints.py   # Chat session management
+│       ├── health.py           # GET /api/v1/health
+│       ├── models.py           # GET /api/v1/models
+│       ├── foundry.py          # Foundry model operations
+│       ├── foundry_management.py  # Start/stop/status Foundry service
+│       ├── foundry_models.py   # List loaded Foundry models
+│       ├── hf_models.py        # HuggingFace model management
+│       ├── llama_cpp.py        # llama.cpp server management
+│       ├── ollama.py           # Ollama integration
+│       ├── rag.py              # RAG search + text extraction endpoints
+│       ├── config.py           # Config read/write endpoint
+│       ├── logs.py             # Log streaming endpoint
+│       ├── agent.py            # AI agent execution
+│       ├── translator.py       # Translation endpoint
+│       ├── mcp_powershell.py   # MCP PowerShell bridge
+│       ├── converter.py        # GGUF→ONNX converter endpoint
+│       └── system_stats.py     # System resource stats
+├── models/
+│   ├── foundry_client.py       # Foundry Local HTTP client (singleton)
+│   ├── enhanced_foundry_client.py
+│   ├── hf_client.py            # HuggingFace Transformers client
+│   ├── model_manager.py        # Unified model manager
+│   └── ollama_client.py        # Ollama HTTP client
+├── rag/
+│   ├── rag_system.py           # RAGSystem: FAISS index, search, cache
+│   ├── indexer.py              # Document indexing pipeline
+│   └── text_extractor_4_rag/   # 40+ format text extraction module
+├── core/
+│   └── config.py               # Re-exports config_manager.config
+├── agents/
+│   ├── base.py                 # BaseAgent abstract class
+│   └── powershell_agent.py     # PowerShell command agent
+├── utils/
+│   ├── command_agent.py        # Async CLI command runner with circuit breaker
+│   ├── foundry_utils.py        # Foundry port discovery (parses `foundry service status`)
+│   ├── foundry_finder.py       # Alternative Foundry discovery
+│   ├── api_utils.py            # @api_response_handler decorator
+│   ├── logging_config.py       # Logging setup
+│   ├── logging_system.py       # Structured JSONL logging
+│   ├── log_analyzer.py         # Log analysis utilities
+│   ├── text_utils.py           # Token counting, text helpers
+│   ├── translator.py           # Translation via MyMemory/LibreTranslate
+│   ├── env_processor.py        # .env file processing
+│   └── process_utils.py        # Process management helpers
+└── converter/
+    └── gguf_to_onnx.py         # GGUF to ONNX model conversion
 ```
 
-### AI Backend Abstraction
-Each backend has its own client class with consistent interface:
-- `health_check()` → status dict
-- `generate_text(prompt, **kwargs)` → `{success, content, model}`
-- `generate_stream(prompt, **kwargs)` → async generator
-- `list_available_models()` → `{success, models, count}`
+---
 
-Global singleton instances: `foundry_client`, `hf_client`, `ollama_client`
+## static/ — Web UI
 
-### Router Registration
-All routers registered in `create_app()` with `/api/v1` prefix (except `main.router` for UI routes).
+```
+static/
+├── index.html              # Main SPA entry point
+├── app.js                  # SPA bootstrap
+├── css/main.css            # Global styles
+├── js/
+│   ├── ui.js               # Core UI: tab switching, modals, notifications
+│   ├── chat.js             # Chat tab logic
+│   ├── foundry.js          # Foundry tab: load/unload models, status polling
+│   ├── models.js           # Models tab
+│   ├── rag.js              # RAG tab: search, extract, index
+│   ├── config.js           # Settings tab: load/save config
+│   ├── hf.js               # HuggingFace tab
+│   ├── llama.js            # llama.cpp tab
+│   ├── ollama.js           # Ollama tab
+│   ├── agent.js            # Agent tab
+│   ├── mcp.js              # MCP tab
+│   ├── i18n.js             # Internationalization (data-i18n attributes)
+│   ├── model-badge.js      # Active model status badge
+│   └── providers.js        # Provider registry UI
+├── locales/
+│   ├── en.json             # English strings
+│   ├── ru.json             # Russian strings
+│   └── he.json             # Hebrew strings
+└── partials/               # HTML partials (one per tab/modal)
+    ├── _tab_chat.html
+    ├── _tab_foundry.html
+    ├── _tab_rag.html
+    ├── _tab_settings.html  # (+ sub-partials per settings section)
+    └── ...
+```
+
+---
+
+## Configuration System
+
+- `config.json` — all public settings (server, AI backends, RAG, logging, security, i18n)
+- `config_manager.py` — singleton `config` object; `src/core/config.py` re-exports it
+- `.env` — secrets: `HF_TOKEN`, `FOUNDRY_BASE_URL`, `LLAMA_MODEL_PATH`, API keys
+- `config.json` sections: `fastapi_server`, `foundry_ai`, `rag_system`, `security`, `logging`, `docs_server`, `llama_cpp`, `directories`, `huggingface`, `translator`, `text_extractor`
+
+---
+
+## Key Architectural Patterns
+
+### Model Routing (generate.py)
+Model selection by prefix in model ID string:
+- `hf::model-name` → HuggingFace client
+- `llama::path/to/model.gguf` → llama.cpp OpenAI-compatible API
+- `ollama::model-name` → Ollama client
+- no prefix → Foundry Local client
+
+### Singleton Clients
+`foundry_client`, `rag_system`, `hf_client` are module-level singletons imported across endpoints.
+
+### API Response Decorator
+`@api_response_handler` (from `src/utils/api_utils.py`) wraps endpoint functions for consistent error handling and response format.
 
 ### Lifespan Management
-`@asynccontextmanager async def lifespan(app)` in `app.py` handles:
-1. RAG system initialization
-2. Auto-loading default Foundry model
-3. Closing aiohttp sessions on shutdown
+`app.py` uses FastAPI `@asynccontextmanager lifespan` for startup (RAG init, model auto-load) and shutdown (close aiohttp sessions).
 
-### Web UI Architecture
-SPA with tab-based navigation. Each tab has:
-- `static/partials/_tab_<name>.html` — HTML fragment
-- `static/js/<name>.js` — tab logic module
-- i18n via `static/js/i18n.js` + `static/locales/<lang>.json`
-
-## Key Relationships
-- `run.py` → discovers Foundry port → sets `config.foundry_base_url` → starts uvicorn
-- `FoundryClient._update_base_url()` → reads `config.foundry_base_url` or auto-discovers
-- `rag_system` initialized at startup, used by `/api/v1/rag/*` endpoints
-- MCP servers run as separate processes, communicated via HTTP from `mcp_powershell.py` endpoint
+### Logging
+Dual output: standard Python `logging` + structured JSONL to `logs/fastapi-foundry-structured.jsonl`. Log rotation with archive management.

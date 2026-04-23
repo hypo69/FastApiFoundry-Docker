@@ -151,7 +151,7 @@ export function updateSystemInfo(data) {
     // Hints shown when service is not running
     const hints = {
         foundry: foundryOk ? '' : '<small class="text-muted d-block">Run: foundry service start</small>',
-        llama:   llamaOk   ? '' : '<small class="text-muted d-block">Set model_path in Settings → llama.cpp</small>',
+        llama:   llamaOk   ? '' : '<small class="text-muted d-block">Start llama.cpp in the llama.cpp tab</small>',
         docs:    docsOk    ? '' : '<small class="text-muted d-block">Enable in Settings → Development</small>',
         rag:     ragOk     ? '' : (data.rag_status === 'no index'
             ? '<small class="text-muted d-block">Build index in RAG tab first</small>'
@@ -518,22 +518,8 @@ export async function selectFoundryModel(modelId) {
             downloadedSelect.value = modelId;
         }
 
-        // Визуальный фидбек в списке скачанных моделей
-        const listEl = document.getElementById('foundry-downloaded-models-list');
-        if (listEl) {
-            listEl.querySelectorAll('button').forEach(btn => {
-                btn.classList.remove('btn-success');
-                btn.classList.add('btn-outline-success');
-                btn.textContent = 'Load & Use';
-            });
-            const activeBtn = [...listEl.querySelectorAll('button')]
-                .find(btn => btn.getAttribute('onclick')?.includes(modelId));
-            if (activeBtn) {
-                activeBtn.classList.remove('btn-outline-success');
-                activeBtn.classList.add('btn-success');
-                activeBtn.textContent = '✓ Loaded & Active';
-            }
-        }
+        // Refresh the cached models list to reflect new loaded/unloaded state
+        await listCachedFoundryModels();
 
         showAlert(`Модель ${modelId} загружена и выбрана как активная`, 'success');
     } catch (error) {
@@ -708,7 +694,6 @@ export async function unloadFoundryModel(modelId) {
         if (data.success) {
             showAlert(`${modelId} unloaded from RAM`, 'success');
             await listCachedFoundryModels();
-            refreshModelBanner();
         } else {
             showAlert(`Unload failed: ${data.error}`, 'danger');
         }

@@ -66,9 +66,10 @@ export async function loadConfigFields() {
         set('config-docs-port', docs_server?.port    || 9697);
 
         // llama.cpp
-        set('config-llama-port',       llama_cpp?.port       || 9780);
-        set('config-llama-model-path', llama_cpp?.model_path || '');
-        chk('config-llama-autostart',  llama_cpp?.auto_start);
+        set('config-llama-port',         llama_cpp?.port        || 9780);
+        set('config-llama-model-path',    llama_cpp?.model_path  || '');
+        set('config-llama-default-model', llama_cpp?.default_model || '');
+        chk('config-llama-autostart',     llama_cpp?.auto_start);
 
         // Directories
         set('config-dir-models', dirs.models    || '~/.models');
@@ -108,8 +109,17 @@ export async function loadConfigFields() {
 
         // Logging
         const log = data.config?.logging || {};
-        set('config-log-level', log.level || 'INFO');
-        set('config-log-file',  log.file  || '');
+        set('config-log-level',           log.level            || 'INFO');
+        set('config-log-file',            log.file             || '');
+        set('config-log-max-mb',          log.max_bytes_mb     || 10);
+        set('config-log-backup-count',    log.backup_count     || 5);
+        set('config-log-structured-file', log.structured_file  || '');
+        set('config-log-retention',       log.retention_hours  || 24);
+        set('config-log-suppress',        (log.suppress_loggers || []).join(','));
+        chk('config-log-console',         log.console          !== false);
+        chk('config-log-file-enabled',    log.file_handler     !== false);
+        chk('config-log-errors-file',     log.errors_file      !== false);
+        chk('config-log-structured',      log.structured       !== false);
 
         // HuggingFace
         const hf = data.config?.huggingface || {};
@@ -133,6 +143,18 @@ export async function loadConfigFields() {
         set('config-extractor-max-images',  ext.max_images_per_page           ?? 20);
         chk('config-extractor-js',          ext.enable_javascript             ?? false);
         chk('config-extractor-limits',      ext.enable_resource_limits        ?? true);
+
+        // Translator
+        const tr = data.config?.translator || {};
+        const trEnabled = tr.enabled ?? false;
+        chk('config-translator-enabled', trEnabled);
+        document.getElementById('translator-settings-body').style.display = trEnabled ? '' : 'none';
+        set('config-translator-provider',       tr.default_provider              || 'mymemory');
+        set('config-translator-timeout',        tr.request_timeout_sec           ?? 30);
+        set('config-translator-mymemory-email', tr.mymemory_email                || '');
+        set('config-translator-libre-url',      tr.libretranslate_url            || 'https://libretranslate.com');
+        set('config-translator-libre-fallback', tr.libretranslate_fallback_url   || 'https://translate.argosopentech.com');
+        set('config-translator-libre-key',      tr.libretranslate_api_key        || '');
 
         showAlert('Settings loaded', 'success');
     } catch (error) {
@@ -181,14 +203,24 @@ export async function saveConfigFields() {
                 https_enabled: getC('config-security-https'),
             },
             logging: {
-                level: get('config-log-level') || 'INFO',
-                file:  get('config-log-file'),
+                level:            get('config-log-level')           || 'INFO',
+                file:             get('config-log-file'),
+                max_bytes_mb:     getN('config-log-max-mb', 10),
+                backup_count:     getN('config-log-backup-count', 5),
+                structured_file:  get('config-log-structured-file'),
+                retention_hours:  getN('config-log-retention', 24),
+                suppress_loggers: get('config-log-suppress').split(',').map(s => s.trim()).filter(Boolean),
+                console:          getC('config-log-console'),
+                file_handler:     getC('config-log-file-enabled'),
+                errors_file:      getC('config-log-errors-file'),
+                structured:       getC('config-log-structured'),
             },
             development: {
                 debug:   getC('config-dev-debug'),
                 verbose: getC('config-dev-verbose'),
             },
             translator: {
+                enabled:                    getC('config-translator-enabled'),
                 default_provider:           get('config-translator-provider')       || 'mymemory',
                 request_timeout_sec:        getN('config-translator-timeout', 30),
                 mymemory_email:             get('config-translator-mymemory-email'),
@@ -201,10 +233,11 @@ export async function saveConfigFields() {
                 port:    getN('config-docs-port', 9697),
             },
             llama_cpp: {
-                port:       getN('config-llama-port', 9780),
-                host:       '127.0.0.1',
-                model_path: get('config-llama-model-path'),
-                auto_start: getC('config-llama-autostart'),
+                port:          getN('config-llama-port', 9780),
+                host:          '127.0.0.1',
+                model_path:    get('config-llama-model-path'),
+                default_model: get('config-llama-default-model'),
+                auto_start:    getC('config-llama-autostart'),
             },
             directories: {
                 models:    get('config-dir-models') || '~/.models',
@@ -290,5 +323,28 @@ export async function importConfig(event) {
         }
     } catch (e) {
         showAlert('Invalid config file', 'danger');
+    }
+}
+
+// ── Log health badges (Settings → Logging section) ────────────────────────────
+
+export async function refreshLogHealth() {
+    const container = document.getElementById('log-health-badges');
+    if (!container) return;
+    try {
+        const data = await fetch(`${window.API_BASE}/logs/health`).then(r => r.json());
+        if (!data.success) throw new Error(data.error || 'failed');
+        const m = data.metrics || {};
+        const statusColor = { healthy: 'success', warning: 'warning', critical: 'danger', error: 'danger' };
+        const color = statusColor[data.status] || 'secondary';
+        container.innerHTML = `
+            <span class="badge bg-${color}">${data.status}</span>
+            <span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>${m.errors_count ?? 0} errors</span>
+            <span class="badge bg-secondary"><i class="bi bi-exclamation-triangle me-1"></i>${m.warnings_count ?? 0} warnings</span>
+            <span class="badge bg-secondary"><i class="bi bi-arrow-left-right me-1"></i>${m.api_requests ?? 0} requests</span>
+            <span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>${(m.avg_response_time ?? 0).toFixed(3)}s avg</span>
+        `;
+    } catch {
+        container.innerHTML = '<span class="badge bg-secondary">unavailable</span>';
     }
 }

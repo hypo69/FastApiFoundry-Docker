@@ -1,0 +1,32 @@
+<!-- ── DIRECTORIES ─────────────────────────────────────────────────────── -->
+<div class="settings-section settings-section--dirs">
+    <div class="settings-section-header text-secondary">
+        <i class="bi bi-folder2"></i> <span data-i18n="settings.directories">Directories</span>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-1">
+                <span data-i18n="settings.dir_models">GGUF models</span>
+                <i class="bi bi-question-circle text-muted" style="cursor:help" data-i18n-title="settings.tip_dir_models"></i>
+            </label>
+            <input type="text" id="config-dir-models" class="form-control font-monospace" placeholder="~/.models">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-1">
+                <span data-i18n="settings.dir_rag">RAG bases</span>
+                <i class="bi bi-question-circle text-muted" style="cursor:help" data-i18n-title="settings.tip_dir_rag"></i>
+            </label>
+            <input type="text" id="config-dir-rag" class="form-control font-monospace" placeholder="~/.rag">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-1">
+                <span data-i18n="settings.dir_hf">HuggingFace models</span>
+                <i class="bi bi-question-circle text-muted" style="cursor:help" data-i18n-title="settings.tip_dir_hf"></i>
+            </label>
+            <input type="text" id="config-dir-hf" class="form-control font-monospace" placeholder="~/.hf_models">
+        </div>
+        <div class="col-12">
+            <div class="form-text" data-i18n="settings.dir_hint">~/ is the user home directory.</div>
+        </div>
+    </div>
+</div>

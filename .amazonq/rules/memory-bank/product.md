@@ -1,61 +1,78 @@
 # FastAPI Foundry — Product Overview
 
-## Purpose
-FastAPI Foundry is a REST API server that provides a unified interface for running and interacting with local AI models. It bridges multiple AI backends (Microsoft Foundry Local, HuggingFace Transformers, llama.cpp, Ollama) through a single FastAPI service with an integrated web UI and RAG (Retrieval-Augmented Generation) system.
+**Version:** 0.6.1 | **Platform:** Windows | **Language:** Python 3.11+
 
-## Value Proposition
-- Run local AI models without cloud dependency
-- Unified API across 4 different AI backends
-- Built-in RAG for context-aware responses using FAISS vector search
-- Web UI for model management, chat, and monitoring — no CLI required
-- MCP (Model Context Protocol) server integration for Claude Desktop
+---
+
+## Purpose
+
+FastAPI Foundry is a REST API server that provides a unified interface for running and interacting with local AI models. It bridges multiple AI backends (Microsoft Foundry Local, HuggingFace Transformers, llama.cpp, Ollama) through a single FastAPI service with an integrated web UI, RAG system, and MCP server support.
+
+---
 
 ## Key Features
 
-### AI Backends
-- **Microsoft Foundry Local** — ONNX-based inference (DeepSeek, Qwen, Mistral, Llama)
-- **HuggingFace Transformers** — download and run models from Hub (PyTorch)
-- **llama.cpp** — GGUF model inference on CPU/GPU (Windows x64 binaries included)
-- **Ollama** — local Ollama server integration
+### AI Model Backends
+- **Microsoft Foundry Local** — ONNX-based inference via CLI (`foundry` command), auto-discovery of port, auto-load on startup
+- **HuggingFace Transformers** — download and run models from Hub (PyTorch-based)
+- **llama.cpp** — GGUF model inference on CPU/GPU via bundled Windows x64 binaries (`bin/`)
+- **Ollama** — integration with locally running Ollama service
 
 ### API Capabilities
-- Text generation (single and batch)
-- Interactive chat with session history
-- RAG search and context injection
-- Model load/unload management
-- Health monitoring endpoints
-- API key security + CORS protection
+- `POST /api/v1/generate` — single text generation
+- `POST /api/v1/ai/generate` — AI generation with optional RAG context
+- `POST /api/v1/ai/chat` — stateful chat with session history
+- `GET /api/v1/ai/chat/stream` — streaming chat via SSE
+- `GET /api/v1/models` — list available models across all backends
+- `GET /api/v1/health` — service health check
+- Full Foundry management: start/stop/status/load/unload model
+- RAG: index documents, search, extract text from 40+ file formats
+- Batch processing, translation, agent execution
 
-### Web Interface (SPA at port 9696)
-Tabs: Chat, Models, Foundry, HuggingFace, llama.cpp, Ollama, RAG, Agent, MCP, Config, Logs, Editor, Docs, Examples, Providers, Settings
+### RAG System
+- FAISS vector index with SentenceTransformers embeddings
+- Text extraction from PDF, DOCX, XLSX, PPTX, images (OCR), HTML, archives, source code
+- Configurable chunk size, min_score filtering, result caching
+- Deduplication of chunks on load
 
-### Infrastructure
-- Docker support (`docker-compose.yml`)
-- MkDocs documentation server (port 9697)
-- Browser extensions (summarizer, locator-editor)
-- PowerShell MCP servers for Windows automation
-- GGUF → ONNX converter
+### Web Interface (SPA)
+- Single-page app at `http://localhost:9696`
+- Tabs: Chat, Models, Foundry, HuggingFace, llama.cpp, Ollama, RAG, Agent, MCP, Logs, Settings, Editor, Docs
+- i18n support: English, Russian, Hebrew (`static/locales/`)
+- Real-time model status badge, WebSocket notifications
+
+### MCP Server
+- PowerShell-based MCP servers in `mcp-powershell-servers/`
+- Integration with Claude Desktop
+- STDIO protocol
+
+### Additional Tools
+- Browser extensions: summarizer, locator-editor
+- SDK: `fastapi_foundry_sdk`, `microsoft_foundry_sdk`
+- Installer web UI (`install/server.py`) with guided setup
+- Diagnostic scripts (`check_engine/`, `diagnose.py`, `check_env.py`)
+- GGUF→ONNX converter (`src/converter/`)
+- Translation utility (`src/utils/translator.py`) via MyMemory/LibreTranslate
+
+---
 
 ## Target Users
-- Developers building AI-powered applications locally
-- Researchers needing offline LLM inference
-- Teams wanting a self-hosted AI API with web management
-- Claude Desktop users needing MCP integration
 
-## Use Cases
-- Local AI chat assistant with document context (RAG)
-- Batch text processing via REST API
-- Model evaluation and comparison across backends
-- AI agent workflows via PowerShell MCP servers
-- Browser-based AI summarization (extension)
+- Developers building AI-powered applications who want a local, privacy-preserving inference server
+- Researchers experimenting with multiple LLM backends without cloud dependency
+- Teams needing a self-hosted RAG pipeline over internal documents
+- Windows users wanting a GUI-managed local AI stack
+
+---
 
 ## Entry Points
-- `start.ps1` — full startup (installs deps, starts Foundry, launches server)
-- `run.py` — direct Python launch (assumes Foundry already running)
-- `docker-compose up` — containerized deployment
-- Web UI: http://localhost:9696
-- Swagger: http://localhost:9696/docs
-- Health: http://localhost:9696/api/v1/health
 
-## Version
-Current: **0.6.0** | Python 3.11+ | Windows primary platform
+| Entry Point | Purpose |
+|---|---|
+| `start.ps1` | Primary launcher (installs deps, starts Foundry, runs server) |
+| `run.py` | Direct Python entry point (assumes Foundry already running) |
+| `install.ps1` | Dependency installer |
+| `docker-compose.yml` | Docker deployment |
+| `http://localhost:9696` | Web UI after startup |
+| `http://localhost:9696/docs` | Swagger UI |
+| `http://localhost:9697` | MkDocs documentation server |

@@ -132,7 +132,48 @@ body select.form-control:disabled {
     overflow-y: auto;
 }
 
-/* ── Active model banner ── */
+/* ── Settings sections ── */
+.settings-section {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem 1.25rem 0.75rem;
+    margin-bottom: 1.25rem;
+    position: relative;
+    background: #fff;
+}
+
+.settings-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.settings-section-header i {
+    font-size: 1rem;
+}
+
+.settings-section--server   { border-left: 3px solid #0d6efd; }
+.settings-section--dirs     { border-left: 3px solid #6c757d; }
+.settings-section--foundry  { border-left: 3px solid #198754; }
+.settings-section--startup  { border-left: 3px solid #20c997; }
+.settings-section--hf       { border-left: 3px solid #dc3545; }
+.settings-section--llama    { border-left: 3px solid #ffc107; }
+.settings-section--rag      { border-left: 3px solid #0dcaf0; }
+.settings-section--extractor{ border-left: 3px solid #0dcaf0; }
+.settings-section--security { border-left: 3px solid #6c757d; }
+.settings-section--logging  { border-left: 3px solid #fd7e14; }
+.settings-section--dev      { border-left: 3px solid #6f42c1; }
+.settings-section--lang     { border-left: 3px solid #6c757d; }
+.settings-section--translator { border-left: 3px solid #0d6efd; }
+
+/* Active model banner */
 .active-model-banner {
     display: flex;
     align-items: center;

@@ -23,8 +23,14 @@ from fastapi.responses import StreamingResponse
 from pathlib import Path
 
 from ...models.foundry_client import foundry_client
+from ...utils.translator import translator
+from ...core.config import config as app_config
 
 router = APIRouter()
+
+
+def _translate_enabled() -> bool:
+    return app_config.get_raw_config().get("translator", {}).get("enabled", False)
 
 # Хранение сессий чата в памяти
 chat_sessions: Dict[str, List[Dict]] = {}
@@ -73,39 +79,47 @@ async def send_chat_message(request: dict):
     """
     session_id = request.get("session_id")
     message = request.get("message", "")
-    
+    source_lang = request.get("source_lang", "auto")
+
     if not session_id or session_id not in chat_sessions:
         raise HTTPException(status_code=400, detail="Неверный ID сессии")
-    
+
     if not message:
         raise HTTPException(status_code=400, detail="Сообщение не может быть пустым")
-    
-    # Добавить сообщение пользователя
-    chat_sessions[session_id].append({"role": "user", "content": message})
-    
-    # Подготовить промпт из истории
-    conversation_history = chat_sessions[session_id]
-    prompt = "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_history])
-    
+
+    # Translate user message to English before sending to model
+    translate_on = _translate_enabled()
+    model_message = message
+    if translate_on:
+        tr = await translator.translate_for_model(message, source_lang=source_lang)
+        if tr["success"] and tr["was_translated"]:
+            model_message = tr["translated"]
+            source_lang = tr["source_lang"]
+
+    chat_sessions[session_id].append({"role": "user", "content": model_message})
+    prompt = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_sessions[session_id]])
+
     try:
         response = await foundry_client.generate_text(
             prompt,
             model=request.get("model"),
             temperature=request.get("temperature", 0.7),
-            max_tokens=request.get("max_tokens", 2048)
+            max_tokens=request.get("max_tokens", 2048),
         )
-        if response["success"]:
-            ai_response = response.get("content", "")
-            chat_sessions[session_id].append({"role": "assistant", "content": ai_response})
-            
-            return {
-                "success": True,
-                "response": ai_response,
-                "session_id": session_id
-            }
-        else:
+        if not response["success"]:
             raise Exception(response.get("error", "Unknown error"))
-            
+
+        ai_response = response.get("content", "")
+        chat_sessions[session_id].append({"role": "assistant", "content": ai_response})
+
+        # Translate response back to user language
+        if translate_on and source_lang and source_lang != "en":
+            tr_back = await translator.translate_response(ai_response, source_lang)
+            if tr_back["success"]:
+                ai_response = tr_back["translated"]
+
+        return {"success": True, "response": ai_response, "session_id": session_id}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка генерации: {str(e)}")
 

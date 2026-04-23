@@ -31,7 +31,7 @@ DEFAULT_SUBPROCESS_KWARGS: Dict[str, Any] = {
 }
 
 def run_command(args: List[str], timeout: int = 30, shell: bool = False, capture_output: bool = True) -> subprocess.CompletedProcess:
-    """! Run a command via subprocess.run with project-standard defaults.
+    """Run a command via subprocess.run with project-standard defaults.
 
     Args:
         args: List of command arguments.

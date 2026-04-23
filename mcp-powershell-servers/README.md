@@ -28,7 +28,8 @@ mcp-powershell-servers/
 │       ├── McpWPCLIServer.ps1     # MCP для WordPress CLI
 │       ├── McpWpServer.ps1        # MCP для WordPress
 │       ├── McpHuggingFaceServer.ps1
-│       └── huggingface_mcp.py     # Python MCP для HuggingFace
+│       ├── huggingface_mcp.py     # Python MCP для HuggingFace (облако)
+│       └── local_models_mcp.py    # Python MCP для локальных моделей (FastAPI Foundry)
 ├── MCPServerLauncher.psd1         # Манифест модуля
 ├── Start-MCPServers.ps1           # Главный скрипт запуска
 └── settings.json                  # Настройки серверов
@@ -117,7 +118,42 @@ MCP сервер для управления WordPress через WP-CLI.
 
 ### McpHuggingFaceServer.ps1 / huggingface_mcp.py
 
-MCP сервер для работы с HuggingFace Hub (скачивание моделей, поиск).
+MCP сервер для работы с HuggingFace Hub через облачный Inference API. Требует `HF_TOKEN`.
+
+### local_models_mcp.py — Локальные AI модели
+
+Python MCP STDIO сервер для работы с локальными AI моделями через FastAPI Foundry REST API.
+Проксирует запросы к `http://localhost:9696` — единой точке входа для всех бэкендов.
+
+**Требования:** FastAPI Foundry должен быть запущен (`venv\Scripts\python.exe run.py`).
+
+**Инструменты:**
+
+| Tool | Описание | FastAPI endpoint |
+|---|---|---|
+| `generate` | Генерация текста | `POST /api/v1/generate` |
+| `chat` | Чат с историей сессии | `POST /api/v1/ai/chat` |
+| `list_models` | Список всех локальных моделей | `GET /api/v1/models` |
+| `rag_search` | Поиск по RAG индексу (FAISS) | `POST /api/v1/rag/search` |
+| `health` | Статус сервиса | `GET /api/v1/health` |
+
+**Маршрутизация моделей** (через поле `model` в `generate` / `chat`):
+
+```
+""                              → Foundry Local (ONNX, по умолчанию)
+"llama::D:/models/qwen.gguf"   → llama.cpp
+"ollama::llama3"               → Ollama
+"hf::microsoft/phi-2"          → HuggingFace Transformers
+```
+
+**Запуск вручную:**
+
+```powershell
+$env:FASTAPI_BASE_URL = "http://localhost:9696"
+python .\src\servers\local_models_mcp.py
+```
+
+**Лог файл:** `%TEMP%\mcp-local-models.log`
 
 ## Выбор режима: STDIO vs HTTPS
 
@@ -154,15 +190,31 @@ MCP сервер для работы с HuggingFace Hub (скачивание м
     "powershell": {
       "command": "pwsh",
       "args": ["-File", "C:\\path\\to\\mcp-powershell-servers\\src\\servers\\McpSTDIOServer.ps1"]
+    },
+    "local-models": {
+      "command": "python",
+      "args": ["C:\\path\\to\\mcp-powershell-servers\\src\\servers\\local_models_mcp.py"],
+      "env": {
+        "FASTAPI_BASE_URL": "http://localhost:9696"
+      }
     }
   }
 }
 ```
 
+> **Важно:** перед подключением `local-models` убедитесь, что FastAPI Foundry запущен:
+> ```powershell
+> venv\Scripts\python.exe run.py
+> ```
+
 ## Логи
 
-- STDIO режим: `%TEMP%\mcp-powershell-server.log`
-- Launcher: `%TEMP%\mcp-launcher.log`
+| Сервер | Лог файл |
+|---|---|
+| McpSTDIOServer.ps1 | `%TEMP%\mcp-powershell-server.log` |
+| McpSTDIOServer.v1.ps1 | `%TEMP%\mcp-stdio-server.log` |
+| local_models_mcp.py | `%TEMP%\mcp-local-models.log` |
+| Launcher | `%TEMP%\mcp-launcher.log` |
 
 ```powershell
 Get-MCPServerLog -Follow

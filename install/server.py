@@ -31,7 +31,7 @@ from fastapi.middleware.cors import CORSMiddleware
 ROOT        = Path(__file__).parent.parent
 INSTALL_DIR = Path(__file__).parent
 STATIC_DIR  = INSTALL_DIR / "static"
-PID_FILE    = INSTALL_DIR / ".installer.pid"
+PID_FILE    = Path(os.environ.get('TEMP', '/tmp')) / 'fastapi-foundry-installer.pid'
 
 app = FastAPI(title="FastAPI Foundry Installer", docs_url=None, redoc_url=None)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -97,6 +97,18 @@ STEPS: list[dict] = [
         "cmd": lambda: _ps("install-models.ps1"),
     },
     {
+        "id": "huggingface",
+        "label_key": "steps.huggingface",
+        "icon": "bi-boxes",
+        "cmd": lambda: _ps("install-huggingface-cli.ps1"),
+    },
+    {
+        "id": "llama",
+        "label_key": "steps.llama",
+        "icon": "bi-cpu",
+        "cmd": lambda: _ps("install-llama.ps1"),
+    },
+    {
         "id": "shortcuts",
         "label_key": "steps.shortcuts",
         "icon": "bi-link-45deg",
@@ -135,6 +147,18 @@ async def get_status():
     })
 
 
+@app.get("/api/defaults")
+async def get_defaults():
+    """Returns default values from config.json for pre-filling installer fields."""
+    try:
+        cfg = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
+        return JSONResponse({
+            "models_dir": cfg.get("directories", {}).get("models", "~/.models"),
+        })
+    except Exception:
+        return JSONResponse({"models_dir": "~/.models"})
+
+
 @app.get("/api/run/{step_id}")
 async def run_step(step_id: str):
     """Stream step output via Server-Sent Events."""
@@ -143,6 +167,66 @@ async def run_step(step_id: str):
         return JSONResponse({"error": "Unknown step"}, status_code=404)
 
     cmd = step["cmd"]()
+
+    async def event_stream():
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd=str(ROOT),
+            )
+            async for raw in proc.stdout:
+                line = raw.decode("utf-8", errors="replace").rstrip()
+                if line:
+                    yield f"data: {json.dumps({'line': line})}\n\n"
+            await proc.wait()
+            yield f"data: {json.dumps({'done': True, 'code': proc.returncode})}\n\n"
+        except FileNotFoundError as exc:
+            yield f"data: {json.dumps({'line': f'ERROR: {exc}', 'done': True, 'code': 1})}\n\n"
+        except Exception as exc:
+            yield f"data: {json.dumps({'line': str(exc), 'done': True, 'code': 1})}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@app.get("/api/run/huggingface")
+async def run_huggingface(token: str = ""):
+    """Stream HuggingFace CLI install + optional token auth via SSE."""
+    cmd = _ps("install-huggingface-cli.ps1")
+    if token:
+        cmd += ["-Token", token]
+    else:
+        cmd += ["-SkipAuth"]
+
+    async def event_stream():
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd=str(ROOT),
+            )
+            async for raw in proc.stdout:
+                line = raw.decode("utf-8", errors="replace").rstrip()
+                if line:
+                    yield f"data: {json.dumps({'line': line})}\n\n"
+            await proc.wait()
+            yield f"data: {json.dumps({'done': True, 'code': proc.returncode})}\n\n"
+        except FileNotFoundError as exc:
+            yield f"data: {json.dumps({'line': f'ERROR: {exc}', 'done': True, 'code': 1})}\n\n"
+        except Exception as exc:
+            yield f"data: {json.dumps({'line': str(exc), 'done': True, 'code': 1})}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@app.get("/api/run/llama")
+async def run_llama(models_dir: str = ""):
+    """Stream llama.cpp extraction + config update via SSE."""
+    cmd = _ps("install-llama.ps1")
+    if models_dir:
+        cmd += ["-ModelsDir", models_dir]
 
     async def event_stream():
         try:

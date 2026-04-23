@@ -8,8 +8,8 @@
 #
 # File: config_manager.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.6.5
-# Изменения в 0.6.5:
+# Version: 0.6.1
+# Изменения в 0.6.1:
 #   - Полная русификация документации
 #   - Добавлены строгие аннотации типов возвращаемых значений
 #   - Комментарии к проверкам `if` в стиле "Проверка ..."
@@ -22,7 +22,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,24 @@ class Config:
         if cls._instance is None: # Проверка существования экземпляра (Singleton)
             cls._instance = super().__new__(cls)
             cls._instance._load_config()
+            # Инициализация необходимых директорий
+            # Initialization of required directories
+            cls._instance._ensure_dirs()
         return cls._instance
+
+    def _ensure_dirs(self) -> None:
+        """! Создание необходимых директорий проекта.
+        
+        Обоснование:
+          - Гарантированное наличие папки archive для ротации логов и истории сессий.
+          - Автоматическое создание при первом запуске (инициализация/инсталляция).
+        """
+        archive_path: Path = Path('archive')
+        if not archive_path.exists(): # Проверка наличия папки
+            try:
+                archive_path.mkdir(parents=True, exist_ok=True)
+            except OSError as e:
+                logger.error(f"❌ Ошибка создания папки архива: {e}")
 
     def _load_config(self) -> None:
         """Загрузка конфигурации из файла config.json.
@@ -100,6 +117,43 @@ class Config:
     @property
     def api_log_level(self) -> str:
         return self._config_data.get('fastapi_server', {}).get('log_level', 'INFO')
+
+    # ── Логирование ───────────────────────────────────────────────────────
+
+    @property
+    def logging_retention_hours(self) -> int:
+        return self._config_data.get('logging', {}).get('retention_hours') or 24
+
+    @property
+    def history_retention_days(self) -> int:
+        return self._config_data.get('logging', {}).get('history_retention_days') or 7
+
+    @property
+    def archive_max_size_gb(self) -> int:
+        return self._config_data.get('logging', {}).get('archive_max_size_gb') or 2
+
+    @property
+    def archive_keep_files(self) -> List[str]:
+        return self._config_data.get('logging', {}).get('archive_keep_files') or []
+
+    # ── Telegram Бот ──────────────────────────────────────────────────────
+
+    @property
+    def telegram_enabled(self) -> bool:
+        return self._config_data.get('telegram', {}).get('enabled', False)
+
+    @property
+    def telegram_token(self) -> str:
+        # Чтение токена из окружения (приоритет) или конфига
+        return os.getenv('TELEGRAM_TOKEN') or self._config_data.get('telegram', {}).get('token', '')
+
+    @property
+    def telegram_allowed_ids(self) -> List[int]:
+        return self._config_data.get('telegram', {}).get('allowed_external_ids', [])
+
+    @property
+    def telegram_status_check_interval(self) -> int:
+        return self._config_data.get('telegram', {}).get('status_check_interval', 300)
 
     # ── ИИ Foundry ────────────────────────────────────────────────────────
 

@@ -5,13 +5,13 @@
 # Description:
 #   Downloads and installs Tesseract OCR 5.x for Windows x64.
 #   Adds Tesseract to the system PATH.
-#   Writes TESSERACT_CMD to the project .env file.
+#   Writes tesseract_cmd to config.json (text_extractor section).
 #   Required for RAG image indexing (OCR of PNG, JPG, TIFF, etc.)
 #   and OCR of embedded images inside PDF files.
 #
 # Examples:
 #   powershell -ExecutionPolicy Bypass -File .\install\install-tesseract.ps1
-#   powershell -ExecutionPolicy Bypass -File .\install\install-tesseract.ps1 -EnvFile "D:\project\.env"
+#   powershell -ExecutionPolicy Bypass -File .\install\install-tesseract.ps1 -ConfigFile "D:\project\config.json"
 #
 # File: install\install-tesseract.ps1
 # Project: FastApiFoundry (Docker)
@@ -21,8 +21,8 @@
 # =============================================================================
 
 param(
-    # Path to project .env file (default: .env in parent directory)
-    [string]$EnvFile = "",
+    # Path to project config.json (default: config.json in parent directory)
+    [string]$ConfigFile = "",
     # Skip download if tesseract.exe already exists at install path
     [switch]$SkipIfExists
 )
@@ -37,11 +37,11 @@ $TESSERACT_URL      = "https://github.com/UB-Mannheim/tesseract/releases/downloa
 $TESSERACT_DIR      = 'C:\Program Files\Tesseract-OCR'
 $TESSERACT_EXE      = Join-Path $TESSERACT_DIR 'tesseract.exe'
 
-# Resolve .env path
-if (-not $EnvFile) {
-    $EnvFile = Join-Path $PSScriptRoot '..\\.env'
+# Resolve config.json path
+if (-not $ConfigFile) {
+    $ConfigFile = Join-Path $PSScriptRoot '..\config.json'
 }
-$EnvFile = [System.IO.Path]::GetFullPath($EnvFile)
+$ConfigFile = [System.IO.Path]::GetFullPath($ConfigFile)
 
 # --- Functions ----------------------------------------------------------------
 
@@ -71,32 +71,33 @@ function Add-TesseractToPath {
     }
 }
 
-function Write-TesseractToEnv {
+function Write-TesseractToConfig {
     <#
     .SYNOPSIS
-        Writes or updates TESSERACT_CMD in the project .env file.
+        Writes or updates text_extractor.tesseract_cmd in config.json.
     .PARAMETER ExePath
         Full path to tesseract.exe.
     #>
     param([string]$ExePath)
 
-    if (-not (Test-Path $EnvFile)) {
-        Write-Host "  .env not found at $EnvFile — skipping TESSERACT_CMD write" -ForegroundColor Yellow
+    if (-not (Test-Path $ConfigFile)) {
+        Write-Host "  config.json not found at $ConfigFile — skipping tesseract_cmd write" -ForegroundColor Yellow
         return
     }
 
-    $content = Get-Content $EnvFile -Raw -Encoding UTF8
-    $line    = "TESSERACT_CMD=$ExePath"
+    try {
+        $json = Get-Content $ConfigFile -Raw -Encoding UTF8 | ConvertFrom-Json
 
-    if ($content -match 'TESSERACT_CMD=') {
-        # Update existing entry
-        $content = $content -replace 'TESSERACT_CMD=.*', $line
-        Set-Content $EnvFile -Value $content -Encoding UTF8 -NoNewline
-        Write-Host "  Updated in .env: $line" -ForegroundColor Green
-    } else {
-        # Append new entry
-        Add-Content $EnvFile -Value "`n$line" -Encoding UTF8
-        Write-Host "  Added to .env: $line" -ForegroundColor Green
+        if (-not $json.text_extractor) {
+            $json | Add-Member -NotePropertyName 'text_extractor' -NotePropertyValue ([PSCustomObject]@{})
+        }
+
+        $json.text_extractor | Add-Member -NotePropertyName 'tesseract_cmd' -NotePropertyValue $ExePath -Force
+
+        $json | ConvertTo-Json -Depth 10 | Set-Content $ConfigFile -Encoding UTF8
+        Write-Host "  Updated config.json: text_extractor.tesseract_cmd = $ExePath" -ForegroundColor Green
+    } catch {
+        Write-Host "  Failed to update config.json: $_" -ForegroundColor Red
     }
 }
 
@@ -153,13 +154,13 @@ if (Test-TesseractInstalled) {
         $ver = & $TESSERACT_EXE --version 2>&1 | Select-Object -First 1
         Write-Host "  Already installed: $ver" -ForegroundColor Green
         Add-TesseractToPath
-        Write-TesseractToEnv -ExePath $TESSERACT_EXE
+        Write-TesseractToConfig -ExePath $TESSERACT_EXE
         return
     }
     $ver = & $TESSERACT_EXE --version 2>&1 | Select-Object -First 1
     Write-Host "  Already installed: $ver" -ForegroundColor Green
     Add-TesseractToPath
-    Write-TesseractToEnv -ExePath $TESSERACT_EXE
+    Write-TesseractToConfig -ExePath $TESSERACT_EXE
     return
 }
 
@@ -176,7 +177,7 @@ $ok = Install-Tesseract
 
 if ($ok -and (Test-Path $TESSERACT_EXE)) {
     Add-TesseractToPath
-    Write-TesseractToEnv -ExePath $TESSERACT_EXE
+    Write-TesseractToConfig -ExePath $TESSERACT_EXE
 
     $ver = & $TESSERACT_EXE --version 2>&1 | Select-Object -First 1
     Write-Host "  OK: $ver" -ForegroundColor Green

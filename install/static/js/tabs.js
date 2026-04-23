@@ -81,6 +81,45 @@ const STEP_META = {
                 </div>
             </div>`,
     },
+    huggingface: {
+        desc: 'steps.huggingface_desc',
+        optional: true,
+        options: () => `
+            <div class="step-options">
+                <label class="form-label small fw-semibold">HuggingFace Token <span class="text-muted">(optional)</span></label>
+                <div class="input-group input-group-sm">
+                    <input id="opt-hf-token-hf" type="password" class="form-control"
+                           placeholder="hf_...">
+                    <button class="btn btn-outline-secondary" type="button"
+                            onclick="const i=document.getElementById('opt-hf-token-hf');i.type=i.type==='password'?'text':'password'">👁</button>
+                </div>
+                <div class="form-text" data-i18n="steps.huggingface_token_hint">For gated models (Gemma, Llama). Leave empty to skip auth.</div>
+                <div class="form-text mt-1">
+                    <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a>
+                </div>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="skip-huggingface">
+                    <label class="form-check-label text-muted small" for="skip-huggingface"
+                           data-i18n="steps.huggingface_opt_skip">Skip HuggingFace setup</label>
+                </div>
+            </div>`,
+    },
+    llama: {
+        desc: 'steps.llama_desc',
+        optional: true,
+        options: () => `
+            <div class="step-options">
+                <label class="form-label small fw-semibold" data-i18n="steps.llama_models_dir">Models Directory</label>
+                <input id="opt-llama-models-dir" type="text" class="form-control form-control-sm font-monospace"
+                       placeholder="~/.models">
+                <div class="form-text" data-i18n="steps.llama_models_dir_hint">Default from config.json: directories.models</div>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="skip-llama">
+                    <label class="form-check-label text-muted small" for="skip-llama"
+                           data-i18n="steps.llama_opt_skip">Skip llama.cpp setup</label>
+                </div>
+            </div>`,
+    },
     shortcuts: {
         desc: 'steps.shortcuts_desc',
         optional: true,

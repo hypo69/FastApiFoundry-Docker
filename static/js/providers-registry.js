@@ -215,6 +215,21 @@ export const PROVIDERS = {
         }
     },
 
+    // ── HuggingFace ──────────────────────────────────────────────────────────
+    // Token stored as HF_TOKEN in .env. Uses /api/v1/config/env endpoint.
+    // fetchModels lists downloaded local models via the app's own HF API.
+    huggingface: {
+        label: 'HuggingFace',
+        placeholder: 'hf_…',
+        hint: 'huggingface.co/settings/tokens',
+        fetchModels: async () => {
+            const r = await fetch('/api/v1/hf/models');
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+            return (d.downloaded || []).map(m => ({ id: m.id, label: m.id }));
+        }
+    },
+
     // ── Custom (OpenAI-compatible) ───────────────────────────────────────────
     // For self-hosted: Ollama, LM Studio, vLLM, FastAPI Foundry.
     // opts.customUrl — base URL, e.g. http://localhost:9696/v1

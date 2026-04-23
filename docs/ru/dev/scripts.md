@@ -15,6 +15,8 @@
 | `hf-download-model.ps1` | Скачивание модели с HuggingFace Hub |
 | `hf-models.ps1` | Поиск и просмотр моделей на HuggingFace |
 | `service-status.ps1` | Проверка статуса Foundry и FastAPI |
+| `Update-Project.ps1` | Проверка обновлений из GitHub и переключение на новый тег |
+| `generate-ps-docs.ps1` | Генерация Markdown-документации из PowerShell comment-based help |
 | `build_exes.ps1` | Сборка `install.exe` и `launcher.exe` |
 
 ---
@@ -32,7 +34,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\restart-mkdocs.ps1
 **Что делает:**
 
 1. Читает порт из `config.json`
-2. Находит процесс на этом порту через `netstat` и убивает его
+2. Находит процесс на этом порту через `Get-NetTCPConnection` и убивает его
 3. Ждёт 800 мс (освобождение порта)
 4. Запускает `mkdocs serve` в новом окне через `venv\Scripts\python.exe`
 
@@ -85,3 +87,75 @@ LLAMA_SERVER_PATH=.\bin\llama-b8802-bin-win-cpu-x64\llama-server.exe
 ```powershell
 .\scripts\service-status.ps1
 ```
+
+---
+
+## Update-Project.ps1
+
+Проверяет GitHub на наличие нового релиза и предлагает обновиться. Автоматически запускается из `start.ps1`.
+
+```powershell
+# Интерактивный режим
+powershell -ExecutionPolicy Bypass -File .\scripts\Update-Project.ps1
+
+# Без подтверждения (авто-принятие)
+powershell -ExecutionPolicy Bypass -File .\scripts\Update-Project.ps1 -Silent
+
+# Принудительное обновление даже если версия актуальна
+powershell -ExecutionPolicy Bypass -File .\scripts\Update-Project.ps1 -Force
+```
+
+**Что делает:**
+
+1. Читает текущую версию из файла `VERSION` или `git describe --tags`
+2. Делает `git fetch --tags` и находит последний тег на remote
+3. Если есть обновление — предлагает переключиться (`git checkout <tag>`)
+4. Запускает `install.ps1` для обновления зависимостей
+
+| Параметр | Описание |
+|---|---|
+| `-Silent` | Авто-принятие обновления без вопроса |
+| `-Force` | Обновить даже если версия уже актуальна |
+
+!!! note
+    Требует `git` в `PATH`. Если проект запущен не из git-репозитория, проверка пропускается автоматически.
+
+---
+
+## generate-ps-docs.ps1
+
+Генерирует Markdown-документацию из PowerShell comment-based help (блоки `<# .SYNOPSIS .DESCRIPTION #>`). Используется в GitHub Actions workflow `deploy-docs.yml`.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\generate-ps-docs.ps1
+```
+
+**Что делает:**
+
+1. Сканирует `mcp-powershell-servers/src/servers/` и `scripts/` на все `.ps1` файлы
+2. Извлекает `.SYNOPSIS`, `.DESCRIPTION`, `.NOTES` из comment-based help
+3. Генерирует `docs/ru/dev/powershell/<name>.md` для каждого скрипта
+4. Создаёт `docs/ru/dev/powershell/index.md` со ссылками на все страницы
+
+!!! note
+    Чтобы скрипт попал в документацию, добавьте в него блок `<# .SYNOPSIS ... #>`.
+
+---
+
+## build_exes.ps1
+
+Собирает `install.exe` и `launcher.exe` — обёртки над PowerShell скриптами для запуска двойным кликом. Использует встроенный компилятор `csc.exe` (.NET Framework 4), внешние инструменты не нужны.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build_exes.ps1
+```
+
+**Что делает:**
+
+1. Находит `csc.exe` в `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\`
+2. Генерирует C# обёртку, которая находит `.ps1` рядом с `.exe` и запускает его через `powershell.exe -ExecutionPolicy Bypass`
+3. Компилирует `install.exe` (обёртка `install.ps1`) и `launcher.exe` (обёртка `launcher.ps1`)
+4. Кладёт файлы в корень проекта
+
+!!! warning
+    Требует .NET Framework 4 (есть на любом Windows 7+). Не требует Visual Studio или MSBuild.

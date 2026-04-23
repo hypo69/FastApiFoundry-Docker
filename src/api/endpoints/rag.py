@@ -1,36 +1,40 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Process Name: RAG System API Endpoints
+# Название процесса: API эндпоинты системы RAG
 # =============================================================================
-# Description:
-#   REST API endpoints for RAG system management
-#   Includes configuration, status, search, and index management
+# Описание:
+#   Управление системой RAG (Retrieval-Augmented Generation).
+#   Включает настройку, поиск, управление индексами и профилями.
 #
-# Examples:
-#   GET /api/v1/rag/status - get RAG status
-#   PUT /api/v1/rag/config - update configuration
-#   POST /api/v1/rag/search - search in RAG
+# Примеры:
+#   GET /api/v1/rag/status  - Получение статуса системы
+#   POST /api/v1/rag/search - Поиск по векторному индексу
 #
 # File: src/api/endpoints/rag.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.6.3
-# Changes in 0.6.3:
-#   - MIT License update
-#   - Unified headers and return type hints
-#   - Added an endpoint to trigger RAG profile cleanup
+# Package: FastApiFoundry
+# Module: api.endpoints.rag
+# Version: 0.6.1
 # Author: hypo69
 # Copyright: © 2026 hypo69
+# License: MIT
+# Date: 2025
 # =============================================================================
 
 import asyncio
 import json
+import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
-import faiss
 from pydantic import BaseModel
+import faiss
 
+from ...rag.rag_system import rag_system
+from src.core.config import config as app_config
+from src.logger import logger
 from ...utils.api_utils import api_response_handler
 from ...rag.text_extractor_4_rag.utils import sanitize_filename as sanitize_for_filesystem
 
@@ -48,6 +52,7 @@ class RAGConfig(BaseModel):
 class RAGSearchRequest(BaseModel):
     query: str
     top_k: Optional[int] = 5
+    min_score: float = 0.0
 
 
 class RAGBuildRequest(BaseModel):
@@ -75,47 +80,53 @@ class RAGSearchResult(BaseModel):
 @router.get("/status")
 @api_response_handler
 async def get_rag_status() -> dict:
-    """Get RAG system status.
+    """! Получение статуса системы RAG.
 
     Returns:
-        dict: success, enabled, index_dir, model, chunk_size, top_k, total_chunks.
-    """
-    config_path = Path("config.json")
-    if config_path.exists():
-        with open(config_path, "r", encoding="utf-8") as f:
-            cfg = json.load(f)
-        rag_config = cfg.get("rag_system", {})
-    else:
-        rag_config = {}
+        dict: Информация о состоянии: enabled, index_dir, model, chunk_size, total_chunks.
 
-    index_dir = Path(rag_config.get("index_dir", "./rag_index"))
-    total_chunks = len(list(index_dir.glob("*.json"))) if index_dir.exists() else 0
+    Example:
+        >>> status = await get_rag_status()
+        >>> print(status['enabled'])
+        True
+    """
+    total_chunks: int = 0
+    index_dir: Path = Path(app_config.rag_index_dir)
+
+    # Подсчет количества сегментов (chunks) в индексе
+    # Counting of chunks in the index directory
+    if index_dir.exists():
+        total_chunks = len(list(index_dir.glob("*.json")))
 
     return {
         "success": True,
-        "enabled": rag_config.get("enabled", False),
+        "enabled": app_config.rag_enabled,
         "index_dir": str(index_dir),
-        "model": rag_config.get("model", "sentence-transformers/all-MiniLM-L6-v2"),
-        "chunk_size": rag_config.get("chunk_size", 1000),
-        "top_k": rag_config.get("top_k", 5),
-        "total_chunks": total_chunks,
+        "model": app_config.rag_model,
+        "chunk_size": app_config.rag_chunk_size,
+        "total_chunks": total_chunks
     }
 
 
 @router.put("/config")
 @api_response_handler
 async def update_rag_config(config: RAGConfig) -> dict:
-    """Update RAG system configuration.
+    """! Обновление конфигурации системы RAG.
 
     Args:
-        config: RAGConfig Pydantic model.
+        config (RAGConfig): Модель данных с новыми настройками.
 
     Returns:
-        dict: success, message.
+        dict: Статус выполнения операции.
     """
-    config_path = Path("config.json")
+    config_path: Path = Path("config.json")
+    full_config: dict = {}
+
+    # Чтение и обновление секции rag_system
+    # Reading and updating the rag_system section
     full_config = json.loads(config_path.read_text(encoding="utf-8")) if config_path.exists() else {}
-    full_config["rag_system"] = config.model_dump()
+    full_config["rag_system"] = config.model_dump() 
+    
     with open(config_path, "w", encoding="utf-8") as f:
         json.dump(full_config, f, indent=2, ensure_ascii=False)
     return {"success": True, "message": "RAG configuration updated"}
@@ -124,28 +135,44 @@ async def update_rag_config(config: RAGConfig) -> dict:
 @router.post("/search")
 @api_response_handler
 async def search_rag(request: RAGSearchRequest) -> dict:
-    """Search in RAG system.
+    """! Выполнение поиска в системе RAG.
 
     Args:
-        request: RAGSearchRequest with query and top_k.
+        request (RAGSearchRequest): Запрос с текстом и параметром top_k.
 
     Returns:
-        dict: success, results, total.
+        dict: Список результатов с контентом и оценками схожести.
+
+    Example:
+        >>> res = await search_rag(RAGSearchRequest(query="test", top_k=5, min_score=0.5))
+        >>> len(res['results'])
+        3
     """
-    results = [
-        {"content": f"Mock result for query: {request.query}", "score": 0.95, "metadata": {"source": "mock"}},
-        {"content": f"Another result for: {request.query}", "score": 0.87, "metadata": {"source": "mock"}},
-    ]
+    results: List[Dict[str, Any]] = []
+    top_k: int = request.top_k or 5
+
+    # Выполнение поиска через ядро системы
+    # Execution of the search through the system core
+    results = await rag_system.search(request.query, top_k=top_k)
+
+    # Фильтрация результатов по порогу схожести
+    # Filtration of results by the similarity threshold
+    if request.min_score > 0:
+        # ПОЧЕМУ ВЫБРАН ЭТОТ МЕТОД:
+        #   Использование централизованной логики фильтрации из RAGSystem гарантирует 
+        #   одинаковое поведение API и внутренних модулей генерации.
+        results = rag_system.filter_by_score(results, request.min_score)
+
     return {"success": True, "results": results[: request.top_k], "total": len(results)}
 
 
 @router.post("/rebuild")
 @api_response_handler
 async def rebuild_rag_index() -> dict:
-    """Rebuild RAG index.
+    """! Пересборка векторного индекса.
 
     Returns:
-        dict: success, message, chunks_processed.
+        dict: Статус запуска процесса пересборки.
     """
     return {"success": True, "message": "RAG index rebuild started (mock)", "chunks_processed": 42}
 
@@ -153,20 +180,17 @@ async def rebuild_rag_index() -> dict:
 @router.post("/clear")
 @api_response_handler
 async def clear_rag_chunks() -> dict:
-    """Clear all RAG index files from the configured index directory.
+    """! Очистка файлов индекса в настроенной директории.
 
     Returns:
-        dict: success, message, deleted_count.
+        dict: Количество удаленных файлов.
     """
-    config_path = Path("config.json")
-    if config_path.exists():
-        cfg = json.loads(config_path.read_text(encoding="utf-8"))
-        index_dir = Path(cfg.get("rag_system", {}).get("index_dir", "./rag_index"))
-    else:
-        index_dir = Path("./rag_index")
+    index_dir: Path = Path(app_config.rag_index_dir)
+    deleted_count: int = 0
+    file: Path = None
 
-    deleted_count = 0
     if index_dir.exists():
+        # Удаление файлов .index и .json
         for file in index_dir.glob("*"):
             if file.is_file() and file.suffix in (".index", ".json"):
                 file.unlink()
@@ -178,13 +202,16 @@ async def clear_rag_chunks() -> dict:
 @router.get("/dirs")
 @api_response_handler
 async def list_indexable_dirs() -> dict:
-    """Return a list of project directories suitable for indexing.
+    """! Получение списка директорий, доступных для индексации.
 
     Returns:
-        dict: success, dirs.
+        dict: Список путей с количеством найденных текстовых файлов.
     """
-    root = Path(".")
-    candidates = []
+    root: Path = Path(".")
+    candidates: list = []
+    p: Path = None
+    count: int = 0
+
     skip = {"venv", ".git", "__pycache__", "node_modules", "rag_index", ".amazonq"}
     for p in sorted(root.iterdir()):
         if p.is_dir() and p.name not in skip and not p.name.startswith("."):
@@ -200,31 +227,34 @@ RAG_HOME = Path.home() / ".rag"
 
 
 def _rag_home() -> Path:
-    """Return ~/.rag, creating it if needed."""
+    """! Получение домашней директории RAG (~/.rag)."""
     RAG_HOME.mkdir(parents=True, exist_ok=True)
     return RAG_HOME
 
 
 def _profile_index_dir(safe_name: str) -> Path:
-    """Return ~/.rag/<safe_name>/."""
+    """! Получение пути к директории профиля."""
     return _rag_home() / safe_name
 
 
 @router.get("/cwd")
 async def get_cwd() -> dict:
-    """Return server working directory."""
+    """! Получение текущей рабочей директории сервера."""
     return {"success": True, "cwd": str(Path.cwd())}
 
 
 @router.get("/browse")
 async def browse_filesystem(path: str = "") -> dict:
-    """Return directory listing for folder-picker UI.
+    """! Просмотр файловой системы для выбора папок.
 
     Args:
-        path: Absolute path (defaults to home directory).
+        path (str): Абсолютный путь для обзора. По умолчанию домашняя папка.
 
     Returns:
-        dict: success, current, parent, dirs.
+        dict: Список вложенных папок и информация о текущем пути.
+
+    Raises:
+        HTTPException: Если путь не существует или не является директорией.
     """
     base = Path(path).expanduser() if path else Path.home()
     if not base.exists() or not base.is_dir():
@@ -243,12 +273,14 @@ async def browse_filesystem(path: str = "") -> dict:
 
 @router.get("/profiles")
 async def list_rag_profiles() -> dict:
-    """List all RAG profiles in ~/.rag/.
+    """! Получение списка всех профилей RAG в директории ~/.rag/.
 
     Returns:
         dict: success, profiles.
     """
-    profiles = []
+    profiles: list = []
+    d: Path = None
+
     for d in sorted(_rag_home().iterdir()):
         if not d.is_dir():
             continue
@@ -267,15 +299,17 @@ async def list_rag_profiles() -> dict:
 
 @router.post("/profiles/load")
 async def load_rag_profile(request: dict) -> dict:
-    """Switch active RAG profile.
+    """! Переключение активного профиля RAG.
 
     Args:
-        request: JSON body with name (str).
+        request (dict): Тело запроса с полем 'name'.
 
     Returns:
-        dict: success, message, index_dir.
+        dict: Результат загрузки и путь к новому индексу.
     """
+    config_path: Path = Path("config.json")
     name = (request.get("name") or "").strip()
+
     if not name:
         return {"success": False, "error": "name is required"}
 
@@ -285,12 +319,10 @@ async def load_rag_profile(request: dict) -> dict:
     if not (profile_dir / "faiss.index").exists():
         return {"success": False, "error": f"Profile '{name}' has no index yet"}
 
-    config_path = Path("config.json")
     cfg = json.loads(config_path.read_text(encoding="utf-8")) if config_path.exists() else {}
     cfg.setdefault("rag_system", {})["index_dir"] = str(profile_dir)
     config_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    from ...rag.rag_system import rag_system
     await rag_system.reload_index(index_dir=str(profile_dir))
 
     return {"success": True, "message": f"Loaded profile '{name}'", "index_dir": str(profile_dir)}
@@ -298,15 +330,16 @@ async def load_rag_profile(request: dict) -> dict:
 
 @router.delete("/profiles/{name}")
 async def delete_rag_profile(name: str) -> dict:
-    """Delete a RAG profile from ~/.rag/<name>/.
+    """! Удаление профиля RAG с диска.
 
     Args:
-        name: Profile name (path parameter).
+        name (str): Имя профиля.
 
     Returns:
-        dict: success, message.
+        dict: Статус удаления.
     """
     import shutil
+    profile_dir: Path = None
     profile_dir = _profile_index_dir(sanitize_for_filesystem(name))
     if not profile_dir.exists():
         return {"success": False, "error": f"Profile '{name}' not found"}
@@ -316,15 +349,16 @@ async def delete_rag_profile(name: str) -> dict:
 
 @router.post("/build")
 async def build_rag_index(request: RAGBuildRequest) -> dict:
-    """Build RAG index from a directory.
+    """! Создание векторного индекса из локальной директории.
 
     Args:
-        request: RAGBuildRequest with docs_dir, model, chunk_size, overlap, force.
+        request (RAGBuildRequest): Параметры сборки (путь, модель, размер чанка).
 
     Returns:
-        dict: success, chunks, index_dir, name.
+        dict: Статистика сборки: количество сегментов, признак пересборки.
     """
-    docs_dir = Path(request.docs_dir).expanduser()
+    docs_dir: Path = Path(request.docs_dir).expanduser()
+
     if not docs_dir.is_absolute():
         docs_dir = Path.cwd() / docs_dir
     docs_dir = docs_dir.resolve()
@@ -394,7 +428,7 @@ async def build_rag_index(request: RAGBuildRequest) -> dict:
             "source_dir": str(docs_dir), 
             "index_dir": str(output_dir), 
             "chunks": chunks_count, 
-            "model": request.model,
+            "model": request.model, 
             "updated_at": datetime.now().isoformat()
         }
         (output_dir / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -415,15 +449,17 @@ async def build_rag_index(request: RAGBuildRequest) -> dict:
 
 @router.post("/extract/file")
 async def extract_text_from_file(file: UploadFile = File(...)) -> dict:
-    """Extract plain text from an uploaded file.
+    """! Извлечение текста из загруженного файла.
 
     Args:
-        file: Uploaded file (multipart/form-data).
+        file (UploadFile): Файл для обработки.
 
     Returns:
-        dict: success, filename, count, total_chars, files.
+        dict: Извлеченный текст и метаданные.
     """
     try:
+        extractor: Any = None
+        results: list = []
         from ...rag.text_extractor_4_rag import TextExtractor
     except ImportError as e:
         return {"success": False, "error": f"TextExtractor not available: {e}"}
@@ -450,15 +486,17 @@ async def extract_text_from_file(file: UploadFile = File(...)) -> dict:
 
 @router.post("/extract/url")
 async def extract_text_from_url(request: ExtractURLRequest) -> dict:
-    """Extract plain text from a URL.
+    """! Извлечение контента с веб-страницы.
 
     Args:
-        request: ExtractURLRequest with url, enable_javascript, process_images, web_page_timeout.
+        request (ExtractURLRequest): URL и параметры парсинга (JS, изображения).
 
     Returns:
-        dict: success, url, count, total_chars, files.
+        dict: Текстовое содержимое страницы.
     """
     try:
+        extractor: Any = None
+        results: list = []
         from ...rag.text_extractor_4_rag import TextExtractor
         from ...rag.text_extractor_4_rag.main import ExtractionOptions
     except ImportError as e:
@@ -484,10 +522,10 @@ async def extract_text_from_url(request: ExtractURLRequest) -> dict:
 
 @router.get("/extract/formats")
 async def get_supported_formats() -> dict:
-    """Return all file formats supported by the text extractor.
+    """! Получение списка поддерживаемых форматов для извлечения текста.
 
     Returns:
-        dict: success, formats.
+        dict: Список расширений.
     """
     try:
         from ...rag.text_extractor_4_rag.config import settings as ext_settings

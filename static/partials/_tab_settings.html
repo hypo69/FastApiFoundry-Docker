@@ -225,25 +225,13 @@
                             <i class="bi bi-boxes"></i> <span data-i18n="settings.huggingface">HuggingFace</span>
                         </h6>
                     </div>
+                    <div class="alert alert-info py-2 px-3 mb-2" style="font-size:.85rem">
+                        <i class="bi bi-key me-1"></i>
+                        <span data-i18n="settings.hf_token_moved">HuggingFace Token has been moved to the</span>
+                        <a href="#" onclick="document.getElementById('providers-tab').click();return false;" data-i18n="settings.hf_token_moved_link">API Keys</a>
+                        <span data-i18n="settings.hf_token_moved_tab">tab.</span>
+                    </div>
                     <div class="row g-3 mb-3">
-                        <div class="col-md-12">
-                            <label class="form-label d-flex align-items-center gap-1">
-                                <span data-i18n="settings.hf_token">HF Token</span>
-                                <small class="text-muted" data-i18n="settings.hf_token_hint">(for gated models)</small>
-                                <i class="bi bi-question-circle text-muted" style="cursor:help"
-                                   data-i18n-title="settings.tip_hf_token"></i>
-                            </label>
-                            <div class="input-group">
-                                <input type="password" id="config-hf-token" class="form-control" placeholder="hf_...">
-                                <button class="btn btn-outline-success" type="button" onclick="saveHFToken()">
-                                    <i class="bi bi-floppy"></i> <span data-i18n="settings.hf_token_save">Save to .env</span>
-                                </button>
-                            </div>
-                            <div class="form-text">
-                                <span data-i18n="settings.hf_token_link">Get token</span>:
-                                <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a>
-                            </div>
-                        </div>
                         <div class="col-md-6">
                             <label class="form-label d-flex align-items-center gap-1">
                                 <span data-i18n="settings.device">Device</span>
@@ -290,7 +278,16 @@
                                    data-i18n-title="settings.tip_llama_model_path"></i>
                             </label>
                             <input type="text" id="config-llama-model-path" class="form-control font-monospace"
-                                   placeholder="D:\models\model.gguf">
+                                   placeholder="~/.models">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label d-flex align-items-center gap-1">
+                                <span data-i18n="settings.llama_default_model">Default Model</span>
+                                <i class="bi bi-question-circle text-muted" style="cursor:help"
+                                   data-i18n-title="settings.tip_foundry_model"></i>
+                            </label>
+                            <input type="text" id="config-llama-default-model" class="form-control"
+                                   placeholder="llama::~/.models/model.gguf">
                         </div>
                         <div class="col-12">
                             <div class="form-check">
@@ -550,6 +547,21 @@
                         </h6>
                     </div>
                     <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="config-translator-enabled"
+                                       onchange="document.getElementById('translator-settings-body').style.display=this.checked?'':'none'">
+                                <label class="form-check-label fw-semibold" for="config-translator-enabled">
+                                    <span data-i18n="settings.translator_enabled">Auto-translate requests to English</span>
+                                </label>
+                                <small class="text-muted d-block mt-1" data-i18n="settings.translator_enabled_hint">
+                                    Translates user input → English before sending to model, then translates response back.
+                                </small>
+                            </div>
+                        </div>
+                        <div id="translator-settings-body" style="display:none" class="col-12">
+                        <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label d-flex align-items-center gap-1">
                                 <span data-i18n="settings.translator_provider">Default Provider</span>
@@ -597,6 +609,8 @@
                             </label>
                             <input type="password" id="config-translator-libre-key" class="form-control" placeholder="optional">
                         </div>
+                        </div><!-- /row g-3 inner -->
+                        </div><!-- /translator-settings-body -->
                     </div>
 
                     <div id="config-status" class="alert mt-3" style="display:none;"></div>

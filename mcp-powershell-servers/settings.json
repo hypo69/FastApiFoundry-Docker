@@ -81,6 +81,16 @@
       ],
       "description": "Последовательное мышление и планирование"
     },
+    "local-models": {
+      "command": "python",
+      "args": [
+        "./mcp-powershell-servers/src/servers/local_models_mcp.py"
+      ],
+      "env": {
+        "FASTAPI_BASE_URL": "http://localhost:9696"
+      },
+      "description": "Local AI models via FastAPI Foundry (Foundry, llama.cpp, Ollama, HuggingFace)"
+    },
     "huggingface": {
       "command": "python",
       "args": [

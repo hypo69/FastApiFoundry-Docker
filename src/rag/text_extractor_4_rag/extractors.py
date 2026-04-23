@@ -132,10 +132,10 @@ class TextExtractor:
         """Инициализация экстрактора текста."""
         self.ocr_languages = settings.OCR_LANGUAGES
         self.timeout = settings.PROCESSING_TIMEOUT_SECONDS
-        # Apply explicit tesseract path from TESSERACT_CMD env var.
-        # Set automatically by install\install-tesseract.ps1 via .env.
+        # Apply explicit tesseract path from config.json → text_extractor.tesseract_cmd.
+        # Set automatically by install\install-tesseract.ps1.
         if pytesseract:
-            tess_cmd = os.getenv('TESSERACT_CMD')
+            tess_cmd = settings.TESSERACT_CMD
             if tess_cmd and os.path.isfile(tess_cmd):
                 pytesseract.pytesseract.tesseract_cmd = tess_cmd
         self._thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=4)

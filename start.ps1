@@ -13,20 +13,21 @@
 #   powershell -ExecutionPolicy Bypass -File .\start.ps1 -Config config.json
 #
 # File: start.ps1
-# Project: FastApiFoundry (Docker)
-# Version: 0.6.0
-# Changes in 0.6.0:
-#   - Added update check via scripts/Update-Project.ps1 (git tag-based)
+# Project: AiStros
+# Package: FastApiFoundry
+# Version: 0.6.1
 # Author: hypo69
 # Copyright: © 2026 hypo69
+# Copyright: © 2026 hypo69
+# Date: 2025
 # =============================================================================
 
 param(
-    # Путь к JSON-файлу конфигурации (относительно корня проекта)
+    # Path to the JSON configuration file (relative to the project root)
     [string]$Config = 'config.json'
 )
 
-# Настройка продолжения выполнения при некритических ошибках
+# Настройка режима обработки некритических ошибок
 $ErrorActionPreference = 'Continue'
 $Root = $PSScriptRoot
 
@@ -34,27 +35,39 @@ Write-Host '🚀 FastAPI Foundry Smart Launcher - Запуск' -ForegroundColor
 Write-Host ('=' * 60) -ForegroundColor Cyan
 
 # -----------------------------------------------------------------------------
-# Этап 0: Проверка обновлений по git-тегам
-# Запускается только при наличии .git и git в PATH.
-# Пропускается автоматически при отсутствии сети или git.
+# Этап 0: Проверка обновлений (git tag-based)
 # -----------------------------------------------------------------------------
+
 $UpdateScript = "$Root\scripts\Update-Project.ps1"
 if (Test-Path $UpdateScript) {
     try {
+        # Execution of the update script
         & $UpdateScript
     } catch {
         Write-Host "⚠️ Проверка обновлений завершилась с ошибкой: $_" -ForegroundColor Yellow
     }
 } else {
-    Write-Host '💡 scripts/Update-Project.ps1 не найден — проверка обновлений пропущена.' -ForegroundColor Gray
+    Write-Host '💡 scripts/Update-Project.ps1 not found — update check skipped.' -ForegroundColor Gray
 }
 
 # -----------------------------------------------------------------------------
-# Этап 1: Проверка зависимостей и автоматическая установка
-# Если venv отсутствует, инициируется запуск install.ps1.
+# Этап 1: Проверка зависимостей и установка
 # -----------------------------------------------------------------------------
 
-# Активация виртуального окружения (настройка путей для pip/python)
+# Создание директории архива при инсталляции
+# Creation of the archive directory during installation
+if (-not (Test-Path "$Root\archive")) {
+    New-Item -ItemType Directory -Path "$Root\archive" -Force | Out-Null
+}
+
+<#
+.SYNOPSIS
+    Активация виртуального окружения Python.
+    Настройка путей для работы с pip и python внутри venv.
+#>
+
+# Активация виртуального окружения
+
 $ActivateScript = "$Root\venv\Scripts\Activate.ps1"
 if (Test-Path $ActivateScript) {
     . $ActivateScript
@@ -63,14 +76,14 @@ if (Test-Path $ActivateScript) {
     Write-Host '⚠️ venv/Scripts/Activate.ps1 не найден' -ForegroundColor Yellow
 }
 
-# Определение пути к интерпретатору (стандартный или python311)
+# Определение пути к интерпретатору
 $venvPath = "$Root\venv\Scripts\python.exe"
 if (-not (Test-Path $venvPath)) {
     $venvPath = "$Root\venv\Scripts\python311.exe"
 }
 
 if (-not (Test-Path $venvPath)) {
-    Write-Host '📦 Первый запуск - установка зависимостей...' -ForegroundColor Yellow
+    Write-Host '📦 First launch - dependency installation...' -ForegroundColor Yellow
     Write-Host 'Это может занять несколько минут...' -ForegroundColor Yellow
     
     if (Test-Path "$Root\install.ps1") {
@@ -89,24 +102,27 @@ if (-not (Test-Path $venvPath)) {
     }
 }
 
-# -----------------------------------------------------------------------------
-# Этап 2: Загрузка переменных .env в текущее окружение процесса
-# -----------------------------------------------------------------------------
+<#
+.SYNOPSIS
+    Загрузка переменных окружения из файла.
+    Чтение .env файла и экспорт пар КЛЮЧ=ЗНАЧЕНИЕ.
+.PARAMETER EnvPath
+    Полный путь к файлу .env.
+.NOTES
+    - Пропуск пустых строк и комментариев (#).
+    - Очистка кавычек вокруг значений.
+    - Маскировка секретных данных (PASSWORD, SECRET, KEY, TOKEN, PAT) в выводе.
+.OUTPUTS
+    Переменные устанавливаются в [System.Environment].
+#>
 function Load-EnvFile {
-    <#
-    .SYNOPSIS
-        Чтение .env файла и экспорт пар КЛЮЧ=ЗНАЧЕНИЕ.
-    .PARAMETER EnvPath
-        Полный путь к файлу .env.
-    .NOTES
-        - Пропуск пустых строк и комментариев (#).
-        - Очистка кавычек вокруг значений.
-        - Маскировка секретных данных в консольном выводе.
-    #>
     param([string]$EnvPath)
     
+    $envVarsCount = 0
+    $line = $null
+    
     if (-not (Test-Path $EnvPath -PathType Leaf)) {
-        if (Test-Path $EnvPath -PathType Container) {
+        if (Test-Path $EnvPath -PathType Container) { 
             Write-Host "⚠️ .env — это папка, а не файл: $EnvPath" -ForegroundColor Yellow
         } else {
             Write-Host "⚠️ Файл .env не найден: $EnvPath" -ForegroundColor Yellow
@@ -115,9 +131,8 @@ function Load-EnvFile {
         return
     }
     
-    Write-Host '⚙️ Загрузка переменных .env...' -ForegroundColor Gray
+    Write-Host '⚙️ Loading .env variables...' -ForegroundColor Gray
     
-    $envVars = 0
     try {
         Get-Content $EnvPath | ForEach-Object {
             $line = $_.Trim()
@@ -135,7 +150,7 @@ function Load-EnvFile {
                     }
                     
                     [System.Environment]::SetEnvironmentVariable($key, $value)
-                    $envVars++
+                    $envVarsCount++
                     
                     if ($key -notmatch '(PASSWORD|SECRET|KEY|TOKEN|PAT)') {
                         Write-Host "  ✓ $key = $value" -ForegroundColor DarkGray
@@ -145,7 +160,7 @@ function Load-EnvFile {
                 }
             }
         }
-        Write-Host "✅ Загружено переменных окружения: $envVars" -ForegroundColor Green
+        Write-Host "✅ Environment variables loaded: $envVarsCount" -ForegroundColor Green
     } catch {
         Write-Host "❌ Ошибка загрузки .env: $_" -ForegroundColor Red
     }
@@ -153,16 +168,14 @@ function Load-EnvFile {
 
 Load-EnvFile "$Root\.env"
 
-# -----------------------------------------------------------------------------
-# Этап 3: Вспомогательные функции обнаружения Foundry
-# -----------------------------------------------------------------------------
+<#
+.SYNOPSIS
+    Проверка доступности Foundry CLI.
+    Поиск утилиты 'foundry' в системном PATH.
+.OUTPUTS
+    bool — True если утилита найдена.
+#>
 function Test-FoundryCli {
-    <#
-    .SYNOPSIS
-        Проверка доступности утилиты 'foundry' в PATH.
-    .OUTPUTS
-        [bool]
-    #>
     try {
         Get-Command foundry -ErrorAction Stop | Out-Null
         return $true
@@ -171,19 +184,21 @@ function Test-FoundryCli {
     }
 }
 
+<#
+.SYNOPSIS
+    Поиск TCP-порта службы инференса Foundry.
+    Обнаружение активного порта Foundry AI.
+.DESCRIPTION
+    Поиск процесса 'Inference.Service.Agent', сканирование портов LISTENING
+    и проверка через API запрос к /v1/models.
+.OUTPUTS
+    string — Номер порта или $null.
+#>
 function Get-FoundryPort {
-    <#
-    .SYNOPSIS
-        Поиск TCP-порта службы инференса Foundry.
-    .DESCRIPTION
-        Поиск процесса 'Inference.Service.Agent', сканирование его LISTENING портов
-        через netstat и проверка каждого порта через запрос к API /v1/models.
-        Возврат первого порта, ответившего HTTP 200.
-    .OUTPUTS
-        [string] | $null — номер порта или null при отсутствии.
-    #>
     $foundryProcess = Get-Process | Where-Object { $_.ProcessName -like "Inference.Service.Agent*" }
-    if (-not $foundryProcess) { return $null }
+    if (-not $foundryProcess) { 
+        return $null 
+    }
     
     $netstatOutput = netstat -ano | Select-String "$($foundryProcess.Id)" | Select-String "LISTENING"
     foreach ($line in $netstatOutput) {
@@ -203,28 +218,23 @@ function Get-FoundryPort {
 
 # -----------------------------------------------------------------------------
 # Этап 4: Обнаружение или запуск службы Foundry AI
-# Использование динамического порта — определение порта во время выполнения 
-# и передача в FastAPI.
 # -----------------------------------------------------------------------------
-Write-Host '🔍 Проверка локального Foundry...' -ForegroundColor Cyan
 
-# Проверка статуса запуска Foundry (ручной запуск или автозагрузка)
+Write-Host '🔍 Local Foundry check...' -ForegroundColor Cyan
+
 $foundryPort = Get-FoundryPort
 
 if ($foundryPort) {
-    # Фиксация порта для FastAPI при активном Foundry
     Write-Host "✅ Foundry уже запущен на порту $foundryPort" -ForegroundColor Green
     $env:FOUNDRY_DYNAMIC_PORT = $foundryPort
 } else {
     if (-not (Test-FoundryCli)) {
-        # Пропуск запуска AI при отсутствии Foundry CLI (сервер запустится без поддержки AI)
-        Write-Host '⚠️ Foundry CLI не найден. Пропуск запуска AI.' -ForegroundColor Yellow
-        Write-Host 'Установка Foundry от Microsoft' -ForegroundColor Gray
+        Write-Host '⚠️ Foundry CLI not found. AI features might be limited.' -ForegroundColor Yellow
     } else {
-        Write-Host '🚀 Запуск службы Foundry...' -ForegroundColor Yellow
+        Write-Host '🚀 Starting Foundry service...' -ForegroundColor Yellow
         
         try {
-            # Запуск Foundry в свернутом окне для предотвращения блокировки текущей консоли
+            # Foundry execution in minimized window
             Start-Process -FilePath "foundry" -ArgumentList "service", "start" -WindowStyle Minimized -NoNewWindow:$false
             Write-Host "Выполнение команды запуска службы Foundry" -ForegroundColor Gray
             
@@ -251,14 +261,13 @@ if ($foundryPort) {
     }
 }
 
-# Экспорт полного базового URL для формирования запросов в FastAPI
+# Экспорт базового URL для FastAPI
 if ($foundryPort) {
     $env:FOUNDRY_BASE_URL = "http://localhost:$foundryPort/v1/"
     Write-Host "🔗 FOUNDRY_BASE_URL = $env:FOUNDRY_BASE_URL" -ForegroundColor Green
 } else {
     Write-Host "⚠️ Foundry not available - AI features disabled" -ForegroundColor Yellow
 }
-
 # -----------------------------------------------------------------------------
 # Этап 5: Опциональный сервер документации MkDocs
 # Активация через параметр docs_server.enabled = true в config.json
@@ -266,10 +275,14 @@ if ($foundryPort) {
 Write-Host '🔍 Проверка конфигурации сервера документации...' -ForegroundColor Cyan
 
 # Чтение секции docs_server из config.json
+$docsServerConfig = $null
 try {
     $configContent = Get-Content "$Root\$Config" | Out-String
     $parsedConfig = $configContent | ConvertFrom-Json
-    $docsServerConfig = $parsedConfig.docs_server
+    
+    if ($parsedConfig) {
+        $docsServerConfig = $parsedConfig.docs_server
+    }
 } catch {
     Write-Host "❌ Ошибка чтения config.json для docs_server: $_" -ForegroundColor Red
     $docsServerConfig = $null
@@ -291,14 +304,13 @@ if ($docsServerConfig -and $docsServerConfig.enabled) {
 
     Write-Host "📚 Сборка документации MkDocs..." -ForegroundColor Yellow
     try {
-        # Пересборка site/ перед запуском сервера
         Push-Location $Root
         & $venvPath -m mkdocs build --quiet
         Pop-Location
         Write-Host "✅ Документация собрана" -ForegroundColor Green
     } catch {
         Write-Host "⚠️ Сборка документации не удалась: $_" -ForegroundColor Yellow
-    }
+    } 
 
     Write-Host "🚀 Запуск сервера MkDocs на порту $docsPort..." -ForegroundColor Yellow
     try {
@@ -321,19 +333,19 @@ if ($docsServerConfig -and $docsServerConfig.enabled) {
 # Step 6: Optional llama.cpp local inference server
 # Only started when LLAMA_MODEL_PATH and LLAMA_AUTO_START=true are set in .env
 # -----------------------------------------------------------------------------
-
+<#
+.SYNOPSIS
+    Обеспечение актуальности бинарных файлов llama.cpp.
+    Распаковка llama-server из zip архива в директории bin/.
+.OUTPUTS
+    string — Путь к llama-server.exe или $null.
+#>
 function Ensure-LlamaBin {
-    <#
-    .SYNOPSIS
-        Ensures llama-server binary is extracted from the latest zip in bin/.
-        Version is read from / written to config.json (llama_cpp.bin_version).
-        If a newer zip is found, prompts the user before extracting.
-    .OUTPUTS
-        [string] Path to llama-server.exe, or $null if unavailable.
-    #>
     $binDir     = Join-Path $Root 'bin'
     $configPath = Join-Path $Root 'config.json'
-
+    $installedVersion = $null
+    $cfg = $null
+    
     # Find all llama zips, pick the latest by name (build number is in the name)
     $zips = Get-ChildItem -Path $binDir -Filter 'llama-*-bin-win-*.zip' -ErrorAction SilentlyContinue |
             Sort-Object Name -Descending
@@ -349,8 +361,6 @@ function Ensure-LlamaBin {
     $serverExe  = Join-Path $extractDir 'llama-server.exe'
 
     # Read installed version from config.json
-    $installedVersion = $null
-    $cfg = $null
     try {
         $cfg = Get-Content $configPath -Raw | ConvertFrom-Json
         $installedVersion = $cfg.llama_cpp.bin_version
@@ -363,7 +373,7 @@ function Ensure-LlamaBin {
         return $serverExe
     }
 
-    # New version available — prompt user
+    # Version update prompt
     if ($installedVersion -and $installedVersion -ne $latestStem) {
         Write-Host '' 
         Write-Host '📦 New llama.cpp version available!' -ForegroundColor Cyan
@@ -381,7 +391,7 @@ function Ensure-LlamaBin {
         Write-Host "📦 Extracting $($latestZip.Name) → bin/$latestStem/ ..." -ForegroundColor Yellow
     }
 
-    # Remove old dir and extract fresh
+    # Directory cleanup and extraction
     if (Test-Path $extractDir) {
         Remove-Item $extractDir -Recurse -Force -ErrorAction SilentlyContinue
     }
@@ -395,7 +405,7 @@ function Ensure-LlamaBin {
         return $null
     }
 
-    # Persist new version to config.json
+    # Configuration update
     try {
         if (-not $cfg) { $cfg = Get-Content $configPath -Raw | ConvertFrom-Json }
         $cfg.llama_cpp.bin_version = $latestStem
@@ -410,19 +420,18 @@ function Ensure-LlamaBin {
     return $null
 }
 
+<#
+.SYNOPSIS
+    Запуск сервера llama.cpp.
+    Инициализация процесса инференса локальной модели.
+.PARAMETER ServerExe
+    Путь к бинарному файлу.
+.PARAMETER ModelPath
+    Путь к файлу модели GGUF.
+.PARAMETER Port
+    TCP порт для сервера.
+#>
 function Start-LlamaServer {
-    <#
-    .SYNOPSIS
-        Starts llama.cpp server. On failure — ensures binary and retries once.
-    .PARAMETER ServerExe
-        Path to llama-server.exe.
-    .PARAMETER ModelPath
-        Path to .gguf model file.
-    .PARAMETER Port
-        TCP port for the server.
-    .OUTPUTS
-        [bool] True if started successfully.
-    #>
     param(
         [string]$ServerExe,
         [string]$ModelPath,
@@ -443,7 +452,7 @@ function Start-LlamaServer {
 
         $proc = Start-Process -FilePath $ServerExe `
             -ArgumentList "--model", $ModelPath, "--port", $Port, "--host", "127.0.0.1", "--log-disable" `
-            -PassThru -WindowStyle Minimized -ErrorAction SilentlyContinue
+            -PassThru -WindowStyle Minimized -ErrorAction SilentlyContinue 
 
         if (-not $proc) {
             Write-Host "⚠️  Start-Process returned nothing on attempt $attempt." -ForegroundColor Yellow
@@ -451,7 +460,7 @@ function Start-LlamaServer {
             continue
         }
 
-        # Wait up to 10 s for the HTTP health endpoint
+        # Health endpoint polling
         for ($i = 1; $i -le 5; $i++) {
             Start-Sleep 2
             try {
@@ -464,7 +473,7 @@ function Start-LlamaServer {
             Write-Host "⏳ Waiting for llama.cpp... ($i/5)" -ForegroundColor Gray
         }
 
-        # Process exited immediately — binary likely broken
+        # Crash handling
         if ($proc.HasExited) {
             Write-Host "⚠️  llama-server.exe exited immediately (code $($proc.ExitCode)). Re-extracting..." -ForegroundColor Yellow
             $ServerExe = Ensure-LlamaBin
@@ -480,7 +489,7 @@ $llamaModelPath = $null
 $llamaAutoStart = $false
 $llamaPort      = 9780
 
-# Read llama.cpp settings from config.json (not .env — no secrets there)
+# Загрузка настроек llama.cpp из config.json
 try {
     $cfg        = Get-Content (Join-Path $Root 'config.json') -Raw | ConvertFrom-Json
     $llamaCfg   = $cfg.llama_cpp
@@ -491,10 +500,10 @@ try {
     Write-Host "⚠️  Could not read llama_cpp from config.json: $_" -ForegroundColor Yellow
 }
 
-# LLAMA_SERVER_PATH override still lives in .env (it's a machine-specific binary path)
+# Переопределение пути сервера из .env
 $llamaServerPathEnv = [System.Environment]::GetEnvironmentVariable('LLAMA_SERVER_PATH')
 
-# Always ensure binary is up-to-date (fast no-op if already correct)
+# Обновление бинарных файлов
 $llamaServerExe = Ensure-LlamaBin
 
 if ($llamaModelPath -and $llamaAutoStart) {
@@ -505,7 +514,7 @@ if ($llamaModelPath -and $llamaAutoStart) {
     $llamaPort = [System.Environment]::GetEnvironmentVariable('LLAMA_PORT')
     if (-not $llamaPort) { $llamaPort = 9780 }
 
-    # Stop previous instance on this port
+    # Остановка предыдущих инстансов
     $oldLlama = Get-NetTCPConnection -LocalPort $llamaPort -State Listen -ErrorAction SilentlyContinue
     if ($oldLlama) {
         try {
@@ -522,7 +531,7 @@ if ($llamaModelPath -and $llamaAutoStart) {
         if ($started) {
             $env:LLAMA_BASE_URL = "http://127.0.0.1:$llamaPort/v1"
             Write-Host "🔗 LLAMA_BASE_URL = $env:LLAMA_BASE_URL" -ForegroundColor Green
-            # Save llama PID for cleanup on exit
+            # Сохранение PID для очистки
             $llamaRunning = Get-NetTCPConnection -LocalPort $llamaPort -State Listen -ErrorAction SilentlyContinue
             if ($llamaRunning) { $script:LlamaPid = $llamaRunning.OwningProcess }
         }
@@ -537,7 +546,6 @@ if ($llamaModelPath -and $llamaAutoStart) {
 
 # -----------------------------------------------------------------------------
 # Этап 6.5: Остановка installer-сервера (если запущен)
-# install/server.py пишет PID в install/.installer.pid
 # -----------------------------------------------------------------------------
 $InstallerPidFile = Join-Path $Root 'install\.installer.pid'
 if (Test-Path $InstallerPidFile) {
@@ -561,7 +569,7 @@ if (Test-Path $InstallerPidFile) {
 # -----------------------------------------------------------------------------
 $PidFile = Join-Path $env:TEMP 'fastapi-foundry.pid'
 
-# Kill previous instance if PID file exists
+# Очистка предыдущих процессов FastAPI
 if (Test-Path $PidFile) {
     $oldPid = Get-Content $PidFile -ErrorAction SilentlyContinue
     if ($oldPid) {
@@ -578,7 +586,7 @@ if (Test-Path $PidFile) {
     Remove-Item $PidFile -Force -ErrorAction SilentlyContinue
 }
 
-Write-Host '🐍 Запуск сервера FastAPI...' -ForegroundColor Cyan
+Write-Host '🐍 FastAPI server launch...' -ForegroundColor Cyan
 
 if (-not (Test-Path $venvPath)) {
     Write-Host '❌ ОШИБКА: venv Python не найден после этапа установки!' -ForegroundColor Red
@@ -587,12 +595,12 @@ if (-not (Test-Path $venvPath)) {
 }
 
 Write-Host "🔗 FOUNDRY_DYNAMIC_PORT = $env:FOUNDRY_DYNAMIC_PORT" -ForegroundColor Gray
-Write-Host '🌐 FastAPI Foundry запускается...' -ForegroundColor Green
+Write-Host '🌐 FastAPI Foundry starting...' -ForegroundColor Green
 Write-Host "📱 Веб-интерфейс будет доступен по адресу: http://localhost:9696" -ForegroundColor Cyan
 Write-Host ('=' * 60) -ForegroundColor Cyan
 
-# Start server, save PID, clean up on exit
 try {
+    # Основной цикл запуска сервера
     $proc = Start-Process -FilePath $venvPath -ArgumentList "run.py", "--config", $Config `
         -PassThru -NoNewWindow
     $proc.Id | Set-Content $PidFile -Encoding UTF8
@@ -605,7 +613,7 @@ try {
 } finally {
     Remove-Item $PidFile -Force -ErrorAction SilentlyContinue
 
-    # Stop background processes started by this launcher
+    # Остановка фоновых процессов при выходе
     if ($script:MkDocsPid) {
         try {
             Stop-Process -Id $script:MkDocsPid -Force -ErrorAction Stop

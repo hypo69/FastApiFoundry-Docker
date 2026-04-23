@@ -121,7 +121,7 @@ class OllamaClient:
                 ]
                 return {"success": True, "models": models, "count": len(models)}
         except Exception as e:
-            logger.error(f"❌ Ollama list_models error: {e}")
+            logger.debug(f"Ollama list_models: server not available ({e})")
             return {"success": False, "error": str(e)}
 
     async def pull_model(self, model: str) -> dict:

@@ -29,6 +29,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     buildTabs(steps);
     refreshStatus();
 
+    // Pre-fill defaults from config.json
+    const defaults = await fetch(`${window.API_BASE}/defaults`).then(r => r.json()).catch(() => ({}));
+    const llamaDirEl = document.getElementById('opt-llama-models-dir');
+    if (llamaDirEl && defaults.models_dir) llamaDirEl.value = defaults.models_dir;
+
     // Wire "Run" buttons
     document.getElementById('installTabsContent').addEventListener('click', e => {
         const btn = e.target.closest('[data-run-step]');

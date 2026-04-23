@@ -24,6 +24,8 @@ from pydantic import BaseModel
 
 from ...models.foundry_client import foundry_client
 from ...agents.powershell_agent import PowerShellAgent
+from ...agents.rag_agent import RagAgent
+from ...agents.keystroke_agent import KeystrokeAgent
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -35,6 +37,8 @@ router = APIRouter()
 def _build_registry():
     return {
         "powershell": PowerShellAgent(foundry_client),
+        "rag": RagAgent(foundry_client),
+        "keystroke": KeystrokeAgent(foundry_client),
     }
 
 _registry = None

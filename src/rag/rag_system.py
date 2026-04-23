@@ -1,268 +1,373 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Process Name: RAG System for FastAPI Foundry
+# Название процесса: Система RAG (Core)
 # =============================================================================
-# Description:
-#   Retrieval-Augmented Generation system using FAISS vector search
-#   and sentence-transformers embeddings.
+# Описание:
+#   Основной класс для работы с векторным поиском и извлечением контекста.
+#   Управляет загрузкой индексов FAISS и поиском релевантных чанков.
 #
-# File: rag_system.py
-# Project: FastApiFoundry (Docker)
-# Version: 0.5.5
-# Changes in 0.5.5:
-#   - Added granular try/except with logging in _load_index, search,
-#     clear_index, get_all_chunks, reload_index
-#   - Each except block explains why the error can occur
+# File: src/rag/rag_system.py
+# Project: FastApiFoundry
+# Package: src.rag
+# Module: rag_system
+# Version: 0.6.1
 # Author: hypo69
 # Copyright: © 2026 hypo69
+# License: MIT
+# Date: 2025
 # =============================================================================
 
-import asyncio
 import json
+from datetime import datetime
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-
 import numpy as np
+from typing import List, Dict, Any, Optional
 
-from ..core.config import config
-
-logger = logging.getLogger(__name__)
-
-RAG_AVAILABLE = False
-try:
-    from sentence_transformers import SentenceTransformer
-    import faiss
-    RAG_AVAILABLE = True
-except ImportError:
-    logger.warning('⚠️ RAG dependencies not installed. Run: pip install sentence-transformers faiss-cpu')
-
+import faiss
+from src.logger import logger
+from src.core.config import config
 
 class RAGSystem:
-    """Retrieval-Augmented Generation system."""
+    """! Класс для управления жизненным циклом RAG индекса и выполнения поиска."""
 
     def __init__(self) -> None:
-        self.index_dir = Path(config.dir_rag)
-        self.index_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f'RAG index directory: {self.index_dir}')
-        self.model_name = config.rag_model
-        self.index = None
+        """Инициализация экземпляра RAG системы."""
+        self.index: Optional[faiss.Index] = None
         self.chunks: List[Dict[str, Any]] = []
-        self.model = None
-        self.loaded = False
-        self._lock = asyncio.Lock()
+        self.model: Any = None
+        self._search_cache: Dict[tuple, List[Dict[str, Any]]] = {} # Кэш для результатов поиска
+        self.current_index_dir: Optional[str] = None
+        self.RAG_HOME: Path = Path.home() / ".rag"
 
-    async def initialize(self) -> bool:
-        """Initialize the RAG system.
+    def _profile_index_dir(self, safe_name: str) -> Path:
+        """! Получение пути к директории профиля."""
+        return self.RAG_HOME / safe_name
 
-        Returns:
-            bool: True if index loaded successfully, False if unavailable or disabled.
-        """
-        if not RAG_AVAILABLE:
-            logger.warning('⚠️ RAG not available — missing dependencies')
-            return False
-        if not config.rag_enabled:
-            logger.info('RAG disabled in configuration')
-            return False
-        async with self._lock:
-            return await self._load_index()
+    def _get_model(self) -> Any:
+        """! Инициализация и получение модели эмбеддингов.
 
-    async def _load_index(self) -> bool:
-        """Load FAISS index and chunk metadata from disk.
+        ПОЧЕМУ ВЫБРАНА ЛЕНИВАЯ ЗАГРУЗКА:
+          - Модели SentenceTransformers (например, mpnet или MiniLM) занимают значительный объем RAM.
+          - Загрузка при первом обращении предотвращает задержки при старте сервера, если RAG не используется.
 
         Returns:
-            bool: True if both faiss.index and chunks.json loaded successfully.
+            Any: Экземпляр SentenceTransformer.
         """
-        index_path = self.index_dir / 'faiss.index'
-        meta_path  = self.index_dir / 'chunks.json'
-
-        if not index_path.exists() or not meta_path.exists():
-            logger.warning(f'⚠️ RAG index not found at {self.index_dir}')
-            return False
-
-        loop = asyncio.get_event_loop()
-
-        try:
-            logger.info(f'Loading embedding model: {self.model_name}')
-            self.model = await loop.run_in_executor(None, SentenceTransformer, self.model_name)
-        except Exception as e:
-            # Model name wrong, no internet, or transformers version mismatch
-            logger.error(f'❌ Failed to load embedding model "{self.model_name}": {e}')
-            return False
-
-        try:
-            logger.info('Loading FAISS index…')
-            self.index = await loop.run_in_executor(None, faiss.read_index, str(index_path))
-        except Exception as e:
-            # Index file corrupted or written by incompatible FAISS version
-            logger.error(f'❌ Failed to read FAISS index from {index_path}: {e}')
-            return False
-
-        try:
-            logger.info('Loading chunks metadata…')
-            with open(meta_path, encoding='utf-8') as f:
-                self.chunks = json.load(f)
-        except (json.JSONDecodeError, OSError) as e:
-            # chunks.json missing, empty, or malformed
-            logger.error(f'❌ Failed to load chunks metadata from {meta_path}: {e}')
-            return False
-
-        self.loaded = True
-        logger.info(f'✅ RAG loaded: {self.index.ntotal} vectors, {len(self.chunks)} chunks')
-        return True
+        if self.model is None:
+            # Импорт внутри метода для предотвращения задержек при инициализации модуля
+            # Import inside the method to prevent initialization delays
+            from sentence_transformers import SentenceTransformer
+            
+            model_name: str = config.rag_model
+            logger.info(f"Загрузка модели эмбеддингов: {model_name}")
+            self.model = SentenceTransformer(model_name)
+            
+        return self.model
 
     async def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        """Find relevant chunks for a query.
+        """! Поиск релевантных фрагментов текста в векторном индексе.
+
+        ПОЧЕМУ ИСПОЛЬЗУЕТСЯ ЭТА РЕАЛИЗАЦИЯ:
+          - FAISS обеспечивает сверхбыстрый поиск в векторном пространстве.
+          - SentenceTransformers гарантирует высокое качество семантического сопоставления.
+          - Проверка наличия индекса предотвращает ошибки при пустой базе знаний.
 
         Args:
-            query: Search query text.
-            top_k: Number of results to return.
+            query (str): Текст поискового запроса.
+            top_k (int): Количество возвращаемых результатов.
 
         Returns:
-            List of matching chunks with score field added.
+            List[Dict[str, Any]]: Список найденных сегментов с контентом и оценкой схожести.
         """
-        if not self.loaded:
+        results: List[Dict[str, Any]] = []
+        query_vector: np.ndarray = None
+        distances: np.ndarray = None
+        
+        # Проверка кеша
+        # Cache check
+        cache_key = (query, top_k)
+        if cache_key in self._search_cache:
+            logger.debug(f"Возвращение результатов поиска из кеша для запроса: '{query[:50]}...'")
+            return self._search_cache[cache_key]
+        indices: np.ndarray = None
+        model: Any = None
+        
+        # Проверка готовности системы к поиску
+        # System readiness check for search
+        if not self.index:
+            logger.warning("Поиск невозможен: индекс не загружен.")
             return []
 
-        loop = asyncio.get_event_loop()
+        if not query.strip():
+            return []
 
         try:
-            query_vec = await loop.run_in_executor(None, self.model.encode, [query])
-        except Exception as e:
-            # Encoding can fail if model was unloaded or GPU OOM
-            logger.error(f'❌ RAG encode failed for query={query!r}: {e}')
-            return []
+            # Получение модели и генерация вектора запроса
+            # Retrieval of the model and generation of the query vector
+            model = self._get_model()
+            query_vector = model.encode([query]).astype('float32')
 
-        try:
-            query_vec = np.array(query_vec).astype('float32')
-            faiss.normalize_L2(query_vec)
-            scores, indices = await loop.run_in_executor(None, self.index.search, query_vec, top_k)
-        except Exception as e:
-            # FAISS search can fail if index is corrupted or dimension mismatch
-            logger.error(f'❌ FAISS search failed: {e}')
-            return []
+            # Выполнение поиска в FAISS
+            # Execution of the FAISS search
+            distances, indices = self.index.search(query_vector, top_k)
 
-        results = []
-        for score, idx in zip(scores[0], indices[0]):
-            if idx < len(self.chunks):
+            # Сборка результатов на основе найденных индексов
+            # Assembly of results based on discovered indices
+            for i, idx in enumerate(indices[0]):
+                if idx == -1 or idx >= len(self.chunks):
+                    continue
+                
                 chunk = self.chunks[idx].copy()
-                chunk['score'] = float(score)
+                
+                # Конвертация расстояния в score (нормализация зависит от типа индекса)
+                # Conversion of distance to score
+                chunk['score'] = float(distances[0][i])
                 results.append(chunk)
-        return results
 
-    def format_context(self, results: List[Dict[str, Any]]) -> str:
-        """Format search results as a context string for prompts.
+            # Сохранение результатов в кеш
+            # Saving results to cache
+            self._search_cache[cache_key] = results
+            logger.debug(f"Поиск завершен. Найдено результатов: {len(results)}")
+            return results
 
-        Args:
-            results: List of chunk dicts returned by search().
-
-        Returns:
-            str: Formatted context block with source, section, relevance, and text.
-        """
-        if not results:
-            return 'No relevant context found.'
-        parts = ['=== PROJECT CONTEXT START ===\n']
-        for i, r in enumerate(results, 1):
-            # Use 'path' if available in metadata for better file identification
-            source_id = r.get('path') or r.get('source', 'Unknown')
-            parts.append(f"[{i}] Source: {source_id} | Section: {r['section']} | Relevance: {r['score']:.2f}")
-            parts.append(r['text'])
-            parts.append('')
-        parts.append('=== PROJECT CONTEXT END ===')
-        return '\n'.join(parts)
-
-    async def get_status(self) -> Dict[str, Any]:
-        """Return current RAG system status.
-
-        Returns:
-            dict: available, enabled, loaded, index_dir, model,
-                  chunks_count, vectors_count.
-        """
-        return {
-            'available':    RAG_AVAILABLE,
-            'enabled':      config.rag_enabled,
-            'loaded':       self.loaded,
-            'index_dir':    str(self.index_dir),
-            'model':        self.model_name,
-            'chunks_count': len(self.chunks) if self.loaded else 0,
-            'vectors_count': self.index.ntotal if self.loaded and self.index else 0,
-        }
-
-    async def reload_index(self, index_dir: Optional[str] = None) -> bool:
-        """Reload RAG index, optionally from a new path.
-
-        Args:
-            index_dir: New index directory path. None = use config.dir_rag.
-
-        Returns:
-            bool: True if reload succeeded.
-        """
-        logger.info('Reloading RAG index…')
-        self.loaded = False
-        self.index  = None
-        self.chunks = []
-        self.model  = None
-
-        if index_dir:
-            self.index_dir = Path(index_dir)
-            logger.info(f'Switching RAG index_dir to: {self.index_dir}')
-        else:
-            self.index_dir = Path(config.dir_rag)
-
-        try:
-            return await self.initialize()
         except Exception as e:
-            # initialize() itself should not raise, but guard just in case
-            logger.error(f'❌ Unexpected error during RAG reload: {e}')
+            logger.error(f"Ошибка при выполнении векторного поиска: {e}")
+            return []
+
+    def _check_index_integrity(self, index_file: Path) -> bool:
+        """! Проверка целостности и доступности файла индекса FAISS.
+
+        Обоснование:
+          - Предотвращение загрузки поврежденных или пустых файлов.
+          - Базовая проверка прав доступа и размера заголовка.
+
+        Args:
+            index_file (Path): Путь к файлу faiss.index.
+
+        Returns:
+            bool: True если файл прошел проверку.
+        """
+        file_size: int = 0
+
+        if not index_file.exists():
+            logger.warning(f"Файл faiss.index не найден: {index_file}")
             return False
 
-    async def clear_index(self) -> bool:
-        """Clear RAG index files and reset in-memory state.
+        if not index_file.is_file():
+            logger.error(f"Путь к индексу не является файлом: {index_file}")
+            return False
 
-        Returns:
-            bool: True if all files removed successfully, False on OS error.
-        """
-        logger.info('Clearing RAG index…')
-        self.loaded = False
-        self.index  = None
-        self.chunks = []
-        self.model  = None
-
-        removed = []
-        for name in ('faiss.index', 'chunks.json', 'index_info.json'):
-            p = self.index_dir / name
-            try:
-                if p.exists():
-                    p.unlink()
-                    removed.append(name)
-                    logger.info(f'Removed: {p}')
-            except OSError as e:
-                # File locked by another process or permission denied
-                logger.error(f'❌ Cannot remove {p}: {e}')
+        try:
+            file_size = index_file.stat().st_size
+            # Минимальный размер заголовка FAISS индекса (~100 байт)
+            # Minimal FAISS index header size check
+            if file_size < 100:
+                logger.error(f"Файл индекса слишком мал или поврежден ({file_size} байт): {index_file}")
                 return False
+        except Exception as e:
+            logger.error(f"Ошибка доступа к файлу индекса: {e}")
+            return False
 
-        logger.info(f'RAG index cleared. Removed: {removed or "nothing (already empty)"}')
         return True
 
-    async def get_all_chunks(self) -> List[Dict[str, Any]]:
-        """Return all chunks with index metadata.
+    def _remove_duplicate_chunks(self) -> None:
+        """! Удаление дубликатов фрагментов текста из текущего набора чанков.
+
+        Обоснование:
+          - Предотвращает избыточность контекста при поиске.
+          - Уменьшает потребление памяти.
+          - Использует уникальность текста как критерий идентичности.
+        """
+        unique_chunks: List[Dict[str, Any]] = []
+        seen_texts: set = set()
+
+        for chunk in self.chunks:
+            # Получение текста из полей 'text' или 'content'
+            # Retrieval of text from 'text' or 'content' fields
+            text = chunk.get('text', chunk.get('content', ''))
+            if text and text not in seen_texts:
+                seen_texts.add(text)
+                unique_chunks.append(chunk)
+
+        if len(unique_chunks) < len(self.chunks):
+            logger.info(f"Очистка дубликатов: удалено {len(self.chunks) - len(unique_chunks)} фрагментов")
+            self.chunks = unique_chunks
+
+    async def initialize(self) -> bool:
+        """! Инициализация RAG системы при старте приложения.
+
+        Загружает индекс из директории, заданной в конфигурации.
+        Если индекс не найден — возвращает False без ошибки.
 
         Returns:
-            List[Dict]: Each chunk dict extended with chunk_id and text_length.
-                        Empty list if index not loaded.
+            bool: True если индекс успешно загружен.
         """
-        if not self.loaded:
-            return []
+        index_dir = config.rag_index_dir
+        index_path = Path(index_dir).expanduser() / "faiss.index"
+        if not index_path.exists():
+            logger.warning(f"⚠️ RAG index not found at {index_path}, skipping load")
+            return False
+        return await self.reload_index(index_dir)
+
+    async def reload_index(self, index_dir: str) -> bool:
+        """! Динамическая перезагрузка индекса RAG для смены профилей.
+
+        ПОЧЕМУ ВЫБРАНО ЭТО РЕШЕНИЕ:
+          - Позволяет переключать контекст знаний "на лету" без перезапуска API.
+          - Использует стандартные файлы .index и .json для совместимости с индоксером.
+          - Обеспечивает атомарность: состояние обновляется только после успешной загрузки файлов.
+
+        Args:
+            index_dir (str): Путь к директории с файлами faiss.index и chunks.json.
+
+        Returns:
+            bool: True если индекс и чанки успешно загружены.
+        """
+        path: Path = Path(index_dir).expanduser()
+        index_file: Path = path / "faiss.index"
+        chunks_file: Path = path / "chunks.json"
+        loaded_index: Optional[faiss.Index] = None
+        loaded_chunks: List[Dict[str, Any]] = []
+
+        model: Any = None
+        model_dim: int = 0
+        index_dim: int = 0
+
+        logger.info(f"Перезагрузка RAG профиля: {path}")
+
+        if not path.exists(): # Проверка существования директории
+            logger.error(f"Директория RAG индекса не найдена: {path}")
+            return False
+
+        # Проверка целостности индекса перед загрузкой
+        # Index integrity check before loading
+        if not self._check_index_integrity(index_file):
+            return False
+
         try:
-            return [
-                {**chunk, 'chunk_id': i, 'text_length': len(chunk.get('text', ''))}
-                for i, chunk in enumerate(self.chunks)
-            ]
+            # Загрузка векторной базы
+            # Loading of the FAISS index
+            loaded_index = faiss.read_index(str(index_file))
+            
+            # Проверка совместимости размерности векторов
+            # Verification of vector dimension compatibility
+            model = self._get_model()
+            model_dim = model.get_sentence_embedding_dimension()
+            index_dim = loaded_index.d
+            
+            if model_dim != index_dim:
+                logger.error(
+                    f"Несовместимость размерности векторов! "
+                    f"Модель ({config.rag_model}): {model_dim}, Индекс: {index_dim}. "
+                    f"Профиль: {path}"
+                )
+                return False
+            
+            # Загрузка метаданных (текстовых сегментов)
+            # Loading of the chunk metadata
+            if chunks_file.exists():
+                loaded_chunks = json.loads(chunks_file.read_text(encoding="utf-8"))
+            
+            # Атомарное обновление состояния системы
+            # Atomic update of the system state
+            self.index = loaded_index
+            self.chunks = loaded_chunks
+
+            # Очистка дубликатов фрагментов
+            # Removal of duplicate fragments
+            self._remove_duplicate_chunks()
+
+            self.current_index_dir = str(path)
+            
+            # Очистка кеша поиска при перезагрузке индекса
+            # Clearing search cache on index reload
+            self._search_cache = {}
+            
+            # Автоматическое сохранение метаданных при перезагрузке
+            # Automatic saving of metadata on reload
+            meta_file = path / "meta.json"
+            meta_data = {}
+            if meta_file.exists():
+                try:
+                    meta_data = json.loads(meta_file.read_text(encoding="utf-8"))
+                except Exception:
+                    logger.debug(f"Ошибка чтения meta.json в {path}, создание новой структуры")
+            
+            meta_data.update({
+                "index_dir": str(path),
+                "chunks": len(self.chunks),
+                "model": config.rag_model,
+                "updated_at": datetime.now().isoformat()
+            })
+            
+            if "name" not in meta_data:
+                meta_data["name"] = path.name
+
+            meta_file.write_text(json.dumps(meta_data, ensure_ascii=False, indent=2), encoding="utf-8")
+            
+            logger.info(f"RAG профиль успешно изменен. Активно чанков: {len(self.chunks)}")
+            return True
+
         except Exception as e:
-            # Unexpected structure in chunks list
-            logger.error(f'❌ Failed to build chunks list: {e}')
-            return []
+            logger.error(f"Ошибка при смене RAG профиля: {e}")
+            return False
 
+    def format_context(self, results: List[Dict[str, Any]]) -> str:
+        """! Форматирование результатов поиска в единый блок текста."""
+        # Объединение текстовых фрагментов через двойной перенос строки
+        # Joining of text fragments with double newline
+        return "\n\n".join([r.get("text", r.get("content", "")) for r in results])
 
-# Global singleton
+    def filter_by_source(self, results: List[Dict[str, Any]], sources: List[str]) -> List[Dict[str, Any]]:
+        """! Фильтрация результатов поиска по списку источников.
+
+        Обоснование:
+          - Ограничение области поиска конкретными документами.
+          - Поддержка пользовательских фильтров в интерфейсе.
+
+        Args:
+            results (List[Dict[str, Any]]): Список результатов поиска.
+            sources (List[str]): Список названий источников для фильтрации.
+
+        Returns:
+            List[Dict[str, Any]]: Отфильтрованные результаты.
+        """
+        filtered: List[Dict[str, Any]] = []
+        source_set: set = set(sources)
+        res: Dict[str, Any] = None
+
+        for res in results:
+            # Сопоставление источника со списком разрешенных
+            # Matching the source with the allowed list
+            if res.get('source') in source_set:
+                filtered.append(res)
+
+        return filtered
+
+    def filter_by_score(self, results: List[Dict[str, Any]], min_score: float) -> List[Dict[str, Any]]:
+        """! Фильтрация результатов поиска по минимальному порогу схожести.
+
+        Обоснование:
+          - Отсечение нерелевантных фрагментов с низким весом совпадения.
+          - Повышение качества контекста для LLM.
+
+        Args:
+            results (List[Dict[str, Any]]): Список результатов поиска.
+            min_score (float): Минимальный порог схожести.
+
+        Returns:
+            List[Dict[str, Any]]: Отфильтрованные результаты.
+        """
+        filtered: List[Dict[str, Any]] = []
+        res: Dict[str, Any] = None
+
+        for res in results:
+            # Сравнение оценки схожести с пороговым значением
+            # Comparison of the similarity score with the threshold value
+            if res.get('score', 0.0) >= min_score:
+                filtered.append(res)
+
+        return filtered
+
 rag_system = RAGSystem()

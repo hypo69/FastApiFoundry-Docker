@@ -137,6 +137,7 @@ def create_app() -> FastAPI:
     # Connect main routers
     from .endpoints import main, models, health, generate, foundry, config, logs, rag, ai_endpoints
     from .endpoints.chat_endpoints import router as chat_router
+    from .endpoints.translator import router as translator_router
     from .endpoints.foundry_management import router as foundry_mgmt_router
     from .endpoints.foundry_models import router as foundry_models_router
     from .endpoints.hf_models import router as hf_router
@@ -157,6 +158,7 @@ def create_app() -> FastAPI:
     app.include_router(generate.router, prefix="/api/v1")
     app.include_router(ai_router, prefix="/api/v1")
     app.include_router(chat_router, prefix="/api/v1")
+    app.include_router(translator_router, prefix="/api/v1")
     app.include_router(rag.router, prefix="/api/v1")
     app.include_router(config.router, prefix="/api/v1")
     app.include_router(logs.router, prefix="/api/v1")

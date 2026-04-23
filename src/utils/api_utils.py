@@ -25,7 +25,7 @@ from fastapi import HTTPException
 logger = logging.getLogger(__name__)
 
 def api_response_handler(func: Callable):
-    """! Decorator to unify API responses.
+    """Decorator to unify API responses.
     
     - Adds 'success: true' to dictionary responses if missing.
     - Catches HTTPException and returns 'success: false' with the detail.

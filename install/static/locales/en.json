@@ -38,6 +38,15 @@
     "rag_opt_skip":       "Skip RAG (saves ~2 GB, RAG search will be unavailable)",
     "foundry_opt_skip":   "Skip Foundry (use llama.cpp or Ollama instead)",
     "models_opt_skip":    "Skip model download (download later via web UI)",
-    "shortcuts_opt_skip": "Skip desktop shortcuts"
+    "shortcuts_opt_skip": "Skip desktop shortcuts",
+    "huggingface":            "HuggingFace Setup",
+    "huggingface_desc":       "Install huggingface_hub, transformers, accelerate. Optionally authorize with your HF token.",
+    "huggingface_token_hint": "For gated models (Gemma, Llama). Leave empty to skip auth.",
+    "huggingface_opt_skip":   "Skip HuggingFace setup",
+    "llama":                  "llama.cpp Setup",
+    "llama_desc":             "Extract llama.cpp binaries from bin/ and set the models directory in config.json.",
+    "llama_models_dir":       "Models Directory",
+    "llama_models_dir_hint":  "Default from config.json: directories.models",
+    "llama_opt_skip":         "Skip llama.cpp setup"
   }
 }

@@ -71,8 +71,8 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
       │      └─ true → scripts\llama-start.ps1 -ModelPath ... -Port ...
       │                 → LLAMA_BASE_URL=http://127.0.0.1:<port>/v1
       │
-      ├─[6.5] install\.installer.pid → Kill installer-сервер (если жив)
-      │        └─ удалить install\.installer.pid
+      ├─[6.5] %TEMP%\fastapi-foundry-installer.pid → Kill installer-сервер (если жив)
+      │        └─ удалить %TEMP%\fastapi-foundry-installer.pid
       │
       ├─[7] %TEMP%\fastapi-foundry.pid → Kill предыдущий процесс FastAPI
       │
@@ -232,12 +232,12 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 
     При первой установке `install.ps1` запускает `install/server.py` — временный
     FastAPI-сервер с GUI-установщиком на порту 9698. Сервер записывает свой PID
-    в `install/.installer.pid`.
+    в `%TEMP%\fastapi-foundry-installer.pid`.
 
     `start.ps1` проверяет этот файл и завершает процесс если он ещё жив:
 
     ```powershell
-    $InstallerPidFile = Join-Path $Root 'install\.installer.pid'
+    $InstallerPidFile = Join-Path $env:TEMP 'fastapi-foundry-installer.pid'
     if (Test-Path $InstallerPidFile) {
         $installerPid = Get-Content $InstallerPidFile
         Get-Process -Id $installerPid | Kill()   # игнорирует ошибку если уже завершён
@@ -313,7 +313,7 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 
 | Сервис | Уже запущен? | Действие |
 |---|---|---|
-| **Installer** (порт 9698) | жив | убивает по `install/.installer.pid` → удаляет файл |
+| **Installer** (порт 9698) | жив | убивает по `%TEMP%/fastapi-foundry-installer.pid` → удаляет файл |
 | **FastAPI** (порт 9696) | да | убивает по `%TEMP%/fastapi-foundry.pid` → запускает новый |
 | **MkDocs** (порт 9697) | да | убивает по порту → `mkdocs build` → `mkdocs serve` |
 | **llama.cpp** (порт 9780) | да | убивает по порту → запускает новый |

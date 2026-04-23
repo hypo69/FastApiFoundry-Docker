@@ -38,6 +38,15 @@
     "rag_opt_skip":       "Пропустить RAG (экономит ~2 ГБ, поиск по документам будет недоступен)",
     "foundry_opt_skip":   "Пропустить Foundry (использовать llama.cpp или Ollama)",
     "models_opt_skip":    "Пропустить загрузку моделей (скачать позже через веб-интерфейс)",
-    "shortcuts_opt_skip": "Пропустить создание ярлыков"
+    "shortcuts_opt_skip": "Пропустить создание ярлыков",
+    "huggingface":            "HuggingFace",
+    "huggingface_desc":       "Установка huggingface_hub, transformers, accelerate. Авторизация через HF Token.",
+    "huggingface_token_hint": "Для закрытых моделей (Gemma, Llama). Оставьте пустым, чтобы пропустить авторизацию.",
+    "huggingface_opt_skip":   "Пропустить настройку HuggingFace",
+    "llama":                  "llama.cpp",
+    "llama_desc":             "Распаковка бинарников llama.cpp из bin/ и установка директории моделей в config.json.",
+    "llama_models_dir":       "Директория моделей",
+    "llama_models_dir_hint":  "По умолчанию из config.json: directories.models",
+    "llama_opt_skip":         "Пропустить настройку llama.cpp"
   }
 }

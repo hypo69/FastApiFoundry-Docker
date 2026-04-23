@@ -66,6 +66,7 @@ class Settings:
 
         # ── OCR ────────────────────────────────────────────────────────────
         self.OCR_LANGUAGES: str = _env_str("OCR_LANGUAGES", _cfg("ocr_languages", "rus+eng"))
+        self.TESSERACT_CMD: str = _cfg("tesseract_cmd", "")
 
         # ── Web extractor ──────────────────────────────────────────────────
         self.ENABLE_JAVASCRIPT: bool = _env_bool("ENABLE_JAVASCRIPT", _cfg("enable_javascript", False))

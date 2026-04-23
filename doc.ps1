@@ -129,12 +129,12 @@ function Stop-PortProcess {
     if (-not $lines) { return }
 
     foreach ($line in $lines) {
-        $parts = ($line -replace '\s+', ' ').Trim().Split(' ')
-        $pid   = $parts[-1]
-        if ($pid -match '^\d+$' -and [int]$pid -gt 0) {
+        $parts  = ($line -replace '\s+', ' ').Trim().Split(' ')
+        $procId = $parts[-1]
+        if ($procId -match '^\d+$' -and [int]$procId -gt 0) {
             try {
-                Stop-Process -Id ([int]$pid) -Force -ErrorAction SilentlyContinue
-                Write-Host "🛑 Killed PID $pid (port $Port)"
+                Stop-Process -Id ([int]$procId) -Force -ErrorAction SilentlyContinue
+                Write-Host "🛑 Killed PID $procId (port $Port)"
             } catch { }
         }
     }

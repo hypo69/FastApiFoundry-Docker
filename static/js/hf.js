@@ -26,7 +26,7 @@ export async function hfCheckStatus() {
                 <tr><td>CUDA</td><td>${d.torch?.cuda ? '<span class="badge bg-success">Available</span>' : '<span class="badge bg-secondary">CPU only</span>'}</td></tr>
                 <tr><td>HF Token</td><td>${d.hf_token_set
                     ? '<span class="badge bg-success">Set ✓</span>'
-                    : '<span class="badge bg-warning">Not set — go to Settings</span>'}</td></tr>
+                    : '<span class="badge bg-warning">Not set — go to API Keys tab</span>'}</td></tr>
             </table>
             ${!d.transformers?.available ? `<div class="alert alert-warning mt-2 mb-0 p-2"><small>Run: <code>${d.install_cmd}</code></small></div>` : ''}`;
     } catch(e) { 
@@ -49,8 +49,8 @@ export async function hfLoadHubModels() {
         if (!_hubData.success && _hubData.error === 'HF_TOKEN not set') {
             listEl.innerHTML = `<div class="alert alert-warning m-2 p-2">
                 ⚠️ HF Token не задан.<br>
-                <small>1. Перейдите в <strong>Settings → HuggingFace</strong><br>
-                2. Введите токен и нажмите Save All<br>
+                <small>1. Перейдите во вкладку <strong>API Keys</strong><br>
+                2. Найдите <strong>HuggingFace</strong> и добавьте токен<br>
                 3. Вернитесь сюда и нажмите Load</small>
             </div>`;
             // Показываем публичные модели даже без токена
@@ -400,30 +400,23 @@ export async function hfGenerate() {
     }
 }
 
-// Сохранение HF токена в .env через отдельный endpoint
-export async function saveHFToken() {
-    const token = document.getElementById('config-hf-token')?.value?.trim();
-    if (!token) { 
-        showAlert('Введите токен', 'warning'); 
-        return; 
+// Save HF token via provider-keys endpoint (used by API Keys tab)
+export async function saveHFToken(token) {
+    if (!token) {
+        showAlert('Введите токен', 'warning');
+        return;
     }
     try {
-        const r = await fetch('/api/v1/config/env', {
+        const r = await fetch(`${window.API_BASE}/config/provider-keys`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({key: 'HF_TOKEN', value: token})
-        });
-        // Сохраняем оба варианта названия — разные части кода используют разные имена
-        await fetch('/api/v1/config/env', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({key: 'HUGGING_FACE_TOKEN', value: token})
+            body: JSON.stringify({ keys: { huggingface: token } }),
         });
         const d = await r.json();
         if (d.success) showAlert('✅ Токен сохранён в .env', 'success');
         else showAlert('Ошибка: ' + (d.detail || d.error), 'danger');
-    } catch(e) { 
-        showAlert('Ошибка запроса: ' + e, 'danger'); 
+    } catch(e) {
+        showAlert('Ошибка запроса: ' + e, 'danger');
         console.error('Save HF token failed:', e);
     }
 }

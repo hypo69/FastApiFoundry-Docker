@@ -340,7 +340,10 @@ async def load_model(request: dict) -> dict:
 @router.post("/unload")
 @api_response_handler
 async def unload_model(request: dict) -> dict:
-    """! Выгрузка модели из Foundry сервиса (foundry model unload).
+    """! Выгрузка модели из Foundry сервиса через REST API (DELETE /v1/models/{id}).
+
+    Foundry CLI `model unload` не работает надёжно (exit 0 при ошибке).
+    Используем прямой DELETE запрос к Foundry REST API.
 
     Args:
         request: JSON body с полями:
@@ -356,11 +359,33 @@ async def unload_model(request: dict) -> dict:
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
 
-    result = _run_foundry(["model", "unload", model_id])
-    if result.returncode != 0:
-        return {"success": False, "error": result.stderr.strip() or "Ошибка выгрузки"}
-    logger.info(f"Модель {model_id} выгружена")
-    return {"success": True, "model_id": model_id, "message": f"Модель {model_id} выгружена"}
+    base_url: str = _get_foundry_base_url().rstrip("/")
+    url: str = f"{base_url}/models/{model_id}"
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.delete(url, timeout=aiohttp.ClientTimeout(total=10)) as response:
+                data: dict = {}
+                try:
+                    data = await response.json()
+                except Exception:
+                    pass
+
+                if response.status == 200 and data.get("deleted"):
+                    logger.info(f"Модель {model_id} выгружена через REST API")
+                    return {"success": True, "model_id": model_id, "message": f"Модель {model_id} выгружена"}
+
+                # 400/404 means model is not loaded — treat as success
+                if response.status in (400, 404):
+                    logger.info(f"Модель {model_id} уже не загружена")
+                    return {"success": True, "model_id": model_id, "message": f"Модель {model_id} не загружена"}
+
+                error_msg = data.get("error") or data.get("message") or f"HTTP {response.status}"
+                logger.warning(f"Unload {model_id} failed: {error_msg}")
+                return {"success": False, "error": error_msg}
+    except Exception as e:
+        logger.error(f"Unload {model_id} exception: {e}")
+        return {"success": False, "error": str(e)}
 
 
 @router.get("/status/{model_id:path}")

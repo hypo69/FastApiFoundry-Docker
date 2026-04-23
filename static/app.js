@@ -66,7 +66,7 @@ async function loadAllPartials() {
             `${base}/_tab_hf.html`,
             `${base}/_tab_llama.html`,
             `${base}/_tab_rag.html`,
-            `${base}/_tab_settings.html`,
+            `${base}/_tab_settings_shell.html`,
             `${base}/_tab_editor.html`,
             `${base}/_tab_mcp.html`,
             `${base}/_tab_agent.html`,
@@ -76,6 +76,27 @@ async function loadAllPartials() {
         ];
         const htmlParts = await Promise.all(tabs.map(fetchPartial));
         tabContent.innerHTML = htmlParts.join('');
+    }
+
+    // Settings sections — injected into #settings-card-body
+    const settingsBody = document.getElementById('settings-card-body');
+    if (settingsBody) {
+        const sections = [
+            `${base}/_tab_settings_server.html`,
+            `${base}/_tab_settings_dirs.html`,
+            `${base}/_tab_settings_foundry.html`,
+            `${base}/_tab_settings_models.html`,
+            `${base}/_tab_settings_rag.html`,
+            `${base}/_tab_settings_security.html`,
+            `${base}/_tab_settings_logging.html`,
+            `${base}/_tab_settings_dev.html`,
+        ];
+        const sectionParts = await Promise.all(sections.map(fetchPartial));
+        // Insert before the status alert (last child)
+        const statusEl = settingsBody.querySelector('#settings-status');
+        sectionParts.forEach(html => {
+            if (html) statusEl.insertAdjacentHTML('beforebegin', html);
+        });
     }
 
     // Modals — appended to body
@@ -141,6 +162,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             e.preventDefault();
             window.sendMessage?.();
         }
+        if (e.target.id === 'agent-input' && e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            window.agentRun?.();
+        }
     });
 
     // Lazy tab loading
@@ -151,7 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('rag-tab')?.addEventListener('shown.bs.tab',       () => { window.refreshRAGStatus?.(); window.ragLoadProfiles?.(); });
     document.getElementById('agent-tab')?.addEventListener('shown.bs.tab',     () => { window.agentLoadTools?.(); });
     document.getElementById('mcp-tab')?.addEventListener('shown.bs.tab',       () => { window.mcpLoadServers?.(); });
-    document.getElementById('settings-tab')?.addEventListener('shown.bs.tab',  () => { window.loadConfigFields?.(); });
+    document.getElementById('settings-tab')?.addEventListener('shown.bs.tab',  () => { window.loadConfigFields?.(); window.refreshLogHealth?.(); });
     document.getElementById('providers-tab')?.addEventListener('shown.bs.tab', () => { window.providersRefresh?.(); });
     let _logViewerInited = false;
     document.getElementById('logs-tab')?.addEventListener('shown.bs.tab', () => {
