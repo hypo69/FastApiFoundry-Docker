@@ -19,6 +19,7 @@
 #   - Added Tesseract OCR installation step (step 5)
 #   - Added -SkipTesseract flag
 #   - Updated version and header format
+#   - Added -NoGui flag to skip web installer
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
@@ -30,6 +31,8 @@ param(
     [switch]$SkipRag,
     # Skip Tesseract OCR installation
     [switch]$SkipTesseract
+    # Skip Web GUI Installer (Console mode only)
+    [switch]$NoGui
 )
 
 # Обоснование остановки при ошибках: предотвращение некорректной настройки системы при сбое на промежуточном этапе.
@@ -134,7 +137,7 @@ Write-Host "  Основные зависимости установлены" -F
 # После установки базовых пакетов запускаем FastAPI installer UI на порту 9698.
 # Пользователь проходит оставшиеся шаги через браузер.
 $installerScript = Join-Path $Root "install\server.py"
-if (Test-Path $installerScript) {
+if (-not $NoGui -and (Test-Path $installerScript)) {
     Write-Host "`n🌐 Запуск интерфейса установщика..." -ForegroundColor Cyan
     Write-Host "   http://localhost:9698" -ForegroundColor Green
     # Запускаем в текущем окне — блокирует до завершения установки

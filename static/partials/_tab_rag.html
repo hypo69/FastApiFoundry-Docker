@@ -33,15 +33,14 @@
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label class="form-label" data-i18n="rag.source_dir">Source Directory</label>
-                                    <div class="input-group">
-                                        <input type="text" id="rag-selected-dir" class="form-control font-monospace"
-                                               data-i18n-placeholder="rag.browse_hint" placeholder="Path will appear here..." readonly>
-                                        <label class="btn btn-outline-secondary mb-0">
-                                            <i class="bi bi-folder2-open"></i>
-                                            <input type="file" id="rag-dir-input" webkitdirectory directory multiple
-                                                   style="display:none" onchange="ragOnDirSelected(this)">
-                                        </label>
+                                    <label class="form-label d-flex justify-content-between align-items-center">
+                                        <span data-i18n="rag.source_dirs">Source Directories</span>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="ragAddDirectory()" type="button">
+                                            <i class="bi bi-folder-plus"></i> <span data-i18n="rag.add_dir">Add Directory</span>
+                                        </button>
+                                    </label>
+                                    <div id="rag-dirs-list" class="d-flex flex-column gap-2">
+                                        <!-- Directory entries added dynamically -->
                                     </div>
                                     <div id="rag-dir-status" class="mt-1" style="display:none"></div>
                                 </div>

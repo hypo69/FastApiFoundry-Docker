@@ -13,6 +13,10 @@
 ### `GET /health`
 Проверка состояния сервиса.
 
+```bash
+curl http://localhost:9696/api/v1/health
+```
+
 **Ответ:**
 ```json
 {
@@ -35,6 +39,12 @@
 - `hf::<model_id>` → HuggingFace
 - `llama::<path>` → llama.cpp
 - без префикса → Foundry Local
+
+```bash
+curl -X POST http://localhost:9696/api/v1/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Ваш запрос", "model": "qwen2.5-0.5b-instruct-generic-cpu:4", "temperature": 0.7}'
+```
 
 **Тело запроса:**
 ```json
@@ -70,6 +80,12 @@
 
 ### `POST /chat/message`
 Отправить сообщение в сессию.
+
+```bash
+curl -X POST http://localhost:9696/api/v1/chat/message \
+  -H "Content-Type: application/json" \
+  -d '{"session_id": "uuid", "message": "Привет", "model": "qwen2.5-0.5b-instruct-generic-cpu:4"}'
+```
 
 **Тело:**
 ```json
@@ -327,6 +343,12 @@
 ### `POST /rag/search`
 Поиск в RAG индексе.
 
+```bash
+curl -X POST http://localhost:9696/api/v1/rag/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "текст запроса", "top_k": 5}'
+```
+
 **Тело:** `{"query": "текст запроса", "top_k": 5}`  
 **Ответ:** `{"success": true, "results": [{"content": "...", "score": 0.95, "metadata": {...}}], "total": 2}`
 
@@ -362,6 +384,12 @@
 ### `POST /rag/build`
 Собрать RAG индекс из директории.
 
+```bash
+curl -X POST http://localhost:9696/api/v1/rag/build \
+  -H "Content-Type: application/json" \
+  -d '{"docs_dir": "./docs", "model": "sentence-transformers/all-mpnet-base-v2", "chunk_size": 1000, "overlap": 50, "force": false}'
+```
+
 **Тело:**
 ```json
 {
@@ -378,6 +406,11 @@
 ### `POST /rag/extract/file`
 Извлечь текст из загруженного файла для индексации.
 
+```bash
+curl -X POST http://localhost:9696/api/v1/rag/extract/file \
+  -F "file=@/path/to/document.pdf"
+```
+
 **Тело:** `multipart/form-data` с полем `file`.  
 Поддерживаемые форматы: PDF, DOCX, XLSX, PPTX, TXT, HTML, MD, JSON, XML, YAML, изображения (OCR), архивы (ZIP/RAR/7Z/TAR), EML, EPUB, ODT, RTF.
 
@@ -385,6 +418,12 @@
 
 ### `POST /rag/extract/url`
 Извлечь текст с веб-страницы для индексации.
+
+```bash
+curl -X POST http://localhost:9696/api/v1/rag/extract/url \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com", "enable_javascript": false, "process_images": false, "web_page_timeout": 30}'
+```
 
 **Тело:**
 ```json

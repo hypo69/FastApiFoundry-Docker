@@ -171,7 +171,30 @@ FASTAPI_RELOAD=false
 
 ---
 
-## Конфигурация
+## Управление зависимостями (requirements)
+
+Проект использует несколько файлов зависимостей:
+
+| Файл | Назначение |
+|---|---|
+| `requirements.txt` | Основные зависимости (FastAPI, uvicorn, aiohttp, pydantic, mcp) |
+| `requirements-rag.txt` | RAG + ML (~3–5 GB: torch, faiss, sentence-transformers) |
+| `requirements-extras.txt` | Опциональные зависимости |
+| `requirements-dev.txt` | Инструменты разработки |
+| `docs/requirements.txt` | MkDocs плагины |
+
+!!! warning "Важно: пересоздание requirements"
+    При пересоздании `requirements.txt` (например, через `pip freeze`) **обязательно** обновить все частичные файлы:
+    - `requirements-rag.txt`
+    - `requirements-extras.txt`
+    - `requirements-dev.txt`
+    - `docs/requirements.txt`
+
+    Иначе версии пакетов в частичных файлах могут рассинхронизироваться с `requirements.txt`, что приведёт к конфликтам при установке.
+
+---
+
+## Архитектура
 
 ### Приоритет источников
 

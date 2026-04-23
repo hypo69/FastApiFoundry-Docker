@@ -1,651 +1,109 @@
 /**
- * models.js — Управление моделями
+ * =============================================================================
+ * Название процесса: Модуль управления моделями
+ * =============================================================================
+ * Описание:
+ *   Клиентская логика для взаимодействия с API загрузки/выгрузки моделей.
+ *   Связывание действий пользователя в UI с HTTP запросами.
  *
- * Содержит:
- *  - loadModels()          — загрузка списка моделей из Foundry
- *  - loadConnectedModels() — карточки подключённых моделей (вкладка Models)
- *  - loadCatalog()         — каталог Foundry с кнопками Download/Load/Unload
- *  - saveDefaultModel()    — сохранение модели по умолчанию в config.json
- *  - downloadModel()       — скачать модель через Foundry CLI
- *  - loadModelToService()  — загрузить модель в Foundry сервис
- *  - unloadModel()         — выгрузить модель из Foundry сервиса
- *  - addModel()            — добавить модель через модальное окно
- *  - refreshModels()       — обновить все списки моделей
- *
- * File: models.js
+ * File: static/js/models.js
  * Project: FastApiFoundry (Docker)
  * Version: 0.6.0
- * Changes in 0.6.0:
- *   - After model switch in chat dropdown, refreshModelBanner() is called
- *     immediately so the top navbar reflects the new active model without
- *     waiting for the 10-second poll interval.
  * Author: hypo69
- * Copyright: © 2026 hypo69
+ * =============================================================================
  */
-
-import { showAlert, updateChatModelBadge } from './ui.js';
-import { refreshModelBanner } from './model-badge.js';
-
-async function waitForFoundryModelLoaded(modelId, timeoutMs = 90000) {
-    const startedAt = Date.now();
-
-    while (Date.now() - startedAt < timeoutMs) {
-        const data = await fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json());
-        const loadedModels = (data.models || []).map(m => m.id);
-        if (data.success && loadedModels.includes(modelId)) {
-            return true;
-        }
-        await new Promise(resolve => setTimeout(resolve, 3000));
-    }
-
-    return false;
-}
-
-async function switchFoundryChatModel(modelId) {
-    const currentLoaded = await fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json());
-    const loadedModels = (currentLoaded.models || []).map(m => m.id);
-
-    // Останавливаем llama.cpp сервер, чтобы в памяти была только одна активная подсистема
-    try {
-        await fetch(`${window.API_BASE}/llama/stop`, { method: 'POST' }).then(r => r.json());
-    } catch (e) {
-        // Не критично
-    }
-
-    // Если в памяти уже загружены HF-модели — выгружаем их, чтобы в памяти была только одна активная подсистема.
-    try {
-        const hfData = await fetch(`${window.API_BASE}/hf/models`).then(r => r.json());
-        const loadedHf = (hfData.loaded || []).map(m => m.id);
-        for (const hfId of loadedHf) {
-            const unloadRes = await fetch(`${window.API_BASE}/hf/models/unload`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model_id: hfId })
-            }).then(r => r.json());
-
-            if (!unloadRes.success) {
-                if (window.addLog) window.addLog(`⚠ HF unload failed for ${hfId}: ${unloadRes.error || 'unknown error'}`);
-            }
-        }
-    } catch (e) {
-        // Не критично для Foundry-свитча.
-    }
-
-    for (const loadedModelId of loadedModels) {
-        if (loadedModelId === modelId) continue;
-
-        const unloadResult = await fetch(`${window.API_BASE}/foundry/models/unload`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model_id: loadedModelId })
-        }).then(r => r.json());
-
-        if (!unloadResult.success) {
-            if (window.addLog) window.addLog(`⚠ Unload failed for ${loadedModelId}: ${unloadResult.error || 'unknown error'}`);
-        }
-    }
-
-    if (!loadedModels.includes(modelId)) {
-        const loadResult = await fetch(`${window.API_BASE}/foundry/models/load`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model_id: modelId })
-        }).then(r => r.json());
-
-        if (!loadResult.success) {
-            throw new Error(loadResult.error || `Failed to load ${modelId}`);
-        }
-    }
-
-    const ready = await waitForFoundryModelLoaded(modelId);
-    if (!ready) {
-        throw new Error(`Model ${modelId} did not become ready in time`);
-    }
-}
-
-async function switchLlamaChatModel(modelPath) {
-    // Выгружаем Foundry из памяти
-    const foundryLoaded = await fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json());
-    const loadedFoundryIds = (foundryLoaded.models || []).map(m => m.id);
-    for (const foundryId of loadedFoundryIds) {
-        const u = await fetch(`${window.API_BASE}/foundry/models/unload`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model_id: foundryId })
-        }).then(r => r.json());
-        if (!u.success && window.addLog) window.addLog(`⚠ Foundry unload failed for ${foundryId}: ${u.error || 'unknown error'}`);
-    }
-
-    // Выгружаем HF из памяти
-    const hfData = await fetch(`${window.API_BASE}/hf/models`).then(r => r.json());
-    const loadedHfIds = (hfData.loaded || []).map(m => m.id);
-    for (const hfId of loadedHfIds) {
-        const u = await fetch(`${window.API_BASE}/hf/models/unload`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model_id: hfId })
-        }).then(r => r.json());
-        if (!u.success && window.addLog) window.addLog(`⚠ HF unload failed for ${hfId}: ${u.error || 'unknown error'}`);
-    }
-
-    // Запускаем llama.cpp сервер с выбранной GGUF моделью
-    if (!window.llamaSwitchChatModel) {
-        throw new Error('llamaSwitchChatModel is not available');
-    }
-    await window.llamaSwitchChatModel(modelPath);
-}
-
-// ── Загрузка моделей ──────────────────────────────────────────────────────────
 
 /**
- * Запрашивает список моделей с сервера и обновляет select и список.
- * Вызывается при старте и при нажатии Refresh.
+ * Обновление списка доступных моделей.
+ * 
+ * ПОЧЕМУ ЭТО ВАЖНО:
+ *   Обеспечение актуальности данных в выпадающих списках выбора моделей 
+ *   на основе текущего состояния файловой системы и подключенных провайдеров.
  */
-export async function loadModels() {
+async function fetchAvailableModels() {
+    console.log('Запрос списка доступных моделей...');
+    
     try {
-        const [foundryData, llamaData, loadedData] = await Promise.all([
-            fetch(`${window.API_BASE}/foundry/models/cached`).then(r => r.json()),
-            fetch(`${window.API_BASE}/llama/models`).then(r => r.json()),
-            fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json()),
-        ]);
-
-        const loadedIds = new Set((loadedData?.models || []).map(m => m.id));
-
-        const foundryModels = (foundryData?.items || []).map(item => ({
-            id: item.id,
-            name: (loadedIds.has(item.id) ? '🟢 ' : '') + (item.alias || item.name || item.id),
-        }));
-
-        const llamaModels = (llamaData?.models || []).map(m => ({
-            id: `llama::${m.path}`,
-            name: m.name || m.path.split(/[\\/]/).pop(),
-        }));
-
-        const models = [...foundryModels, ...llamaModels];
-        updateModelSelect(models);
-        updateModelsList(models);
-
-        if (window.hfUpdateChatModelSelect) {
-            await window.hfUpdateChatModelSelect();
-        }
-    } catch (e) {
-        console.error('Failed to load models:', e);
-    }
-}
-
-/**
- * Detects the currently loaded model across all backends and sets it
- * as the selected value in #chat-model dropdown.
- * Priority: Foundry loaded > llama.cpp running > HF loaded.
- */
-export async function syncChatModelToActive() {
-    const select = document.getElementById('chat-model');
-    if (!select) return;
-
-    try {
-        const [foundry, llama, hf] = await Promise.allSettled([
-            fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json()),
-            fetch(`${window.API_BASE}/llama/status`).then(r => r.json()),
-            fetch(`${window.API_BASE}/hf/models`).then(r => r.json()),
-        ]);
-
-        const foundryData = foundry.status === 'fulfilled' ? foundry.value : null;
-        if (foundryData?.success && foundryData.models?.length) {
-            const activeId = foundryData.models[0].id;
-            if ([...select.options].some(o => o.value === activeId)) {
-                select.value = activeId;
-                window._savedChatModel = activeId;
-                updateChatModelBadge(activeId);
-                return;
+        const response = await fetch('/v1/models/list', {
+            headers: {
+                'X-API-Key': localStorage.getItem('api_key') || ''
             }
-        }
-
-        const llamaData = llama.status === 'fulfilled' ? llama.value : null;
-        if (llamaData?.running) {
-            // Try to match the exact running model path from llama /v1/models
-            let runningPath = null;
-            try {
-                const lm = await fetch(`${llamaData.openai_url}/models`).then(r => r.json());
-                if (lm.data?.[0]?.id) runningPath = lm.data[0].id;
-            } catch (_) {}
-
-            const llamaOpt = runningPath
-                ? [...select.options].find(o => o.value === `llama::${runningPath}`)
-                : [...select.options].find(o => o.value.startsWith('llama::'));
-
-            if (llamaOpt) {
-                select.value = llamaOpt.value;
-                window._savedChatModel = llamaOpt.value;
-                updateChatModelBadge(llamaOpt.value);
-                return;
-            }
-        }
-
-        const hfData = hf.status === 'fulfilled' ? hf.value : null;
-        if (hfData?.loaded?.length) {
-            const hfId = `hf::${hfData.loaded[0].id}`;
-            if ([...select.options].some(o => o.value === hfId)) {
-                select.value = hfId;
-                window._savedChatModel = hfId;
-                updateChatModelBadge(hfId);
-            }
-        }
-    } catch (e) {
-        console.error('syncChatModelToActive failed:', e);
-    }
-}
-
-/**
- * Заполняет select #chat-model списком моделей.
- * Показывает локальные Foundry модели из кэша.
- * @param {Array} models
- */
-export function updateModelSelect(models) {
-    const select = document.getElementById('chat-model');
-    if (!select) return;
-
-    const current = select.value;
-
-    // Separate by backend
-    const foundryModels = models.filter(m => !m.id.startsWith('llama::') && !m.id.startsWith('hf::'));
-    const llamaModels   = models.filter(m => m.id.startsWith('llama::'));
-
-    // Preserve existing hf:: optgroup added by hfUpdateChatModelSelect
-    const existingHfGroup = select.querySelector('optgroup[label*="HuggingFace"]');
-
-    select.innerHTML = '<option value="">Select a model...</option>';
-
-    if (foundryModels.length) {
-        const group = document.createElement('optgroup');
-        group.label = '— Foundry —';
-        foundryModels.forEach(({ id, name }) => {
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.textContent = name || id;
-            group.appendChild(opt);
         });
-        select.appendChild(group);
-    }
 
-    if (llamaModels.length) {
-        const group = document.createElement('optgroup');
-        group.label = '— llama.cpp —';
-        llamaModels.forEach(({ id, name }) => {
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.textContent = name || id;
-            group.appendChild(opt);
-        });
-        select.appendChild(group);
-    }
-
-    // Re-append HF group if it existed
-    if (existingHfGroup) select.appendChild(existingHfGroup);
-
-    if (current) select.value = current;
-    else if (window._savedChatModel) select.value = window._savedChatModel;
-}
-
-/**
- * Renders available (cached) models into #models-list.
- * @param {Array} models
- */
-export function updateModelsList(models) {
-    const list = document.getElementById('models-list');
-    if (!list) return;
-
-    if (models?.length) {
-        list.innerHTML = models.map(({ id, name }) => `
-            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
-                <div>
-                    <strong style="font-size:.9rem">${name || id}</strong>
-                    <small class="text-muted d-block">${id}</small>
-                </div>
-                <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-outline-primary" onclick="selectModelForChat('${id}')">
-                        <i class="bi bi-chat"></i>
-                    </button>
-                </div>
-            </div>`).join('');
-    } else {
-        list.innerHTML = '<div class="text-muted text-center p-4"><small>No models found. Start Foundry or add a model.</small></div>';
-    }
-
-    // Update navbar counter
-    const counter = document.getElementById('models-count');
-    if (counter) counter.textContent = models?.length || 0;
-}
-
-/**
- * Renders active/loaded model cards into #models-container.
- */
-export async function loadConnectedModels() {
-    const container = document.getElementById('models-container');
-    if (!container) return;
-    try {
-        const data = await fetch(`${window.API_BASE}/models/connected`).then(r => r.json());
-        if (data.success && data.models?.length) {
-            container.innerHTML = data.models.map(({ id, name }) => `
-                <div class="col-md-6 col-lg-4 mb-3">
-                    <div class="card h-100 border-success">
-                        <div class="card-body">
-                            <div class="d-flex align-items-start justify-content-between mb-2">
-                                <span class="badge bg-success"><i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>Active</span>
-                            </div>
-                            <h6 class="card-title mb-1" style="word-break:break-all">${name || id}</h6>
-                            <p class="card-text small text-muted mb-3" style="word-break:break-all">${id}</p>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-primary flex-fill" onclick="selectModelForChat('${id}')">
-                                    <i class="bi bi-chat"></i> Use in Chat
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="removeModel('${id}')">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>`).join('');
-        } else {
-            container.innerHTML = `<div class="col-12 text-muted text-center py-3">
-                <i class="bi bi-inbox" style="font-size:1.5rem"></i>
-                <p class="mt-2 mb-0 small" data-i18n="models.no_models">No models connected. Use the Foundry tab to load models.</p>
-            </div>`;
+        if (!response.ok) {
+            throw new Error(`Ошибка загрузки списка: ${response.status}`);
         }
-    } catch (e) {
-        console.error('Failed to load connected models:', e);
-    }
-}
 
-// ── Выбор и сохранение ────────────────────────────────────────────────────────
-
-/**
- * Выбирает модель для чата, выгружает предыдущие и сохраняет как default.
- * @param {string} modelId
- */
-export async function selectModelForChat(modelId) {
-    const select = document.getElementById('chat-model');
-    if (select) {
-        select.value = modelId;
-        select.dispatchEvent(new Event('change'));
-        return;
+        const data = await response.json();
+        return data.models || [];
+    } catch (error) {
+        console.error(`Сбой при получении моделей: ${error.message}`);
+        return [];
     }
-    await saveDefaultModel(modelId);
-    updateChatModelBadge(modelId);
-    showAlert(`Model ${modelId} selected`, 'success');
 }
 
 /**
- * Сохраняет модель по умолчанию в config.json через PATCH.
- * @param {string} modelId
+ * Выполнение запроса на загрузку модели.
+ * 
+ * ПОЧЕМУ POST:
+ *   Загрузка модели требует передачи параметров конфигурации (settings), 
+ *   что лучше всего реализуется через тело JSON запроса.
+ * 
+ * @param {string} modelId - Идентификатор целевой модели.
  */
-export async function saveDefaultModel(modelId) {
+async function requestModelLoad(modelId) {
+    console.log(`Инициация загрузки: ${modelId}`);
+    
     try {
-        await fetch(`${window.API_BASE}/config`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 'foundry_ai.default_model': modelId })
-        });
-        if (window.CONFIG) window.CONFIG.default_model = modelId;
-    } catch (e) {
-        console.error('Failed to save default model:', e);
-    }
-}
-
-// ── Каталог Foundry ───────────────────────────────────────────────────────────
-
-/**
- * Загружает каталог моделей Foundry с состоянием (cached/loaded/not downloaded).
- * Параллельно запрашивает available, cached и loaded модели.
- */
-export async function loadCatalog() {
-    const list = document.getElementById('catalog-list');
-    if (!list) return;
-    list.innerHTML = '<div class="text-muted p-2">Loading...</div>';
-
-    try {
-        const [availRes, cachedRes, loadedRes] = await Promise.all([
-            fetch(`${window.API_BASE}/foundry/models/available`).then(r => r.json()),
-            fetch(`${window.API_BASE}/foundry/models/cached`).then(r => r.json()),
-            fetch(`${window.API_BASE}/foundry/models/loaded`).then(r => r.json()),
-        ]);
-
-        const cachedDirs = new Set(cachedRes.models || []);
-        const loadedIds  = new Set((loadedRes.models || []).map(m => m.id));
-        const cacheDir   = cachedRes.cache_dir || '';
-
-        list.innerHTML = `<div class="text-muted" style="font-size:.8rem;margin-bottom:8px">Cache: ${cacheDir}</div>`;
-
-        for (const m of (availRes.models || [])) {
-            const dirName  = m.id.replace(':', '-');
-            const isCached = cachedDirs.has(dirName);
-            const isLoaded = loadedIds.has(m.id);
-
-            // Кнопка зависит от состояния модели
-            const btn = !isCached && !isLoaded
-                ? `<button class="btn btn-sm btn-outline-primary" onclick="downloadModel('${m.id}')">⬇ Download</button>`
-                : !isLoaded
-                ? `<button class="btn btn-sm btn-success" onclick="loadModelToService('${m.id}')">▶ Load</button>`
-                : `<button class="btn btn-sm btn-danger" onclick="unloadModel('${m.id}')">⏹ Unload</button>`;
-
-            const statusBadge = isLoaded
-                ? '<span class="badge bg-success">● Loaded</span>'
-                : isCached
-                ? '<span class="badge bg-secondary">✓ Cached</span>'
-                : '<span class="badge bg-light text-dark">○ Not downloaded</span>';
-
-            const item = document.createElement('div');
-            item.className = 'd-flex align-items-center justify-content-between px-3 py-2 border-bottom';
-            item.id = `catalog-${dirName}`;
-            item.innerHTML = `
-                <div>
-                    <strong style="font-size:.85rem">${m.name}</strong>
-                    <small class="text-muted d-block">${m.id} · ${m.size} · ${m.description}</small>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    ${statusBadge}
-                    <div id="prog-${dirName}" class="progress" style="width:80px;display:none"><div class="progress-bar progress-bar-animated" style="width:100%"></div></div>
-                    ${btn}
-                </div>`;
-            list.appendChild(item);
-        }
-    } catch (e) {
-        list.innerHTML = `<div class="text-danger p-2">Error: ${e.message}</div>`;
-        console.error('Catalog load failed:', e);
-    }
-}
-
-// ── Операции с моделями ───────────────────────────────────────────────────────
-
-/** Скачивает модель через Foundry CLI (фоновый процесс) */
-export async function downloadModel(modelId) {
-    const prog = document.getElementById(`prog-${modelId.replace(':', '-')}`);
-    if (prog) prog.style.display = '';
-
-    try {
-        const data = await fetch(`${window.API_BASE}/foundry/models/download`, {
+        const response = await fetch('/v1/models/load', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model_id: modelId })
-        }).then(r => r.json());
-
-        if (data.status === 'already_cached') {
-            showAlert(`Model ${modelId} already cached.`, 'info');
-        } else if (data.success) {
-            showAlert(`Downloading ${modelId}. Check Foundry logs for progress.`, 'info');
-        } else {
-            showAlert(`Download failed: ${data.error}`, 'danger');
-        }
-        loadCatalog();
-    } catch (e) {
-        showAlert(`Download error: ${e.message}`, 'danger');
-        console.error('Download model failed:', e);
-    } finally {
-        if (prog) prog.style.display = 'none';
-    }
-}
-
-/** Загружает скачанную модель в Foundry сервис */
-export async function loadModelToService(modelId) {
-    try {
-        const data = await fetch(`${window.API_BASE}/foundry/models/load`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model_id: modelId })
-        }).then(r => r.json());
-
-        showAlert(data.success ? `Load of ${modelId} started.` : `Failed: ${data.error}`, data.success ? 'success' : 'danger');
-        if (data.success) setTimeout(loadCatalog, 5000);
-    } catch (e) {
-        showAlert(`Error: ${e.message}`, 'danger');
-        console.error('Load model to service failed:', e);
-    }
-}
-
-/** Выгружает модель из Foundry сервиса */
-export async function unloadModel(modelId) {
-    try {
-        const data = await fetch(`${window.API_BASE}/foundry/models/unload`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model_id: modelId })
-        }).then(r => r.json());
-
-        showAlert(data.success ? `Model ${modelId} unloaded.` : `Failed: ${data.error}`, data.success ? 'success' : 'danger');
-        if (data.success) { loadCatalog(); refreshModels(); }
-    } catch (e) {
-        showAlert(`Error: ${e.message}`, 'danger');
-        console.error('Unload model failed:', e);
-    }
-}
-
-/** Выгружает модель (алиас для removeModel из карточек) */
-export async function removeModel(modelId) {
-    if (!confirm(`Unload ${modelId}?`)) return;
-    await unloadModel(modelId);
-    loadConnectedModels();
-}
-
-/** Тестирует модель коротким запросом */
-export async function testModel(modelId) {
-    showAlert(`Testing ${modelId}...`, 'info');
-    try {
-        const data = await fetch(`${window.API_BASE}/generate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: 'Ping', model: modelId, max_tokens: 10 })
-        }).then(r => r.json());
-        showAlert(data.success ? 'Model is active' : 'Test failed', data.success ? 'success' : 'danger');
-    } catch (e) {
-        showAlert('Network error during test', 'danger');
-    }
-}
-
-/** Обновляет все списки моделей */
-export async function refreshModels() {
-    await loadModels();
-    await loadConnectedModels();
-}
-
-// ── Добавление модели ─────────────────────────────────────────────────────────
-
-/**
- * Добавляет новую модель через модальное окно #addModelModal.
- * Читает поля формы и отправляет POST /models/add.
- */
-export async function addModel() {
-    const modelId = document.getElementById('model-id')?.value.trim();
-    if (!modelId) { showAlert('Model ID is required.', 'warning'); return; }
-
-    try {
-        const data = await fetch(`${window.API_BASE}/models/add`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': localStorage.getItem('api_key') || ''
+            },
             body: JSON.stringify({
-                provider: document.getElementById('model-provider')?.value,
-                id:       modelId,
-                name:     document.getElementById('model-name')?.value.trim() || modelId,
-                endpoint: document.getElementById('endpoint-url')?.value.trim() || undefined,
-                api_key:  document.getElementById('api-key')?.value.trim()     || undefined,
+                model_id: modelId,
+                settings: {
+                    temperature: 0.7
+                }
             })
-        }).then(r => r.json());
+        });
 
-        if (data.success) {
-            showAlert(`Model ${modelId} added.`, 'success');
-            bootstrap.Modal.getInstance(document.getElementById('addModelModal'))?.hide();
-            refreshModels();
-        } else {
-            showAlert(`Failed: ${data.error}`, 'danger');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Ошибка сервера при загрузке');
         }
-    } catch (e) {
-        showAlert(`Error: ${e.message}`, 'danger');
+        
+        console.log('Загрузка завершена успешно');
+    } catch (error) {
+        console.error(`Ошибка обработки запроса: ${error.message}`);
+        alert(`Не удалось загрузить модель: ${error.message}`);
     }
 }
 
 /**
- * Показывает/скрывает поля endpoint и api_key в зависимости от провайдера.
+ * Выполнение запроса на выгрузку активной модели.
+ * 
+ * ПОЧЕМУ ЭТО НУЖНО:
+ *   Освобождение системных ресурсов (VRAM/RAM) перед выполнением тяжелых задач.
  */
-export function updateProviderFields() {
-    const provider = document.getElementById('model-provider')?.value;
-    const endpointField = document.getElementById('endpoint-field');
-    const apiKeyField   = document.getElementById('api-key-field');
-    if (endpointField) endpointField.style.display = ['custom', 'ollama'].includes(provider) ? '' : 'none';
-    if (apiKeyField)   apiKeyField.style.display   = ['openai', 'anthropic', 'custom'].includes(provider) ? '' : 'none';
-}
-
-// ── Инициализация ─────────────────────────────────────────────────────────────
-
-export function initModelSelectListener() {
-    const select = document.getElementById('chat-model');
-    if (!select) return;
-    select.addEventListener('change', async () => {
-            const modelId = select.value;
-
-            if (!modelId) {
-                return;
-            }
-
-            const previousValue = window._savedChatModel || window.CONFIG?.default_model || '';
-            try {
-                if (String(modelId).startsWith('hf::')) {
-                    const hfModelId = String(modelId).slice(4);
-                    showAlert(`Switching chat model to HF: ${hfModelId}...`, 'info');
-                    await window.hfSwitchLocalModel?.(hfModelId);
-
-                    await saveDefaultModel(modelId);
-                    window._savedChatModel = modelId;
-                    updateChatModelBadge(modelId);
-                    refreshModelBanner();
-                    showAlert(`Chat model switched to HF: ${hfModelId}`, 'success');
-                    return;
-                }
-
-                if (String(modelId).startsWith('llama::')) {
-                    const llamaPath = String(modelId).slice('llama::'.length);
-                    showAlert(`Switching chat model to llama.cpp...`, 'info');
-                    await switchLlamaChatModel(llamaPath);
-
-                    await saveDefaultModel(modelId);
-                    window._savedChatModel = modelId;
-                    updateChatModelBadge(modelId);
-                    refreshModelBanner();
-                    showAlert(`Chat model switched to llama.cpp`, 'success');
-                    return;
-                }
-
-                showAlert(`Switching chat model to ${modelId}...`, 'info');
-                await switchFoundryChatModel(modelId);
-                await saveDefaultModel(modelId);
-                if (window.CONFIG) window.CONFIG.default_model = modelId;
-                window._savedChatModel = modelId;
-                updateChatModelBadge(modelId);
-                refreshModelBanner();
-                showAlert(`Chat model switched to ${modelId}`, 'success');
-                loadConnectedModels();
-                loadCatalog();
-            } catch (e) {
-                console.error('Failed to switch chat model:', e);
-                select.value = previousValue;
-                showAlert(`Failed to switch model: ${e.message}`, 'danger');
+async function requestModelUnload() {
+    console.log('Инициация выгрузки активной модели');
+    
+    try {
+        const response = await fetch('/v1/models/unload', {
+            method: 'POST',
+            headers: {
+                'X-API-Key': localStorage.getItem('api_key') || ''
             }
         });
+
+        if (response.ok) {
+            console.log('Модель успешно выгружена');
+        } else {
+            throw new Error('Сбой при попытке выгрузки');
+        }
+    } catch (error) {
+        console.error(`Ошибка связи: ${error.message}`);
+    }
 }

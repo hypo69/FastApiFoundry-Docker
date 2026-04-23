@@ -136,24 +136,73 @@ class Config:
     def archive_keep_files(self) -> List[str]:
         return self._config_data.get('logging', {}).get('archive_keep_files') or []
 
-    # ── Telegram Бот ──────────────────────────────────────────────────────
+    # ── Telegram Admin Bot ────────────────────────────────────────────────
 
     @property
-    def telegram_enabled(self) -> bool:
-        return self._config_data.get('telegram', {}).get('enabled', False)
+    def telegram_admin_token(self) -> str:
+        """Token for admin_bot. Env: TELEGRAM_ADMIN_TOKEN."""
+        return os.getenv('TELEGRAM_ADMIN_TOKEN', '')
 
     @property
-    def telegram_token(self) -> str:
-        # Чтение токена из окружения (приоритет) или конфига
-        return os.getenv('TELEGRAM_TOKEN') or self._config_data.get('telegram', {}).get('token', '')
-
-    @property
-    def telegram_allowed_ids(self) -> List[int]:
+    def telegram_admin_ids(self) -> List[int]:
+        """Allowed admin user IDs. Env: TELEGRAM_ADMIN_IDS (comma-separated)."""
+        raw = os.getenv('TELEGRAM_ADMIN_IDS', '')
+        if raw:
+            try:
+                return [int(x.strip()) for x in raw.split(',') if x.strip()]
+            except ValueError:
+                pass
         return self._config_data.get('telegram', {}).get('allowed_external_ids', [])
 
     @property
     def telegram_status_check_interval(self) -> int:
         return self._config_data.get('telegram', {}).get('status_check_interval', 300)
+
+    # ── Telegram HelpDesk Bot ─────────────────────────────────────────────
+
+    @property
+    def telegram_helpdesk_token(self) -> str:
+        """Token for helpdesk_bot. Env: TELEGRAM_HELPDESK_TOKEN."""
+        return os.getenv('TELEGRAM_HELPDESK_TOKEN', '')
+
+    @property
+    def telegram_helpdesk_rag_profile(self) -> str:
+        """RAG profile used by helpdesk_bot."""
+        return self._config_data.get('telegram_helpdesk', {}).get('rag_profile', 'support')
+
+    # ── Telegram legacy aliases (backward compat) ─────────────────────────
+
+    @property
+    def telegram_enabled(self) -> bool:
+        return bool(self.telegram_admin_token)
+
+    @property
+    def telegram_token(self) -> str:
+        """Deprecated: use telegram_admin_token."""
+        return self.telegram_admin_token
+
+    @property
+    def telegram_allowed_ids(self) -> List[int]:
+        """Deprecated: use telegram_admin_ids."""
+        return self.telegram_admin_ids
+
+    @property
+    def telegram_chat_history_enabled(self) -> bool:
+        return self._config_data.get('telegram', {}).get('chat_history_enabled', True)
+
+    @property
+    def telegram_chat_history_file(self) -> str:
+        return self._config_data.get('telegram', {}).get('chat_history_file', 'session_history.json')
+
+    @property
+    def telegram_support_token(self) -> str:
+        """Deprecated: use telegram_helpdesk_token."""
+        return self.telegram_helpdesk_token
+
+    @property
+    def telegram_support_rag_profile(self) -> str:
+        """Deprecated: use telegram_helpdesk_rag_profile."""
+        return self.telegram_helpdesk_rag_profile
 
     # ── ИИ Foundry ────────────────────────────────────────────────────────
 

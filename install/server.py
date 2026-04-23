@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,6 +35,37 @@ PID_FILE    = Path(os.environ.get('TEMP', '/tmp')) / 'fastapi-foundry-installer.
 
 app = FastAPI(title="FastAPI Foundry Installer", docs_url=None, redoc_url=None)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+# ── Middleware ────────────────────────────────────────────────────────────────
+
+@app.middleware("http")
+async def detect_language_middleware(request: Request, call_next):
+    """! Автоматическое определение языка пользователя.
+    
+    ОБОСНОВАНИЕ:
+      - Использование заголовков браузера для предустановки локали при первом запуске.
+      - Приоритезация настроек из config.json над заголовками.
+    """
+    detected_lang = ""
+    
+    # Чтение существующей конфигурации
+    # Reading of existing configuration
+    try:
+        config_data = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
+        detected_lang = config_data.get("app", {}).get("language", "")
+    except Exception:
+        pass
+
+    # Анализ заголовка Accept-Language при отсутствии настройки в конфиге
+    # Analysis of the Accept-Language header if config is empty
+    if not detected_lang:
+        accept_lang = request.headers.get("accept-language", "")
+        detected_lang = "ru" if accept_lang and "ru" in accept_lang.lower() else "en"
+
+    # Сохранение определенного языка в состоянии запроса
+    # Storage of the detected language in the request state
+    request.state.lang = detected_lang
+    return await call_next(request)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -148,15 +179,16 @@ async def get_status():
 
 
 @app.get("/api/defaults")
-async def get_defaults():
+async def get_defaults(request: Request):
     """Returns default values from config.json for pre-filling installer fields."""
     try:
         cfg = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
         return JSONResponse({
             "models_dir": cfg.get("directories", {}).get("models", "~/.models"),
+            "language": getattr(request.state, "lang", "en")
         })
     except Exception:
-        return JSONResponse({"models_dir": "~/.models"})
+        return JSONResponse({"models_dir": "~/.models", "language": "en"})
 
 
 @app.get("/api/run/{step_id}")

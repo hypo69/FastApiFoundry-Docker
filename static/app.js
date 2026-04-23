@@ -16,6 +16,7 @@ import * as agent     from './js/agent.js';
 import * as mcp       from './js/mcp.js';
 import * as sdk       from './js/sdk.js';
 import * as providers from './js/providers.js';
+import * as support   from './js/support.js';
 import { initI18n, switchLang } from './js/i18n.js';
 import { initModelBanner, refreshModelBanner } from './js/model-badge.js';
 
@@ -24,7 +25,7 @@ window.CONFIG   = { foundry_url: 'http://localhost:50477/v1/', default_model: nu
 
 window.switchLang = switchLang;
 
-Object.assign(window, ui, config, models, chat, foundry, rag, editor, llama, hf, ollama, agent, mcp, sdk, providers);
+Object.assign(window, ui, config, models, chat, foundry, rag, editor, llama, hf, ollama, agent, mcp, sdk, providers, support);
 
 window.providersRefresh = providers.initProviders;
 window.systemRestartService = foundry.systemRestartService;
@@ -71,6 +72,7 @@ async function loadAllPartials() {
             `${base}/_tab_mcp.html`,
             `${base}/_tab_agent.html`,
             `${base}/_tab_providers.html`,
+            `${base}/_tab_support.html`,
             `${base}/_tab_logs.html`,
             `${base}/_tab_docs.html`,
         ];
@@ -178,6 +180,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('mcp-tab')?.addEventListener('shown.bs.tab',       () => { window.mcpLoadServers?.(); });
     document.getElementById('settings-tab')?.addEventListener('shown.bs.tab',  () => { window.loadConfigFields?.(); window.refreshLogHealth?.(); });
     document.getElementById('providers-tab')?.addEventListener('shown.bs.tab', () => { window.providersRefresh?.(); });
+    document.getElementById('support-tab')?.addEventListener('shown.bs.tab', () => {
+        window.supportLoadDialogs?.();
+        window.supportLoadProfiles?.();
+        window.supportLoadStatus?.();
+    });
     let _logViewerInited = false;
     document.getElementById('logs-tab')?.addEventListener('shown.bs.tab', () => {
         if (!_logViewerInited) { window.initLogViewer?.(); _logViewerInited = true; }

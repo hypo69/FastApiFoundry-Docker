@@ -340,10 +340,9 @@ async def load_model(request: dict) -> dict:
 @router.post("/unload")
 @api_response_handler
 async def unload_model(request: dict) -> dict:
-    """! Выгрузка модели из Foundry сервиса через REST API (DELETE /v1/models/{id}).
+    """! Выгрузка модели из Foundry сервиса.
 
-    Foundry CLI `model unload` не работает надёжно (exit 0 при ошибке).
-    Используем прямой DELETE запрос к Foundry REST API.
+    Сначала пробует CLI (foundry model unload), при ошибке — REST API DELETE.
 
     Args:
         request: JSON body с полями:
@@ -359,9 +358,22 @@ async def unload_model(request: dict) -> dict:
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
 
+    # Try CLI first
+    try:
+        result = _run_foundry(["model", "unload", model_id])
+        output = (result.stdout or "").strip()
+        error_keywords = ("exception", "denied", "failed", "unexpected error")
+        cli_ok = result.returncode == 0 and not any(k in output.lower() for k in error_keywords)
+        if cli_ok:
+            logger.info(f"Модель {model_id} выгружена через CLI")
+            return {"success": True, "model_id": model_id, "message": f"Модель {model_id} выгружена"}
+        logger.warning(f"CLI unload failed for {model_id}: {output} — falling back to REST API")
+    except Exception as e:
+        logger.warning(f"CLI unload exception for {model_id}: {e} — falling back to REST API")
+
+    # Fallback: REST API DELETE /v1/models/{id}
     base_url: str = _get_foundry_base_url().rstrip("/")
     url: str = f"{base_url}/models/{model_id}"
-
     try:
         async with aiohttp.ClientSession() as session:
             async with session.delete(url, timeout=aiohttp.ClientTimeout(total=10)) as response:
@@ -370,21 +382,16 @@ async def unload_model(request: dict) -> dict:
                     data = await response.json()
                 except Exception:
                     pass
-
                 if response.status == 200 and data.get("deleted"):
                     logger.info(f"Модель {model_id} выгружена через REST API")
                     return {"success": True, "model_id": model_id, "message": f"Модель {model_id} выгружена"}
-
-                # 400/404 means model is not loaded — treat as success
+                # 400/404 — model already not loaded
                 if response.status in (400, 404):
-                    logger.info(f"Модель {model_id} уже не загружена")
                     return {"success": True, "model_id": model_id, "message": f"Модель {model_id} не загружена"}
-
-                error_msg = data.get("error") or data.get("message") or f"HTTP {response.status}"
-                logger.warning(f"Unload {model_id} failed: {error_msg}")
+                error_msg = data.get("error") or f"HTTP {response.status}"
                 return {"success": False, "error": error_msg}
     except Exception as e:
-        logger.error(f"Unload {model_id} exception: {e}")
+        logger.error(f"REST unload exception for {model_id}: {e}")
         return {"success": False, "error": str(e)}
 
 

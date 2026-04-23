@@ -2,15 +2,15 @@
  * rag.js — Система RAG
  *
  * Содержит:
- *  - refreshRAGStatus()   — статус активной базы
- *  - ragLoadProfiles()    — список баз в ~/.rag
- *  - ragBrowseHome()      — открыть браузер с домашней директории
- *  - ragBrowse(path)      — навигация по файловой системе
- *  - ragSelectDir(path)   — выбрать директорию и проверить индекс
- *  - ragBuildIndex(force) — собрать индекс для выбранной директории
- *  - testRAGSearch()      — тестовый поиск
- *  - clearRAGChunks()     — очистить активный индекс
- *  - handleRAGToggle()    — переключатель Enable RAG
+ *  - refreshRAGStatus()      — статус активной базы
+ *  - ragLoadProfiles()       — список баз в ~/.rag
+ *  - ragAddDirectory()       — добавить строку выбора директории
+ *  - ragRemoveDirectory(idx) — удалить строку директории
+ *  - ragOpenBrowserFor(idx)  — открыть браузер для конкретной строки
+ *  - ragBuildIndex(force)    — собрать индексы для всех выбранных директорий
+ *  - testRAGSearch()         — тестовый поиск
+ *  - clearRAGChunks()        — очистить активный индекс
+ *  - handleRAGToggle()       — переключатель Enable RAG
  */
 
 import { showAlert } from './ui.js';
@@ -119,13 +119,57 @@ export async function ragDeleteProfile(name) {
     }
 }
 
-// ── Выбор директории (серверный браузер) ─────────────────────────────────────
+// ── Выбор директорий (серверный браузер, мульти) ─────────────────────────────
 
 let _ragBrowserModal = null;
 let _ragBrowserCurrentPath = '';
+let _ragBrowserTargetIdx = -1; // index of the directory row being edited
 
-/** Открывает модальный браузер директорий, стартуя с CWD сервера. */
-export async function ragOpenBrowser() {
+/**
+ * Adds a new directory row and immediately opens the browser for it.
+ */
+export function ragAddDirectory() {
+    const list = document.getElementById('rag-dirs-list');
+    if (!list) return;
+    const idx = list.children.length;
+    const row = document.createElement('div');
+    row.className = 'input-group rag-dir-row';
+    row.dataset.idx = idx;
+    row.innerHTML = `
+        <input type="text" class="form-control font-monospace rag-dir-path"
+               placeholder="Path will appear here..." readonly>
+        <button class="btn btn-outline-secondary" type="button" onclick="ragOpenBrowserFor(${idx})">
+            <i class="bi bi-folder2-open"></i>
+        </button>
+        <button class="btn btn-outline-danger" type="button" onclick="ragRemoveDirectory(${idx})">
+            <i class="bi bi-x"></i>
+        </button>`;
+    list.appendChild(row);
+    ragOpenBrowserFor(idx);
+}
+
+/**
+ * Removes a directory row by its index.
+ * @param {number} idx
+ */
+export function ragRemoveDirectory(idx) {
+    const row = document.querySelector(`.rag-dir-row[data-idx="${idx}"]`);
+    if (row) row.remove();
+}
+
+/**
+ * Returns all non-empty directory paths from the list.
+ * @returns {string[]}
+ */
+function ragGetSelectedDirs() {
+    return [...document.querySelectorAll('.rag-dir-path')]
+        .map(el => el.value.trim())
+        .filter(Boolean);
+}
+
+/** Opens the directory browser modal for a specific row index. */
+export async function ragOpenBrowserFor(idx) {
+    _ragBrowserTargetIdx = idx;
     const modalEl = document.getElementById('ragBrowserModal');
     if (!modalEl) return;
     _ragBrowserModal = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -133,6 +177,9 @@ export async function ragOpenBrowser() {
     const cwdData = await fetch(`${RAG_API}/cwd`).then(r => r.json()).catch(() => ({}));
     await ragBrowseTo(cwdData.cwd || '');
 }
+
+/** @deprecated Use ragAddDirectory() instead */
+export async function ragOpenBrowser() { ragAddDirectory(); }
 
 /** Навигация в директорию path. */
 export async function ragBrowseTo(path) {
@@ -174,86 +221,71 @@ export async function ragBrowserUp() {
     if (data.parent) await ragBrowseTo(data.parent);
 }
 
-/** Подтверждает выбор текущей директории и закрывает модаль. */
-export async function ragBrowserConfirm() {
+/** Подтверждает выбор текущей директории и записывает в целевую строку. */
+export function ragBrowserConfirm() {
     const selected = _ragBrowserCurrentPath;
     if (!selected) return;
-    const dirInput = document.getElementById('rag-selected-dir');
-    if (dirInput) dirInput.value = selected;
+    // Write path into the target row input
+    const row = document.querySelector(`.rag-dir-row[data-idx="${_ragBrowserTargetIdx}"]`);
+    if (row) {
+        const input = row.querySelector('.rag-dir-path');
+        if (input) input.value = selected;
+    }
     if (_ragBrowserModal) _ragBrowserModal.hide();
-    // Проверяем существующий индекс
     const status = document.getElementById('rag-dir-status');
-    if (!status) return;
-    status.style.display = '';
-    status.innerHTML = '<div class="spinner-border spinner-border-sm me-1"></div><small>Checking...</small>';
-    try {
-        const data = await fetch(`${RAG_API}/build`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ docs_dir: selected, output_dir: '', model: 'x', chunk_size: 1, overlap: 0 })
-        }).then(r => r.json());
-        status.innerHTML = data.already_indexed
-            ? `<div class="alert alert-warning p-2 mb-0 small">⚠️ Index already exists for <strong>${data.name}</strong>. Use <strong>Rebuild (force)</strong> to re-index.</div>`
-            : `<div class="alert alert-success p-2 mb-0 small">✅ Ready to build index for <strong>${selected}</strong>.</div>`;
-    } catch (e) {
-        status.innerHTML = `<div class="text-danger small">${e.message}</div>`;
+    if (status) {
+        status.style.display = '';
+        status.innerHTML = `<div class="alert alert-success p-2 mb-0 small">✅ Added: <strong>${selected}</strong></div>`;
     }
 }
 
 // ── Сборка индекса ────────────────────────────────────────────────────────────
 
 /**
- * Собирает RAG индекс для выбранной директории.
- * Сохраняет в ~/.rag/<dir_name>/.
- * @param {boolean} force — пересобрать даже если индекс уже есть
+ * Builds RAG index for each selected directory sequentially.
+ * @param {boolean} force - rebuild even if index already exists
  */
 export async function ragBuildIndex(force = false) {
-    const sourceDir = document.getElementById('rag-selected-dir')?.value.trim();
-    if (!sourceDir) { showAlert('Select a source directory first', 'warning'); return; }
+    const dirs = ragGetSelectedDirs();
+    if (!dirs.length) { showAlert('Add at least one source directory', 'warning'); return; }
 
     const statusEl = document.getElementById('rag-build-status');
     const buildBtn = document.getElementById('rag-build-btn');
+    const model      = document.getElementById('rag-build-model')?.value || 'sentence-transformers/all-mpnet-base-v2';
+    const chunk_size = parseInt(document.getElementById('rag-build-chunk')?.value  || '1000');
+    const overlap    = parseInt(document.getElementById('rag-build-overlap')?.value || '50');
 
     if (buildBtn) buildBtn.disabled = true;
     if (statusEl) {
         statusEl.style.display = '';
-        statusEl.innerHTML = '<div class="alert alert-info p-2"><div class="spinner-border spinner-border-sm me-2"></div>Building index... This may take a few minutes.</div>';
+        statusEl.innerHTML = `<div class="alert alert-info p-2"><div class="spinner-border spinner-border-sm me-2"></div>Building ${dirs.length} index(es)...</div>`;
     }
 
-    try {
-        const data = await fetch(`${RAG_API}/build`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                docs_dir:   sourceDir,
-                output_dir: '',  // сервер сам определяет ~/.rag/<name>/
-                model:      document.getElementById('rag-build-model')?.value || 'sentence-transformers/all-mpnet-base-v2',
-                chunk_size: parseInt(document.getElementById('rag-build-chunk')?.value  || '1000'),
-                overlap:    parseInt(document.getElementById('rag-build-overlap')?.value || '50'),
-                force,
-            })
-        }).then(r => r.json());
-
-        if (data.already_indexed && !force) {
-            if (statusEl) statusEl.innerHTML = `<div class="alert alert-warning p-2">
-                ⚠️ Index already exists for <strong>${data.name}</strong>.
-                Use <strong>Rebuild (force)</strong> to re-index.
-            </div>`;
-        } else if (data.success) {
-            if (statusEl) statusEl.innerHTML = `<div class="alert alert-success p-2">
-                ✅ Built <strong>${data.name}</strong>: ${data.chunks} chunks → <code>${data.index_dir}</code>
-            </div>`;
-            ragLoadProfiles();
-            refreshRAGStatus();
-        } else {
-            if (statusEl) statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${data.error}</div>`;
+    const results = [];
+    for (const sourceDir of dirs) {
+        try {
+            const data = await fetch(`${RAG_API}/build`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ docs_dir: sourceDir, output_dir: '', model, chunk_size, overlap, force })
+            }).then(r => r.json());
+            results.push({ dir: sourceDir, ...data });
+        } catch (e) {
+            results.push({ dir: sourceDir, success: false, error: e.message });
         }
-    } catch (e) {
-        if (statusEl) statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${e.message}</div>`;
-        console.error('ragBuildIndex failed:', e);
-    } finally {
-        if (buildBtn) buildBtn.disabled = false;
     }
+
+    if (statusEl) {
+        const lines = results.map(r =>
+            r.success
+                ? `<div>✅ <strong>${r.name || r.dir}</strong>: ${r.chunks} chunks</div>`
+                : `<div>❌ <strong>${r.dir}</strong>: ${r.error}</div>`
+        ).join('');
+        statusEl.innerHTML = `<div class="alert ${results.every(r => r.success) ? 'alert-success' : 'alert-warning'} p-2">${lines}</div>`;
+    }
+
+    if (results.some(r => r.success)) { ragLoadProfiles(); refreshRAGStatus(); }
+    if (buildBtn) buildBtn.disabled = false;
 }
 
 // ── Поиск ─────────────────────────────────────────────────────────────────────
@@ -300,25 +332,6 @@ export async function clearRAGChunks() {
         if (data.success) refreshRAGStatus();
     } catch (e) {
         showAlert(`❌ ${e.message}`, 'danger');
-    }
-}
-
-/**
- * Handles native directory picker input — extracts the directory path
- * from the first selected file and populates #rag-selected-dir.
- * @param {HTMLInputElement} input
- */
-export function ragOnDirSelected(input) {
-    if (!input.files?.length) return;
-    // webkitRelativePath is "dirName/file.ext" — take the root folder name
-    const relativePath = input.files[0].webkitRelativePath || '';
-    const dirName = relativePath.split('/')[0];
-    const dirInput = document.getElementById('rag-selected-dir');
-    if (dirInput) dirInput.value = dirName;
-    const status = document.getElementById('rag-dir-status');
-    if (status) {
-        status.style.display = '';
-        status.innerHTML = `<div class="alert alert-success p-2 mb-0 small">✅ Selected: <strong>${dirName}</strong> (${input.files.length} files)</div>`;
     }
 }
 

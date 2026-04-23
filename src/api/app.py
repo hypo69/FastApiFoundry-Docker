@@ -148,6 +148,8 @@ def create_app() -> FastAPI:
     from .endpoints.converter import router as converter_router
     from .endpoints.ai_endpoints import router as ai_router
     from .endpoints.system_stats import router as system_stats_router
+    from .endpoints.support import router as support_router
+    from .endpoints.helpdesk import router as helpdesk_router
 
     app.include_router(main.router)
     app.include_router(health.router, prefix="/api/v1")
@@ -169,5 +171,7 @@ def create_app() -> FastAPI:
     app.include_router(agent_router, prefix="/api/v1")
     app.include_router(converter_router, prefix="/api/v1")
     app.include_router(system_stats_router, prefix="/api/v1")
+    app.include_router(support_router, prefix="/api/v1")
+    app.include_router(helpdesk_router, prefix="/api/v1")
     
     return app
