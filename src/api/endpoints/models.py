@@ -1,24 +1,23 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Process Name: Models Management Endpoints (Refactored)
+# Process Name: Models Management Endpoints
 # =============================================================================
 # Description:
-#   API endpoints for managing AI models
-#   Getting the list of available and connected models via Foundry
+#   GET /api/v1/models          — all available models (Foundry + llama.cpp)
+#   GET /api/v1/models/connected — connected models with provider metadata
 #
 # Examples:
 #   >>> import requests
-#   >>> response = requests.get('http://localhost:9696/api/v1/models')
-#   >>> models = response.json()['models']
-#   >>> print(f"Available models: {len(models)}")
+#   >>> models = requests.get('http://localhost:9696/api/v1/models').json()['models']
+#   >>> print(len(models))
 #
 # File: models.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.3.3
+# Version: 0.6.1
+# Changes in 0.6.1:
+#   - Updated version to match project
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
-# Date: December 9, 2025
 # =============================================================================
 
 from fastapi import APIRouter

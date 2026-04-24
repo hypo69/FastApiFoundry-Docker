@@ -16,6 +16,7 @@
 | `service-status.ps1` | Проверка статуса Foundry и FastAPI сервисов |
 | `build_exes.ps1` | Сборка `install.exe` и `launcher.exe` из PowerShell скриптов |
 | `restart-mkdocs.ps1` | Перезапуск сервера документации MkDocs |
+| `create_requirements.ps1` | Генерация `requirements.txt` (режимы: `freeze`, `pipreqs`, `clean`) |
 
 ## Использование
 
@@ -34,6 +35,15 @@
 
 # Перезапустить сервер документации
 .\scripts\restart-mkdocs.ps1
+
+# Создать requirements.txt из импортов в коде
+.\scripts\create_requirements.ps1 -Mode pipreqs
+
+# Создать requirements.txt из текущего venv
+.\scripts\create_requirements.ps1 -Mode freeze
+
+# Пересоздать venv с нуля
+.\scripts\create_requirements.ps1 -Mode clean
 ```
 
 ## Правила

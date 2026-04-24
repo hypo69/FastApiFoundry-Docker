@@ -1,4 +1,61 @@
-# Утилиты (`src/utils`)
+# Утилиты
+
+Проект содержит два уровня утилит:
+
+- **`src/utils/`** — внутренние модули, используемые компонентами FastAPI Foundry (логирование, перевод, конфигурация)
+- **`utils/`** — standalone-утилиты командной строки для управления, диагностики и обслуживания системы
+
+---
+
+## `utils/` — Standalone утилиты
+
+| Файл | Назначение |
+|---|---|
+| `ai_model_scanner.py` | Сканирование AI моделей в системе (Foundry, Ollama, HuggingFace) |
+| `foundry_model_finder.py` | Поиск и анализ доступных Foundry моделей |
+| `port_manager.py` | Управление портами: поиск свободных, остановка процессов |
+| `generate-ssl.py` | Генерация самоподписанных SSL сертификатов |
+| `pc_component_processor.py` | Обработка и фильтрация JSON данных о компонентах ПК |
+
+### Использование
+
+```bash
+# Сканирование AI моделей
+python utils/ai_model_scanner.py
+
+# Поиск свободного порта
+python utils/port_manager.py --find-free
+
+# Остановка процесса на порту
+python utils/port_manager.py --kill-port 8000
+
+# Генерация SSL сертификата
+python utils/generate-ssl.py --domain localhost --days 365
+```
+
+### `pc_component_processor.py`
+
+Обрабатывает JSON данные о компонентах ПК: классифицирует типы сборок, фильтрует запрещённые бренды, нормализует структуру.
+
+```python
+from utils.pc_component_processor import PCComponentProcessor
+
+processor = PCComponentProcessor()
+result = processor.execute("path/to/components.json")
+# {"components": [{"name": "...", ...}, ...]}
+```
+
+**Класс `PCComponentProcessor`:**
+
+| Метод | Описание |
+|---|---|
+| `execute(data_path)` | Запускает обработку JSON файла, возвращает нормализованный dict |
+| `_process_items(data)` | Внутренняя обработка: фильтрация брендов, распаковка сборок |
+| `_filter_brands(text)` | Удаляет упоминания запрещённых брендов из строки |
+
+---
+
+## `src/utils/` — Внутренние модули
 
 Вспомогательные модули, используемые всеми компонентами FastAPI Foundry.
 

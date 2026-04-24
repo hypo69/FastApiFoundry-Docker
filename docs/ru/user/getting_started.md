@@ -2,21 +2,20 @@
 
 ## Первый запуск — установка + старт
 
-Если `venv\` ещё не создан, `start.ps1` автоматически запустит `install.ps1`.
-`install.ps1` после установки базовых пакетов откроет браузер с GUI-установщиком на **http://localhost:9698**.
-
-После завершения установки в браузере — запустите сервер:
-
 ```powershell
+# Первая установка
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+
+# Запуск сервера
 powershell -ExecutionPolicy Bypass -File .\start.ps1
 ```
 
 После запуска веб-интерфейс доступен по адресу **http://localhost:9696**
 
-!!! tip "Только установка (без запуска сервера)"
-    ```powershell
-    powershell -ExecutionPolicy Bypass -File .\install.ps1
-    ```
+!!! tip "Первая установка через install.bat"
+    Двойной клик по `install.bat` — автоматически найдёт или установит PowerShell 7,
+    затем запустит `install.ps1`.
+
     Подробнее: [Установка](installation.md)
 
 ---
@@ -33,9 +32,8 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
     3. **Foundry AI** — ищет запущенный Foundry, при необходимости запускает его
     4. **Документация** — опционально собирает и запускает локальный сервер MkDocs
     5. **llama.cpp** — опционально запускает локальный inference сервер
-    6. **Installer** — останавливает GUI-установщик (если ещё работает)
-    7. **Очистка** — останавливает предыдущий экземпляр FastAPI (если был)
-    8. **Запуск** — стартует FastAPI сервер, открывается http://localhost:9696
+    6. **Очистка** — останавливает предыдущий экземпляр FastAPI (если был)
+    7. **Запуск** — стартует FastAPI сервер, открывается http://localhost:9696
 
 === "Для разработчика"
 
@@ -71,10 +69,7 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
       │      └─ true → scripts\llama-start.ps1 -ModelPath ... -Port ...
       │                 → LLAMA_BASE_URL=http://127.0.0.1:<port>/v1
       │
-      ├─[6.5] %TEMP%\fastapi-foundry-installer.pid → Kill installer-сервер (если жив)
-      │        └─ удалить %TEMP%\fastapi-foundry-installer.pid
-      │
-      ├─[7] %TEMP%\fastapi-foundry.pid → Kill предыдущий процесс FastAPI
+      ├─[6] %TEMP%\fastapi-foundry.pid → Kill предыдущий процесс FastAPI
       │
       └─[8] Start-Process $venvPath run.py  ← блокирует до завершения
              └─ PID сохраняется в %TEMP%\fastapi-foundry.pid
@@ -228,33 +223,7 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
         Поле `bin_version` обновляется автоматически при установке новой версии.
         Чтобы добавить новую версию — положите zip в `bin/` и перезапустите `start.ps1`.
 
-??? note "Этап 6.5 — Остановка installer-сервера"
-
-    При первой установке `install.ps1` запускает `install/server.py` — временный
-    FastAPI-сервер с GUI-установщиком на порту 9698. Сервер записывает свой PID
-    в `%TEMP%\fastapi-foundry-installer.pid`.
-
-    `start.ps1` проверяет этот файл и завершает процесс если он ещё жив:
-
-    ```powershell
-    $InstallerPidFile = Join-Path $env:TEMP 'fastapi-foundry-installer.pid'
-    if (Test-Path $InstallerPidFile) {
-        $installerPid = Get-Content $InstallerPidFile
-        Get-Process -Id $installerPid | Kill()   # игнорирует ошибку если уже завершён
-        Remove-Item $InstallerPidFile
-    }
-    ```
-
-    Installer-сервер также завершается сам при нажатии **Finish** в браузере
-    (UI вызывает `POST /api/shutdown` → сервер удаляет PID-файл и посылает `SIGTERM`).
-
-    | Сценарий | Что происходит |
-    |---|---|
-    | Пользователь нажал Finish | Сервер завершается сам, PID-файл удаляется |
-    | Пользователь закрыл браузер | Сервер продолжает работать до `start.ps1` |
-    | Перезагрузка ПК | PID-файл остался, `start.ps1` пробует Kill (процесс мёртв — игнорирует) |
-
-??? note "Этап 7 — Остановка предыдущего экземпляра FastAPI"
+??? note "Этап 6 — Остановка предыдущего экземпляра FastAPI"
 
     PID запущенного FastAPI сохраняется в `%TEMP%\fastapi-foundry.pid`.
     При следующем запуске `start.ps1` читает этот файл и завершает старый процесс
@@ -301,6 +270,33 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 
 ---
 
+## Остановка системы
+
+### Остановить FastAPI сервер
+
+```powershell
+# Через stop.py (рекомендуется)
+venv\Scripts\python.exe stop.py
+
+# Или через stop_precise.py — точечная остановка по PID
+venv\Scripts\python.exe stop_precise.py
+```
+
+### Остановить все сервисы
+
+| Сервис | Команда |
+|---|---|
+| **FastAPI** | `venv\Scripts\python.exe stop.py` |
+| **llama.cpp** | `python utils/port_manager.py --kill-port 9780` |
+| **MkDocs** | `python utils/port_manager.py --kill-port 9697` |
+| **Foundry** | `foundry service stop` |
+
+!!! warning "Foundry останавливается отдельно"
+    `stop.py` не трогает Foundry — это внешний системный сервис Microsoft.
+    Для его остановки используйте `foundry service stop` в терминале.
+
+---
+
 ## Повторный запуск (restart)
 
 Команда та же самая:
@@ -313,7 +309,6 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 
 | Сервис | Уже запущен? | Действие |
 |---|---|---|
-| **Installer** (порт 9698) | жив | убивает по `%TEMP%/fastapi-foundry-installer.pid` → удаляет файл |
 | **FastAPI** (порт 9696) | да | убивает по `%TEMP%/fastapi-foundry.pid` → запускает новый |
 | **MkDocs** (порт 9697) | да | убивает по порту → `mkdocs build` → `mkdocs serve` |
 | **llama.cpp** (порт 9780) | да | убивает по порту → запускает новый |
@@ -399,6 +394,181 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 | `level`, `file` | `logging` | Уровень и файл логов |
 
 ---
+
+# Консоль
+### Детальный разбор вывода консоли при старте системы
+
+При запуске `start.ps1` система проходит через несколько этапов подготовки окружения и запуска вспомогательных сервисов. Ниже приведен детальный разбор каждой строки лога.
+
+```
+(venv) PS D:\repos\public_repositories\FastApiFoundry-Docker> ./start
+🚀 FastAPI Foundry Smart Launcher - Запуск
+============================================================
+🔄 Проверка обновлений...
+   Текущая версия : v0.6.0
+   Последний тег  : v0.5.0
+✅ Версия актуальна (v0.5.0)
+✅ venv активирован
+⚙️ Loading .env variables...
+  ✓ TELEGRAM_ADMIN_TOKEN = ***
+  ✓ TELEGRAM_ADMIN_IDS =
+  ✓ TELEGRAM_HELPDESK_TOKEN = ***
+  ✓ GITHUB_PAT = ***
+  ✓ API_KEY = ***
+  ✓ SECRET_KEY = ***
+  ✓ OPENAI_API_KEY = ***
+  ✓ ANTHROPIC_API_KEY = ***
+  ✓ HF_TOKEN = ***
+  ✓ GEMINI_API_KEY = ***
+  ✓ FOUNDRY_API_KEY = ***
+  ✓ LLAMA_SERVER_PATH = ***
+✅ Environment variables loaded: 12
+🔍 Local Foundry check...
+✅ API Foundry найден на порту 62376
+✅ Foundry уже запущен на порту 62376
+🔗 FOUNDRY_BASE_URL = http://localhost:62376/v1/
+🔍 Проверка конфигурации сервера документации...
+✅ Предыдущий MkDocs (PID: 32492) остановлен
+📚 Сборка документации MkDocs...
+
+ │  ⚠  Warning from the Material for MkDocs team
+ │
+ │  MkDocs 2.0, the underlying framework of Material for MkDocs,
+ │  will introduce backward-incompatible changes, including:
+ │
+ │  × All plugins will stop working – the plugin system has been removed
+ │  × All theme overrides will break – the theming system has been rewritten
+ │  × No migration path exists – existing projects cannot be upgraded
+ │  × Closed contribution model – community members can't report bugs
+ │  × Currently unlicensed – unsuitable for production use
+ │
+ │  Our full analysis:
+ │
+ │  https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/
+
+✅ Документация собрана
+🚀 Запуск сервера MkDocs на порту 9697...
+✅ Сервер MkDocs запущен на http://localhost:9697 (PID: 24992)
+📦 Extracting llama-b8802-bin-win-cpu-x64.zip → bin/llama-b8802-bin-win-cpu-x64/ ...
+✅ Extracted: D:\repos\public_repositories\FastApiFoundry-Docker\bin\llama-b8802-bin-win-cpu-x64
+⚠️  Could not update config.json: Exception setting "bin_version": "The property 'bin_version' cannot be found on this object. Verify that the property exists and can be set."
+💡 llama.cpp: no model_path set in config.json (skipping)
+🐍 FastAPI server launch...
+🔗 FOUNDRY_DYNAMIC_PORT = 62376
+🌐 FastAPI Foundry starting...
+📱 Веб-интерфейс будет доступен по адресу: http://localhost:9696
+============================================================
+💾 PID 8000 сохранён в C:\Users\onela\AppData\Local\Temp\fastapi-foundry.pid
+INFO:     Will watch for changes in these directories: ['D:\\repos\\public_repositories\\FastApiFoundry-Docker']
+INFO:     Uvicorn running on http://0.0.0.0:9696 (Press CTRL+C to quit)
+INFO:     Started reloader process [21740] using WatchFiles
+INFO:     Started server process [26552]
+INFO:     Waiting for application startup.
+12:18:08 | WARNING | fastapi-foundry | ⚠️ RAG index not found at C:\Users\onela\.rag\faiss.index, skipping load
+⚠️ RAG system not initialized
+INFO:     Application startup complete.
+
+════════════════════════════════════════════════════════════
+  ✅  FastAPI Foundry — startup complete
+  🌐  http://localhost:9696
+════════════════════════════════════════════════════════════
+
+INFO:     127.0.0.1:51455 - "GET /api/v1/system/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51455 - "GET /api/v1/hf/models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51455 - "GET /api/v1/hf/models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51454 - "GET /api/v1/foundry/models/loaded HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51455 - "GET /api/v1/foundry/models/loaded HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51460 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51456 - "GET /api/v1/llama/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51455 - "GET /api/v1/llama/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51455 - "GET /api/v1/system/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51460 - "GET /api/v1/hf/models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51455 - "GET /api/v1/foundry/models/loaded HTTP/1.1" 200 OK
+```
+
+#### 1. Инициализация и проверка обновлений
+*   **`(venv) PS D:\repos\public_repositories\FastApiFoundry-Docker> ./start`**: Это команда, которую вы вводите для запуска системы. `(venv)` указывает на то, что активировано виртуальное окружение Python, а `PS D:\repos\public_repositories\FastApiFoundry-Docker>` — это текущий рабочий каталог в PowerShell.
+*   **`🚀 FastAPI Foundry Smart Launcher - Запуск`**: Приветственное сообщение скрипта-оркестратора `start.ps1`.
+*   **`============================================================`**: Декоративная разделительная линия.
+*   **`🔄 Проверка обновлений...`**: Запуск скрипта `Update-Project.ps1`. Он проверяет локальную версию в файле `VERSION` и сравнивает её с последними тегами (tags) в Git-репозитории.
+*   **`Текущая версия : v0.6.0` / `Последний тег : v0.5.0`**: Информационные строки, показывающие состояние вашего кода относительно репозитория.
+*   **`✅ Версия актуальна (v0.5.0)`**: Подтверждение того, что обновление не требуется.
+
+#### 2. Подготовка окружения Python
+*   **`✅ venv активирован`**: Скрипт успешно нашел и активировал виртуальное окружение Python в папке `venv`.
+*   **`⚙️ Loading .env variables...`**: Начало процесса чтения файла `.env`.
+*   **`✓ VARIABLE_NAME = ***`**: Успешная загрузка переменной окружения. Значения чувствительных данных (токены, ключи) маскируются символами `***` для безопасности.
+*   **`✅ Environment variables loaded: 12`**: Резюме — общее количество загруженных настроек из файла `.env`.
+
+#### 3. Обнаружение AI-бэкенда (Foundry Local)
+*   **`🔍 Local Foundry check...`**: Система ищет запущенный процесс `Inference.Service.Agent` (Microsoft Foundry Local).
+*   **`✅ API Foundry найден на порту 62376`**: Скрипт просканировал открытые порты процесса и нашел тот, который отвечает на запросы к API.
+*   **`✅ Foundry уже запущен на порту 62376`**: Подтверждение, что сервис активен и не требует повторного запуска.
+*   **`🔗 FOUNDRY_BASE_URL = http://localhost:62376/v1/`**: Динамический URL, который будет использоваться FastAPI сервером для связи с моделями.
+
+#### 4. Сервер документации (MkDocs)
+*   **`🔍 Проверка конфигурации сервера документации...`**: Чтение секции `docs_server` из `config.json`.
+*   **`✅ Предыдущий MkDocs (PID: 32492) остановлен`**: Если порт документации (9697) был занят, скрипт завершил старый процесс, чтобы избежать конфликтов.
+*   **`📚 Сборка документации MkDocs...`**: Запуск генерации статических HTML-страниц из Markdown-файлов папки `docs/`.
+*   **Баннер предупреждения от Material for MkDocs:**
+    ```
+     │  ⚠  Warning from the Material for MkDocs team
+     │
+     │  MkDocs 2.0, the underlying framework of Material for MkDocs,
+     │  will introduce backward-incompatible changes, including:
+     │
+     │  × All plugins will stop working – the plugin system has been removed
+     │  × All theme overrides will break – the theming system has been rewritten
+     │  × No migration path exists – existing projects cannot be upgraded
+     │  × Closed contribution model – community members can't report bugs
+     │  × Currently unlicensed – unsuitable for production use
+     │
+     │  Our full analysis:
+     │
+     │  https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/
+    ```
+    *   **Пояснение к предупреждению MkDocs:** Это сообщение является сатирическим баннером от разработчика темы Material for MkDocs (squidfunk). Оно не означает, что MkDocs 2.0 с такими радикальными изменениями действительно существует или планируется к выпуску в ближайшее время. Цель этого предупреждения — привлечь внимание к проблемам и медленному развитию основного фреймворка MkDocs, а также выразить обеспокоенность по поводу потенциальных будущих проблем с обратной совместимостью, если эти вопросы не будут решены. Это не влияет на текущую работу вашей документации с Material for MkDocs.
+    *   **Как подавить этот баннер:** Чтобы скрыть это предупреждение, вы можете установить переменную окружения `NO_MKDOCS_2_WARNING` со значением `1` перед запуском скрипта. Например, в PowerShell:
+        ```powershell
+        $env:NO_MKDOCS_2_WARNING = "1"
+        ./start
+        ```
+*   **`✅ Документация собрана`**: Процесс генерации файлов успешно завершен.
+*   **`🚀 Запуск сервера MkDocs на порту 9697...`**: Запуск локального веб-сервера для просмотра документации.
+*   **`✅ Сервер MkDocs запущен на http://localhost:9697 (PID: 24992)`**: Подтверждение запуска с указанием идентификатора процесса.
+
+#### 5. Локальный инференс (llama.cpp)
+*   **`📦 Extracting llama-b8802-bin-win-cpu-x64.zip → bin/llama-b8802-bin-win-cpu-x64/ ...`**: Скрипт обнаружил новый архив с бинарными файлами llama.cpp и автоматически распаковывает его для актуализации версии.
+*   **`✅ Extracted: D:\repos\public_repositories\FastApiFoundry-Docker\bin\llama-b8802-bin-win-cpu-x64`**: Подтверждение успешной распаковки бинарных файлов.
+*   **`⚠️ Could not update config.json: Exception setting "bin_version": "The property 'bin_version' cannot be found on this object. Verify that the property exists and can be set."`**: Системное предупреждение о том, что скрипту не удалось автоматически прописать версию бинарника в `config.json` (обычно из-за отсутствия нужного свойства в объекте конфигурации). Не критично.
+*   **`💡 llama.cpp: no model_path set in config.json (skipping)`**: Скрипт не нашел путь к модели GGUF в настройках, поэтому пропустил запуск сервера `llama-server`.
+
+#### 6. Запуск основного сервера FastAPI
+*   **`🐍 FastAPI server launch...`**: Переход к финальному этапу — запуску приложения на Python.
+*   **`🔗 FOUNDRY_DYNAMIC_PORT = 62376`**: Передача найденного порта Foundry в процесс Python.
+*   **`🌐 FastAPI Foundry starting...`**: Старт приложения `run.py`.
+*   **`📱 Веб-интерфейс будет доступен по адресу: http://localhost:9696`**: Информационное сообщение о том, по какому адресу будет доступен веб-интерфейс приложения.
+*   **`============================================================`**: Декоративная разделительная линия.
+*   **`💾 PID 8000 сохранён в C:\Users\onela\AppData\Local\Temp\fastapi-foundry.pid`**: Идентификатор процесса FastAPI записан во временный файл. Это нужно, чтобы при следующем запуске скрипт мог корректно остановить сервер.
+*   **`INFO: Will watch for changes in these directories: ['D:\\repos\\public_repositories\\FastApiFoundry-Docker']`**: Сообщение от Uvicorn (движка сервера). В режиме `dev` система следит за изменениями в коде и автоматически перезагружается при сохранении файлов.
+*   **`INFO: Uvicorn running on http://0.0.0.0:9696 (Press CTRL+C to quit)`**: Основное сообщение от Uvicorn, подтверждающее, что сервер запущен и доступен по указанному адресу.
+*   **`INFO: Started reloader process [21740] using WatchFiles` / `INFO: Started server process [26552]`**: Запуск управляющего процесса и рабочего процесса сервера.
+
+#### 7. Инициализация приложения (Lifespan)
+*   **`INFO: Waiting for application startup.`**: Uvicorn ожидает завершения инициализации приложения FastAPI.
+*   **`12:18:08 | WARNING | fastapi-foundry | ⚠️ RAG index not found at C:\Users\onela\.rag\faiss.index, skipping load`**: Система RAG (поиск по документам) попыталась загрузить индекс, но не нашла его по стандартному пути.
+*   **`⚠️ RAG system not initialized`**: Предупреждение о том, что поиск по знаниям (RAG) пока недоступен (нужно собрать индекс во вкладке RAG).
+*   **`INFO: Application startup complete.`**: Сервер полностью готов к работе.
+*   **`════════════════════════════════════════════════════════════`**
+    **`✅ FastAPI Foundry — startup complete`**
+    **`🌐 http://localhost:9696`**
+    **`════════════════════════════════════════════════════════════`**: Финальный баннер, подтверждающий успешный запуск.
+
+#### 8. Логи запросов (Runtime)
+*   **`INFO: 127.0.0.1:51455 - "GET /api/v1/system/stats HTTP/1.1" 200 OK`**: Это логи в реальном времени. В данном случае мы видим, как фронтенд (веб-интерфейс) после открытия страницы начал опрашивать API для получения статистики системы, списка моделей и статуса сервисов. `200 OK` означает, что запрос был успешно обработан.
+
+---
+
 
 ## Что дальше
 

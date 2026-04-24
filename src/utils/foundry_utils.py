@@ -35,11 +35,18 @@ logger = logging.getLogger(__name__)
 # Known ports often used by Foundry or local LLM proxies
 _KNOWN_PORTS = [52632, 62171, 50477, 58130]
 
-# Default cache location
-FOUNDRY_CACHE_DIR = Path(os.getenv(
-    "FOUNDRY_CACHE_DIR",
-    os.path.expanduser(r"~\.foundry\cache\models\Microsoft")
-))
+# Default cache location — reads from config.json (foundry_ai.models_dir) with env override
+def _get_foundry_cache_dir() -> Path:
+    env_override = os.getenv("FOUNDRY_CACHE_DIR", "")
+    if env_override:
+        return Path(env_override)
+    try:
+        from config_manager import config as _cfg
+        return Path(_cfg.foundry_models_dir)
+    except Exception:
+        return Path(os.path.expanduser(r"~\.foundry\cache\models"))
+
+FOUNDRY_CACHE_DIR = _get_foundry_cache_dir()
 
 def test_foundry_port(port: int) -> bool:
     """Check whether Foundry is responding on the given port.

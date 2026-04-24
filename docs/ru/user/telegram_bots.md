@@ -6,15 +6,17 @@ FastAPI Foundry включает два Telegram бота с разными ро
 
 ```
 telegram/
-├── __init__.py        # Запуск обоих ботов через asyncio.gather
-├── admin_bot.py       # Admin Bot — мониторинг и управление
-└── helpdesk_bot.py    # HelpDesk Bot — поддержка клиентов
+├── __init__.py        # start_all_bots() — asyncio.gather обоих ботов
+├── admin_bot.py       # class AdminBot
+└── helpdesk_bot.py    # class HelpdeskBot + вспомогательные функции
 ```
 
 ```
-Клиент → HelpDesk Bot → RAG (профиль "support") → AI модель → ответ
+Клиент → HelpDesk Bot → RAG (профиль "support") → /api/v1/ai/generate → ответ
 Админ  → Admin Bot   → Foundry / логи / система
 ```
+
+Модуль живёт в корне проекта и импортирует `config_manager.config` напрямую (не через `src.core.config`), что позволяет запускать его автономно без FastAPI.
 
 ---
 
@@ -38,16 +40,16 @@ TELEGRAM_ADMIN_IDS=123456789,987654321
 | Команда | Описание |
 |---|---|
 | `/status` | Статус Foundry: состояние, порт, PID |
-| `/stats` | График CPU / RAM / Disk |
+| `/stats` | График CPU / RAM / Disk (PNG через matplotlib) |
 | `/foundry_start` | Запустить Foundry сервис |
 | `/foundry_stop` | Остановить Foundry сервис |
 | `/logs` | Последние 5 ошибок из лога |
 | `/get_logs` | Скачать полный файл лога |
-| `/clear_logs` | Очистить лог (с подтверждением) |
+| `/clear_logs` | Очистить лог (с подтверждением Да/Нет) |
 | `/restart_server` | Перезапустить FastAPI сервер (с подтверждением) |
 | `/rag_rebuild` | Инициировать переиндексацию RAG |
-| `/rag_status` | Информация об активном RAG индексе |
-| `/rag_profiles` | Список RAG профилей с выбором |
+| `/rag_status` | Информация об активном RAG индексе (meta.json) |
+| `/rag_profiles` | Список RAG профилей с inline-кнопками выбора |
 
 ### Фоновый мониторинг
 
@@ -55,6 +57,8 @@ TELEGRAM_ADMIN_IDS=123456789,987654321
 
 - **Foundry статус** — при изменении на `failed` / `stopped` / `unknown` отправляет алерт
 - **Диск** — при заполнении > 95% отправляет алерт (один раз до нормализации)
+
+Мониторинг реализован через `CommandAgent.parse_foundry_status()`.
 
 ### Загрузка ZIP-архивов
 
@@ -97,16 +101,54 @@ TELEGRAM_HELPDESK_TOKEN=токен_от_BotFather
 
 ### Логика ответа
 
-1. Пользователь отправляет вопрос
-2. Бот ищет релевантный контекст в RAG профиле `support` (top-5 чанков)
-3. Контекст + вопрос + история диалога отправляются в активную AI модель
-4. Ответ возвращается пользователю
-5. Диалог сохраняется в `logs/helpdesk_dialogs.jsonl`
+```
+on_message(message)
+    │
+    ├─ _save(chat_id, username, "user", text)
+    │
+    ├─ _rag_search(question, profile)
+    │     └─ POST /api/v1/rag/search  →  top-5 чанков, берётся первые 3
+    │
+    ├─ _generate(chat_id, question, context)
+    │     ├─ строит messages[] с историей из _history[chat_id]
+    │     └─ POST /api/v1/ai/generate  →  ответ модели
+    │
+    ├─ _save(chat_id, username, "assistant", answer)
+    ├─ _update_history(chat_id, question, answer)
+    └─ bot.reply_to(message, answer)  # разбивает на чанки по 4000 символов
+```
 
-### Многоходовые диалоги
+### История диалогов `_history`
 
-Бот хранит последние 6 ходов диалога в памяти (per `chat_id`).  
-Команда `/new` сбрасывает историю.
+Глобальный словарь `dict[int, list[dict]]` в памяти процесса.  
+Хранит последние `_MAX_HISTORY_TURNS = 6` ходов (12 сообщений).  
+Сбрасывается командой `/new` или перезапуском процесса.
+
+### Персистентность диалогов
+
+Каждое сообщение дописывается в `logs/helpdesk_dialogs.jsonl`:
+
+```json
+{"chat_id": 123, "username": "user", "role": "user", "text": "...", "ts": "2025-..."}
+{"chat_id": 123, "username": "user", "role": "assistant", "text": "...", "ts": "2025-..."}
+```
+
+Файл читается API эндпоинтом `GET /api/v1/helpdesk/dialogs` для веб-интерфейса.
+
+---
+
+## HelpDesk API Endpoints
+
+**Файл:** `src/api/endpoints/helpdesk.py`  
+**Prefix:** `/api/v1/helpdesk`
+
+| Метод | Путь | Описание |
+|---|---|---|
+| `GET` | `/helpdesk/dialogs` | Диалоги сгруппированные по `chat_id` |
+| `GET` | `/helpdesk/rag-profiles` | Список RAG профилей |
+| `POST` | `/helpdesk/rag-profiles` | Создать профиль `{name, description}` |
+| `DELETE` | `/helpdesk/rag-profiles/{name}` | Soft-delete профиля |
+| `GET` | `/helpdesk/config` | Статус бота и активный RAG профиль |
 
 ---
 
@@ -120,7 +162,7 @@ POST /api/v1/helpdesk/rag-profiles
 {"name": "support", "description": "Project documentation"}
 
 POST /api/v1/rag/build
-{"docs_dir": "./docs", "profile": "support"}
+{"docs_dir": "./docs"}
 ```
 
 Или через веб-интерфейс: таб **Support** → раздел **RAG Profiles** → **Create Profile**.
@@ -131,7 +173,7 @@ POST /api/v1/rag/build
 
 ### Вместе с FastAPI сервером
 
-Добавьте в `run.py`:
+Боты запускаются автоматически из `run.py` при наличии токенов:
 
 ```python
 from telegram import start_all_bots

@@ -14,12 +14,11 @@
 #
 # File: install.ps1
 # Project: FastApiFoundry (Docker)
-# Version: 0.6.0
-# Changes in 0.6.0:
-#   - Added Tesseract OCR installation step (step 5)
-#   - Added -SkipTesseract flag
-#   - Updated version and header format
-#   - Added -NoGui flag to skip web installer
+# Version: 0.6.1
+# Changes in 0.6.1:
+#   - Removed GUI installer (install/server.py + install/static/)
+#   - Removed -NoGui flag (all installation is now terminal-only)
+#   - Removed step 3.5 (web installer launch)
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
@@ -31,13 +30,18 @@ param(
     [switch]$SkipRag,
     # Skip Tesseract OCR installation
     [switch]$SkipTesseract
-    # Skip Web GUI Installer (Console mode only)
-    [switch]$NoGui
 )
 
 # Обоснование остановки при ошибках: предотвращение некорректной настройки системы при сбое на промежуточном этапе.
 $ErrorActionPreference = "Stop"
 $Root = $PSScriptRoot
+
+# --- 0. Проверка версии PowerShell ---
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Host "[ERROR] Требуется PowerShell 7+. Текущая версия: $($PSVersionTable.PSVersion)" -ForegroundColor Red
+    Write-Host "        Запустите установщик через install.bat или скачайте PS7: https://aka.ms/powershell" -ForegroundColor Cyan
+    exit 1
+}
 
 Write-Host "FastAPI Foundry - Установка системы" -ForegroundColor Green
 Write-Host ("=" * 50)
@@ -107,16 +111,37 @@ Write-Host "`nСоздание виртуального окружения..." -
 $venvPath = Join-Path $Root "venv"
 
 if ((Test-Path $venvPath) -and $Force) {
-    # Удаление старого окружения при использовании флага Force.
+    # Delete old venv when -Force flag is set
     Remove-Item $venvPath -Recurse -Force
     Write-Host "  Старое окружение venv удалено" -ForegroundColor Gray
+} elseif (Test-Path $venvPath) {
+    Write-Host "  venv уже существует." -ForegroundColor Yellow
+    $answer = Read-Host "  Очистить и переустановить? Текущий requirements.txt будет архивирован (y/N)"
+    if ($answer -eq 'y' -or $answer -eq 'Y') {
+        # Archive existing requirements.txt before regenerating
+        $reqFile = Join-Path $Root "requirements.txt"
+        if (Test-Path $reqFile) {
+            $stamp   = Get-Date -Format 'yyMMddHHmmss'
+            $archive = "${reqFile}_${stamp}"
+            Copy-Item $reqFile $archive
+            Write-Host "  Архив requirements.txt сохранён: $archive" -ForegroundColor Gray
+        }
+        # Regenerate requirements.txt from current venv before wiping it
+        $createScript = Join-Path $Root "scripts\create_requirements.ps1"
+        if (Test-Path $createScript) {
+            Write-Host "  Генерация нового requirements.txt (режим freeze)..." -ForegroundColor Yellow
+            & $createScript -Mode freeze -ProjectPath $Root -VenvPath $venvPath
+        }
+        Remove-Item $venvPath -Recurse -Force
+        Write-Host "  venv удалён" -ForegroundColor Gray
+    } else {
+        Write-Host "  Продолжение с существующим venv" -ForegroundColor Gray
+    }
 }
 
 if (-not (Test-Path $venvPath)) {
     & $pythonCmd -m venv $venvPath
-    Write-Host "  venv создан по пути: $venvPath" -ForegroundColor Green
-} else {
-    Write-Host "  venv уже существует (используйте -Force для пересоздания)" -ForegroundColor Gray
+    Write-Host "  venv создан: $venvPath" -ForegroundColor Green
 }
 
 $pip = Join-Path $venvPath "Scripts\pip.exe"
@@ -132,20 +157,6 @@ Write-Host "  pip обновлен до актуальной версии" -Fore
 Write-Host "`nУстановка библиотек из requirements.txt..." -ForegroundColor Yellow
 & $python -m pip install -r (Join-Path $Root "requirements.txt")
 Write-Host "  Основные зависимости установлены" -ForegroundColor Green
-
-# --- 3.5. Запуск интерактивного установщика (веб-интерфейс) ---
-# После установки базовых пакетов запускаем FastAPI installer UI на порту 9698.
-# Пользователь проходит оставшиеся шаги через браузер.
-$installerScript = Join-Path $Root "install\server.py"
-if (-not $NoGui -and (Test-Path $installerScript)) {
-    Write-Host "`n🌐 Запуск интерфейса установщика..." -ForegroundColor Cyan
-    Write-Host "   http://localhost:9698" -ForegroundColor Green
-    # Запускаем в текущем окне — блокирует до завершения установки
-    & $python $installerScript
-    Write-Host "`n✅ Установщик завершён" -ForegroundColor Green
-} else {
-    Write-Host "`n⚠️ install\server.py не найден — продолжение в консольном режиме" -ForegroundColor Yellow
-}
 
 # --- 4. RAG dependencies (sentence-transformers, faiss-cpu) ---
 if (-not $SkipRag) {

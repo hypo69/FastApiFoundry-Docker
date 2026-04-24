@@ -204,6 +204,23 @@ class Config:
         """Deprecated: use telegram_helpdesk_rag_profile."""
         return self.telegram_helpdesk_rag_profile
 
+    # ── Model Manager (LRU / TTL / RAM guard) ──────────────────────────────
+
+    @property
+    def model_manager_max_loaded(self) -> int:
+        """Max models loaded in Foundry simultaneously before LRU eviction."""
+        return self._config_data.get('model_manager', {}).get('max_loaded_models', 1)
+
+    @property
+    def model_manager_ttl_seconds(self) -> int:
+        """Seconds of inactivity before a model is unloaded."""
+        return self._config_data.get('model_manager', {}).get('ttl_seconds', 600)
+
+    @property
+    def model_manager_max_ram_percent(self) -> float:
+        """RAM usage threshold (%) above which LRU eviction is triggered."""
+        return self._config_data.get('model_manager', {}).get('max_ram_percent', 80.0)
+
     # ── ИИ Foundry ────────────────────────────────────────────────────────
 
     @property
@@ -241,6 +258,22 @@ class Config:
     @property
     def foundry_top_k(self) -> int:
         return self._config_data.get('foundry_ai', {}).get('top_k', 50)
+
+    @property
+    def foundry_models_dir(self) -> str:
+        raw = self._config_data.get('foundry_ai', {}).get('models_dir') or '.foundry/cache/models'
+        return str(Path(raw).expanduser())
+
+    # ── llama.cpp ──────────────────────────────────────────────────────────────────────
+
+    @property
+    def llama_model_path(self) -> str:
+        return self._config_data.get('llama_cpp', {}).get('model_path', '')
+
+    @property
+    def llama_models_dir(self) -> str:
+        raw = self._config_data.get('llama_cpp', {}).get('models_dir') or '.models'
+        return str(Path(raw).expanduser())
 
     # ── Управление портами ────────────────────────────────────────────────
 

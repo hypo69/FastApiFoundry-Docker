@@ -67,7 +67,7 @@ on_message(message)
     ├─ _save(chat_id, username, "user", text)
     │
     ├─ _rag_search(question, profile)
-    │     └─ POST /api/v1/rag/search  →  top-3 чанка
+    │     └─ POST /api/v1/rag/search  →  top-5 чанков, берётся первые 3
     │
     ├─ _generate(chat_id, question, context)
     │     ├─ строит messages[] с историей из _history[chat_id]
@@ -75,7 +75,7 @@ on_message(message)
     │
     ├─ _save(chat_id, username, "assistant", answer)
     ├─ _update_history(chat_id, question, answer)
-    └─ bot.reply_to(message, answer)
+    └─ bot.reply_to(message, answer)  # разбивает на чанки по 4000 символов
 ```
 
 ### История диалогов `_history`

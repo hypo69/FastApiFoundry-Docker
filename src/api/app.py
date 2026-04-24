@@ -1,15 +1,22 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Process Name: FastAPI Application Factory (Refactored)
+# Process Name: FastAPI Application Factory
 # =============================================================================
 # Description:
-#   Simplified factory for creating the FastAPI application
+#   Creates and configures the FastAPI application instance.
+#   Manages lifespan (RAG init, Foundry auto-load, session cleanup).
+#   Registers all API routers under /api/v1 prefix.
+#   Mounts static files and configures CORS + request-logging middleware.
 #
 # File: app.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
+# Version: 0.6.1
+# Changes in 0.6.1:
+#   - Updated version to match project
+#   - Removed duplicate ai_router import (already imported via ai_endpoints)
+#   - Added support_router and helpdesk_router registration
+#   - Lifespan: skip auto-load for hf::/llama::/ollama:: prefixed models
 # Author: hypo69
-# Copyright: © 2026 hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
 
@@ -45,21 +52,26 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("⚠️ RAG system not initialized")
 
-    # Автозагрузка модели по умолчанию
+    # Auto-load default Foundry model on startup.
+    # NOTE: Foundry does NOT auto-load models from .foundry/cache/models at service start.
+    # Models are loaded on-demand (first inference request) or explicitly via `foundry model load`.
+    # We trigger an explicit load here so the model is warm before the first request.
     from ..core.config import config as app_config
     if app_config.foundry_auto_load_default and app_config.foundry_default_model:
-        import asyncio, subprocess
+        import subprocess
         model_id = app_config.foundry_default_model
-        # Модели в UI/чате имеют префиксы `hf::...` и `llama::...`, их нельзя пытаться загрузить в Foundry.
-        if str(model_id).startswith("hf::") or str(model_id).startswith("llama::") or str(model_id).startswith("ollama::"):
-            logger.info(f"Skip auto-loading non-Foundry default model in Foundry: {model_id}")
+        # Skip non-Foundry models (hf::, llama::, ollama:: are handled by their own backends)
+        if any(str(model_id).startswith(p) for p in ("hf::", "llama::", "ollama::")):
+            logger.info(f"Skip auto-loading non-Foundry model: {model_id}")
         else:
             try:
                 subprocess.Popen(
                     ["foundry", "model", "load", model_id],
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
                 )
-                logger.info(f"✅ Auto-loading default model: {model_id}")
+                logger.info(f"✅ Triggered Foundry model load: {model_id} (async, may take 10-60s)")
+            except FileNotFoundError:
+                logger.warning("⚠️ foundry CLI not found — skipping auto-load")
             except Exception as e:
                 logger.warning(f"⚠️ Could not auto-load model {model_id}: {e}")
 
@@ -85,8 +97,8 @@ def create_app() -> FastAPI:
     
     app = FastAPI(
         title="FastAPI Foundry",
-        description="REST API for local AI models via Foundry",
-        version="0.4.1",
+        description="REST API for local AI models (Foundry, HuggingFace, llama.cpp, Ollama) with RAG",
+        version="0.6.1",
         lifespan=lifespan
     )
     
@@ -134,8 +146,9 @@ def create_app() -> FastAPI:
             }
         )
     
-    # Connect main routers
-    from .endpoints import main, models, health, generate, foundry, config, logs, rag, ai_endpoints
+    # Connect all routers
+    from .endpoints import main, models, health, generate, foundry, config, logs, rag
+    from .endpoints.ai_endpoints import router as ai_router
     from .endpoints.chat_endpoints import router as chat_router
     from .endpoints.translator import router as translator_router
     from .endpoints.foundry_management import router as foundry_mgmt_router
@@ -146,10 +159,10 @@ def create_app() -> FastAPI:
     from .endpoints.mcp_powershell import router as mcp_ps_router
     from .endpoints.agent import router as agent_router
     from .endpoints.converter import router as converter_router
-    from .endpoints.ai_endpoints import router as ai_router
     from .endpoints.system_stats import router as system_stats_router
     from .endpoints.support import router as support_router
     from .endpoints.helpdesk import router as helpdesk_router
+    from .endpoints.mcp_agent_endpoints import router as mcp_agent_router
 
     app.include_router(main.router)
     app.include_router(health.router, prefix="/api/v1")
@@ -173,5 +186,6 @@ def create_app() -> FastAPI:
     app.include_router(system_stats_router, prefix="/api/v1")
     app.include_router(support_router, prefix="/api/v1")
     app.include_router(helpdesk_router, prefix="/api/v1")
+    app.include_router(mcp_agent_router, prefix="/api/v1")
     
     return app

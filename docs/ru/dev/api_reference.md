@@ -738,3 +738,44 @@ MCP сервер для подключения Claude Desktop и других MC
 Использование RAM и CPU (требует `psutil`).
 
 **Ответ:** `{"success": true, "ram_used_mb": 4096.0, "ram_total_mb": 16384.0, "cpu_pct": 12.5}`
+
+---
+
+## HelpDesk
+
+### `GET /helpdesk/dialogs`
+Диалоги HelpDesk бота, сгруппированные по `chat_id`.
+
+**Ответ:**
+```json
+{
+  "success": true,
+  "dialogs": {
+    "123456789": [
+      {"role": "user", "text": "Как запустить?", "ts": "2025-...", "username": "ivan"},
+      {"role": "assistant", "text": "Запустите start.ps1...", "ts": "2025-...", "username": "ivan"}
+    ]
+  }
+}
+```
+
+### `GET /helpdesk/rag-profiles`
+Список RAG профилей из `~/.rag/`.
+
+**Ответ:** `{"success": true, "profiles": [{"name": "support", "path": "...", "has_index": true, "description": "..."}]}`
+
+### `POST /helpdesk/rag-profiles`
+Создать новый RAG профиль.
+
+**Тело:** `{"name": "support", "description": "Project documentation"}`  
+**Ответ:** `{"success": true, "path": "C:/Users/user/.rag/support"}`
+
+### `DELETE /helpdesk/rag-profiles/{name}`
+Soft-delete профиля (переименование в `<name>~`).
+
+**Ответ:** `{"success": true, "error": null}`
+
+### `GET /helpdesk/config`
+Статус HelpDesk бота и активный RAG профиль.
+
+**Ответ:** `{"success": true, "enabled": true, "rag_profile": "support"}`

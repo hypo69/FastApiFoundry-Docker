@@ -15,10 +15,11 @@
 # Package: FastApiFoundry
 # Module: api.endpoints.rag
 # Version: 0.6.1
+# Changes in 0.6.1:
+#   - Updated version to match project
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # License: MIT
-# Date: 2025
 # =============================================================================
 
 import asyncio

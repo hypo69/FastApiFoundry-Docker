@@ -79,6 +79,55 @@
                                             <input class="form-check-input" type="checkbox" id="use-rag" checked>
                                             <label class="form-check-label" for="use-rag" data-i18n="chat.use_rag">Use RAG Context</label>
                                         </div>
+                                        <div class="form-check mb-1">
+                                            <input class="form-check-input" type="checkbox" id="translate-dialog" checked>
+                                            <label class="form-check-label" for="translate-dialog">Auto-translate dialog</label>
+                                        </div>
+                                        <div class="mb-2">
+                                            <select id="user-language" class="form-select form-select-sm">
+                                                <option value="">Auto-detect language</option>
+                                                <option value="en">English</option>
+                                                <option value="ru">Русский</option>
+                                                <option value="de">Deutsch</option>
+                                                <option value="fr">Français</option>
+                                                <option value="es">Español</option>
+                                                <option value="zh">中文</option>
+                                                <option value="ja">日本語</option>
+                                                <option value="ar">العربية</option>
+                                                <option value="he">עברית</option>
+                                                <option value="uk">Українська</option>
+                                                <option value="pl">Polski</option>
+                                                <option value="it">Italiano</option>
+                                                <option value="pt">Português</option>
+                                                <option value="ko">한국어</option>
+                                                <option value="tr">Türkçe</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-check mb-1">
+                                            <input class="form-check-input" type="checkbox" id="translate-dialog" checked>
+                                            <label class="form-check-label" for="translate-dialog" data-i18n="chat.translate_dialog">Auto-translate dialog</label>
+                                        </div>
+                                        <div class="mb-2" id="user-language-row">
+                                            <label class="form-label mb-1" style="font-size:.8rem" data-i18n="chat.user_language">Your language</label>
+                                            <select id="user-language" class="form-select form-select-sm">
+                                                <option value="" data-i18n="chat.lang_auto">Auto-detect</option>
+                                                <option value="en">English</option>
+                                                <option value="ru">Русский</option>
+                                                <option value="de">Deutsch</option>
+                                                <option value="fr">Français</option>
+                                                <option value="es">Español</option>
+                                                <option value="zh">中文</option>
+                                                <option value="ja">日本語</option>
+                                                <option value="ar">العربية</option>
+                                                <option value="he">עברית</option>
+                                                <option value="uk">Українська</option>
+                                                <option value="pl">Polski</option>
+                                                <option value="it">Italiano</option>
+                                                <option value="pt">Português</option>
+                                                <option value="ko">한국어</option>
+                                                <option value="tr">Türkçe</option>
+                                            </select>
+                                        </div>
                                     </div>
 
                                     <!-- Info block: how models work + CLI instructions -->

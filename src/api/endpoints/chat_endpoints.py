@@ -1,15 +1,27 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Chat Endpoints (Refactored)
+# Process Name: Chat Endpoints
 # =============================================================================
-# Описание:
-#   Упрощенные endpoints для интерактивного чата с AI моделями
+# Description:
+#   Session-based chat endpoints for interactive AI conversations.
+#   POST /api/v1/chat/start          — create new session (UUID)
+#   POST /api/v1/chat/message        — send message, get response
+#   POST /api/v1/chat/stream         — streaming message (SSE)
+#   GET  /api/v1/chat/history/{id}   — get session history
+#   DELETE /api/v1/chat/session/{id} — delete session
+#   POST /api/v1/chat/history/save   — persist history to disk
+#   GET  /api/v1/chat/models         — list available Foundry models
+#
+#   Sessions are stored in-memory (chat_sessions dict).
+#   Auto-translation: enabled via config translator.enabled.
 #
 # File: chat_endpoints.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
+# Version: 0.6.1
+# Changes in 0.6.1:
+#   - Updated version to match project
+#   - Added source_lang translation support in /chat/message
 # Author: hypo69
-# Copyright: © 2026 hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
 

@@ -1,15 +1,27 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Config Endpoints (Refactored)
+# Process Name: Config Endpoints
 # =============================================================================
-# Описание:
-#   Endpoint для получения конфигурации в веб-интерфейсе
+# Description:
+#   Read/write config.json and .env via REST API.
+#   GET/POST/PATCH /api/v1/config     — full config, save, partial update
+#   GET/POST /api/v1/config/raw       — raw config.json text (editor)
+#   GET/POST /api/v1/config/env-raw   — raw .env text (editor)
+#   POST /api/v1/config/env           — save single env variable
+#   GET/POST /api/v1/config/provider-keys — provider API keys in .env
+#   GET /api/v1/config/export         — full backup (config + env + MCP)
+#   POST /api/v1/config/import        — restore from backup
+#   GET/POST /api/v1/config/extension-export/import — browser extension sync
+#   GET /api/v1/config/provider-models/{provider} — proxy model list
 #
 # File: config.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
+# Version: 0.6.1
+# Changes in 0.6.1:
+#   - Updated version to match project
+#   - HF token sanitization on GET /config
+#   - PATCH /config supports dot-notation keys
 # Author: hypo69
-# Copyright: © 2026 hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
 

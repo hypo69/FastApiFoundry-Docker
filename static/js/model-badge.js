@@ -20,10 +20,7 @@ let _bannerTimer = null;
  */
 async function _fetchActiveModel() {
     const base = window.API_BASE;
-    const [health] = await Promise.allSettled([
-        fetch(`${base}/health`).then(r => r.json()),
-    ]);
-    const stats = await _sysStats(health);
+    const stats = await _sysStats();
 
     // Primary source: what the user selected in the chat dropdown
     const selectedModel = document.getElementById('chat-model')?.value || '';
@@ -73,16 +70,34 @@ async function _fetchActiveModel() {
     return null;
 }
 
-/** Extract RAM / CPU from health response (if psutil data present). */
-async function _sysStats(healthSettled) {
-    // health endpoint doesn't expose psutil yet — try /api/v1/system/stats if available
+/** Fetch system stats from /api/v1/system/stats. */
+async function _sysStats() {
     try {
         const s = await fetch(`${window.API_BASE}/system/stats`).then(r => r.json());
         if (s.success) {
-            return { ram_mb: s.ram_used_mb, ram_total_mb: s.ram_total_mb, cpu_pct: s.cpu_pct };
+            return {
+                ram_mb:       s.ram_used_mb,
+                ram_avail_mb: s.ram_available_mb,
+                ram_total_mb: s.ram_total_mb,
+                ram_pct:      s.ram_pct,
+                cpu_pct:      s.cpu_pct,
+                disk_used_gb: s.disk_used_gb,
+                disk_total_gb:s.disk_total_gb,
+                disk_pct:     s.disk_pct,
+                proc_ram_mb:  s.proc_ram_mb,
+                proc_cpu_pct: s.proc_cpu_pct,
+                proc_threads: s.proc_threads,
+                gpus:         s.gpus || [],
+            };
         }
     } catch (_) {}
-    return { ram_mb: null, ram_total_mb: null, cpu_pct: null };
+    return {
+        ram_mb: null, ram_avail_mb: null, ram_total_mb: null, ram_pct: null,
+        cpu_pct: null,
+        disk_used_gb: null, disk_total_gb: null, disk_pct: null,
+        proc_ram_mb: null, proc_cpu_pct: null, proc_threads: null,
+        gpus: [],
+    };
 }
 
 /** Look up model size from the Foundry available list (window._foundryModels cache). */
@@ -109,22 +124,46 @@ function _renderBanner(info) {
     const sizePart  = info.size  ? ` <span class="badge bg-secondary ms-1">${info.size}</span>` : '';
     const backendPart = `<span class="badge bg-primary ms-2">${info.backend}</span>`;
 
+    const fmt1 = v => v != null ? Number(v).toFixed(1) : null;
+    const pct   = v => v != null ? `${Number(v).toFixed(1)}%` : null;
+
     let statsPart = '';
+
     if (info.ram_mb != null) {
-        const ramGb = (info.ram_mb / 1024).toFixed(1);
-        const totalGb = info.ram_total_mb ? ` / ${(info.ram_total_mb / 1024).toFixed(1)} GB` : '';
-        statsPart += `<span class="active-model-stat"><i class="bi bi-memory me-1"></i>${ramGb}${totalGb} GB RAM</span>`;
+        const used  = (info.ram_mb / 1024).toFixed(1);
+        const total = info.ram_total_mb ? ` / ${(info.ram_total_mb / 1024).toFixed(1)}` : '';
+        const p     = info.ram_pct != null ? ` (${info.ram_pct.toFixed(0)}%)` : '';
+        statsPart += `<span class="active-model-stat"><i class="bi bi-memory me-1"></i>${used}${total} GB RAM${p}</span>`;
     }
+
     if (info.cpu_pct != null) {
-        statsPart += `<span class="active-model-stat ms-3"><i class="bi bi-speedometer2 me-1"></i>${info.cpu_pct.toFixed(1)}% CPU</span>`;
+        statsPart += `<span class="active-model-stat"><i class="bi bi-speedometer2 me-1"></i>${pct(info.cpu_pct)} CPU</span>`;
     }
+
+    if (info.disk_used_gb != null) {
+        const total = info.disk_total_gb ? ` / ${info.disk_total_gb.toFixed(0)}` : '';
+        const p     = info.disk_pct != null ? ` (${info.disk_pct.toFixed(0)}%)` : '';
+        statsPart += `<span class="active-model-stat"><i class="bi bi-hdd me-1"></i>${info.disk_used_gb.toFixed(1)}${total} GB${p}</span>`;
+    }
+
+    if (info.proc_ram_mb != null) {
+        statsPart += `<span class="active-model-stat"><i class="bi bi-box me-1"></i>${(info.proc_ram_mb / 1024).toFixed(2)} GB proc</span>`;
+    }
+
+    (info.gpus || []).forEach(g => {
+        const used  = (g.ram_used_mb / 1024).toFixed(1);
+        const total = g.ram_total_mb ? ` / ${(g.ram_total_mb / 1024).toFixed(1)}` : '';
+        const p     = g.ram_pct != null ? ` (${g.ram_pct.toFixed(0)}%)` : '';
+        const util  = g.gpu_pct != null ? ` · ${g.gpu_pct}% util` : '';
+        statsPart += `<span class="active-model-stat"><i class="bi bi-gpu-card me-1"></i>${g.name}: ${used}${total} GB${p}${util}</span>`;
+    });
 
     banner.innerHTML = `
         <span class="active-model-label">
             <i class="bi bi-robot me-2"></i>
             <strong>${info.name}</strong>${sizePart}${backendPart}
         </span>
-        ${statsPart ? `<span class="active-model-stats ms-4">${statsPart}</span>` : ''}`;
+        ${statsPart ? `<span class="active-model-stats">${statsPart}</span>` : ''}`;
     banner.className = 'active-model-banner active-model-banner--active';
 }
 
@@ -140,6 +179,7 @@ async function _poll() {
 
 /** Start polling. Call once after DOM is ready. */
 export function initModelBanner() {
+    _poll();
     _bannerTimer = setInterval(_poll, 10_000);
 }
 

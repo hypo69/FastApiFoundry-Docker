@@ -3,54 +3,57 @@
 # Process Name: FastAPI Foundry Main Entry Point
 # =============================================================================
 # Description:
-#   Entry point for the FastAPI Foundry application
+#   Creates the FastAPI app instance, attaches the WebSocket endpoint,
+#   and optionally exports API docs in dev mode.
+#   Entry point for uvicorn: src.api.main:app
 #
 # File: main.py
-# Project: AiStros
+# Project: FastApiFoundry (Docker)
 # Version: 0.6.1
-# Module: FastApiFoundry
+# Changes in 0.6.1:
+#   - Removed duplicate rag_router inclusion (already registered in app.py)
+#   - Fixed import: use logging.getLogger instead of src.logger
+#   - Fixed uvicorn __main__ block: use config properties (api_host, api_port)
+#   - Removed reference to non-existent settings alias
 # Author: hypo69
-# Copyright: © 2026 hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
 
-from fastapi import WebSocket, WebSocketDisconnect
-from .app import create_app
-from .endpoints import router as rag_router
-from .docs_generator import export_to_markdown
-from .websocket_manager import manager
-from src.logger import logger
+import logging
 import os
 
-# Application creation
+from fastapi import WebSocket, WebSocketDisconnect
+
+from .app import create_app
+from .docs_generator import export_to_markdown
+from .websocket_manager import manager
+
+logger = logging.getLogger(__name__)
+
+# Application instance
 app = create_app()
 
-# Подключение роутера для RAG операций
-# Inclusion of the router for RAG operations
-app.include_router(rag_router)
-
-# Запуск генерации документации при обновлении роутеров
-# Initiation of documentation generation on router updates
+# Export API docs in dev mode
 if os.getenv("ENVIRONMENT") == "dev" or True:
     try:
-        logger.info("Генерация актуальной API документации...")
+        logger.info("Generating API documentation...")
         export_to_markdown(app)
     except Exception as e:
-        logger.error(f"Сбой при генерации документации: {e}")
+        logger.error(f"Documentation generation failed: {e}")
+
 
 @app.websocket("/ws/{room}")
 async def websocket_endpoint(websocket: WebSocket, room: str):
-    """! Эндпоинт для WebSocket соединений с распределением по комнатам.
+    """WebSocket endpoint with room-based routing.
 
     Args:
-        websocket (WebSocket): Объект веб-сокета.
-        room (str): Название комнаты для подписки (foundry, rag, system).
+        websocket (WebSocket): WebSocket connection object.
+        room (str): Room name for subscription (foundry, rag, system).
     """
     await manager.connect(websocket, room)
     try:
         while True:
-            # Ожидание входящих данных для поддержания активности соединения
-            # Waiting for incoming data to keep connection alive
+            # Keep connection alive by waiting for incoming data
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket, room)
@@ -58,15 +61,16 @@ async def websocket_endpoint(websocket: WebSocket, room: str):
         logger.error(f"WebSocket error in room '{room}': {e}")
         manager.disconnect(websocket, room)
 
+
 if __name__ == "__main__":
     import uvicorn
-    from ..core.config import settings
-    
+    from ..core.config import config
+
     uvicorn.run(
         "src.api.main:app",
-        host=settings.api_host,
-        port=settings.api_port,
-        reload=settings.api_reload,
-        workers=settings.api_workers,
-        log_level=settings.log_level.lower()
+        host=config.api_host,
+        port=config.api_port,
+        reload=config.api_reload,
+        workers=config.api_workers,
+        log_level=config.api_log_level.lower(),
     )

@@ -1,24 +1,26 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Health Check Endpoint (Refactored)
+# Process Name: Health Check Endpoint
 # =============================================================================
-# Описание:
-#   Endpoint для проверки здоровья сервиса FastAPI Foundry
-#   Проверяет статус API, Foundry сервера, RAG системы и количество моделей
+# Description:
+#   Health check and service restart endpoints for FastAPI Foundry.
+#   GET /api/v1/health — returns status of Foundry, llama.cpp, MkDocs, RAG.
+#   POST /api/v1/restart/{service} — restarts foundry|llama|docs|rag.
 #
-# Примеры:
+# Examples:
 #   >>> import requests
-#   >>> response = requests.get('http://localhost:9696/api/v1/health')
-#   >>> print(response.json())
-#   {'status': 'healthy', 'foundry_status': 'healthy', 'models_count': 3}
+#   >>> r = requests.get('http://localhost:9696/api/v1/health')
+#   >>> r.json()['status']
+#   'healthy'
 #
 # File: health.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.3.3
+# Version: 0.6.1
+# Changes in 0.6.1:
+#   - Updated version to match project
+#   - restart/rag now uses config.get_section() correctly
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
-# Date: 9 декабря 2025
 # =============================================================================
 
 import asyncio

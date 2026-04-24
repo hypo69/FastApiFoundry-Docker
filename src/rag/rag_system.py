@@ -7,14 +7,15 @@
 #   Управляет загрузкой индексов FAISS и поиском релевантных чанков.
 #
 # File: src/rag/rag_system.py
-# Project: FastApiFoundry
+# Project: FastApiFoundry (Docker)
 # Package: src.rag
 # Module: rag_system
 # Version: 0.6.1
+# Changes in 0.6.1:
+#   - index_directories: fixed config access (config.get_section instead of config.rag_system.get)
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # License: MIT
-# Date: 2025
 # =============================================================================
 
 import json
@@ -205,7 +206,7 @@ class RAGSystem:
         Args:
             source_dirs (List[str], optional): Список путей. Если None, берутся из конфига.
         """
-        dirs_to_process = source_dirs or config.rag_system.get("source_dirs", [])
+        dirs_to_process = source_dirs or config.get_section("rag_system").get("source_dirs", [])
         if not dirs_to_process:
             logger.warning("Список директорий для индексации пуст.")
             return False

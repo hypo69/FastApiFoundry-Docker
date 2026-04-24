@@ -62,6 +62,7 @@ nav:
     - Конфигурация: user/configuration.md
     - Работа с моделями: user/models_guide.md
     - Веб-интерфейс: user/web_interface.md
+    - Telegram Боты: user/telegram_bots.md
     - Извлечение текста: user/text_extraction.md
     - Логирование: user/logging.md
     - CLI Reference: user/cli_reference.md
@@ -71,6 +72,8 @@ nav:
     - Система RAG: dev/rag_system.md
     - Text Extractor: dev/text_extractor.md
     - Агенты: dev/agents.md
+    - MCP Agent: dev/mcp_agent.md
+    - Telegram Боты: dev/telegram_bots.md
     - SDK: dev/sdk.md
     - Логирование: dev/logging.md
     - CI/CD документации: dev/cicd_docs.md

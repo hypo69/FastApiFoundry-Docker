@@ -26,6 +26,7 @@ from ...models.foundry_client import foundry_client
 from ...agents.powershell_agent import PowerShellAgent
 from ...agents.rag_agent import RagAgent
 from ...agents.keystroke_agent import KeystrokeAgent
+from ...agents.mcp_agent import McpAgent
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -39,6 +40,7 @@ def _build_registry():
         "powershell": PowerShellAgent(foundry_client),
         "rag": RagAgent(foundry_client),
         "keystroke": KeystrokeAgent(foundry_client),
+        "mcp": McpAgent(foundry_client),
     }
 
 _registry = None

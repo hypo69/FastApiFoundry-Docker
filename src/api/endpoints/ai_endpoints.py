@@ -1,18 +1,29 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Enhanced AI Endpoints
+# Process Name: Enhanced AI Endpoints
 # =============================================================================
-# Описание:
-#   Расширенные endpoints для работы с AI моделями
-#   Поддержка стриминга, управления моделями, оптимизации
+# Description:
+#   Extended AI endpoints: generate, stream, chat, chat/stream, model management.
+#   POST /api/v1/ai/generate        — text generation with optional RAG context
+#   POST /api/v1/ai/generate/stream — streaming text generation (SSE)
+#   POST /api/v1/ai/chat            — stateful chat (messages array, RAG, system_prompt)
+#   POST /api/v1/ai/chat/stream     — streaming chat with session history persistence
+#   GET  /api/v1/ai/models          — list Foundry models
+#   GET  /api/v1/ai/models/recommended — categorized model recommendations
+#   POST /api/v1/ai/models/{id}/load   — load model into Foundry
+#   POST /api/v1/ai/models/{id}/unload — unload model from Foundry
+#   GET  /api/v1/ai/health          — Foundry health check
+#   POST /api/v1/ai/optimize        — suggest optimal model for task type
 #
 # File: ai_endpoints.py
 # Project: FastApiFoundry (Docker)
 # Version: 0.6.1
+# Changes in 0.6.1:
+#   - Fixed docstring for _save_session_history (removed duplicate Args block)
+#   - DummyRAGSystem: added filter_by_score and format_context stubs
+#   - chat/stream: fixed SSE escape sequences (\\n -> \n)
 # Author: hypo69
 # Copyright: © 2026 hypo69
-# Copyright: © 2026 hypo69
-# Date: 9 декабря 2025
 # =============================================================================
 
 import json
@@ -69,15 +80,12 @@ def _save_session_history(history: list, session_id: str = "default", chat_type:
     Обоснование:
       - Унифицированное хранение истории для разных источников (FastAPI, Telegram).
       - Использование `session_id` для разделения диалогов.
-      - Добавление метаданных для удобства анализа.
-
-    Args:
-        history (list): Список сообщений для сохранения.
       - Сохранение контекста между перезапусками.
-      - Упрощение отладки промптов.
 
     Args:
         history (list): Список сообщений для сохранения.
+        session_id (str): Идентификатор сессии. По умолчанию 'default'.
+        chat_type (str): Тип источника чата. По умолчанию 'fastapi'.
     """
     history_file: Path = Path("session_history.json")
     
@@ -140,7 +148,7 @@ async def generate_text(request: dict):
                     context = rag_system.format_context(rag_results)
                 else:
                     context = "\\n".join([r.get("text", "") for r in rag_results])
-                prompt = f"Context:\\n{context}\\n\\nQuestion: {prompt}"
+                prompt = f"Context:\n{context}\n\nQuestion: {prompt}"
         except Exception as e:
             # Продолжаем без RAG если ошибка
             pass
@@ -281,7 +289,7 @@ async def chat_completion(request: dict):
                     # Форматирование найденных фрагментов и вставка в начало промпта
                     context = rag_system.format_context(rag_results) if hasattr(rag_system, "format_context") else ""
                     if context:
-                        prompt_parts.insert(0, f"Context:\\n{context}")
+                        prompt_parts.insert(0, f"Context:\n{context}")
             except Exception:
                 # Игнорирование ошибок RAG для сохранения работоспособности базового чата
                 pass

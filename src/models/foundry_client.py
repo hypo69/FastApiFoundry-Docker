@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Название процесса: Foundry Client (Refactored)
+# Process Name: Foundry Client
 # =============================================================================
-# Описание:
-#   Упрощенный клиент для работы с Foundry API
-#   Использует только класс Config для получения настроек
+# Description:
+#   Async HTTP client for Foundry Local API.
+#   Foundry loads models on-demand (not at service start).
+#   .foundry/cache/models is disk storage only — RAM is used per-request.
 #
 # File: foundry_client.py
 # Project: FastApiFoundry (Docker)
-# Version: 0.4.1
+# Version: 0.6.1
+# Changes in 0.6.1:
+#   - Removed inline subprocess model-load retry from generate_text (wrong layer)
+#   - generate_text now returns clear error on HTTP 400 (model not loaded)
+#   - Added max_loaded_models / ttl_seconds awareness via config model_manager section
 # Author: hypo69
-# Copyright: © 2026 hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
 
@@ -214,26 +218,32 @@ class FoundryClient:
             }
     
     async def generate_text(self, prompt: str, **kwargs):
-        """Генерация текста. Если модель не загружена — загружает её автоматически.
+        """Generate text via Foundry chat/completions endpoint.
+
+        Foundry loads models on-demand: the model must already be loaded
+        via `foundry model load` before calling this method.
+        HTTP 400 means the model is not loaded — caller should load it first.
 
         Args:
             prompt: User input text.
             **kwargs: model (str), temperature (float), max_tokens (int).
 
         Returns:
-            dict: success, content, model, usage on success; success=False, error on failure.
+            dict: success, content, model, usage on success;
+                  success=False, error on failure.
+                  error='model_not_loaded' when HTTP 400 received.
         """
         model = kwargs.get('model') or None
-        
+
         try:
             health = await self.health_check()
             if health["status"] != "healthy":
                 return {"success": False, "error": f"Foundry недоступен: {health.get('error')}"}
-            
+
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/chat/completions"
 
-            # Если модель не указана — берём первую загруженную
+            # Use first loaded model when none specified
             if not model:
                 models_resp = await self.list_available_models()
                 loaded = models_resp.get('models', [])
@@ -241,7 +251,7 @@ class FoundryClient:
                     model = loaded[0].get('id', '')
                     logger.info(f"🤖 Модель не указана, используем: {model}")
                 else:
-                    return {"success": False, "error": "Нет загруженных моделей в Foundry"}
+                    return {"success": False, "error": "Нет загруженных моделей в Foundry. Загрузите модель через вкладку Foundry."}
 
             payload = {
                 "model": model,
@@ -261,25 +271,16 @@ class FoundryClient:
                         return {"success": True, "content": content, "model": model, "usage": usage}
                     return {"success": False, "error": "Некорректный ответ от Foundry"}
                 elif response.status == 400:
-                    # Модель не загружена — пробуем загрузить и повторить
-                    logger.warning(f"⚠️ HTTP 400 для модели {model} — пробуем загрузить")
-                    import subprocess
-                    proc = subprocess.Popen(
-                        ["foundry", "model", "load", model],
-                        stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                    )
-                    # Ждём до 60 секунд пока модель загрузится
-                    import asyncio
-                    for _ in range(30):
-                        await asyncio.sleep(2)
-                        async with session.post(url, json=payload) as retry:
-                            if retry.status == 200:
-                                data = await retry.json()
-                                if data.get('choices'):
-                                    content = data['choices'][0]['message']['content']
-                                    logger.info(f"✅ Модель {model} загружена и ответила")
-                                    return {"success": True, "content": content, "model": model}
-                    return {"success": False, "error": f"Модель {model} не отвечает после загрузки"}
+                    # Model is not loaded in Foundry service.
+                    # Foundry does NOT auto-load from cache on inference request.
+                    # The caller must explicitly load the model first.
+                    logger.warning(f"⚠️ HTTP 400: модель {model} не загружена в Foundry сервис")
+                    return {
+                        "success": False,
+                        "error": f"Модель {model} не загружена. Загрузите её через вкладку Foundry → Downloaded Models → Load & Use.",
+                        "error_code": "model_not_loaded",
+                        "model_id": model,
+                    }
                 else:
                     error_text = await response.text()
                     logger.error(f"❌ HTTP {response.status}: {error_text}")

@@ -3,164 +3,116 @@
 ## Системные требования
 
 - Windows 10/11
-- Python 3.11+ (или распаковывается из `bin/Python-3.11.9.zip`)
-- PowerShell 5+
+- Python 3.11+
+- PowerShell 7+
 - Интернет-соединение
 
 ---
 
-## Три способа установки
+## Два способа установки
 
-| | `install.bat` | `install.ps1` | Вручную |
-|---|---|---|---|
-| **Запуск** | Двойной клик | PowerShell | Командная строка |
-| **Python** | Из `bin\Python-3.11.9.zip` | Ищет в PATH | Любой |
-| **GUI** | ✅ Открывает браузер | ✅ Открывает браузер | ❌ Только консоль |
-| **Когда** | Первая установка | Первая установка | CI, Docker, опытные |
+| | `install.bat` | `install.ps1` |
+|---|---|---|
+| **Запуск** | Двойной клик | PowerShell |
+| **Python** | Из `bin\Python-3.11.9.zip` если нет в PATH | Ищет в PATH |
+| **Когда** | Первая установка, нет PS7 | Повторная установка, CI |
+
+Оба варианта — только терминал, без браузера.
 
 ---
 
-## GUI-установка (рекомендуется)
-
-### Через install.bat (двойной клик)
+## Через install.bat (рекомендуется для первой установки)
 
 ```
 install.bat
-  ├─ Распаковывает bin\Python-3.11.9.zip → bin\Python-3.11.9\
-  ├─ Создаёт venv\
-  ├─ pip install fastapi uvicorn python-dotenv psutil
-  └─ python install\server.py  → браузер http://localhost:9698
+  ├─ Проверяет PowerShell 7+ (устанавливает через winget/curl/MSI если нет)
+  └─ Запускает install.ps1 через pwsh.exe
 ```
 
-### Через install.ps1 (PowerShell)
+Двойной клик по `install.bat` в проводнике.
+
+---
+
+## Через install.ps1 (PowerShell)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
+### Параметры
+
+| Параметр | Описание |
+|---|---|
+| `-Force` | Пересоздать venv (архивирует текущий `requirements.txt`) |
+| `-SkipRag` | Пропустить RAG-зависимости (~3-5 GB) |
+| `-SkipTesseract` | Пропустить установку Tesseract OCR |
+
+### Что делает install.ps1
+
 ```
 install.ps1
-  ├─ Проверяет Python 3.11+ в PATH
-  ├─ Создаёт venv\
-  ├─ pip install -r requirements.txt
-  └─ python install\server.py  → браузер http://localhost:9698
+  ├─ 0. Проверка PowerShell 7+
+  ├─ 1. Поиск Python 3.11+ (или распаковка из bin\Python-3.11.9.zip)
+  ├─ 2. Создание venv\
+  ├─ 3. pip install -r requirements.txt
+  ├─ 4. pip install sentence-transformers faiss-cpu  (если не -SkipRag)
+  ├─ 5. install\install-tesseract.ps1               (если не -SkipTesseract)
+  ├─ 6. Создание .env из .env.example               (если нет)
+  ├─ 7. Создание logs\
+  ├─ 8. Распаковка llama.cpp из bin\llama-*.zip     (если есть)
+  ├─ 9. Установка Foundry Local через winget        (интерактивно)
+  ├─ 10. Загрузка моделей по умолчанию              (интерактивно)
+  └─ 11. Создание ярлыков на рабочем столе
 ```
-
-### Интерфейс установщика (http://localhost:9698)
-
-| Вкладка | Что устанавливает | Опция |
-|---|---|---|
-| **Core Packages** | `requirements.txt` — FastAPI, uvicorn, aiohttp | — обязательно |
-| **RAG / ML** | `requirements-rag.txt` — torch, transformers, faiss (~3-5 GB) | ☑ Skip |
-| **Text Extraction** | `requirements-extras.txt` — PDF, DOCX, OCR, архивы | ☑ Skip |
-| **Docs / SDK / Tests** | `requirements-dev.txt` — MkDocs, foundry-local-sdk, pytest | ☑ Skip |
-| **.env File** | Создаёт `.env` из `.env.example` | поле HF Token |
-| **Foundry Local** | `install-foundry.ps1` — winget install | ☑ Skip |
-| **Download Models** | `install-models.ps1` — модели по умолчанию | ☑ Skip |
-| **Desktop Shortcuts** | `install-shortcuts.ps1` — ярлыки на рабочем столе | ☑ Skip |
 
 ---
 
-## CLI-установка (без браузера)
+## Ручная установка (CLI)
 
-Для автоматизации, CI или если GUI не нужен — все шаги вручную:
+Для автоматизации или Docker:
 
 ```powershell
-# 1. Создать venv (если нет)
+# 1. Создать venv
 python -m venv venv
 
-# 2. Активировать
-venv\Scripts\Activate.ps1
+# 2. Установить зависимости
+venv\Scripts\pip.exe install -r requirements.txt
 
-# 3. Обновить pip
-python -m pip install --upgrade pip
-
-# 4. Основные зависимости (обязательно)
-pip install -r requirements.txt
-
-# 5. RAG + ML (опционально, ~3-5 GB)
-pip install -r requirements-rag.txt
-
-# 6. Извлечение текста — PDF, DOCX, OCR (опционально)
-pip install -r requirements-extras.txt
-
-# 7. Docs + SDK + тесты (опционально)
-pip install -r requirements-dev.txt
-
-# 8. Создать .env
-copy .env.example .env
+# 3. Создать .env
+Copy-Item .env.example .env
 notepad .env
 
-# 9. Установить Foundry (опционально)
+# 4. Установить Foundry (опционально)
 winget install Microsoft.FoundryLocal
 
-# 10. Запустить сервер
+# 5. Запустить
 .\start.ps1
 ```
 
-### Параметры install.ps1
+---
+
+## Настройка .env
+
+После установки отредактируйте `.env`:
+
+```env
+# Foundry (определяется автоматически если пусто)
+FOUNDRY_BASE_URL=http://localhost:50477/v1
+
+# HuggingFace (для закрытых моделей: Gemma, Llama)
+HF_TOKEN=hf_ваш_токен
+HF_MODELS_DIR=D:\models
+
+# llama.cpp (опционально)
+LLAMA_MODEL_PATH=D:\models\model.gguf
+LLAMA_AUTO_START=false
+```
+
+Или через мастер настройки:
 
 ```powershell
-.\install.ps1              # стандартная установка + GUI
-.\install.ps1 -Force       # пересоздать venv
-.\install.ps1 -SkipRag     # без RAG (~2 GB экономии)
-.\install.ps1 -SkipTesseract  # без Tesseract OCR
+.\install\setup-env.ps1
 ```
-
----
-
-## PID-файлы процессов
-
-Все запущенные процессы отслеживаются через PID-файлы. `start.ps1` читает их при каждом запуске и завершает старые процессы перед стартом новых.
-
-| Процесс | PID-файл | Кто пишет | Кто читает и убивает |
-|---|---|---|---|
-| **FastAPI** (порт 9696) | `%TEMP%\fastapi-foundry.pid` | `start.ps1` | `start.ps1` при следующем запуске |
-| **Installer UI** (порт 9698) | `install\.installer.pid` | `install\server.py` | `start.ps1` (этап 6.5) или кнопка Finish |
-| **MkDocs** (порт 9697) | нет файла | — | `start.ps1` по порту через `Get-NetTCPConnection` |
-| **llama.cpp** (порт 9780) | нет файла | — | `start.ps1` по порту через `Get-NetTCPConnection` |
-| **Foundry** | нет файла | — | не трогается намеренно |
-
-### Жизненный цикл installer PID
-
-```
-install.bat / install.ps1
-  └─ python install\server.py
-       ├─ пишет PID → install\.installer.pid
-       ├─ открывает браузер
-       └─ ждёт...
-           ├─ пользователь нажал Finish
-           │    └─ POST /api/shutdown → удаляет .installer.pid → SIGTERM
-           └─ пользователь закрыл браузер (сервер жив)
-                └─ start.ps1 читает .installer.pid → Kill → удаляет файл
-```
-
-### Жизненный цикл FastAPI PID
-
-```
-start.ps1
-  ├─ читает %TEMP%\fastapi-foundry.pid
-  │    └─ Kill старый процесс → удалить файл
-  ├─ Start-Process python run.py → PassThru
-  └─ $proc.Id → %TEMP%\fastapi-foundry.pid
-       └─ finally: Remove-Item (при завершении start.ps1)
-```
-
-!!! info "Почему разные места хранения"
-    `%TEMP%\fastapi-foundry.pid` — стандартное место для временных файлов процессов,
-    доступно из любого скрипта без знания пути проекта.
-    `install\.installer.pid` — рядом со скриптом установщика, удаляется вместе с проектом.
-
----
-
-## Файлы зависимостей
-
-| Файл | Размер | Назначение |
-|---|---|---|
-| `requirements.txt` | ~50 MB | Ядро: FastAPI, uvicorn, aiohttp, pydantic, mcp |
-| `requirements-rag.txt` | ~3-5 GB | RAG: torch, transformers, faiss, sentence-transformers |
-| `requirements-extras.txt` | ~200 MB | Текст: PDF, DOCX, OCR, архивы |
-| `requirements-dev.txt` | ~100 MB | Dev: MkDocs, foundry-local-sdk, pytest |
 
 ---
 
@@ -169,7 +121,7 @@ start.ps1
 Нужен для OCR изображений при RAG-индексации (PNG, JPG, TIFF, изображения в PDF).
 
 ```powershell
-# Автоматически через скрипт
+# Автоматически
 .\install\install-tesseract.ps1
 
 # Или вручную
@@ -186,12 +138,117 @@ TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
 
 ---
 
+## Файлы зависимостей
+
+| Файл | Размер | Назначение |
+|---|---|---|
+| `requirements.txt` | ~50 MB | Всё: FastAPI, RAG, ML, PDF, OCR, тесты |
+
+Все зависимости объединены в один файл `requirements.txt`.
+
+---
+
+## Автозапуск при входе в Windows
+
+### Как это работает
+
+```
+Вход пользователя
+  └─ Планировщик задач Windows (AtLogOn)
+       └─ autostart.ps1 (скрыто, без окна)
+            └─ start.ps1 (весь вывод → logs/autostart.log)
+                 └─ FastAPI сервер на http://localhost:9696
+```
+
+`autostart.ps1` — обёртка над `start.ps1`:
+- запускает его через `powershell.exe -NonInteractive -NoProfile -WindowStyle Hidden`
+- перехватывает stdout/stderr, очищает ANSI-коды, пишет в `logs/autostart.log`
+- опционально устанавливает PowerShell 7 из `bin/PowerShell-7.4.6-win-x64.msi` если не найден
+
+### Регистрация в Планировщике задач (Task Scheduler)
+
+Требует запуска от имени администратора:
+
+```powershell
+# Установить автозапуск
+powershell -ExecutionPolicy Bypass -File .\install\install-autostart.ps1
+
+# Удалить автозапуск
+powershell -ExecutionPolicy Bypass -File .\install\install-autostart.ps1 -Uninstall
+```
+
+Что регистрирует `install-autostart.ps1`:
+
+| Параметр | Значение |
+|---|---|
+| Имя задачи | `FastApiFoundry-Autostart` |
+| Триггер | `AtLogOn` — при входе любого пользователя |
+| Уровень прав | `RunLevel Highest` (администратор) |
+| Окно | Скрыто (`-WindowStyle Hidden`) |
+| Перезапуски | 3 попытки с интервалом 1 минута |
+| Лимит времени | Без ограничений |
+| Лог | `logs/autostart.log` |
+
+### Ярлыки на рабочем столе
+
+`install.ps1` создаёт два ярлыка на рабочем столе:
+
+| Ярлык | Скрипт | Окно |
+|---|---|---|
+| **AI Assistant** | `start.ps1` | Видимое окно PowerShell |
+| **AI Assistant (Silent)** | `autostart.ps1` | Скрытое окно, без консоли |
+
+Создать ярлыки вручную:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install\install-shortcuts.ps1
+```
+
+### Проверка автозапуска
+
+```powershell
+# Просмотреть задачу в планировщике
+Get-ScheduledTask -TaskName 'FastApiFoundry-Autostart'
+
+# Просмотреть лог запуска
+Get-Content logs\autostart.log -Tail 30
+
+# Запустить задачу вручную (для теста)
+Start-ScheduledTask -TaskName 'FastApiFoundry-Autostart'
+```
+
+### Остановка всех сервисов
+
+В silent mode нет видимого окна — для остановки используйте `stop.ps1`:
+
+```powershell
+# Остановить FastAPI, llama.cpp, MkDocs
+powershell -ExecutionPolicy Bypass -File .\stop.ps1
+
+# То же + остановить Foundry Local
+powershell -ExecutionPolicy Bypass -File .\stop.ps1 -StopFoundry
+```
+
+`stop.ps1` останавливает по порядку:
+
+| Шаг | Сервис | Метод |
+|---|---|---|
+| 1 | FastAPI (9696) | PID-файл `%TEMP%\fastapi-foundry.pid`, затем по порту |
+| 2 | llama.cpp (9780) | По порту из `config.json` |
+| 3 | MkDocs (9697) | По порту из `config.json` |
+| 4 | Foundry Local | Только с `-StopFoundry` |
+
+!!! warning "Foundry не останавливается по умолчанию"
+    Foundry — системный сервис Microsoft. Его остановка выгрузит загруженную модель из памяти.
+    Используйте `-StopFoundry` осознанно.
+
+---
+
 ## Проверка установки
 
 ```powershell
 venv\Scripts\python.exe check_env.py
 venv\Scripts\python.exe diagnose.py
-tesseract --version
 .\start.ps1
 ```
 

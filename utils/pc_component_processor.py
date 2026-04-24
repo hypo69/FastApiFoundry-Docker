@@ -11,9 +11,9 @@
 #   >>> processor = PCComponentProcessor()
 #   >>> result = processor.execute(input_data)
 #
-# File: pc_component_processor.py
-# Project: AiStros
-# Package: src.processors
+# File: utils/pc_component_processor.py
+# Project: FastApiFoundry (Docker)
+# Package: utils
 # Module: pc_component_processor
 # Author: hypo69
 # Copyright: © 2026 hypo69

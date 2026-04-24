@@ -108,3 +108,26 @@ watchdog==6.0.0
 watchfiles==1.1.1
 websockets==16.0
 yarl==1.23.0
+
+# Text extraction (PDF, Office, OCR, archives)
+pytesseract
+Pillow
+pdfplumber
+PyPDF2
+python-docx
+python-pptx
+openpyxl
+pandas
+beautifulsoup4
+lxml
+odfpy
+striprtf
+rarfile
+py7zr
+xmltodict==1.0.4
+
+# Docs / SDK / Tests
+accelerate==1.13.0
+foundry-local-sdk
+pytest==9.0.3
+pytest-asyncio==1.3.0

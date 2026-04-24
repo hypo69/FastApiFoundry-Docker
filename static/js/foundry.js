@@ -121,8 +121,12 @@ export async function checkSystemStatus() {
 
         if (window.addLog) window.addLog(`✅ API: ${data.status}, Foundry: ${data.foundry_status}, Models: ${data.models_count || 0}`);
     } catch (error) {
-        // Update top-right status indicator on connection error
         console.error('System status check failed:', error);
+        const indicator = document.getElementById('status-indicator');
+        if (indicator) {
+            indicator.innerHTML = '<i class="bi bi-circle-fill text-danger"></i> Offline';
+            indicator.className = 'navbar-text text-danger';
+        }
         updateFoundryStatus('offline');
     }
 }
@@ -383,8 +387,8 @@ export async function listCachedFoundryModels() {
                 listEl.innerHTML = (items.length ? items : models.map(id => ({ id }))).map(model => {
                     const isLoaded = loadedIds.has(model.id);
                     const statusBadge = isLoaded
-                        ? `<span class="badge bg-success me-2"><i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>In RAM</span>`
-                        : `<span class="badge bg-secondary me-2">On disk</span>`;
+                        ? `<span class="badge bg-success me-2" title="Model is loaded in Foundry service and ready for inference"><i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>Loaded</span>`
+                        : `<span class="badge bg-secondary me-2" title="Model is on disk (.foundry/cache/models). Load it to use.">Cached</span>`;
                     const actionBtn = isLoaded
                         ? `<button class="btn btn-sm btn-outline-danger" onclick="unloadFoundryModel('${esc(model.id)}')" title="Unload from RAM">
                                <i class="bi bi-stop-fill"></i> Unload

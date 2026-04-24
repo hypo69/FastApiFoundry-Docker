@@ -203,13 +203,19 @@ async def list_cached_models() -> dict:
 @router.get("/loaded")
 @api_response_handler
 async def list_loaded_models() -> dict:
-    """! Список моделей загруженных в Foundry сервис.
+    """! List models currently loaded in the Foundry service (in active use / warm).
+
+    NOTE: Foundry does NOT load all cached models at startup.
+    .foundry/cache/models is disk storage only.
+    A model appears here only after explicit `foundry model load` or first inference.
 
     Returns:
         dict: success, models (list of {id, name, status}), count;
               success=False, error on failure.
     """
-    base_url: str = _get_foundry_base_url().rstrip("/")
+    from ...models.foundry_client import foundry_client
+    await foundry_client._update_base_url()
+    base_url: str = (foundry_client.base_url or _get_foundry_base_url()).rstrip("/")
     url: str = f"{base_url}/models"
 
     try:
@@ -358,20 +364,7 @@ async def unload_model(request: dict) -> dict:
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
 
-    # Try CLI first
-    try:
-        result = _run_foundry(["model", "unload", model_id])
-        output = (result.stdout or "").strip()
-        error_keywords = ("exception", "denied", "failed", "unexpected error")
-        cli_ok = result.returncode == 0 and not any(k in output.lower() for k in error_keywords)
-        if cli_ok:
-            logger.info(f"Модель {model_id} выгружена через CLI")
-            return {"success": True, "model_id": model_id, "message": f"Модель {model_id} выгружена"}
-        logger.warning(f"CLI unload failed for {model_id}: {output} — falling back to REST API")
-    except Exception as e:
-        logger.warning(f"CLI unload exception for {model_id}: {e} — falling back to REST API")
-
-    # Fallback: REST API DELETE /v1/models/{id}
+    # Primary: REST API DELETE /v1/models/{id} — works regardless of how model was loaded
     base_url: str = _get_foundry_base_url().rstrip("/")
     url: str = f"{base_url}/models/{model_id}"
     try:
@@ -388,10 +381,23 @@ async def unload_model(request: dict) -> dict:
                 # 400/404 — model already not loaded
                 if response.status in (400, 404):
                     return {"success": True, "model_id": model_id, "message": f"Модель {model_id} не загружена"}
-                error_msg = data.get("error") or f"HTTP {response.status}"
-                return {"success": False, "error": error_msg}
+                logger.warning(f"REST unload {model_id}: HTTP {response.status} — falling back to CLI")
     except Exception as e:
-        logger.error(f"REST unload exception for {model_id}: {e}")
+        logger.warning(f"REST unload exception for {model_id}: {e} — falling back to CLI")
+
+    # Fallback: CLI
+    try:
+        result = _run_foundry(["model", "unload", model_id])
+        output = (result.stdout or "").strip()
+        error_keywords = ("exception", "denied", "failed", "unexpected error")
+        if result.returncode == 0 and not any(k in output.lower() for k in error_keywords):
+            logger.info(f"Модель {model_id} выгружена через CLI")
+            return {"success": True, "model_id": model_id, "message": f"Модель {model_id} выгружена"}
+        error_msg = output or "Ошибка выгрузки"
+        logger.warning(f"CLI unload failed for {model_id}: {error_msg}")
+        return {"success": False, "error": error_msg}
+    except Exception as e:
+        logger.error(f"CLI unload exception for {model_id}: {e}")
         return {"success": False, "error": str(e)}
 
 

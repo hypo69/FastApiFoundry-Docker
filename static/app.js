@@ -27,10 +27,24 @@ window.switchLang = switchLang;
 
 Object.assign(window, ui, config, models, chat, foundry, rag, editor, llama, hf, ollama, agent, mcp, sdk, providers, support);
 
-window.providersRefresh = providers.initProviders;
+window.providersRefresh     = providers.initProviders;
 window.systemRestartService = foundry.systemRestartService;
-window.providersExport  = providers.exportToExtension;
-window.providersImport  = (e) => { const f = e.target.files?.[0]; if (f) providers.importFromExtension(f); e.target.value = ''; };
+window.providersExport      = providers.exportToExtension;
+window.providersImport      = (e) => { const f = e.target.files?.[0]; if (f) providers.importFromExtension(f); e.target.value = ''; };
+
+// ── Loading overlay helpers ───────────────────────────────────────────────────
+
+function _loadingStatus(text) {
+    const el = document.getElementById('app-loading-status');
+    if (el) el.textContent = text;
+}
+
+function _hideLoading() {
+    const overlay = document.getElementById('app-loading-overlay');
+    if (!overlay) return;
+    overlay.classList.add('fade-out');
+    setTimeout(() => overlay.remove(), 380);
+}
 
 // ── Partial loader ────────────────────────────────────────────────────────────
 
@@ -47,7 +61,6 @@ async function fetchPartial(path) {
 async function loadAllPartials() {
     const base = '/static/partials';
 
-    // Slots with their own id (navbar, tabs nav, modals)
     const slots = [
         ['slot-navbar',   `${base}/_navbar.html`],
         ['slot-tabs-nav', `${base}/_tabs_nav.html`],
@@ -57,7 +70,6 @@ async function loadAllPartials() {
         if (el) el.innerHTML = await fetchPartial(path);
     }
 
-    // Tab panes — must be direct children of .tab-content
     const tabContent = document.getElementById('mainTabsContent');
     if (tabContent) {
         const tabs = [
@@ -80,7 +92,6 @@ async function loadAllPartials() {
         tabContent.innerHTML = htmlParts.join('');
     }
 
-    // Settings sections — injected into #settings-card-body
     const settingsBody = document.getElementById('settings-card-body');
     if (settingsBody) {
         const sections = [
@@ -94,14 +105,12 @@ async function loadAllPartials() {
             `${base}/_tab_settings_dev.html`,
         ];
         const sectionParts = await Promise.all(sections.map(fetchPartial));
-        // Insert before the status alert (last child)
         const statusEl = settingsBody.querySelector('#settings-status');
         sectionParts.forEach(html => {
             if (html) statusEl.insertAdjacentHTML('beforebegin', html);
         });
     }
 
-    // Modals — appended to body
     const modals = [
         `${base}/_modal_llama_picker.html`,
         `${base}/_modal_add_model.html`,
@@ -113,13 +122,16 @@ async function loadAllPartials() {
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
+    _loadingStatus('Загрузка компонентов интерфейса...');
     await loadAllPartials();
 
+    _loadingStatus('Загрузка конфигурации...');
     const cfg  = await config.loadConfig();
     const lang = cfg?.config?.app?.language || '';
+
+    _loadingStatus('Инициализация локализации...');
     await initI18n(lang);
 
-    // Show/hide custom model input when radio changes
     document.addEventListener('change', e => {
         if (e.target.name === 'startup-model-mode') {
             const row = document.getElementById('startup-custom-model-row');
@@ -127,37 +139,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    foundry.checkSystemStatus();
-    setInterval(foundry.checkSystemStatus, 30_000);
-
     initModelBanner();
     window.refreshModelBanner = refreshModelBanner;
 
-    models.loadModels().then(async () => {
-        // Determine which model to select based on startup_model_mode
-        const startupMode = cfg?.config?.foundry_ai?.startup_model_mode || 'default';
-        if (startupMode === 'active') {
-            await models.syncChatModelToActive();
-        } else if (startupMode === 'custom') {
-            const customId = cfg?.config?.foundry_ai?.startup_custom_model || '';
-            const select = document.getElementById('chat-model');
-            if (customId && select && [...select.options].some(o => o.value === customId)) {
-                select.value = customId;
-                window._savedChatModel = customId;
-            } else {
-                await models.syncChatModelToActive();
-            }
-        } else {
-            // 'default' — use saved default_model from config, already set by applyChatConfig
-            // but still sync to active if nothing is selected
-            const select = document.getElementById('chat-model');
-            if (!select?.value) await models.syncChatModelToActive();
-        }
-        // Refresh banner AFTER dropdown is fully populated and synced
-        refreshModelBanner();
-    });
-    models.loadConnectedModels();
-    models.initModelSelectListener();
+    _loadingStatus('Подключение к сервисам...');
+    await Promise.allSettled([
+        foundry.checkSystemStatus(),
+        foundry.listCachedFoundryModels?.(),
+        hf.hfCheckStatus?.(),
+        hf.hfRefreshModels?.(),
+        llama.llamaCheckStatus?.(),
+        llama.llamaScanModels?.(),
+        ollama.ollamaCheckStatus?.(),
+        ollama.ollamaLoadModels?.(),
+        rag.refreshRAGStatus?.(),
+    ]);
+
+    refreshModelBanner();
+
+    _loadingStatus('Готово');
+    setTimeout(_hideLoading, 200);
+
+    setInterval(foundry.checkSystemStatus, 30_000);
 
     document.getElementById('mainTabsContent')?.addEventListener('keypress', e => {
         if (e.target.id === 'chat-input' && e.key === 'Enter' && !e.shiftKey) {
@@ -170,17 +173,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Lazy tab loading
-    document.getElementById('foundry-tab')?.addEventListener('shown.bs.tab',     () => { window.listCachedFoundryModels?.(); });
+    document.getElementById('foundry-tab')?.addEventListener('shown.bs.tab',   () => { window.listCachedFoundryModels?.(); });
     document.getElementById('editor-tab')?.addEventListener('shown.bs.tab',    () => { window.loadEnv?.(); window.loadConfigJson?.(); });
     document.getElementById('llama-tab')?.addEventListener('shown.bs.tab',     () => { window.llamaCheckStatus?.(); window.llamaScanModels?.(); window.ollamaCheckStatus?.(); window.ollamaLoadModels?.(); });
-    document.getElementById('hf-tab')?.addEventListener('shown.bs.tab',        () => { window.hfCheckStatus?.(); window.hfRefreshModels?.(); window.hfLoadHubModels?.(); });
+    document.getElementById('hf-tab')?.addEventListener('shown.bs.tab',        () => { window.hfCheckStatus?.(); window.hfRefreshModels?.(); });
     document.getElementById('rag-tab')?.addEventListener('shown.bs.tab',       () => { window.refreshRAGStatus?.(); window.ragLoadProfiles?.(); });
     document.getElementById('agent-tab')?.addEventListener('shown.bs.tab',     () => { window.agentLoadTools?.(); });
     document.getElementById('mcp-tab')?.addEventListener('shown.bs.tab',       () => { window.mcpLoadServers?.(); });
     document.getElementById('settings-tab')?.addEventListener('shown.bs.tab',  () => { window.loadConfigFields?.(); window.refreshLogHealth?.(); });
     document.getElementById('providers-tab')?.addEventListener('shown.bs.tab', () => { window.providersRefresh?.(); });
-    document.getElementById('support-tab')?.addEventListener('shown.bs.tab', () => {
+    document.getElementById('support-tab')?.addEventListener('shown.bs.tab',   () => {
         window.supportLoadDialogs?.();
         window.supportLoadProfiles?.();
         window.supportLoadStatus?.();

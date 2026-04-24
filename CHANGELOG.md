@@ -6,49 +6,50 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
-## [0.6.1] - 2025
-
-### Added
-- Добавлен механизм автоматической очистки временных файлов логов (`.tmp`) старше заданного времени (настраивается в `config.json`).
-- Добавлены интерактивные кнопки подтверждения (Да/Нет) для команды `/restart_server` в Telegram-боте.
-- Реализована автоматическая система оповещения о критическом заполнении диска (>95%) в Telegram.
-- Реализован полноценный векторный поиск в `RAGSystem` с использованием `SentenceTransformers`.
-- Добавлено кеширование результатов поиска в `RAGSystem` для оптимизации повторных запросов.
-- Реализована автоматическая проверка совместимости размерности векторов модели и индекса при загрузке.
-- Реализовано автоматическое обновление метаданных (`meta.json`) при каждой активации/перезагрузке профиля RAG.
-- Добавлен метод `_remove_duplicate_chunks` в `RAGSystem` для удаления дубликатов чанков при загрузке индекса и сохранении метаданных.
-- Добавлена отправка уведомлений через WebSocket при изменении статуса Foundry в процессе опроса.
-- Реализован автоматический сброс всех предохранителей в `CommandAgent` при обнаружении изменений в `PATH`.
-- Добавлены команды `/stats` (графики ресурсов, включая диск), `/get_logs` (отправка файла логов) и `/restart_server` в Telegram-бота.
-- Реализована фоновая проверка состояния Foundry с оповещением в Telegram при падении сервиса.
-- Добавлен метод `test_command_available` в `CommandAgent` для предварительной проверки наличия утилит в системном окружении.
-- Реализована проверка целостности файлов индекса (faiss.index) перед загрузкой в `RAGSystem`.
-- Добавлен метод `filter_by_source` в `RAGSystem` для фильтрации результатов поиска по источнику.
-- Добавлен метод `filter_by_score` в `RAGSystem` для фильтрации результатов по порогу схожести.
-- Обновлён эндпоинт `/search` в `rag.py`: добавлен параметр `min_score` и интеграция с реальным поиском `RAGSystem.search`.
-- Обновлён эндпоинт `/ai/generate` в `ai_endpoints.py`: добавлена поддержка параметра `min_score` для RAG.
-- Обновлён эндпоинт `/ai/chat` в `ai_endpoints.py`: добавлена поддержка параметра `min_score` и интеграция RAG контекста.
-- Добавлена поддержка параметра `system_prompt` в эндпоинте `/ai/chat` для переопределения поведения ассистента.
-- Реализована поддержка стриминга для чата через эндпоинт `/ai/chat/stream` с сохранением истории сессии.
-- Добавлена отправка заголовка `X-Session-Id` в эндпоинте `/ai/chat/stream` для отслеживания сессий в логах.
-- Реализовано автоматическое сохранение истории чата в файл `session_history.json` при каждом запросе в `ai_endpoints.py`.
-- Добавлена автоматическая очистка файла `session_history.json` при старте приложения, если он старше 7 дней.
-- Реализована автоматическая очистка папки `archive` при достижении размера 2 ГБ (FIFO удаление старых файлов).
-- Добавлена возможность исключать определенные файлы из удаления в `cleanup_archive_size` через параметр `logging.archive_keep_files` в `config.json`.
-- Добавлен метод `execute_command_lines` в `CommandAgent` для асинхронного получения текстового вывода команд.
-- Обновлён эндпоинт `/foundry/status` в `foundry_management.py` для интеграции с парсером `CommandAgent`.
-- Реализован метод `parse_foundry_status` в `CommandAgent` для структурированного парсинга вывода `foundry service status`.
-- Интегрирован асинхронный `CommandAgent` и PowerShell wrapper для безопасного выполнения CLI команд с JSONL-логированием.
-- Реализован метод `reset_circuit_breaker` в `CommandAgent` и соответствующий эндпоинт в API.
-- Добавлен фоновый опрос статуса Foundry через `BackgroundTasks` после вызова команды старта.
-- Реализована ротация файлов истории чата: устаревшие файлы перемещаются в папку `archive/` перед "удалением" из корня.
-- Добавлен параметр `logging.history_retention_days` в `config.json` для настройки срока хранения истории.
+## [0.6.1] - 2025 (refactored)
 
 ### Changed
-- Выполнен рефакторинг и приведение к стандартам AiStros файлов `run.py`, `config_manager.py`, `start.ps1`, `autostart.ps1`.
-- Параметр `logging.retention_hours` добавлен в `config.json`.
-- Версии проекта во всех заголовках обновлены до 0.6.1.
-- Исправлена ошибка синтаксиса в эндпоинтах RAG.
+- `pc_component_processor.py` — перемещён из корня проекта в `utils/pc_component_processor.py`; обновлён заголовок файла
+- `utils/README.md` — добавлен `pc_component_processor.py` в таблицу утилит
+- `docs/ru/dev/utils.md` — добавлен раздел `utils/` (standalone-утилиты) с документацией `pc_component_processor`
+- `docs/ru/user/getting_started.md` — добавлен раздел «Остановка системы» с командами для всех сервисов
+
+### Removed
+- `install/server.py` — GUI-установщик (веб-интерфейс на порту 9698) удалён; помечен `server.py~`
+- `install/static/` — SPA установщика удалёна; папка помечена `static~`
+
+### Added
+- `stop.ps1` — скрипт остановки всех сервисов (FastAPI, llama.cpp, MkDocs) для silent mode; опциональная остановка Foundry через `-StopFoundry`
+- `docs/ru/user/installation.md` — добавлен раздел **Автозапуск при входе в Windows**: `autostart.ps1`, Task Scheduler, ярлыки, `stop.ps1`
+
+### Changed
+- `install.ps1` — удалён шаг 3.5 (запуск `server.py`), удалён параметр `-NoGui`; вся установка теперь только через терминал
+- `docs/ru/user/installation.md` — переписана: убраны все упоминания GUI, остались только `install.bat` и `install.ps1`
+
+### Fixed
+- `src/api/main.py` — удалён дублирующий `app.include_router(rag_router)`; исправлен импорт логгера (`logging.getLogger` вместо `src.logger`); исправлен `__main__` блок — использует `config.api_*` вместо несуществующего `settings`
+- `src/api/app.py` — удалён дублирующий импорт `ai_endpoints`; версия обновлена до 0.6.1
+- `src/core/config.py` — удалён устаревший алиас `settings = config`; добавлен `__all__ = ["config"]`
+- `src/rag/rag_system.py` — `index_directories()`: исправлен вызов `config.rag_system.get(...)` → `config.get_section("rag_system").get(...)`
+- `src/api/endpoints/ai_endpoints.py` — исправлен дублированный блок `Args:` в docstring; исправлены escape-последовательности в SSE (`\\n` → `\n`)
+- `src/models/foundry_client.py` — `generate_text()`: удалён inline subprocess retry при HTTP 400; возвращается `error_code: model_not_loaded` с инструкцией пользователю
+- `src/api/endpoints/foundry_models.py` — `list_loaded_models()` использует динамический URL из `foundry_client` вместо хардкода
+- `src/api/endpoints/generate.py` — `error_code: model_not_loaded` пробрасывается к клиенту
+- `static/js/foundry.js` — метки «In RAM» / «On disk» заменены на «Loaded» / «Cached»
+- `docs/ru/dev/rag_system.md` — переписана: добавлены `RAGProfileManager`, таблица всех RAG API endpoints, исправлена ссылка на `config.get_section()`
+- `docs/ru/user/telegram_bots.md` — исправлены: поток HelpDesk (top-5 чанков, `/api/v1/ai/generate`), добавлены HelpDesk API endpoints, исправлен путь ZIP-архивов
+- `docs/ru/dev/telegram_bots.md` — исправлен поток HelpDesk (top-5 чанков вместо top-3)
+
+### Added
+- `config.json` — секция `model_manager` с параметрами `max_loaded_models`, `ttl_seconds`, `max_ram_percent`
+- `config_manager.py` — свойства `model_manager_max_loaded`, `model_manager_ttl_seconds`, `model_manager_max_ram_percent`
+- `docs/ru/dev/code/foundry_client.md` — таблица статусов модели, модель памяти Foundry, `error_code: model_not_loaded`
+- `scripts/create_requirements.ps1` — генерация `requirements.txt` в режимах `freeze` / `pipreqs` / `clean`
+
+### Changed
+- `requirements.txt` — объединён с `requirements-rag.txt`, `requirements-extras.txt`, `requirements-dev.txt`
+- `install/server.py` — шаги `rag`, `extras`, `dev` удалены; остался один шаг `requirements`
+- Все заголовки файлов приведены к версии 0.6.1
 
 ## [0.6.0] - 2025-12-10 (updated)
 
