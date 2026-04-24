@@ -6,6 +6,8 @@ site_url: https://hypo69.github.io/FastApiFoundry-Docker/
 theme:
   name: material
   language: en
+  logo: assets/icons/icon128.png
+  favicon: assets/icons/icon48.png
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default

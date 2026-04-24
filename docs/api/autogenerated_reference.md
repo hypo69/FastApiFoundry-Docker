@@ -5,22 +5,22 @@
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `GET, HEAD /openapi.json`
+**Путь:** `HEAD, GET /openapi.json`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `GET, HEAD /docs`
+**Путь:** `HEAD, GET /docs`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `GET, HEAD /docs/oauth2-redirect`
+**Путь:** `HEAD, GET /docs/oauth2-redirect`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `GET, HEAD /redoc`
+**Путь:** `HEAD, GET /redoc`
 
 ## None
 FastAPI Foundry Control Panel

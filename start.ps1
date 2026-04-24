@@ -596,7 +596,10 @@ if (-not (Test-Path $venvPath)) {
 
 Write-Host "🔗 FOUNDRY_DYNAMIC_PORT = $env:FOUNDRY_DYNAMIC_PORT" -ForegroundColor Gray
 Write-Host '🌐 FastAPI Foundry starting...' -ForegroundColor Green
-Write-Host "📱 Веб-интерфейс будет доступен по адресу: http://localhost:9696" -ForegroundColor Cyan
+Write-Host "📱 Веб-интерфейс:  http://localhost:9696" -ForegroundColor Cyan
+if ($docsServerConfig -and $docsServerConfig.enabled) {
+    Write-Host "📚 Документация:   http://localhost:$($docsServerConfig.port)" -ForegroundColor Cyan
+}
 Write-Host ('=' * 60) -ForegroundColor Cyan
 
 try {
@@ -605,6 +608,31 @@ try {
         -PassThru -NoNewWindow
     $proc.Id | Set-Content $PidFile -Encoding UTF8
     Write-Host "💾 PID $($proc.Id) сохранён в $PidFile" -ForegroundColor Gray
+
+    # Open browser after server starts (wait up to 15s for port to become available)
+    $appPort = 9696
+    try {
+        $cfg = Get-Content (Join-Path $Root 'config.json') -Raw | ConvertFrom-Json
+        if ($cfg.fastapi_server.port) { $appPort = [int]$cfg.fastapi_server.port }
+    } catch { }
+
+    $browserOpened = $false
+    for ($i = 1; $i -le 15; $i++) {
+        Start-Sleep 1
+        try {
+            $tcp = [System.Net.Sockets.TcpClient]::new()
+            $tcp.Connect('127.0.0.1', $appPort)
+            $tcp.Close()
+            Start-Process "http://localhost:$appPort"
+            Write-Host "🌐 Браузер открыт: http://localhost:$appPort" -ForegroundColor Green
+            $browserOpened = $true
+            break
+        } catch { }
+    }
+    if (-not $browserOpened) {
+        Write-Host "💡 Откройте браузер вручную: http://localhost:$appPort" -ForegroundColor Yellow
+    }
+
     $proc.WaitForExit()
 } catch {
     Write-Host "❌ Ошибка запуска сервера FastAPI: $_" -ForegroundColor Red

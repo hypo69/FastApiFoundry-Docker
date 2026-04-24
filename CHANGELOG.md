@@ -41,6 +41,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - `docs/ru/dev/telegram_bots.md` — исправлен поток HelpDesk (top-5 чанков вместо top-3)
 
 ### Added
+- `install/make-ico.ps1` — конвертер PNG → ICO: собирает `assets/icons/icon16.png` + `icon48.png` + `icon128.png` в `icon.ico` через `System.Drawing` (без внешних инструментов)
+- `static/assets/icons/` — иконки скопированы в `static/` для раздачи через FastAPI StaticFiles
+- `docs/assets/icons/` — иконки скопированы в `docs/` для MkDocs (`logo` + `favicon`)
 - `config.json` — секция `model_manager` с параметрами `max_loaded_models`, `ttl_seconds`, `max_ram_percent`
 - `config_manager.py` — свойства `model_manager_max_loaded`, `model_manager_ttl_seconds`, `model_manager_max_ram_percent`
 - `docs/ru/dev/code/foundry_client.md` — таблица статусов модели, модель памяти Foundry, `error_code: model_not_loaded`
@@ -49,6 +52,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Changed
 - `requirements.txt` — объединён с `requirements-rag.txt`, `requirements-extras.txt`, `requirements-dev.txt`
 - `install/server.py` — шаги `rag`, `extras`, `dev` удалены; остался один шаг `requirements`
+- `install/install-shortcuts.ps1` — ищет `icon.ico` в корне проекта, автозапуск `make-ico.ps1` если `icon.ico` отсутствует, `WorkingDirectory` исправлен на корень проекта; добавлен ярлык «AI Assistant Docs» на рабочем столе (открывает браузер на порте документации из `config.json`)
+- `install.ps1` — шаг 11: перед созданием ярлыков вызывается `make-ico.ps1`; в summary добавлены ссылки на приложение, документацию и Swagger UI (порты читаются из `config.json`)
+- `start.ps1` — после запуска FastAPI автоматически открывается браузер на порте приложения (опрос TCP до 15с); в баннере запуска показываются ссылки на приложение и документацию
+- `mkdocs.yml` — добавлены `logo: assets/icons/icon128.png` и `favicon: assets/icons/icon48.png`
+- `static/index.html`, `static/chat.html`, `static/simple.html`, `static/partials/_head.html` — добавлены `<link rel="icon">` для 16/48/128px + `apple-touch-icon`
 - Все заголовки файлов приведены к версии 0.6.1
 
 ## [0.6.0] - 2025-12-10 (updated)

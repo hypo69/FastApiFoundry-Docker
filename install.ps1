@@ -338,6 +338,17 @@ if ($isFirstInstall) {
 
 # --- 11. Desktop shortcuts ---
 Write-Host "`nСоздание ярлыков..." -ForegroundColor Yellow
+
+# Build icon.ico from assets\icons\ PNGs before creating shortcuts
+$makeIcoScript = Join-Path $Root "install\make-ico.ps1"
+if (Test-Path $makeIcoScript) {
+    try {
+        & $makeIcoScript -ProjectRoot $Root
+    } catch {
+        Write-Host "  Предупреждение: не удалось создать icon.ico: $_" -ForegroundColor Yellow
+    }
+}
+
 $shortcutsScript = Join-Path $Root "install\install-shortcuts.ps1"
 if (Test-Path $shortcutsScript) {
     try {
@@ -351,11 +362,27 @@ if (Test-Path $shortcutsScript) {
 }
 
 # --- 12. Summary ---
-Write-Host "`n$("=" * 50)" -ForegroundColor Green
+Write-Host "
+$('=' * 50)" -ForegroundColor Green
 Write-Host "Установка завершена!" -ForegroundColor Green
 Write-Host ""
 
+# Read ports from config.json for summary
+$summaryAppPort  = 9696
+$summaryDocsPort = 9697
+try {
+    $summaryCfg = Get-Content (Join-Path $Root 'config.json') -Raw | ConvertFrom-Json
+    if ($summaryCfg.fastapi_server.port)  { $summaryAppPort  = [int]$summaryCfg.fastapi_server.port }
+    if ($summaryCfg.docs_server.port)     { $summaryDocsPort = [int]$summaryCfg.docs_server.port }
+} catch { }
+
 $foundryReady = $null -ne (Get-Command foundry -ErrorAction SilentlyContinue)
+
+Write-Host "Ссылки после запуска:" -ForegroundColor Cyan
+Write-Host "  🌐 Приложение:   http://localhost:$summaryAppPort" -ForegroundColor Green
+Write-Host "  📚 Документация: http://localhost:$summaryDocsPort" -ForegroundColor Green
+Write-Host "  📖 Swagger UI:  http://localhost:$summaryAppPort/docs" -ForegroundColor Green
+Write-Host ""
 
 Write-Host "Следующие шаги:" -ForegroundColor Cyan
 if ($foundryReady) {
