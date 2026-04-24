@@ -41,7 +41,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - `docs/ru/dev/telegram_bots.md` — исправлен поток HelpDesk (top-5 чанков вместо top-3)
 
 ### Added
-- `install/make-ico.ps1` — конвертер PNG → ICO: собирает `assets/icons/icon16.png` + `icon48.png` + `icon128.png` в `icon.ico` через `System.Drawing` (без внешних инструментов)
+- `install/make-ico.ps1` — конвертер PNG → ICO
+- `install/install-models.ps1` — раздел llama.cpp: создаёт `~/.models`, определяет найденные `.gguf` и автопрописывает первый в `config.json`; если моделей нет — показывает инструкцию с рекомендуемыми моделями (Mega.nz не поддерживает прямое скачивание): собирает `assets/icons/icon16.png` + `icon48.png` + `icon128.png` в `icon.ico` через `System.Drawing` (без внешних инструментов)
 - `static/assets/icons/` — иконки скопированы в `static/` для раздачи через FastAPI StaticFiles
 - `docs/assets/icons/` — иконки скопированы в `docs/` для MkDocs (`logo` + `favicon`)
 - `config.json` — секция `model_manager` с параметрами `max_loaded_models`, `ttl_seconds`, `max_ram_percent`
@@ -52,9 +53,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Changed
 - `requirements.txt` — объединён с `requirements-rag.txt`, `requirements-extras.txt`, `requirements-dev.txt`
 - `install/server.py` — шаги `rag`, `extras`, `dev` удалены; остался один шаг `requirements`
+- `.env.example` — синхронизирован с `.env`: добавлены `SECRET_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `GITHUB_PAT`, `LLAMA_SERVER_PATH`; все ключи присутствуют в файле (пустыми или закомментированы) чтобы `setup-env.ps1` мог их заменять
+- `install/setup-env.ps1` — исправлена ошибка `❌ .env.example not found`: `$Root` указывал на `install\` вместо корня проекта; добавлен `$Project = Split-Path -Parent $PSScriptRoot`
 - `install/install-shortcuts.ps1` — ищет `icon.ico` в корне проекта, автозапуск `make-ico.ps1` если `icon.ico` отсутствует, `WorkingDirectory` исправлен на корень проекта; добавлен ярлык «AI Assistant Docs» на рабочем столе (открывает браузер на порте документации из `config.json`)
 - `install.ps1` — шаг 11: перед созданием ярлыков вызывается `make-ico.ps1`; в summary добавлены ссылки на приложение, документацию и Swagger UI (порты читаются из `config.json`)
-- `start.ps1` — после запуска FastAPI автоматически открывается браузер на порте приложения (опрос TCP до 15с); в баннере запуска показываются ссылки на приложение и документацию
+- `start.ps1` — после запуска FastAPI автоматически открывается браузер на порте приложения (опрос TCP до 15с); если `docs_server.enabled=true` — также открывает браузер на порте документации (опрос HTTP до 20с); llama.cpp запускается автоматически если задан `llama_cpp.model_path` (без необходимости `auto_start=true`); отключить можно явным `auto_start=false`
+- `install/install-models.ps1` — раздел llama.cpp: создаёт `~/.models`, интерактивный выбор модели из найденных `.gguf`; если моделей нет — инструкция с `huggingface-cli` примером и подсказкой про веб-интерфейс
 - `mkdocs.yml` — добавлены `logo: assets/icons/icon128.png` и `favicon: assets/icons/icon48.png`
 - `static/index.html`, `static/chat.html`, `static/simple.html`, `static/partials/_head.html` — добавлены `<link rel="icon">` для 16/48/128px + `apple-touch-icon`
 - Все заголовки файлов приведены к версии 0.6.1

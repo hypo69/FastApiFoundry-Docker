@@ -195,7 +195,7 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
     ```json
     {
       "llama_cpp": {
-        "model_path": "D:\\models\\qwen2.5-0.5b-q4_k_m.gguf",
+        "model_path": "~/.models/qwen2.5-0.5b-q4_k_m.gguf",
         "auto_start": true,
         "port": 9780
       }

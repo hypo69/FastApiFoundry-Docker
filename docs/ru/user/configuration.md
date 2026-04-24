@@ -104,7 +104,7 @@ HF_TOKEN=hf_ваш_токен
   "directories": {
     "models": "~/.models",     // GGUF модели для llama.cpp
     "rag": "~/.rag",           // RAG индексы
-    "hf_models": "~/.hf_models" // HuggingFace модели
+    "hf_models": "~/.cache/huggingface/hub" // HuggingFace модели (стандартный кэш HF)
   },
 
   "app": {
@@ -179,7 +179,7 @@ notepad .env
 | MkDocs включён | `docs_server.enabled` | Документация на порту 9697 |
 | Язык интерфейса | `app.language` | en / ru / he |
 | Директория моделей | `directories.models` | ~/.models — GGUF для llama.cpp |
-| Директория HF моделей | `directories.hf_models` | ~/.hf_models — HuggingFace модели |
+| Директория HF моделей | `directories.hf_models` | `~/.cache/huggingface/hub` — стандартный кэш HuggingFace |
 | Директория RAG | `directories.rag` | ~/.rag — FAISS индексы |
 
 ### 🔐 .env
@@ -216,7 +216,7 @@ notepad .env
 ```
 directories.hf_models в config.json  ← приоритет 1
 HF_MODELS_DIR в .env (legacy)        ← приоритет 2
-~/.models (по умолчанию)             ← приоритет 3
+~/.cache/huggingface/hub (по умолчанию) ← приоритет 3
 ```
 
 **Пример — URL Foundry:**

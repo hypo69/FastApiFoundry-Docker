@@ -173,24 +173,85 @@ FASTAPI_RELOAD=false
 
 ## Управление зависимостями (requirements)
 
-Проект использует несколько файлов зависимостей:
+Проект использует **один файл** зависимостей:
 
 | Файл | Назначение |
 |---|---|
-| `requirements.txt` | Основные зависимости (FastAPI, uvicorn, aiohttp, pydantic, mcp) |
-| `requirements-rag.txt` | RAG + ML (~3–5 GB: torch, faiss, sentence-transformers) |
-| `requirements-extras.txt` | Опциональные зависимости |
-| `requirements-dev.txt` | Инструменты разработки |
-| `docs/requirements.txt` | MkDocs плагины |
+| `requirements.txt` | Все зависимости: FastAPI, RAG, ML, PDF, OCR, тесты, MkDocs |
+| `docs/requirements.txt` | MkDocs плагины (только для сборки документации) |
 
-!!! warning "Важно: пересоздание requirements"
-    При пересоздании `requirements.txt` (например, через `pip freeze`) **обязательно** обновить все частичные файлы:
-    - `requirements-rag.txt`
-    - `requirements-extras.txt`
-    - `requirements-dev.txt`
-    - `docs/requirements.txt`
+---
 
-    Иначе версии пакетов в частичных файлах могут рассинхронизироваться с `requirements.txt`, что приведёт к конфликтам при установке.
+### Пересоздание requirements.txt
+
+Для обновления `requirements.txt` используйте утилиту `scripts/create_requirements.ps1`.
+
+Скрипт поддерживает три режима:
+
+| Режим | Описание | Когда использовать |
+|---|---|---|
+| `pipreqs` | Только пакеты, реально импортируемые в коде | Рекомендуется — чистый минимальный файл |
+| `freeze` | Полный снимок всего venv (`pip freeze`) | Когда нужна точная воспроизводимость |
+| `clean` | Удалить venv, создать новый, установить вручную | Сброс окружения с нуля |
+
+#### Использование
+
+```powershell
+# Рекомендуемый способ — только реально используемые пакеты
+powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode pipreqs
+
+# Полный снимок venv
+powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode freeze
+
+# Сброс окружения
+powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode clean
+```
+
+#### Параметры скрипта
+
+| Параметр | По умолчанию | Описание |
+|---|---|---|
+| `-Mode` | `pipreqs` | Режим: `pipreqs`, `freeze`, `clean` |
+| `-ProjectPath` | корень проекта | Путь к проекту |
+| `-VenvPath` | `<корень>\venv` | Путь к виртуальному окружению |
+
+#### Что делает каждый режим
+
+**`pipreqs`** — анализирует импорты в `src/` и генерирует минимальный `requirements.txt`:
+```
+1. Активирует venv
+2. Устанавливает pipreqs (если нет)
+3. Запускает: pipreqs <ProjectPath> --force
+4. Записывает requirements.txt в корень проекта
+```
+
+**`freeze`** — снимок текущего окружения:
+```
+1. Активирует venv
+2. Запускает: pip freeze
+3. Записывает вывод в requirements.txt
+```
+
+**`clean`** — полный сброс:
+```
+1. Удаляет существующий venv
+2. Создаёт новый через: python -m venv <VenvPath>
+3. Активирует его
+4. Выводит инструкцию: установите пакеты вручную, затем запустите -Mode freeze
+```
+
+!!! tip "Рекомендуемый workflow при обновлении зависимостей"
+    ```powershell
+    # 1. Установить новый пакет
+    venv\Scripts\pip.exe install some-package
+
+    # 2. Обновить requirements.txt
+    powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode freeze
+
+    # 3. Закоммитить
+    git add requirements.txt
+    git commit -m "deps: add some-package"
+    ```
 
 ---
 

@@ -44,11 +44,11 @@
   "directories": {
     "models": "~/.models",
     "rag": "~/.rag",
-    "hf_models": "~/.hf_models"
+    "hf_models": "~/.cache/huggingface/hub"
   },
   "huggingface": {
     "token": "",
-    "models_dir": "./models/hf",
+    "models_dir": "~/.hf_models",
     "device": "auto",
     "default_max_new_tokens": 512,
     "default_temperature": 0.7

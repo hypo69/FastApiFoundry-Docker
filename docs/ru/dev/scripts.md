@@ -6,6 +6,7 @@
 
 | Скрипт | Назначение |
 |---|---|
+| `create_requirements.ps1` | Обновление `requirements.txt` (режимы: pipreqs, freeze, clean) |
 | `restart-mkdocs.ps1` | Перезапуск сервера документации MkDocs |
 | `llama-start.ps1` | Запуск `llama-server.exe` с выбранной GGUF моделью |
 | `load-model.ps1` | Загрузка модели в Foundry через CLI |
@@ -18,6 +19,47 @@
 | `Update-Project.ps1` | Проверка обновлений из GitHub и переключение на новый тег |
 | `generate-ps-docs.ps1` | Генерация Markdown-документации из PowerShell comment-based help |
 | `build_exes.ps1` | Сборка `install.exe` и `launcher.exe` |
+
+---
+
+## create_requirements.ps1
+
+Обновляет `requirements.txt` одним из трёх способов.
+
+```powershell
+# Рекомендуемый: только реально используемые пакеты
+powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode pipreqs
+
+# Полный снимок venv
+powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode freeze
+
+# Сброс окружения с нуля
+powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode clean
+```
+
+### Режимы
+
+| Режим | Описание |
+|---|---|
+| `pipreqs` | Анализирует `import` в `src/` и генерирует минимальный файл. Автоустанавливает `pipreqs` если нет. |
+| `freeze` | `pip freeze` — полный снимок всего venv с зафиксированными версиями. |
+| `clean` | Удаляет venv, создаёт новый. Используйте для сброса окружения, затем запустите `-Mode freeze`. |
+
+### Параметры
+
+| Параметр | По умолчанию | Описание |
+|---|---|---|
+| `-Mode` | `pipreqs` | Режим работы |
+| `-ProjectPath` | корень проекта | Путь к проекту |
+| `-VenvPath` | `<корень>\venv` | Путь к venv |
+
+!!! tip "Рекомендуемый workflow"
+    После установки нового пакета используйте `freeze`, чтобы зафиксировать точные версии:
+    ```powershell
+    venv\Scripts\pip.exe install some-package
+    powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode freeze
+    git add requirements.txt && git commit -m "deps: add some-package"
+    ```
 
 ---
 

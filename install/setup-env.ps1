@@ -33,7 +33,8 @@ param(
 )
 
 $ErrorActionPreference = 'Continue'
-$Root = $PSScriptRoot
+$Root    = $PSScriptRoot
+$Project = Split-Path -Parent $Root   # project root (one level above install\)
 
 Write-Host '🔐 FastAPI Foundry - Environment Setup' -ForegroundColor Cyan
 Write-Host ('=' * 60) -ForegroundColor Cyan
@@ -41,8 +42,8 @@ Write-Host ('=' * 60) -ForegroundColor Cyan
 # -----------------------------------------------------------------------------
 # Step 1: Check whether .env already exists
 # -----------------------------------------------------------------------------
-$envPath        = "$Root\.env"
-$envExamplePath = "$Root\.env.example"
+$envPath        = "$Project\.env"
+$envExamplePath = "$Project\.env.example"
 
 if ((Test-Path $envPath) -and -not $Force) {
     Write-Host '⚠️ .env file already exists!' -ForegroundColor Yellow
@@ -171,14 +172,13 @@ Write-Host "`n✅ Setup completed!" -ForegroundColor Green
 Write-Host "📁 Configuration saved to: $envPath" -ForegroundColor Gray
 
 Write-Host "`n🔍 Checking configuration..." -ForegroundColor Cyan
-if (Test-Path "$Root\check_env.py") {
+if (Test-Path "$Project\check_env.py") {
     try {
-        # Use the venv Python if available, otherwise fall back to system Python
-        $pythonPath = "$Root\venv\Scripts\python.exe"
+        $pythonPath = "$Project\venv\Scripts\python.exe"
         if (Test-Path $pythonPath) {
-            & $pythonPath "$Root\check_env.py"
+            & $pythonPath "$Project\check_env.py"
         } else {
-            python "$Root\check_env.py"
+            python "$Project\check_env.py"
         }
     } catch {
         Write-Host "⚠️ Could not run environment check: $_" -ForegroundColor Yellow

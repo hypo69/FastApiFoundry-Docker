@@ -35,7 +35,7 @@ def _get_models_dir() -> Path:
     Priority:
         1. ``directories.hf_models`` from config.json
         2. ``HF_MODELS_DIR`` environment variable (legacy)
-        3. ``~/.models`` default
+        3. ``~/.cache/huggingface/hub`` default (standard HuggingFace cache)
 
     Returns:
         Path: Resolved absolute path to the models directory.
@@ -51,11 +51,11 @@ def _get_models_dir() -> Path:
     raw = os.environ.get("HF_MODELS_DIR", "")
     if raw and not raw.startswith("${"):
         return Path(raw).expanduser()
-    return Path.home() / ".models"
+    return Path.home() / ".cache" / "huggingface" / "hub"
 
 HF_MODELS_DIR = _get_models_dir()
 
-# Standard HuggingFace cache — scanned additionally in list_downloaded()
+# Standard HuggingFace cache — same as HF_MODELS_DIR default, kept for explicit reference
 HF_CACHE_DIR = Path.home() / ".cache" / "huggingface" / "hub"
 
 # Models loaded into memory: {model_id: {"pipeline": Pipeline, "tokenizer": Tokenizer}}
@@ -114,7 +114,7 @@ class HFClient:
 
     Environment variables:
         HF_TOKEN: HuggingFace access token (required for gated models).
-        HF_MODELS_DIR: Directory to save downloaded models (default: ``~/.models``).
+        HF_MODELS_DIR: Directory to save downloaded models (default: ``~/.cache/huggingface/hub``).
     """
 
     def download_model(self, model_id: str, token: Optional[str] = None) -> dict:
@@ -322,10 +322,16 @@ class HFClient:
         # Scan both directories, deduplicate by model_id
         seen: set = set()
         results = []
-        for model in _scan_dir(HF_MODELS_DIR, "~/.models") + _scan_dir(HF_CACHE_DIR, "~/.cache/huggingface/hub"):
+        for model in _scan_dir(HF_MODELS_DIR, str(HF_MODELS_DIR)):
             if model["id"] not in seen:
                 seen.add(model["id"])
                 results.append(model)
+        # Also scan standard cache if it differs from HF_MODELS_DIR
+        if HF_CACHE_DIR != HF_MODELS_DIR:
+            for model in _scan_dir(HF_CACHE_DIR, str(HF_CACHE_DIR)):
+                if model["id"] not in seen:
+                    seen.add(model["id"])
+                    results.append(model)
 
         return sorted(results, key=lambda x: x["id"])
 

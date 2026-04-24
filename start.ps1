@@ -321,6 +321,24 @@ if ($docsServerConfig -and $docsServerConfig.enabled) {
         ) -WindowStyle Minimized -PassThru
         $script:MkDocsPid = $mkdocsProc.Id
         Write-Host "✅ Сервер MkDocs запущен на http://localhost:$docsPort (PID: $($mkdocsProc.Id))" -ForegroundColor Green
+
+        # Wait for MkDocs to become ready, then open browser
+        $docsUrl      = "http://localhost:$docsPort"
+        $docsDeadline = (Get-Date).AddSeconds(20)
+        $docsReady    = $false
+        while ((Get-Date) -lt $docsDeadline) {
+            try {
+                $r = Invoke-WebRequest -Uri $docsUrl -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+                if ($r.StatusCode -lt 500) { $docsReady = $true; break }
+            } catch { }
+            Start-Sleep -Milliseconds 500
+        }
+        if ($docsReady) {
+            Start-Process $docsUrl
+            Write-Host "🌐 Браузер открыт: $docsUrl" -ForegroundColor Green
+        } else {
+            Write-Host "💡 Документация: $docsUrl" -ForegroundColor Cyan
+        }
     } catch {
         Write-Host "❌ Сбой при запуске сервера MkDocs: $_" -ForegroundColor Red
         Write-Host "⚠️ Продолжение работы без сервера документации." -ForegroundColor Yellow
@@ -330,8 +348,9 @@ if ($docsServerConfig -and $docsServerConfig.enabled) {
 }
 
 # -----------------------------------------------------------------------------
-# Step 6: Optional llama.cpp local inference server
-# Only started when LLAMA_MODEL_PATH and LLAMA_AUTO_START=true are set in .env
+# Step 6: llama.cpp local inference server
+# Starts if llama_cpp.model_path is set in config.json.
+# Set auto_start=false to disable automatic start.
 # -----------------------------------------------------------------------------
 <#
 .SYNOPSIS
@@ -486,28 +505,31 @@ function Start-LlamaServer {
 }
 
 $llamaModelPath = $null
-$llamaAutoStart = $false
+$llamaAutoStart = $true   # default: start if model_path is set
 $llamaPort      = 9780
 
-# Загрузка настроек llama.cpp из config.json
+# Read llama.cpp settings from config.json
 try {
     $cfg        = Get-Content (Join-Path $Root 'config.json') -Raw | ConvertFrom-Json
     $llamaCfg   = $cfg.llama_cpp
     $llamaModelPath = $llamaCfg.model_path
-    $llamaAutoStart = [bool]$llamaCfg.auto_start
-    $llamaPort      = if ($llamaCfg.port) { [int]$llamaCfg.port } else { 9780 }
+    # auto_start=false is the only way to suppress start when model_path is set
+    if ($llamaCfg.PSObject.Properties['auto_start']) {
+        $llamaAutoStart = [bool]$llamaCfg.auto_start
+    }
+    $llamaPort = if ($llamaCfg.port) { [int]$llamaCfg.port } else { 9780 }
 } catch {
     Write-Host "⚠️  Could not read llama_cpp from config.json: $_" -ForegroundColor Yellow
 }
 
-# Переопределение пути сервера из .env
+# Override from .env
 $llamaServerPathEnv = [System.Environment]::GetEnvironmentVariable('LLAMA_SERVER_PATH')
 
-# Обновление бинарных файлов
+# Ensure binary is up-to-date
 $llamaServerExe = Ensure-LlamaBin
 
 if ($llamaModelPath -and $llamaAutoStart) {
-    Write-Host '🦙 Auto-starting llama.cpp server...' -ForegroundColor Cyan
+    Write-Host "🦙 Starting llama.cpp server..." -ForegroundColor Cyan
     Write-Host "   Model : $llamaModelPath" -ForegroundColor Gray
     Write-Host "   Port  : $llamaPort" -ForegroundColor Gray
 
@@ -539,9 +561,10 @@ if ($llamaModelPath -and $llamaAutoStart) {
         Write-Host '❌ llama-server.exe not available, skipping auto-start.' -ForegroundColor Red
     }
 } elseif ($llamaModelPath) {
-    Write-Host '💡 llama.cpp model configured but auto_start=false in config.json (skipping)' -ForegroundColor Gray
+    Write-Host '💡 llama.cpp: auto_start=false in config.json — skipping. Set auto_start=true to enable.' -ForegroundColor Gray
 } else {
-    Write-Host '💡 llama.cpp: no model_path set in config.json (skipping)' -ForegroundColor Gray
+    Write-Host '💡 llama.cpp: no model_path in config.json — skipping.' -ForegroundColor Gray
+    Write-Host '   Add a .gguf model and set llama_cpp.model_path, or use the web UI: llama.cpp tab → Browse' -ForegroundColor Gray
 }
 
 # -----------------------------------------------------------------------------

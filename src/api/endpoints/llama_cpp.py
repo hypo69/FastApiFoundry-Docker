@@ -120,7 +120,8 @@ async def llama_copy_model(request: dict) -> dict:
     if not src.exists():
         raise HTTPException(status_code=404, detail=f"File not found: {src}")
 
-    dest_dir = Path.home() / ".models"
+    from ...core.config import config as _cfg
+    dest_dir = Path(_cfg.llama_models_dir)
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / src.name
 
