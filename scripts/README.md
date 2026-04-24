@@ -28,7 +28,7 @@
 .\scripts\load-model.ps1 -ModelId "qwen2.5-0.5b-instruct-generic-cpu"
 
 # Скачать модель с HuggingFace
-.\scripts\hf-download-model.ps1 -Repo "bartowski/gemma-7b-it-GGUF" -LocalDir "D:\models"
+.\scripts\hf-download-model.ps1 -Repo "bartowski/gemma-7b-it-GGUF" -LocalDir "~\hf_models"
 
 # Проверить статус сервисов
 .\scripts\service-status.ps1

@@ -191,15 +191,16 @@ class SystemBot:
             try:
                 help_text = (
                     "🚀 *FastAPI Foundry Bot*\n\n"
-                    "/status - Состояние системы и Foundry\n"
-                    "/foundry_start - Запустить Foundry\n"
-                    "/foundry_stop - Остановить Foundry\n"
-                    "/logs - Последние 5 ошибок из лога\n"
-                    "/get_logs - Получить полный файл логов\n"
-                    "/clear_logs - Очистить файл логов\n"
-                    "/stats - Графики нагрузки CPU, RAM и диска\n"
-                    "/restart_server - Перезагрузить API сервер\n"
-                    "/rag_rebuild - Пересборка индекса RAG"
+                    "/status - System and Foundry state\n"
+                    "/foundry_start - Start Foundry service\n"
+                    "/foundry_stop - Stop Foundry service\n"
+                    "/logs - Last 5 errors from log file\n"
+                    "/get_logs - Get full log file\n"
+                    "/clear_logs - Clear log file\n"
+                    "/clear_chat_history - Delete chat history file\n"
+                    "/stats - CPU, RAM, and Disk usage graphs\n"
+                    "/restart_server - Restart API server\n"
+                    "/rag_rebuild - Rebuild RAG index"
                 )
                 await self.bot.reply_to(message, help_text, parse_mode='Markdown')
             except Exception as e:
@@ -418,6 +419,36 @@ class SystemBot:
                 )
             except Exception as e:
                 logger.error(f"Ошибка clear_logs_request: {e}")
+
+        @self.bot.message_handler(commands=['clear_chat_history'])
+        async def clear_chat_history(message):
+            if not self._is_allowed(message): return
+            try:
+                if self.chat_history_file.exists():
+                    self.chat_history_file.unlink()
+                    msg = "🗑️ *Файл истории чатов удален.*"
+                    logger.info("История чатов Telegram удалена через бота.")
+                else:
+                    msg = "⚠️ Файл истории чатов не найден."
+                
+                await self.bot.send_message(message.chat.id, msg, parse_mode='Markdown')
+            except Exception as e:
+                logger.error(f"Ошибка clear_chat_history: {e}")
+
+        @self.bot.message_handler(commands=['clear_chat_history'])
+        async def clear_chat_history(message):
+            if not self._is_allowed(message): return
+            try:
+                if self.chat_history_file.exists():
+                    self.chat_history_file.unlink()
+                    msg = "🗑️ *Файл истории чатов удален.*"
+                    logger.info("История чатов Telegram удалена через бота.")
+                else:
+                    msg = "⚠️ Файл истории чатов не найден."
+                
+                await self.bot.send_message(message.chat.id, msg, parse_mode='Markdown')
+            except Exception as e:
+                logger.error(f"Ошибка clear_chat_history: {e}")
 
         @self.bot.message_handler(commands=['restart_server'])
         async def restart_server_request(message):

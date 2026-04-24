@@ -216,8 +216,6 @@ export async function sendMessage() {
                 use_rag:                 document.getElementById('use-rag')?.checked || false,
                 translate_model_dialog:  document.getElementById('translate-dialog')?.checked ?? true,
                 user_language:           document.getElementById('user-language')?.value || null,
-                translate_model_dialog:  document.getElementById('translate-dialog')?.checked ?? true,
-                user_language:           document.getElementById('user-language')?.value || null,
             }),
             signal: _activeAbortController.signal,
         });

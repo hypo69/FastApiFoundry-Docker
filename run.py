@@ -28,32 +28,32 @@ from datetime import datetime
 import locale
 from typing import Optional
 
-# Принудительная настройка кодировки UTF-8 для всего процесса Python
+# Forced UTF-8 encoding setup for the entire Python process
 os.environ['PYTHONIOENCODING'] = 'utf-8'
-if sys.platform == 'win32': # Проверка платформы Windows
+if sys.platform == 'win32': # Windows platform check
     import codecs
     try:
         sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
         sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
     except:
-        pass  # Проверка: если кодировка уже установлена
-    # Попытка установить UTF-8 локаль
+        pass  # Check: if encoding is already set
+    # Attempt to set UTF-8 locale
     try:
         locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
     except:
         try:
             locale.setlocale(locale.LC_ALL, 'C.UTF-8')
         except:
-            pass  # Проверка: использование системной локали по умолчанию
+            pass  # Check: use system default locale
 
 import json
 import socket
 import logging
 from pathlib import Path
 
-# Добавление текущей директории в sys.path для импорта модулей
+# Adding current directory to sys.path for module imports
 current_dir = Path(__file__).parent
-if str(current_dir) not in sys.path: # Проверка наличия пути в sys.path
+if str(current_dir) not in sys.path: # Check if path is in sys.path
     sys.path.insert(0, str(current_dir))
 
 # Добавление site-packages для python311
