@@ -32,8 +32,8 @@ from ...utils.api_utils import api_response_handler
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-MCP_SETTINGS_PATH = Path("mcp-powershell-servers/settings.json")
-MCP_PIDS_PATH = Path("mcp-powershell-servers/.mcp-pids.json")
+MCP_SETTINGS_PATH = Path("mcp/settings.json")
+MCP_PIDS_PATH = Path("mcp/.mcp-pids.json")
 
 # In-memory storage for running processes
 _running_processes: Dict[str, subprocess.Popen] = {}

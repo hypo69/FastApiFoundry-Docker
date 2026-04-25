@@ -81,6 +81,19 @@
       ],
       "description": "Последовательное мышление и планирование"
     },
+    "ftp": {
+      "command": "python",
+      "args": [
+        "./mcp-powershell-servers/src/servers/ftp_mcp.py"
+      ],
+      "env": {
+        "FTP_HOST": "${FTP_HOST}",
+        "FTP_USER": "${FTP_USER}",
+        "FTP_PASSWORD": "${FTP_PASSWORD}",
+        "FTP_PORT": "${FTP_PORT}"
+      },
+      "description": "FTP server operations: list, upload, download, delete, rename"
+    },
     "local-models": {
       "command": "python",
       "args": [

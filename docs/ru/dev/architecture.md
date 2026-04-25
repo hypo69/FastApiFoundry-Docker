@@ -192,7 +192,6 @@ FASTAPI_RELOAD=false
 |---|---|---|
 | `pipreqs` | Только пакеты, реально импортируемые в коде | Рекомендуется — чистый минимальный файл |
 | `freeze` | Полный снимок всего venv (`pip freeze`) | Когда нужна точная воспроизводимость |
-| `clean` | Удалить venv, создать новый, установить вручную | Сброс окружения с нуля |
 
 #### Использование
 
@@ -202,16 +201,13 @@ powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode
 
 # Полный снимок venv
 powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode freeze
-
-# Сброс окружения
-powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode clean
 ```
 
 #### Параметры скрипта
 
 | Параметр | По умолчанию | Описание |
 |---|---|---|
-| `-Mode` | `pipreqs` | Режим: `pipreqs`, `freeze`, `clean` |
+| `-Mode` | `pipreqs` | Режим: `pipreqs`, `freeze` |
 | `-ProjectPath` | корень проекта | Путь к проекту |
 | `-VenvPath` | `<корень>\venv` | Путь к виртуальному окружению |
 
@@ -230,14 +226,6 @@ powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode
 1. Активирует venv
 2. Запускает: pip freeze
 3. Записывает вывод в requirements.txt
-```
-
-**`clean`** — полный сброс:
-```
-1. Удаляет существующий venv
-2. Создаёт новый через: python -m venv <VenvPath>
-3. Активирует его
-4. Выводит инструкцию: установите пакеты вручную, затем запустите -Mode freeze
 ```
 
 !!! tip "Рекомендуемый workflow при обновлении зависимостей"
@@ -313,20 +301,51 @@ from src.core.config import config
 ```python
 from src.core.config import config
 
-config.api_port            # int, порт FastAPI
-config.api_host            # str, хост
-config.api_reload          # bool, hot reload
-config.foundry_base_url    # str | None, URL Foundry API
-config.foundry_base_url = "http://localhost:50477/v1/"  # setter
-config.foundry_default_model   # str
-config.foundry_auto_load_default  # bool
-config.rag_enabled         # bool
-config.rag_index_dir       # str, путь к индексу
-config.rag_model           # str, модель эмбеддингов
-config.rag_top_k           # int
-config.dir_models          # str, ~/.models
-config.dir_hf_models       # str, ~/.hf_models
+# Сервер FastAPI
+config.api_host            # str,  хост (default: '0.0.0.0')
+config.api_port            # int,  порт (default: 9696)
+config.api_workers         # int,  количество воркеров (default: 1)
+config.api_reload          # bool, hot reload (default: True)
+config.api_log_level       # str,  уровень логов uvicorn (default: 'INFO')
 
+# Foundry AI
+config.foundry_base_url              # str,  URL Foundry API (runtime override)
+config.foundry_base_url = "http://localhost:50477/v1/"  # setter
+config.foundry_default_model         # str,  модель по умолчанию
+config.foundry_auto_load_default     # bool, автозагрузка при старте
+config.foundry_temperature           # float, температура (default: 0.7)
+config.foundry_max_tokens            # int,   максимум токенов (default: 2048)
+config.foundry_top_p                 # float, top-p сэмплинг (default: 0.9)
+config.foundry_top_k                 # int,   top-k сэмплинг (default: 50)
+config.foundry_models_dir            # str,   путь к кэшу Foundry
+
+# llama.cpp
+config.llama_model_path    # str, путь к .gguf файлу
+config.llama_models_dir    # str, директория GGUF моделей
+
+# RAG
+config.rag_enabled         # bool, включена ли RAG
+config.rag_index_dir       # str,  путь к FAISS индексу
+config.rag_model           # str,  модель эмбеддингов
+config.rag_chunk_size      # int,  размер чанка (default: 1000)
+config.rag_top_k           # int,  количество результатов поиска (default: 5)
+
+# Директории
+config.dir_models          # str, ~/.models  — GGUF модели
+config.dir_rag             # str, ~/.rag     — RAG индексы
+config.dir_hf_models       # str, ~/.cache/huggingface/hub — HuggingFace модели
+
+# Model Manager
+config.model_manager_max_loaded      # int,   макс одновременно загруженных моделей (default: 1)
+config.model_manager_ttl_seconds     # int,   TTL бездействия в секундах (default: 600)
+config.model_manager_max_ram_percent # float, порог RAM для LRU вытеснения (default: 80.0)
+
+# Логирование
+config.logging_retention_hours  # int, хранение логов в часах (default: 24)
+config.history_retention_days   # int, хранение истории чата в днях (default: 7)
+config.archive_max_size_gb      # int, макс размер архива в GB (default: 2)
+
+# Методы
 config.get_section("huggingface")   # dict секции
 config.get_raw_config()             # весь config.json
 config.update_config(new_dict)      # сохранить в файл
@@ -348,17 +367,31 @@ config.reload_config()              # перечитать файл
 
 Все роутеры подключаются с префиксом `/api/v1`:
 
-```python
-app.include_router(health.router,        prefix="/api/v1")
-app.include_router(generate.router,      prefix="/api/v1")
-app.include_router(chat_router,          prefix="/api/v1")
-app.include_router(rag.router,           prefix="/api/v1")
-app.include_router(hf_router,            prefix="/api/v1")
-app.include_router(llama_router,         prefix="/api/v1")
-app.include_router(foundry_mgmt_router,  prefix="/api/v1")
-app.include_router(agent_router,         prefix="/api/v1")
-app.include_router(converter_router,     prefix="/api/v1")
-```
+| Файл | Префикс | Назначение | API |
+|---|---|---|---|
+| `endpoints/main.py` | `/` | Главная страница, статика | — |
+| `endpoints/health.py` | `/api/v1/health` | Проверка здоровья сервиса | [Health](api_reference.md#health) |
+| `endpoints/models.py` | `/api/v1/models` | Список всех моделей, пакетная генерация | [Models](api_reference.md#models) |
+| `endpoints/generate.py` | `/api/v1/generate` | Генерация текста, маршрутизация по префиксу модели | [Generate](api_reference.md#generate) |
+| `endpoints/ai_endpoints.py` | `/api/v1/ai` | Расширенная генерация, стриминг, рекомендации | [AI](api_reference.md#ai) |
+| `endpoints/chat_endpoints.py` | `/api/v1/chat` | Чат с историей сессии, SSE стриминг | [Chat](api_reference.md#chat) |
+| `endpoints/foundry.py` | `/api/v1/foundry` | Статус Foundry, запуск/остановка сервиса | [Foundry](api_reference.md#foundry) |
+| `endpoints/foundry_management.py` | `/api/v1/foundry/service` | Управление сервисом Foundry через CLI | [Foundry](api_reference.md#foundry) |
+| `endpoints/foundry_models.py` | `/api/v1/foundry/models` | Скачивание, загрузка, выгрузка моделей Foundry | [Foundry Models](api_reference.md#foundry-models) |
+| `endpoints/hf_models.py` | `/api/v1/hf` | HuggingFace: скачивание, загрузка, inference | [HuggingFace](api_reference.md#huggingface) |
+| `endpoints/llama_cpp.py` | `/api/v1/llama` | Запуск/остановка llama-server, скан моделей | [llama.cpp](api_reference.md#llamacpp) |
+| `endpoints/ollama.py` | `/api/v1/ollama` | Интеграция с Ollama | [Ollama](api_reference.md#ollama) |
+| `endpoints/rag.py` | `/api/v1/rag` | Поиск, индексация, профили, извлечение текста | [RAG](api_reference.md#rag) |
+| `endpoints/agent.py` | `/api/v1/agent` | Запуск агентов, список инструментов | [Agent](api_reference.md#agent) |
+| `endpoints/mcp_powershell.py` | `/api/v1/mcp-powershell` | Управление MCP серверами | [MCP PowerShell](api_reference.md#mcp-powershell) |
+| `endpoints/mcp_agent_endpoints.py` | `/api/v1/mcp-agent` | Обнаружение MCP инструментов для агента | [MCP Agent](mcp_agent.md#api-reference) |
+| `endpoints/config.py` | `/api/v1/config` | Чтение/запись `config.json` и `.env` | [Config](api_reference.md#config) |
+| `endpoints/logs.py` | `/api/v1/logs` | Чтение, фильтрация, очистка логов | [Logs](api_reference.md#logs) |
+| `endpoints/converter.py` | `/api/v1/converter` | Конвертация GGUF → ONNX | [Converter](api_reference.md#converter) |
+| `endpoints/system_stats.py` | `/api/v1/system` | Статистика RAM/CPU | [System](api_reference.md#system) |
+| `endpoints/translator.py` | `/api/v1/translate` | Перевод текста (MyMemory / LibreTranslate) | — |
+| `endpoints/support.py` | `/api/v1/support` | Техподдержка | — |
+| `endpoints/helpdesk.py` | `/api/v1/helpdesk` | Диалоги HelpDesk бота, RAG профили | [HelpDesk](api_reference.md#helpdesk) |
 
 ### src/models/
 

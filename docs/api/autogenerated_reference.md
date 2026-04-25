@@ -5,22 +5,22 @@
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `HEAD, GET /openapi.json`
+**Путь:** `GET, HEAD /openapi.json`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `HEAD, GET /docs`
+**Путь:** `GET, HEAD /docs`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `HEAD, GET /docs/oauth2-redirect`
+**Путь:** `GET, HEAD /docs/oauth2-redirect`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `HEAD, GET /redoc`
+**Путь:** `GET, HEAD /redoc`
 
 ## None
 FastAPI Foundry Control Panel
@@ -466,13 +466,13 @@ Args:
         model (str):         ID модели (optional).
         temperature (float): Температура (default: 0.7).
         max_tokens (int):    Максимум токенов (default: 2048).
+        source_lang (str):   Язык входящего сообщения (default: "auto").
+        locale (str):        Язык ответа — "ru", "he", "fr" и т.д.
+                             Переопределяет source_lang для обратного перевода.
+                             Пусто = отвечать на языке source_lang.
 
 Returns:
     dict: success, response, session_id.
-
-Raises:
-    HTTPException 400: Неверный session_id или пустое сообщение.
-    HTTPException 500: Ошибка генерации.
 
 **Путь:** `POST /api/v1/chat/message`
 

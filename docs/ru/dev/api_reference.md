@@ -72,6 +72,42 @@ curl -X POST http://localhost:9696/api/v1/generate \
 
 ## Chat
 
+### Workflow диалога: пользователь → перевод → RAG → модель → перевод → пользователь
+
+```
+[1] Пользователь отправляет сообщение (на любом языке)
+        │  POST /api/v1/chat/message
+        │  { message, session_id, source_lang, locale, use_rag, model }
+        ▼
+[2] Перевод входящего сообщения → English
+        │  translator.translate_for_model(message, source_lang)
+        │  Включается если: translator.enabled=true И source_lang != "en"
+        ▼
+[3] RAG поиск (если use_rag=true)
+        │  rag_system.search(message_en, top_k=3)
+        │  Релевантные фрагменты добавляются в начало промпта
+        ▼
+[4] Сборка промпта
+        │  "Context:\n{rag}\n\nSystem: {system_prompt}\n\n{history}\nUser: {message}"
+        ▼
+[5] Генерация ответа
+        │  foundry_client.generate_text(prompt, model, temperature, max_tokens)
+        │  Модель отвечает на English
+        ▼
+[6] Обратный перевод ответа
+        │  translator.translate_response(response_en, locale или source_lang)
+        │  Включается если: translator.enabled=true И reply_lang != "en"
+        ▼
+[7] Ответ пользователю (на его языке)
+        { success, response, session_id }
+```
+
+!!! info "Приоритет `locale` над `source_lang`"
+    Если передан `locale="ru"`, ответ всегда будет на русском — даже если входящее сообщение было на английском.
+    Без `locale` ответ переводится на язык `source_lang` (определённый автоматически).
+
+---
+
 ### `POST /chat/start`
 Начать новую сессию чата.
 
@@ -84,19 +120,31 @@ curl -X POST http://localhost:9696/api/v1/generate \
 ```bash
 curl -X POST http://localhost:9696/api/v1/chat/message \
   -H "Content-Type: application/json" \
-  -d '{"session_id": "uuid", "message": "Привет", "model": "qwen2.5-0.5b-instruct-generic-cpu:4"}'
+  -d '{"session_id": "uuid", "message": "Привет", "locale": "ru"}'
 ```
 
 **Тело:**
 ```json
 {
   "session_id": "uuid",
-  "message": "Привет",
+  "message": "Текст сообщения",
   "model": "...",
   "temperature": 0.7,
-  "max_tokens": 2048
+  "max_tokens": 2048,
+  "source_lang": "auto",
+  "locale": "ru"
 }
 ```
+
+| Поле | По умолчанию | Описание |
+|---|---|---|
+| `session_id` | — | UUID сессии (обязательно) |
+| `message` | — | Текст сообщения (обязательно) |
+| `model` | из config.json | ID модели |
+| `temperature` | `0.7` | Температура |
+| `max_tokens` | `2048` | Максимум токенов |
+| `source_lang` | `"auto"` | Язык входящего сообщения (`"ru"`, `"he"`, `"auto"`) |
+| `locale` | `""` | Язык ответа. Переопределяет `source_lang` для обратного перевода |
 
 ### `POST /chat/stream`
 Стриминговый ответ (SSE). Те же поля что и `/chat/message`.  
@@ -481,7 +529,7 @@ curl -X POST http://localhost:9696/api/v1/rag/extract/url \
 ## MCP PowerShell
 
 ### `GET /mcp-powershell/servers`
-Список всех MCP серверов из `mcp-powershell-servers/settings.json` со статусом.
+Список всех MCP серверов из `mcp/settings.json` со статусом.
 
 ### `POST /mcp-powershell/servers/{name}/start`
 Запустить MCP сервер по имени.
@@ -493,10 +541,10 @@ curl -X POST http://localhost:9696/api/v1/rag/extract/url \
 Статус конкретного MCP сервера: `running` / `stopped`, `pid`.
 
 ### `GET /mcp-powershell/settings`
-Содержимое `mcp-powershell-servers/settings.json`.
+Содержимое `mcp/settings.json`.
 
 ### `POST /mcp-powershell/settings`
-Сохранить `mcp-powershell-servers/settings.json`.
+Сохранить `mcp/settings.json`.
 
 **Тело:** `{"settings": {"mcpServers": {...}}}`
 
@@ -504,7 +552,7 @@ curl -X POST http://localhost:9696/api/v1/rag/extract/url \
 
 ## Local Models MCP Server
 
-> Файл: `mcp-powershell-servers/src/servers/local_models_mcp.py`  
+> Файл: `mcp/src/servers/local_models_mcp.py`  
 > Транспорт: STDIO (JSON-RPC 2.0)  
 > Требует: FastAPI Foundry запущен на `localhost:9696`
 

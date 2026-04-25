@@ -41,7 +41,7 @@ from .base import BaseAgent, ToolDefinition
 
 logger = logging.getLogger(__name__)
 
-MCP_SETTINGS_PATH = Path("mcp-powershell-servers/settings.json")
+MCP_SETTINGS_PATH = Path("mcp/settings.json")
 _MCP_TOOL_PREFIX = "mcp__"  # prefix added to tool names to avoid collisions
 
 

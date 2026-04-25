@@ -3,15 +3,13 @@
 # Process Name: Create requirements.txt
 # =============================================================================
 # Description:
-#   Generates requirements.txt using one of three strategies:
+#   Generates requirements.txt using one of two strategies:
 #     freeze   — full pip freeze snapshot of the active venv
 #     pipreqs  — only packages actually imported in source code (auto-installs pipreqs)
-#     clean    — wipe venv, recreate it, then prompt to install deps manually
 #
 # Examples:
 #   .\create_requirements.ps1 -Mode pipreqs
 #   .\create_requirements.ps1 -Mode freeze -ProjectPath . -VenvPath venv
-#   .\create_requirements.ps1 -Mode clean
 #
 # File: scripts/create_requirements.ps1
 # Project: FastApiFoundry (Docker)
@@ -21,7 +19,7 @@
 # =============================================================================
 
 param (
-    [ValidateSet('freeze', 'pipreqs', 'clean')]
+    [ValidateSet('freeze', 'pipreqs')]
     [string]$Mode = 'pipreqs',
 
     [string]$ProjectPath = (Split-Path $PSScriptRoot -Parent),
@@ -76,31 +74,16 @@ function Invoke-Pipreqs {
     Write-Log "requirements.txt written (pipreqs): $ProjectPath"
 }
 
-function Invoke-CleanVenv {
-    param ([string]$ProjectPath, [string]$VenvPath)
-    if (Test-Path $VenvPath) {
-        Write-Log "Removing existing venv: $VenvPath" 'WARN'
-        Remove-Item -Recurse -Force $VenvPath
-    }
-    Write-Log 'Creating new venv...'
-    python -m venv $VenvPath
-    Invoke-ActivateVenv -Path $VenvPath
-    Write-Log 'Venv ready. Install your packages, then re-run with -Mode freeze.' 'WARN'
-}
-
 # --- main ---
 
 try {
     Write-Log "Mode: $Mode | Project: $ProjectPath | Venv: $VenvPath"
 
-    if ($Mode -ne 'clean') {
-        Invoke-ActivateVenv -Path $VenvPath
-    }
+    Invoke-ActivateVenv -Path $VenvPath
 
     switch ($Mode) {
-        'freeze'  { Invoke-Freeze   -ProjectPath $ProjectPath }
-        'pipreqs' { Invoke-Pipreqs  -ProjectPath $ProjectPath }
-        'clean'   { Invoke-CleanVenv -ProjectPath $ProjectPath -VenvPath $VenvPath }
+        'freeze'  { Invoke-Freeze  -ProjectPath $ProjectPath }
+        'pipreqs' { Invoke-Pipreqs -ProjectPath $ProjectPath }
     }
 
     Write-Host '✅ Done' -ForegroundColor Green

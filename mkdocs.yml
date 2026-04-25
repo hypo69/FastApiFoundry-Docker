@@ -1,7 +1,7 @@
 site_name: FastAPI Foundry
 site_description: REST API for local AI models with RAG support
 site_author: hypo69
-site_url: https://hypo69.github.io/FastApiFoundry-Docker/
+site_url: https://davidka.net/ai_assist/docs/
 
 theme:
   name: material

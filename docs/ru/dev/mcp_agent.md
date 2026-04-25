@@ -2,7 +2,7 @@
 
 **Версия:** 0.6.1
 
-MCP Agent позволяет модели Foundry Local использовать ваши локальные MCP серверы как инструменты (function calling). Агент автоматически обнаруживает все инструменты из `mcp-powershell-servers/settings.json` и передаёт их модели в формате OpenAI tools.
+mcp Agent позволяет модели Foundry Local использовать ваши локальные MCP серверы как инструменты (function calling). Агент автоматически обнаруживает все инструменты из `mcp/settings.json` и передаёт их модели в формате OpenAI tools.
 
 ---
 
@@ -169,14 +169,14 @@ POST /api/v1/mcp-agent/refresh-tools
 
 ## Добавление нового MCP сервера
 
-Добавьте запись в `mcp-powershell-servers/settings.json`:
+Добавьте запись в `mcp/settings.json`:
 
 ```json
 {
   "mcpServers": {
     "my-server": {
       "command": "python",
-      "args": ["./mcp-powershell-servers/src/servers/my_server.py"],
+      "args": ["./mcp/src/servers/my_server.py"],
       "env": {
         "MY_API_KEY": "${MY_API_KEY}"
       },
@@ -202,12 +202,13 @@ src/agents/mcp_agent.py          — McpAgent (BaseAgent)
 src/api/endpoints/
   mcp_agent_endpoints.py         — /mcp-agent/* endpoints
   agent.py                       — реестр агентов (включает "mcp")
-mcp-powershell-servers/
+mcp/
   settings.json                  — конфигурация MCP серверов
   src/servers/
-    McpSTDIOServer.v2.ps1        — PowerShell STDIO сервер
+    McpSTDIOServer.ps1           — PowerShell STDIO сервер
     local_models_mcp.py          — FastAPI Foundry MCP сервер
     huggingface_mcp.py           — HuggingFace MCP сервер
+    ftp_mcp.py                   — FTP MCP сервер
 ```
 
 ---

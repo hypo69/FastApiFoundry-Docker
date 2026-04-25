@@ -81,17 +81,21 @@ async def send_chat_message(request: dict):
             model (str):         ID модели (optional).
             temperature (float): Температура (default: 0.7).
             max_tokens (int):    Максимум токенов (default: 2048).
+            source_lang (str):   Язык входящего сообщения (default: "auto").
+            locale (str):        Язык ответа — "ru", "he", "fr" и т.д.
+                                 Переопределяет source_lang для обратного перевода.
+                                 Пусто = отвечать на языке source_lang.
 
     Returns:
         dict: success, response, session_id.
-
-    Raises:
-        HTTPException 400: Неверный session_id или пустое сообщение.
-        HTTPException 500: Ошибка генерации.
     """
     session_id = request.get("session_id")
     message = request.get("message", "")
     source_lang = request.get("source_lang", "auto")
+    # locale: explicit reply language (e.g. "ru", "he", "fr").
+    # If set, overrides source_lang for the back-translation step.
+    # "auto" means: translate response back to the detected source language.
+    locale = request.get("locale", "")  # e.g. "ru", "he", "fr", "auto", or ""
 
     if not session_id or session_id not in chat_sessions:
         raise HTTPException(status_code=400, detail="Неверный ID сессии")
@@ -124,9 +128,11 @@ async def send_chat_message(request: dict):
         ai_response = response.get("content", "")
         chat_sessions[session_id].append({"role": "assistant", "content": ai_response})
 
-        # Translate response back to user language
-        if translate_on and source_lang and source_lang != "en":
-            tr_back = await translator.translate_response(ai_response, source_lang)
+        # Translate response back to user language.
+        # locale overrides detected source_lang if explicitly set.
+        reply_lang = locale if locale and locale != "auto" else source_lang
+        if translate_on and reply_lang and reply_lang not in ("en", "auto"):
+            tr_back = await translator.translate_response(ai_response, reply_lang)
             if tr_back["success"]:
                 ai_response = tr_back["translated"]
 

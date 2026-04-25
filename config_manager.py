@@ -326,7 +326,7 @@ class Config:
 
     @property
     def dir_hf_models(self) -> str:
-        raw = self._config_data.get('directories', {}).get('hf_models') or '~/.hf_models'
+        raw = self._config_data.get('directories', {}).get('hf_models') or '~/.cache/huggingface/hub'
         return str(Path(raw).expanduser())
 
     # ── Помощники ─────────────────────────────────────────────────────────

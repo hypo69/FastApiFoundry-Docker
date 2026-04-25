@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 def _find_server_script(name: str) -> Optional[str]:
-    p = Path("mcp-powershell-servers/src/servers") / f"{name}.ps1"
+    p = Path("mcp/src/servers") / f"{name}.ps1"
     return str(p) if p.exists() else None
 
 

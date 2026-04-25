@@ -1,27 +1,11 @@
-details summary::after {
-    content: 'код';
-    display: inline-block;
-    margin-left: 8px;
-    padding: 1px 7px;
-    font-size: 0.68em;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    border-radius: 3px;
-    background-color: var(--md-primary-fg-color);
-    color: var(--md-primary-bg-color);
-    vertical-align: middle;
-    line-height: 1.6;
-    pointer-events: none;
-}
-
 /* ── mkdocstrings: separators between methods/functions ── */
 .doc-function,
 .doc-method,
 .doc-attribute {
-    border-top: 1px solid var(--md-default-fg-color--lightest);
-    margin-top: 0.6rem !important;
-    padding-top: 0.6rem;
+    border-top: 2px solid var(--md-default-fg-color--lighter);
+    margin-top: 1.6rem !important;
+    padding-top: 1rem;
+    padding-bottom: 0.4rem;
 }
 
 /* ── mkdocstrings: tighter vertical spacing ── */
@@ -45,44 +29,16 @@ details summary::after {
     margin-bottom: 0.3rem;
 }
 
-/* ── Source code link — burgundy/bordeaux style ── */
-.doc-function .doc-source,
-.doc-method .doc-source,
-.doc-class .doc-source {
-    margin-top: 0.8rem;
-    margin-bottom: 1.2rem;
-}
-
-.doc-function .doc-source a,
-.doc-method .doc-source a,
-.doc-class .doc-source a {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35em;
-    padding: 3px 10px 3px 8px;
-    border-radius: 4px;
-    background-color: #6b1a2a;
-    color: #f5d0d8 !important;
-    font-size: 0.78em;
+/* ── mkdocstrings: "Source code in ..." — dark burgundy ── */
+details.mkdocstrings-source > summary {
+    color: #8b1a2e !important;
     font-weight: 600;
-    letter-spacing: 0.02em;
-    text-decoration: none !important;
-    border: 1px solid #8b2a3e;
-    transition: background-color 0.15s ease;
 }
 
-.doc-function .doc-source a:hover,
-.doc-method .doc-source a:hover,
-.doc-class .doc-source a:hover {
-    background-color: #8b2a3e;
-    color: #fff !important;
-}
-
-/* ── Stronger separator between functions/methods ── */
-.doc-function,
-.doc-method {
-    border-top: 2px solid var(--md-default-fg-color--lighter);
-    margin-top: 1.6rem !important;
-    padding-top: 1rem;
-    padding-bottom: 0.4rem;
+details.mkdocstrings-source > summary code {
+    background-color: #f5d0d8 !important;
+    color: #6b1a2a !important;
+    border: 1px solid #c4607a !important;
+    padding: 1px 5px;
+    border-radius: 3px;
 }

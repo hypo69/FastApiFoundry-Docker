@@ -22,7 +22,7 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 
 ## Что происходит при запуске
 
-`start.ps1` — единственная точка входа. Он последовательно проходит 8 этапов,
+`start.ps1` — единая точка входа. Он последовательно проходит 8 этапов,
 затем передаёт управление `run.py`, который запускает FastAPI через Uvicorn.
 
 === "Для пользователя"
@@ -386,12 +386,20 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 | Параметр | Секция | Описание |
 |---|---|---|
 | `port`, `host` | `fastapi_server` | Порт и хост FastAPI |
-| `default_model`, `auto_load_default` | `foundry_ai` | Модель по умолчанию и автозагрузка |
-| `port`, `host`, `model_path`, `auto_start` | `llama_cpp` | Настройки llama.cpp |
-| `hf_models` | `directories` | Директория HuggingFace моделей |
-| `models`, `rag` | `directories` | Директории GGUF и RAG индексов |
+| `mode` | `fastapi_server` | `dev` = hot-reload, `prod` = без reload |
+| `auto_find_free_port`, `workers` | `fastapi_server` | Автопоиск порта, количество воркеров |
+| `base_url`, `default_model`, `auto_load_default` | `foundry_ai` | URL, модель по умолчанию, автозагрузка |
+| `temperature`, `max_tokens` | `foundry_ai` | Параметры генерации |
+| `startup_model_mode`, `startup_custom_model` | `foundry_ai` | Режим загрузки модели при старте |
+| `port`, `host`, `model_path`, `auto_start` | `llama_cpp` | Основные настройки llama.cpp |
+| `models_dir`, `default_model` | `llama_cpp` | Директория GGUF моделей, модель по умолчанию |
+| `models`, `rag`, `hf_models` | `directories` | Директории GGUF, RAG индексов, HuggingFace моделей |
 | `enabled`, `index_dir`, `chunk_size` | `rag_system` | Настройки RAG |
-| `level`, `file` | `logging` | Уровень и файл логов |
+| `level`, `file`, `max_bytes_mb`, `backup_count` | `logging` | Уровень, файл, ротация логов |
+| `console`, `structured`, `errors_file` | `logging` | Вывод в консоль, JSONL логи, отдельный файл ошибок |
+| `enabled`, `port` | `docs_server` | Запуск MkDocs при старте, порт |
+| `max_loaded_models`, `ttl_seconds`, `max_ram_percent` | `model_manager` | Лимиты памяти и TTL для загруженных моделей |
+| `language` | `app` | Язык интерфейса: `en` / `ru` / `he` |
 
 ---
 

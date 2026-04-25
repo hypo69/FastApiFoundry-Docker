@@ -6,7 +6,7 @@
 
 | Скрипт | Назначение |
 |---|---|
-| `create_requirements.ps1` | Обновление `requirements.txt` (режимы: pipreqs, freeze, clean) |
+| `create_requirements.ps1` | Обновление `requirements.txt` (режимы: pipreqs, freeze) |
 | `restart-mkdocs.ps1` | Перезапуск сервера документации MkDocs |
 | `llama-start.ps1` | Запуск `llama-server.exe` с выбранной GGUF моделью |
 | `load-model.ps1` | Загрузка модели в Foundry через CLI |
@@ -32,9 +32,6 @@ powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode
 
 # Полный снимок venv
 powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode freeze
-
-# Сброс окружения с нуля
-powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode clean
 ```
 
 ### Режимы
@@ -43,7 +40,6 @@ powershell -ExecutionPolicy Bypass -File .\scripts\create_requirements.ps1 -Mode
 |---|---|
 | `pipreqs` | Анализирует `import` в `src/` и генерирует минимальный файл. Автоустанавливает `pipreqs` если нет. |
 | `freeze` | `pip freeze` — полный снимок всего venv с зафиксированными версиями. |
-| `clean` | Удаляет venv, создаёт новый. Используйте для сброса окружения, затем запустите `-Mode freeze`. |
 
 ### Параметры
 
