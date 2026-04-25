@@ -1,0 +1,2561 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="REST API for local AI models with RAG support">
+      
+      
+        <meta name="author" content="hypo69">
+      
+      
+        <link rel="canonical" href="https://davidka.net/ai_assist/docs/en/user/models_guide/">
+      
+      
+        <link rel="prev" href="../configuration/">
+      
+      
+        <link rel="next" href="../web_interface/">
+      
+      
+        
+          <link rel="alternate" href="../../../user/models_guide/" hreflang="ru">
+        
+          <link rel="alternate" href="./" hreflang="en">
+        
+      
+      
+      <link rel="icon" href="../../../assets/icons/icon48.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Работа с моделями - FastAPI Foundry</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="FastAPI Foundry" class="md-header__button md-logo" aria-label="FastAPI Foundry" data-md-component="logo">
+      
+  <img src="../../../assets/icons/icon128.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FastAPI Foundry
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Работа с моделями
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Select language">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="../../../user/models_guide/" hreflang="ru" class="md-select__link">
+              Русский
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../index.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Главная
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../getting_started/" class="md-tabs__link">
+          
+  
+  
+  Руководство пользователя
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dev/architecture/" class="md-tabs__link">
+          
+  
+  
+  Для разработчиков
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="FastAPI Foundry" class="md-nav__button md-logo" aria-label="FastAPI Foundry" data-md-component="logo">
+      
+  <img src="../../../assets/icons/icon128.png" alt="logo">
+
+    </a>
+    FastAPI Foundry
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Главная
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Руководство пользователя
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Руководство пользователя
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Быстрый старт
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Установка
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Конфигурация
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Работа с моделями
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Работа с моделями
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#microsoft-foundry-local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 Microsoft Foundry Local
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🤖 Microsoft Foundry Local">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Запуск сервиса
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Загрузка модели
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Автоопределение порта
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Автозагрузка модели при старте
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#huggingface-transformers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤗 HuggingFace Transformers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🤗 HuggingFace Transformers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Концепция
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Настройка
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Популярные модели
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apiv1hfstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Пример ответа /api/v1/hf/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Использование в чате
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Зависимости
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#llamacpp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🦙 llama.cpp
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🦙 llama.cpp">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Настройка
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Запуск через скрипт
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ollama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🦙 Ollama
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚙️ Конфигурация моделей
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web_interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Веб-интерфейс
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram_bots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Telegram Боты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../text_extraction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Извлечение текста
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Логирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Для разработчиков
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Архитектура
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/api_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/rag_system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Система RAG
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/text_extractor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Text Extractor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Агенты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/mcp_agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/telegram_bots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Telegram Боты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Логирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/cicd_docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD документации
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/versioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Управление версиями
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Скрипты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_13" id="__nav_3_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Reference (Python)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Code Reference (Python)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/code/foundry_client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Foundry Client
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/code/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/code/rag_system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RAG System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/code/app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    App Factory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_14" id="__nav_3_14_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Browser Extension (JS)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Browser Extension (JS)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/js/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_15" id="__nav_3_15_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PowerShell MCP Servers
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    PowerShell MCP Servers
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/powershell/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/powershell/run-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    run-sandbox.ps1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#microsoft-foundry-local" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 Microsoft Foundry Local
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🤖 Microsoft Foundry Local">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Запуск сервиса
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Загрузка модели
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Автоопределение порта
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Автозагрузка модели при старте
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#huggingface-transformers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤗 HuggingFace Transformers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🤗 HuggingFace Transformers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Концепция
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Настройка
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Популярные модели
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apiv1hfstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Пример ответа /api/v1/hf/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Использование в чате
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Зависимости
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#llamacpp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🦙 llama.cpp
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🦙 llama.cpp">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Настройка
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Запуск через скрипт
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ollama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🦙 Ollama
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚙️ Конфигурация моделей
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="_1">Руководство по работе с моделями ИИ</h1>
+<p>FastAPI Foundry поддерживает четыре бэкенда для запуска моделей ИИ. Каждый доступен
+через единый REST API и веб-интерфейс.</p>
+<table>
+<thead>
+<tr>
+<th>Бэкенд</th>
+<th>Префикс модели</th>
+<th>Формат</th>
+<th>Рекомендуется для</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Microsoft Foundry Local</strong></td>
+<td><em>(без префикса)</em></td>
+<td>ONNX</td>
+<td>Qwen, DeepSeek, Mistral — быстрый CPU inference</td>
+</tr>
+<tr>
+<td><strong>HuggingFace Transformers</strong></td>
+<td><code>hf::model-id</code></td>
+<td>PyTorch / safetensors</td>
+<td>Любые модели с Hub</td>
+</tr>
+<tr>
+<td><strong>llama.cpp</strong></td>
+<td><code>llama::model-name</code></td>
+<td>GGUF</td>
+<td>Большие модели на CPU/GPU</td>
+</tr>
+<tr>
+<td><strong>Ollama</strong></td>
+<td><em>(настраивается через URL)</em></td>
+<td>GGUF</td>
+<td>Удобное управление моделями</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="microsoft-foundry-local">🤖 Microsoft Foundry Local</h2>
+<p>Рекомендуемый бэкенд для моделей Qwen, DeepSeek, Mistral в формате ONNX.
+FastAPI Foundry автоматически обнаруживает запущенный Foundry Local.</p>
+<h3 id="_2">Запуск сервиса</h3>
+<div class="highlight"><pre><span></span><code><span class="n">foundry</span> <span class="n">service</span> <span class="nb">start</span>
+</code></pre></div>
+<h3 id="_3">Загрузка модели</h3>
+<div class="highlight"><pre><span></span><code><span class="c"># Скачать модель</span>
+<span class="n">foundry</span> <span class="n">model</span> <span class="n">download</span> <span class="n">qwen2</span><span class="p">.</span><span class="n">5</span><span class="p">-</span><span class="n">0</span><span class="p">.</span><span class="n">5b-instruct-generic-cpu</span>
+
+<span class="c"># Список доступных моделей</span>
+<span class="n">foundry</span> <span class="n">model</span> <span class="n">list-available</span>
+
+<span class="c"># Загрузить в память</span>
+<span class="n">foundry</span> <span class="n">model</span> <span class="n">load</span> <span class="n">qwen2</span><span class="p">.</span><span class="n">5</span><span class="p">-</span><span class="n">0</span><span class="p">.</span><span class="n">5b-instruct-generic-cpu</span>
+</code></pre></div>
+<h3 id="_4">Автоопределение порта</h3>
+<p><code>run.py</code> автоматически находит Foundry по процессу <code>Inference.Service.Agent*</code>
+и сканирует порты <code>[62171, 50477, 58130]</code>. Можно задать явно:</p>
+<div class="highlight"><pre><span></span><code># .env
+FOUNDRY_BASE_URL=http://localhost:50477/v1/
+</code></pre></div>
+<h3 id="_5">Автозагрузка модели при старте</h3>
+<div class="highlight"><pre><span></span><code><span class="c1">// config.json</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;foundry_ai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;auto_load_default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;default_model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;qwen2.5-0.5b-instruct-generic-cpu&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="api">API</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Список загруженных моделей Foundry</span>
+GET<span class="w"> </span>/api/v1/foundry/models/loaded
+
+<span class="c1"># Загрузить модель</span>
+POST<span class="w"> </span>/api/v1/foundry/models/load
+<span class="o">{</span><span class="s2">&quot;model_id&quot;</span>:<span class="w"> </span><span class="s2">&quot;qwen2.5-0.5b-instruct-generic-cpu&quot;</span><span class="o">}</span>
+
+<span class="c1"># Выгрузить модель</span>
+POST<span class="w"> </span>/api/v1/foundry/models/unload
+<span class="o">{</span><span class="s2">&quot;model_id&quot;</span>:<span class="w"> </span><span class="s2">&quot;qwen2.5-0.5b-instruct-generic-cpu&quot;</span><span class="o">}</span>
+</code></pre></div>
+<hr />
+<h2 id="huggingface-transformers">🤗 HuggingFace Transformers</h2>
+<p>Полноценная интеграция с HuggingFace Hub: скачивание, загрузка в память,
+inference через <code>transformers.pipeline</code>. Реализовано в <code>src/models/hf_client.py</code>.</p>
+<h3 id="_6">Концепция</h3>
+<div class="highlight"><pre><span></span><code>HuggingFace Hub
+      ↓  snapshot_download()
+~/.cache/huggingface/hub/&lt;author&gt;--&lt;model-name&gt;/   ← directories.hf_models (config.json)
+      ↓  AutoModelForCausalLM
+RAM / VRAM (_loaded_models dict)
+      ↓  pipeline(&quot;text-generation&quot;)
+/api/v1/hf/generate
+</code></pre></div>
+<p>Модели также сканируются из любой другой директории, если <code>directories.hf_models</code> отличается от дефолта.</p>
+<h3 id="_7">Настройка</h3>
+<div class="highlight"><pre><span></span><code># .env — только токен
+HF_TOKEN=hf_ваш_токен   # обязателен для закрытых моделей (Gemma, Llama)
+</code></pre></div>
+<p>Директория для скачивания моделей задаётся в <code>config.json</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;directories&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;hf_models&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;~/.hf_models&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="admonition info">
+<p class="admonition-title">Куда HuggingFace скачивает модели по умолчанию</p>
+<p>Библиотека <code>huggingface_hub</code> без настройки скачивает модели в стандартный кэш:</p>
+<table>
+<thead>
+<tr>
+<th>ОС</th>
+<th>Путь по умолчанию</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows</td>
+<td><code>C:\Users\&lt;user&gt;\.cache\huggingface\hub</code></td>
+</tr>
+<tr>
+<td>Linux / macOS</td>
+<td><code>~/.cache/huggingface/hub</code></td>
+</tr>
+</tbody>
+</table>
+<p>FastAPI Foundry использует тот же путь по умолчанию (<code>~/.cache/huggingface/hub</code>).
+Если задать <code>directories.hf_models</code> в <code>config.json</code> — модели будут скачиваться туда.
+Стандартный кэш сканируется автоматически, если <code>hf_models</code> отличается от него.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Изменить директорию можно через веб-интерфейс: <strong>Settings</strong> → секция <strong>Directories</strong> → поле <strong>HF Models</strong>.</p>
+</div>
+<p>Токен создаётся на <a href="https://huggingface.co/settings/tokens">huggingface.co/settings/tokens</a> с ролью <code>Read</code>.</p>
+<h3 id="_8">Популярные модели</h3>
+<table>
+<thead>
+<tr>
+<th>Модель</th>
+<th>Размер</th>
+<th>Лицензия</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Qwen/Qwen2.5-0.5B-Instruct</code></td>
+<td>~1 GB</td>
+<td>Открытая</td>
+</tr>
+<tr>
+<td><code>Qwen/Qwen2.5-1.5B-Instruct</code></td>
+<td>~3 GB</td>
+<td>Открытая</td>
+</tr>
+<tr>
+<td><code>TinyLlama/TinyLlama-1.1B-Chat-v1.0</code></td>
+<td>~2 GB</td>
+<td>Открытая</td>
+</tr>
+<tr>
+<td><code>microsoft/phi-2</code></td>
+<td>~5 GB</td>
+<td>Открытая</td>
+</tr>
+<tr>
+<td><code>deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B</code></td>
+<td>~3 GB</td>
+<td>Открытая</td>
+</tr>
+<tr>
+<td><code>mistralai/Mistral-7B-Instruct-v0.3</code></td>
+<td>~14 GB</td>
+<td>Нужно принять</td>
+</tr>
+<tr>
+<td><code>meta-llama/Llama-3.2-1B-Instruct</code></td>
+<td>~2 GB</td>
+<td>Нужно принять</td>
+</tr>
+<tr>
+<td><code>google/gemma-2-2b-it</code></td>
+<td>~5 GB</td>
+<td>Нужно принять</td>
+</tr>
+</tbody>
+</table>
+<p>Для моделей с пометкой «Нужно принять» — откройте страницу модели на huggingface.co
+и примите лицензию, затем установите <code>HF_TOKEN</code>.</p>
+<h3 id="api_1">API</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Статус интеграции (версии библиотек, CUDA, путь к моделям)</span>
+GET<span class="w"> </span>/api/v1/hf/status
+
+<span class="c1"># Список скачанных и загруженных моделей</span>
+GET<span class="w"> </span>/api/v1/hf/models
+
+<span class="c1"># Список моделей пользователя + популярные публичные модели</span>
+GET<span class="w"> </span>/api/v1/hf/hub/models
+
+<span class="c1"># Скачать модель с Hub</span>
+POST<span class="w"> </span>/api/v1/hf/models/download
+<span class="o">{</span><span class="s2">&quot;model_id&quot;</span>:<span class="w"> </span><span class="s2">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span><span class="o">}</span>
+
+<span class="c1"># Для закрытой модели — передать токен явно</span>
+POST<span class="w"> </span>/api/v1/hf/models/download
+<span class="o">{</span><span class="s2">&quot;model_id&quot;</span>:<span class="w"> </span><span class="s2">&quot;google/gemma-2-2b-it&quot;</span>,<span class="w"> </span><span class="s2">&quot;token&quot;</span>:<span class="w"> </span><span class="s2">&quot;hf_...&quot;</span><span class="o">}</span>
+
+<span class="c1"># Загрузить в память (CPU или GPU)</span>
+POST<span class="w"> </span>/api/v1/hf/models/load
+<span class="o">{</span><span class="s2">&quot;model_id&quot;</span>:<span class="w"> </span><span class="s2">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span>,<span class="w"> </span><span class="s2">&quot;device&quot;</span>:<span class="w"> </span><span class="s2">&quot;auto&quot;</span><span class="o">}</span>
+
+<span class="c1"># Выгрузить из памяти (освобождает RAM/VRAM)</span>
+POST<span class="w"> </span>/api/v1/hf/models/unload
+<span class="o">{</span><span class="s2">&quot;model_id&quot;</span>:<span class="w"> </span><span class="s2">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span><span class="o">}</span>
+
+<span class="c1"># Генерация текста</span>
+POST<span class="w"> </span>/api/v1/hf/generate
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;model_id&quot;</span>:<span class="w"> </span><span class="s2">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;prompt&quot;</span>:<span class="w"> </span><span class="s2">&quot;Объясни, что такое RAG&quot;</span>,
+<span class="w">  </span><span class="s2">&quot;max_new_tokens&quot;</span>:<span class="w"> </span><span class="m">512</span>,
+<span class="w">  </span><span class="s2">&quot;temperature&quot;</span>:<span class="w"> </span><span class="m">0</span>.7
+<span class="o">}</span>
+</code></pre></div>
+<h3 id="apiv1hfstatus">Пример ответа <code>/api/v1/hf/status</code></h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;success&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;transformers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;available&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;4.40.0&quot;</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;huggingface_hub&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;available&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.23.0&quot;</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;torch&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;available&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.1.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;cuda&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;hf_token_set&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;models_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;~/.hf_models&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="_9">Использование в чате</h3>
+<p>В веб-интерфейсе HuggingFace модели отображаются с префиксом <code>hf::</code>:</p>
+<div class="highlight"><pre><span></span><code>hf::Qwen/Qwen2.5-0.5B-Instruct
+hf::TinyLlama/TinyLlama-1.1B-Chat-v1.0
+</code></pre></div>
+<p>Модель должна быть <strong>скачана и загружена в память</strong> перед использованием в чате.
+При первом обращении через <code>/api/v1/hf/generate</code> загрузка происходит автоматически.</p>
+<h3 id="_10">Зависимости</h3>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>transformers<span class="w"> </span>accelerate<span class="w"> </span>huggingface_hub<span class="w"> </span>torch
+</code></pre></div>
+<p>Если зависимости не установлены — <code>/api/v1/hf/status</code> вернёт <code>"available": false</code>,
+остальные эндпоинты вернут понятное сообщение об ошибке.</p>
+<hr />
+<h2 id="llamacpp">🦙 llama.cpp</h2>
+<p>Запуск GGUF моделей на CPU или GPU через <code>llama-server.exe</code>.
+Бинарники для Windows x64 включены в <code>bin/llama-b8802-bin-win-cpu-x64/</code>.</p>
+<h3 id="_11">Настройка</h3>
+<div class="highlight"><pre><span></span><code># .env
+LLAMA_SERVER_PATH=.\bin\llama-b8802-bin-win-cpu-x64\llama-server.exe
+</code></pre></div>
+<h3 id="_12">Запуск через скрипт</h3>
+<div class="highlight"><pre><span></span><code><span class="p">.\</span><span class="n">scripts</span><span class="p">\</span><span class="n">llama-start</span><span class="p">.</span><span class="n">ps1</span>
+</code></pre></div>
+<p>Или вручную:</p>
+<div class="highlight"><pre><span></span><code><span class="p">.\</span><span class="n">bin</span><span class="p">\</span><span class="n">llama-b8802-bin-win-cpu-x64</span><span class="p">\</span><span class="n">llama-server</span><span class="p">.</span><span class="n">exe</span> <span class="p">`</span>
+  <span class="p">-</span><span class="n">-model</span> <span class="p">~/.</span><span class="n">models</span><span class="p">/</span><span class="n">qwen2</span><span class="p">.</span><span class="n">5</span><span class="p">-</span><span class="n">0</span><span class="p">.</span><span class="n">5b-q4_k_m</span><span class="p">.</span><span class="n">gguf</span> <span class="p">`</span>
+  <span class="p">-</span><span class="n">-port</span> <span class="n">9780</span> <span class="p">`</span>
+  <span class="p">-</span><span class="n">-ctx-size</span> <span class="n">4096</span>
+</code></pre></div>
+<h3 id="api_2">API</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Статус llama.cpp сервера</span>
+GET<span class="w"> </span>/api/v1/llama/status
+
+<span class="c1"># Запустить сервер с моделью</span>
+POST<span class="w"> </span>/api/v1/llama/start
+<span class="o">{</span><span class="s2">&quot;model_path&quot;</span>:<span class="w"> </span><span class="s2">&quot;~/.models/qwen2.5-0.5b-q4_k_m.gguf&quot;</span><span class="o">}</span>
+
+<span class="c1"># Остановить сервер</span>
+POST<span class="w"> </span>/api/v1/llama/stop
+</code></pre></div>
+<p>В чате и генерации llama.cpp модели используются с префиксом <code>llama::</code>.</p>
+<hr />
+<h2 id="ollama">🦙 Ollama</h2>
+<div class="highlight"><pre><span></span><code><span class="c1"># Установить и запустить</span>
+<span class="c1"># https://ollama.com/download</span>
+
+ollama<span class="w"> </span>run<span class="w"> </span>llama2
+ollama<span class="w"> </span>run<span class="w"> </span>qwen2.5:0.5b
+</code></pre></div>
+<p>Настройте <code>FOUNDRY_BASE_URL</code> на порт Ollama (по умолчанию <code>11434</code>):</p>
+<div class="highlight"><pre><span></span><code>FOUNDRY_BASE_URL=http://127.0.0.1:11434/v1/
+</code></pre></div>
+<hr />
+<h2 id="_13">⚙️ Конфигурация моделей</h2>
+<div class="highlight"><pre><span></span><code><span class="c1">// config.json</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;foundry_ai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;default_model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;qwen2.5-0.5b-instruct-generic-cpu&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;auto_load_default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;temperature&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;max_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2048</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;directories&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;models&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;~/.models&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;hf_models&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;~/.hf_models&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>default_model</code></td>
+<td>Модель по умолчанию в веб-интерфейсе</td>
+</tr>
+<tr>
+<td><code>auto_load_default</code></td>
+<td>Загружать модель при старте (только Foundry)</td>
+</tr>
+<tr>
+<td><code>temperature</code></td>
+<td>Температура генерации (0.0 — детерминировано, 2.0 — максимально случайно)</td>
+</tr>
+<tr>
+<td><code>max_tokens</code></td>
+<td>Максимум токенов в ответе</td>
+</tr>
+<tr>
+<td><code>directories.models</code></td>
+<td>Директория GGUF моделей для llama.cpp</td>
+</tr>
+<tr>
+<td><code>directories.hf_models</code></td>
+<td>Директория HuggingFace моделей (переопределяет <code>HF_MODELS_DIR</code>)</td>
+</tr>
+</tbody>
+</table>
+<h1 id="_14">Имена моделей –  техническая спецификация</h1>
+<h1 id="llm-how-to">Как читать имена LLM-моделей и не гадать при выборе: практический how-to</h1>
+<p>Если вы хоть раз открывали репозиторий на Hugging Face, Ollama или LM Studio, то наверняка видели строки вроде:
+<code>Qwen2.5-Coder-32B-Instruct-GGUF-Q4_K_M</code> или <code>Meta-Llama-3.1-8B-Instruct-AWQ</code>.
+На первый взгляд это случайный набор букв и цифр. На самом деле – компактная техническая спецификация. В имени зашита архитектура, назначение модели, требования к памяти и даже то, как она будет с вами общаться. Научившись «читать» эти этикетки, вы перестанете скачивать гигабайты вслепую и начнёте собирать стек под конкретную задачу.</p>
+<hr />
+<h2 id="_15">Как устроено имя модели</h2>
+<p>Унифицированного стандарта нет, но за последние два года сложилась устойчивая конвенция. Имя обычно собирается по схеме:</p>
+<p><code>[Семейство/Разработчик] + [Версия] - [Размер] - [Специализация] - [Формат/Упаковка]</code></p>
+<p>Разберём каждый слой.</p>
+<h3 id="1">1. Семейство и версия</h3>
+<p>Примеры: <code>Llama-3.1</code>, <code>Qwen2.5</code>, <code>Mistral-Nemo</code>, <code>DeepSeek-V3</code>, <code>Gemma-2</code></p>
+<p>Это указывает на лабораторию и поколение архитектуры. Цифры после названия – не маркетинг, а индикатор улучшений: лучше отфильтрованные данные, исправленные баги внимания, оптимизированный токенизатор. Как правило, <code>3.1</code> стабильнее и предсказуемее, чем <code>3.0</code>. Если видите <code>v2</code>, <code>v3</code> или <code>2.5</code> – это почти всегда шаг вперёд по качеству логики и снижению галлюцинаций.</p>
+<h3 id="2">2. Размер параметров</h3>
+<p>Формат: <code>2B</code>, <code>7B</code>, <code>14B</code>, <code>32B</code>, <code>70B</code> (B = миллиарды)</p>
+<p>Условный «объём знаний». Больше параметров → глубже рассуждения, лучше удержание длинных зависимостей, но выше требования к памяти. Важный нюанс: качество не растёт линейно с размером. Аккуратно отобранная 14B-модель часто обходит сырую 30B, потому что важнее не количество нейронов, а качество данных и архитектура.</p>
+<h3 id="3">3. Специализация (суффиксы назначения)</h3>
+<p>Здесь кроется главный подвох. Один и тот же размер может вести себя совершенно по-разному в зависимости от этого маркера:</p>
+<table>
+<thead>
+<tr>
+<th>Суффикс</th>
+<th>Что означает</th>
+<th>Когда брать</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>base</code></td>
+<td>«Голая» предтренерная модель. Умеет продолжать текст, но не понимает команд.</td>
+<td>Только если вы сами обучаете/дообучаете или используете её как сырьё для fine-tune.</td>
+</tr>
+<tr>
+<td><code>instruct</code> / <code>IT</code> / <code>chat</code></td>
+<td>Прошла instruction tuning. Понимает задания, следует ограничениям, держит структуру ответа.</td>
+<td>Для 95% сценариев: диалог, API, ассистенты, генерация по промпту.</td>
+</tr>
+<tr>
+<td><code>coder</code> / <code>code</code></td>
+<td>Дополнительно тренировалась на репозиториях, issue, коммитах. Знает синтаксис, паттерны, стек-трейсы.</td>
+<td>Для написания, рефакторинга, объяснения кода, написания тестов.</td>
+</tr>
+<tr>
+<td><code>math</code> / <code>reasoning</code> / <code>R1</code></td>
+<td>Заточена под логику, часто использует скрытые цепочки рассуждений.</td>
+<td>Для математики, сложных выводов, анализа аргументов.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Правило:</strong> если в имени нет <code>instruct</code> или <code>chat</code>, а вы планируете просто спрашивать модель – готовьтесь писать сложные системные промпты и мириться с «плывущим» форматом ответа.</p>
+<h3 id="4">4. Архитектурные пометки</h3>
+<p>Иногда встречаются уточнения в имени или описании:
+- <code>MoE</code> (Mixture of Experts) – внутри несколько «экспертов», но на каждый токен активируется лишь часть сети. Даёт качество большой модели при расходе памяти меньшей. Пример: <code>Mixtral-8x7B</code>, <code>Qwen2.5-MoE</code>.
+- <code>128k</code> / <code>256k</code> / <code>Long</code> – растянутое контекстное окно. Критично, если вы скормите модели несколько книг или весь репозиторий.</p>
+<h3 id="5">5. Формат и квантизация</h3>
+<p>Часть имени, которую часто добавляют не авторы, а паковщики сообщество (GGUF, AWQ, EXL2). Это способ сжатия весов для локального запуска.</p>
+<table>
+<thead>
+<tr>
+<th>Обозначение</th>
+<th>Что значит</th>
+<th>Потребление памяти (грубо)</th>
+<th>Когда использовать</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fp16</code> / <code>bf16</code></td>
+<td>Оригинальные веса</td>
+<td>~2 ГБ на 1B параметров</td>
+<td>Серверы, когда качество важнее всего</td>
+</tr>
+<tr>
+<td><code>q8_0</code></td>
+<td>8-бит квантизация</td>
+<td>~1 ГБ на 1B</td>
+<td>Почти без потери качества, если есть запас</td>
+</tr>
+<tr>
+<td><code>q5_k_m</code></td>
+<td>5-бит</td>
+<td>~0.75 ГБ на 1B</td>
+<td>Баланс скорость/качество</td>
+</tr>
+<tr>
+<td><code>q4_k_m</code></td>
+<td>4-бит (оптимизированная)</td>
+<td>~0.65 ГБ на 1B</td>
+<td>Золотая середина для ноутбуков/слабых GPU</td>
+</tr>
+<tr>
+<td><code>q3</code> / <code>q2</code></td>
+<td>Агрессивное сжатие</td>
+<td>~0.5 ГБ на 1B</td>
+<td>Только для очень лёгких моделей или edge-устройств</td>
+</tr>
+</tbody>
+</table>
+<p>Для локального запуска в 2025–2026 годах <code>q4_k_m</code> или <code>q5_k_m</code> в формате GGUF – де-факто стандарт. Вы теряете ~5–10% «интеллекта», но модель влезает в обычную ОЗУ/видеопамять и работает заметно быстрее.</p>
+<hr />
+<h2 id="_16">Как собирать пазл под свои задачи</h2>
+<ol>
+<li><strong>Определите домен.</strong> Код? Текст? Логика? Документы? Суффикс специализации важнее размера.</li>
+<li><strong>Посчитайте память.</strong> 1B параметров в <code>q4</code> ≈ 0.6–0.7 ГБ + оверхед на контекст и ОС. Для 8B в <code>q4</code> закладывайте 5–6 ГБ, для 14B – 9–10 ГБ. Всегда оставляйте запас под активное окно.</li>
+<li><strong>Ищите <code>instruct</code>.</strong> Без него модель будет «рычать» в ответ на вопросы.</li>
+<li><strong>Проверяйте контекст.</strong> Если планируете работать с архивами, ищите явное указание <code>128k+</code> или <code>long-context</code>. Модели без этого маркера часто «забывают» начало длинного промпта после 8–16k токенов.</li>
+</ol>
+<hr />
+<h2 id="20252026">Рекомендации под конкретные сценарии (стандарты 2025–2026)</h2>
+<h3 id="_17">🛠 Кодинг и разработка</h3>
+<p>Вам нужна модель, которая понимает не только синтаксис, но и архитектурные паттерны, умеет рефакторить, писать тесты и объяснять ошибки без воды.</p>
+<p><strong>Что брать:</strong>
+- <code>Qwen2.5-Coder-32B-Instruct</code> (или актуальные версии на момент чтения) – лидер по качеству кодогенерации и пониманию сложных фреймворков.
+- <code>DeepSeek-Coder-V2-Lite-Instruct</code> (16B MoE) – отличный баланс качества и потребления памяти.
+- Для слабых машин (ноутбук, без GPU): <code>CodeGemma-2-7B-Instruct</code> или <code>Phi-3.5-mini-instruct</code> (3.8B).</p>
+<p><strong>Формат:</strong> <code>GGUF</code>, квантизация <code>q4_k_m</code> или <code>q5_k_m</code>. Обязательно наличие суффиксов <code>coder</code> + <code>instruct</code>. <code>base</code>-версии здесь бесполезны.</p>
+<h3 id="rag">📚 Большой архив документов (анализ, поиск, RAG)</h3>
+<p>Три критических параметра: длинное контекстное окно (128k+), устойчивость к фактическим галлюцинациям и аккуратная работа с инструкциями по структурированию выводов.</p>
+<p><strong>Что брать:</strong>
+- <code>Qwen2.5-14B-Instruct-128k</code> или <code>32B</code> – отличная фактологическая точность и стабильность на длинных окнах.
+- <code>Llama-3.1-8B-Instruct-Long</code> – предсказуемая, хорошо документирована, отлично встраивается в RAG-пайплайны.
+- Если работаете через векторный поиск + контекстная подгрузка, хватит 8–14B. Главное – явно заявленное длинное окно.</p>
+<p><strong>Чего избегать:</strong> <code>coder</code>-версий для текста. Они часто «сворачивают» ответы в псевдокод, игнорируют литературный стиль или переоценивают технические детали в ущерб смыслу.</p>
+<h3 id="_18">☕ Повседневные задачи (заметки, письма, переводы, планирование, простые вопросы)</h3>
+<p>Здесь не нужны гиганты. Важна скорость, адекватный тон, низкая стоимость запуска и отсутствие «заумности».</p>
+<p><strong>Что брать:</strong>
+- <code>Meta-Llama-3.2-3B-Instruct</code> или <code>Gemma-2-2B-IT</code> – работают даже на встроенной графике, занимают 2–4 ГБ в <code>q4</code>, отлично справляются с бытовыми промптами.
+- <code>Qwen2.5-7B-Instruct</code> – если есть запас памяти, даёт заметно более связные и стилистически гибкие ответы.
+- <code>Mistral-Nemo-12B-Instruct</code> – если нужен баланс между качеством и скоростью (очень эффективная архитектура для своего размера).</p>
+<p><strong>Формат:</strong> <code>q4_k_m</code>. Для этих задач переплачивать памятью за <code>q5</code>/<code>q8</code> обычно бессмысленно: вы не заметите разницы в переписке или планировании.</p>
+<hr />
+<h2 id="-">Краткий чек-лист перед скачиванием</h2>
+<ol>
+<li>Есть ли <code>instruct</code> / <code>IT</code> / <code>chat</code>? → Если нет, не берите для диалога.</li>
+<li>Подходит ли суффикс под домен (<code>coder</code>, <code>math</code>, <code>long</code>)? → Специализация &gt; размер.</li>
+<li>Влезает ли в память с запасом под контекст? → 1B ≈ 0.65 ГБ в q4 + 20% на окно.</li>
+<li>Выбран ли адекватный формат? → <code>GGUF q4_k_m</code> как стартовая точка всегда безопасен.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../../javascripts/extra.js"></script>
+      
+    
+  </body>
+</html>

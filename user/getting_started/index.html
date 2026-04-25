@@ -1,0 +1,2759 @@
+
+<!doctype html>
+<html lang="ru" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="REST API for local AI models with RAG support">
+      
+      
+        <meta name="author" content="hypo69">
+      
+      
+        <link rel="canonical" href="https://davidka.net/ai_assist/docs/user/getting_started/">
+      
+      
+      
+        <link rel="next" href="../installation/">
+      
+      
+        
+          <link rel="alternate" href="./" hreflang="ru">
+        
+          <link rel="alternate" href="../../en/user/getting_started/" hreflang="en">
+        
+      
+      
+      <link rel="icon" href="../../assets/icons/icon48.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Быстрый старт - FastAPI Foundry</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          Перейти к содержанию
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Верхний колонтитул">
+    <a href="../.." title="FastAPI Foundry" class="md-header__button md-logo" aria-label="FastAPI Foundry" data-md-component="logo">
+      
+  <img src="../../assets/icons/icon128.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FastAPI Foundry
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Быстрый старт
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Выберите язык">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="ru" class="md-select__link">
+              Русский
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="../../en/user/getting_started/" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Поиск" placeholder="Поиск" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Поиск">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Очистить" aria-label="Очистить" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Инициализация поиска
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Вкладки" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../index.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Главная
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Руководство пользователя
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dev/architecture/" class="md-tabs__link">
+          
+  
+  
+  Для разработчиков
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Навигация" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="FastAPI Foundry" class="md-nav__button md-logo" aria-label="FastAPI Foundry" data-md-component="logo">
+      
+  <img src="../../assets/icons/icon128.png" alt="logo">
+
+    </a>
+    FastAPI Foundry
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Главная
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Руководство пользователя
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Руководство пользователя
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Быстрый старт
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Быстрый старт
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Содержание">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Содержание
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Первый запуск — установка + старт
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Что происходит при запуске
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Этапы подробно
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Этапы подробно">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Проверка и установка бинарника
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#llama-serverexe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Поиск llama-server.exe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Автозапуск сервера
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reloader-watchfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reloader (WatchFiles)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Остановка системы
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Остановка системы">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Остановить FastAPI сервер
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Остановить все сервисы
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#restart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Повторный запуск (restart)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#startps1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Прямой запуск без start.ps1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#startps1_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Параметры start.ps1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ключевые переменные окружения
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ключевые переменные окружения">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#env" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Секреты — хранятся в .env
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#startps1_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Служебные — выставляются start.ps1 автоматически
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Настройки поведения — хранятся в config.json
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Установка
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Конфигурация
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Работа с моделями
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web_interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Веб-интерфейс
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram_bots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Telegram Боты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../text_extraction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Извлечение текста
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Логирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Для разработчиков
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Архитектура
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/api_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/rag_system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Система RAG
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/text_extractor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Text Extractor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Агенты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/mcp_agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/telegram_bots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Telegram Боты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Логирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/cicd_docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD документации
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/versioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Управление версиями
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Скрипты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_13" id="__nav_3_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Reference (Python)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Code Reference (Python)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/code/foundry_client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Foundry Client
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/code/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/code/rag_system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RAG System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/code/app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    App Factory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_14" id="__nav_3_14_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Browser Extension (JS)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Browser Extension (JS)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/js/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_15" id="__nav_3_15_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PowerShell MCP Servers
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    PowerShell MCP Servers
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/powershell/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/powershell/run-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    run-sandbox.ps1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Содержание">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Содержание
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Первый запуск — установка + старт
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Что происходит при запуске
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Этапы подробно
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Этапы подробно">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Проверка и установка бинарника
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#llama-serverexe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Поиск llama-server.exe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Автозапуск сервера
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reloader-watchfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reloader (WatchFiles)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Остановка системы
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Остановка системы">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Остановить FastAPI сервер
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Остановить все сервисы
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#restart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Повторный запуск (restart)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#startps1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Прямой запуск без start.ps1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#startps1_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Параметры start.ps1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ключевые переменные окружения
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ключевые переменные окружения">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#env" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Секреты — хранятся в .env
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#startps1_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Служебные — выставляются start.ps1 автоматически
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Настройки поведения — хранятся в config.json
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="_1">Быстрый старт</h1>
+<h2 id="_2">Первый запуск — установка + старт</h2>
+<div class="highlight"><pre><span></span><code><span class="c"># Первая установка</span>
+<span class="n">powershell</span> <span class="n">-ExecutionPolicy</span> <span class="n">Bypass</span> <span class="o">-File</span> <span class="p">.\</span><span class="n">install</span><span class="p">.</span><span class="n">ps1</span>
+
+<span class="c"># Запуск сервера</span>
+<span class="n">powershell</span> <span class="n">-ExecutionPolicy</span> <span class="n">Bypass</span> <span class="o">-File</span> <span class="p">.\</span><span class="n">start</span><span class="p">.</span><span class="n">ps1</span>
+</code></pre></div>
+<p>После запуска веб-интерфейс доступен по адресу <strong>http://localhost:9696</strong></p>
+<div class="admonition tip">
+<p class="admonition-title">Первая установка через install.bat</p>
+<p>Двойной клик по <code>install.bat</code> — автоматически найдёт или установит PowerShell 7,
+затем запустит <code>install.ps1</code>.</p>
+<p>Подробнее: <a href="../installation/">Установка</a></p>
+</div>
+<hr />
+<h2 id="_3">Что происходит при запуске</h2>
+<p><code>start.ps1</code> — единая точка входа. Он последовательно проходит 8 этапов,
+затем передаёт управление <code>run.py</code>, который запускает FastAPI через Uvicorn.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Для пользователя</label><label for="__tabbed_1_2">Для разработчика</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ol>
+<li><strong>Проверка окружения</strong> — если <code>venv\</code> нет, автоматически запускается установка</li>
+<li><strong>Загрузка настроек</strong> — переменные из <code>.env</code> попадают в окружение процесса</li>
+<li><strong>Foundry AI</strong> — ищет запущенный Foundry, при необходимости запускает его</li>
+<li><strong>Документация</strong> — опционально собирает и запускает локальный сервер MkDocs</li>
+<li><strong>llama.cpp</strong> — опционально запускает локальный inference сервер</li>
+<li><strong>Очистка</strong> — останавливает предыдущий экземпляр FastAPI (если был)</li>
+<li><strong>Запуск</strong> — стартует FastAPI сервер, открывается http://localhost:9696</li>
+</ol>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>start.ps1
+  │
+  ├─[1] Test-Path venv\Scripts\python.exe
+  │      ├─ найден → . venv\Scripts\Activate.ps1
+  │      └─ не найден → .\install.ps1 → создать venv
+  │
+  ├─[2] Load-EnvFile &quot;.env&quot;
+  │      └─ SetEnvironmentVariable KEY=VALUE (секреты маскируются ***)
+  │
+  ├─[3] объявление функций Test-FoundryCli, Get-FoundryPort
+  │
+  ├─[4] Get-FoundryPort()
+  │      ├─ Get-Process &quot;Inference.Service.Agent*&quot; → найден?
+  │      │   ├─ да  → netstat -ano | grep PID | grep LISTENING
+  │      │   │         → GET /v1/models → HTTP 200
+  │      │   │         → FOUNDRY_DYNAMIC_PORT=&lt;port&gt;
+  │      │   │         → FOUNDRY_BASE_URL=http://localhost:&lt;port&gt;/v1/
+  │      │   └─ нет → Test-FoundryCli?
+  │      │             ├─ да  → foundry service start (свёрнутое окно)
+  │      │             │         → опрос 10×2 сек → FOUNDRY_DYNAMIC_PORT=&lt;port&gt;
+  │      │             └─ нет → предупреждение, продолжить без Foundry
+  │
+  ├─[5] config.json → docs_server.enabled?
+  │      └─ true →
+  │          ├─ python -m mkdocs build --quiet  (синхронно, обновляет site/)
+  │          └─ mkdocs serve -a 0.0.0.0:&lt;port&gt;  (фоновое окно, hot-reload)
+  │
+  ├─[6] LLAMA_MODEL_PATH + LLAMA_AUTO_START=true?
+  │      └─ true → scripts\llama-start.ps1 -ModelPath ... -Port ...
+  │                 → LLAMA_BASE_URL=http://127.0.0.1:&lt;port&gt;/v1
+  │
+  ├─[6] %TEMP%\fastapi-foundry.pid → Kill предыдущий процесс FastAPI
+  │
+  └─[8] Start-Process $venvPath run.py  ← блокирует до завершения
+         └─ PID сохраняется в %TEMP%\fastapi-foundry.pid
+</code></pre></div>
+</div>
+</div>
+</div>
+<hr />
+<h2 id="_4">Этапы подробно</h2>
+<details class="note">
+<summary>Этап 1 — Проверка venv</summary>
+<p><code>start.ps1</code> ищет <code>venv\Scripts\python.exe</code> (или <code>python311.exe</code>).</p>
+<ul>
+<li><strong>Найден</strong> → активирует <code>venv\Scripts\Activate.ps1</code> и продолжает</li>
+<li><strong>Не найден</strong> → запускает <code>install.ps1</code> автоматически</li>
+</ul>
+<p><code>install.ps1</code> создаёт venv, устанавливает <code>requirements.txt</code>, опционально
+устанавливает RAG-зависимости и Foundry CLI.</p>
+</details>
+<details class="note">
+<summary>Этап 2 — Загрузка .env</summary>
+<p>Функция <code>Load-EnvFile</code> читает <code>.env</code> построчно и экспортирует каждую пару
+<code>КЛЮЧ=ЗНАЧЕНИЕ</code> через <code>[System.Environment]::SetEnvironmentVariable</code>.</p>
+<p>Секретные переменные (<code>PASSWORD</code>, <code>SECRET</code>, <code>KEY</code>, <code>TOKEN</code>, <code>PAT</code>) маскируются
+в выводе как <code>***</code>.</p>
+<p>Если <code>.env</code> не найден — выводится подсказка создать его из <code>.env.example</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">Copy-Item</span> <span class="p">.</span><span class="n">env</span><span class="p">.</span><span class="n">example</span> <span class="p">.</span><span class="n">env</span>
+<span class="n">notepad</span> <span class="p">.</span><span class="n">env</span>
+</code></pre></div>
+</details>
+<details class="note">
+<summary>Этап 3 — Foundry AI</summary>
+<p>Алгоритм поиска запущенного Foundry:</p>
+<div class="highlight"><pre><span></span><code>Get-Process | Where ProcessName -like &quot;Inference.Service.Agent*&quot;
+  └─ найден → netstat -ano | grep PID | grep LISTENING
+      └─ для каждого порта → GET http://127.0.0.1:&lt;port&gt;/v1/models
+          └─ HTTP 200 → вернуть порт
+</code></pre></div>
+<p>Если Foundry не запущен, но <code>foundry</code> есть в PATH:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">Start-Process</span> <span class="n">foundry</span> <span class="n">-ArgumentList</span> <span class="s2">&quot;service&quot;</span><span class="p">,</span> <span class="s2">&quot;start&quot;</span> <span class="n">-WindowStyle</span> <span class="n">Minimized</span>
+<span class="c"># Опрос каждые 2 сек, максимум 10 попыток (20 сек)</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Foundry недоступен</p>
+<p>Если Foundry не найден и не установлен — сервер всё равно запустится.
+HuggingFace и llama.cpp продолжат работать. Foundry-модели будут недоступны.</p>
+</div>
+</details>
+<details class="note">
+<summary>Этап 4 — MkDocs (опционально)</summary>
+<p>Управляется через <code>config.json</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;docs_server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">9697</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Последовательность действий:</p>
+<ol>
+<li><code>Get-NetTCPConnection -LocalPort 9697</code> — если порт занят, убивает процесс (<code>Stop-Process</code>)</li>
+<li><code>mkdocs build</code> — пересобирает <code>site/</code> из актуальных <code>docs/</code></li>
+<li><code>mkdocs serve</code> — запускает live-сервер с hot-reload в фоновом окне</li>
+</ol>
+<p>Документация доступна на <strong>http://localhost:9697</strong></p>
+<div class="admonition info">
+<p class="admonition-title">Почему нужна пересборка</p>
+<p><code>mkdocs serve</code> отдаёт страницы из <code>docs/</code> напрямую (hot-reload),
+но <code>site/</code> — статика для GitHub Pages — обновляется только через <code>mkdocs build</code>.
+<code>start.ps1</code> запускает оба шага, поэтому <code>site/</code> всегда актуален.</p>
+</div>
+</details>
+<details class="note">
+<summary>Этап 5 — llama.cpp (опционально)</summary>
+<h3 id="_5">Проверка и установка бинарника</h3>
+<p>При каждом запуске <code>start.ps1</code> вызывает <code>Ensure-LlamaBin</code>:</p>
+<ol>
+<li>Ищет файлы <code>llama-*-bin-win-*.zip</code> в директории <code>bin/</code></li>
+<li>Берёт последний по имени (номер сборки растёт лексикографически)</li>
+<li>Читает установленную версию из <code>config.json</code> → <code>llama_cpp.bin_version</code></li>
+<li>Если версия совпадает и <code>llama-server.exe</code> существует — пропускает</li>
+<li>Если найдена <strong>новая версия</strong> — спрашивает:</li>
+</ol>
+<div class="highlight"><pre><span></span><code>📦 New llama.cpp version available!
+   Installed : llama-b8000-bin-win-cpu-x64
+   Available : llama-b8802-bin-win-cpu-x64
+   Install now? [Y/n]
+</code></pre></div>
+<p>При согласии (<code>Y</code> или Enter):
+- Удаляет старую директорию
+- Распаковывает zip в <code>bin/&lt;version&gt;/</code> (файлы из zip без корневой папки)
+- Обновляет <code>config.json</code> → <code>llama_cpp.bin_version</code></p>
+<p>При отказе (<code>n</code>) — продолжает с уже установленным бинарником.</p>
+<h3 id="llama-serverexe">Поиск llama-server.exe</h3>
+<p><code>_find_llama_server()</code> в Python ищет в следующем порядке:</p>
+<ol>
+<li><code>LLAMA_SERVER_PATH</code> из <code>.env</code> (явный путь)</li>
+<li><code>PATH</code> системы (<code>shutil.which</code>)</li>
+<li><code>bin/&lt;bin_version&gt;/llama-server.exe</code> — <strong>основной путь</strong>, версия из <code>config.json</code></li>
+<li>Любая поддиректория <code>bin/</code> (fallback, по убыванию имени)</li>
+<li>Стандартные места Windows (<code>C:/llama.cpp/</code>, <code>%LOCALAPPDATA%/llama.cpp/</code>)</li>
+</ol>
+<h3 id="_6">Автозапуск сервера</h3>
+<p>Управляется через <code>config.json</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;llama_cpp&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;model_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;~/.models/qwen2.5-0.5b-q4_k_m.gguf&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;auto_start&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">9780</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>При <code>auto_start: true</code>:</p>
+<ol>
+<li>Останавливает предыдущий процесс на порту</li>
+<li>Запускает <code>llama-server.exe</code> напрямую из <code>bin/&lt;bin_version&gt;/</code></li>
+<li>Ждёт до 10 сек пока <code>/health</code> ответит 200</li>
+<li>При немедленном падении процесса — переизвлекает бинарник и повторяет (max 2 попытки)</li>
+<li>Экспортирует <code>LLAMA_BASE_URL=http://127.0.0.1:&lt;port&gt;/v1</code></li>
+</ol>
+<div class="admonition info">
+<p class="admonition-title">Версия бинарника в config.json</p>
+<p><div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;llama_cpp&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">9780</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;bin_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;llama-b8802-bin-win-cpu-x64&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+Поле <code>bin_version</code> обновляется автоматически при установке новой версии.
+Чтобы добавить новую версию — положите zip в <code>bin/</code> и перезапустите <code>start.ps1</code>.</p>
+</div>
+</details>
+<details class="note">
+<summary>Этап 6 — Остановка предыдущего экземпляра FastAPI</summary>
+<p>PID запущенного FastAPI сохраняется в <code>%TEMP%\fastapi-foundry.pid</code>.
+При следующем запуске <code>start.ps1</code> читает этот файл и завершает старый процесс
+перед стартом нового — порт не будет занят.</p>
+</details>
+<details class="note">
+<summary>Этап 7 — run.py и FastAPI lifespan</summary>
+<p><code>start.ps1</code> запускает <code>venv\Scripts\python.exe run.py</code> и ждёт завершения.</p>
+<p><code>run.py</code> выполняет:</p>
+<ol>
+<li>Форсирует UTF-8 для stdout/stderr (важно на Windows)</li>
+<li>Загружает <code>.env</code> через <code>src/utils/env_processor</code></li>
+<li>Импортирует <code>Config</code> singleton — читает <code>config.json</code> один раз</li>
+<li>Определяет порт FastAPI (фиксированный или автопоиск в диапазоне 9696–9796)</li>
+<li>Повторно ищет Foundry (на случай прямого запуска без <code>start.ps1</code>)</li>
+<li>Запускает Uvicorn</li>
+</ol>
+<p>После старта Uvicorn выполняется <code>lifespan</code> в <code>app.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">with</span> <span class="n">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">rag_system</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>          <span class="c1"># загружает FAISS индекс</span>
+    <span class="k">if</span> <span class="n">auto_load_default</span> <span class="ow">and</span> <span class="n">default_model</span><span class="p">:</span>
+        <span class="n">subprocess</span> <span class="n">foundry</span> <span class="n">model</span> <span class="n">load</span> <span class="o">...</span>  <span class="c1"># автозагрузка модели</span>
+    <span class="k">yield</span>
+    <span class="k">await</span> <span class="n">foundry_client</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>           <span class="c1"># закрытие aiohttp сессии</span>
+</code></pre></div>
+<h3 id="reloader-watchfiles">Reloader (WatchFiles)</h3>
+<p>В режиме <code>mode: dev</code> Uvicorn запускает <strong>два процесса</strong>:</p>
+<div class="highlight"><pre><span></span><code>reloader process [33548] using WatchFiles   ← следит за изменениями *.py
+Started server process [33612]              ← фактический FastAPI сервер
+</code></pre></div>
+<p>Это нормальное поведение. При сохранении любого <code>.py</code> файла worker перезапускается автоматически.</p>
+<p>Чтобы стартовые сообщения не печатались дважды, <code>run.py</code> использует флаг <code>_UVICORN_CHILD</code>.</p>
+<p>Для отключения reloader установите <code>mode: prod</code> в <code>config.json</code>.</p>
+</details>
+<hr />
+<h2 id="_7">Остановка системы</h2>
+<h3 id="fastapi">Остановить FastAPI сервер</h3>
+<div class="highlight"><pre><span></span><code><span class="c"># Через stop.py (рекомендуется)</span>
+<span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">stop</span><span class="p">.</span><span class="n">py</span>
+
+<span class="c"># Или через stop_precise.py — точечная остановка по PID</span>
+<span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">stop_precise</span><span class="p">.</span><span class="n">py</span>
+</code></pre></div>
+<h3 id="_8">Остановить все сервисы</h3>
+<table>
+<thead>
+<tr>
+<th>Сервис</th>
+<th>Команда</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>FastAPI</strong></td>
+<td><code>venv\Scripts\python.exe stop.py</code></td>
+</tr>
+<tr>
+<td><strong>llama.cpp</strong></td>
+<td><code>python utils/port_manager.py --kill-port 9780</code></td>
+</tr>
+<tr>
+<td><strong>MkDocs</strong></td>
+<td><code>python utils/port_manager.py --kill-port 9697</code></td>
+</tr>
+<tr>
+<td><strong>Foundry</strong></td>
+<td><code>foundry service stop</code></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Foundry останавливается отдельно</p>
+<p><code>stop.py</code> не трогает Foundry — это внешний системный сервис Microsoft.
+Для его остановки используйте <code>foundry service stop</code> в терминале.</p>
+</div>
+<hr />
+<h2 id="restart">Повторный запуск (restart)</h2>
+<p>Команда та же самая:</p>
+<div class="highlight"><pre><span></span><code><span class="n">powershell</span> <span class="n">-ExecutionPolicy</span> <span class="n">Bypass</span> <span class="o">-File</span> <span class="p">.\</span><span class="n">start</span><span class="p">.</span><span class="n">ps1</span>
+</code></pre></div>
+<p><code>start.ps1</code> сам разберётся что остановить, что оставить и что запустить заново:</p>
+<table>
+<thead>
+<tr>
+<th>Сервис</th>
+<th>Уже запущен?</th>
+<th>Действие</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>FastAPI</strong> (порт 9696)</td>
+<td>да</td>
+<td>убивает по <code>%TEMP%/fastapi-foundry.pid</code> → запускает новый</td>
+</tr>
+<tr>
+<td><strong>MkDocs</strong> (порт 9697)</td>
+<td>да</td>
+<td>убивает по порту → <code>mkdocs build</code> → <code>mkdocs serve</code></td>
+</tr>
+<tr>
+<td><strong>llama.cpp</strong> (порт 9780)</td>
+<td>да</td>
+<td>убивает по порту → запускает новый</td>
+</tr>
+<tr>
+<td><strong>Foundry</strong></td>
+<td>да</td>
+<td>не трогает — только читает порт</td>
+</tr>
+<tr>
+<td><strong>Foundry</strong></td>
+<td>нет</td>
+<td>запускает <code>foundry service start</code>, ждёт 20 сек</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition info">
+<p class="admonition-title">Foundry не перезапускается намеренно</p>
+<p>Foundry — внешний системный сервис Microsoft. Его перезапуск выгрузил бы загруженную модель из памяти.
+<code>start.ps1</code> никогда не останавливает Foundry самостоятельно.</p>
+</div>
+<hr />
+<h2 id="startps1">Прямой запуск без start.ps1</h2>
+<div class="admonition tip">
+<p class="admonition-title">Если Foundry уже запущен</p>
+<p><div class="highlight"><pre><span></span><code><span class="n">venv</span><span class="p">\</span><span class="n">Scripts</span><span class="p">\</span><span class="n">python</span><span class="p">.</span><span class="n">exe</span> <span class="n">run</span><span class="p">.</span><span class="n">py</span>
+</code></pre></div>
+<code>run.py</code> сам найдёт Foundry через <code>tasklist</code> + <code>netstat</code>.</p>
+</div>
+<hr />
+<h2 id="startps1_1">Параметры start.ps1</h2>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>По умолчанию</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-Config</code></td>
+<td><code>config.json</code></td>
+<td>Путь к файлу конфигурации</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="p">.\</span><span class="n">start</span><span class="p">.</span><span class="n">ps1</span> <span class="n">-Config</span> <span class="n">config</span><span class="p">.</span><span class="n">prod</span><span class="p">.</span><span class="n">json</span>
+</code></pre></div>
+<hr />
+<h2 id="_9">Ключевые переменные окружения</h2>
+<div class="admonition info">
+<p class="admonition-title">Актуальность</p>
+<p>Таблица отражает текущее состояние. Правило проекта: <strong><code>.env</code> хранит только секреты</strong>.
+Все пути, порты, флаги и настройки поведения — в <code>config.json</code>.
+Состав может меняться по мере развития проекта. Актуальный эталон — в <a href="https://github.com/hypo69/FastApiFoundry-Docker/blob/main/.env.example"><code>.env.example</code></a>.</p>
+</div>
+<h3 id="env">Секреты — хранятся в <code>.env</code></h3>
+<table>
+<thead>
+<tr>
+<th>Переменная</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HF_TOKEN</code></td>
+<td>Токен HuggingFace для закрытых моделей (Gemma, Llama, Mistral)</td>
+</tr>
+<tr>
+<td><code>API_KEY</code></td>
+<td>Ключ для защиты FastAPI эндпоинтов (optional)</td>
+</tr>
+<tr>
+<td><code>SECRET_KEY</code></td>
+<td>JWT секрет (optional)</td>
+</tr>
+<tr>
+<td><code>FOUNDRY_API_KEY</code></td>
+<td>Ключ Foundry API (optional)</td>
+</tr>
+<tr>
+<td><code>OPENAI_API_KEY</code></td>
+<td>Ключ OpenAI</td>
+</tr>
+<tr>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td>Ключ Anthropic</td>
+</tr>
+<tr>
+<td><code>GEMINI_API_KEY</code></td>
+<td>Ключ Google Gemini</td>
+</tr>
+<tr>
+<td><code>OPENROUTER_API_KEY</code></td>
+<td>Ключ OpenRouter</td>
+</tr>
+<tr>
+<td><code>MISTRAL_API_KEY</code></td>
+<td>Ключ Mistral</td>
+</tr>
+<tr>
+<td><code>GROQ_API_KEY</code></td>
+<td>Ключ Groq</td>
+</tr>
+<tr>
+<td><code>DEEPSEEK_API_KEY</code></td>
+<td>Ключ DeepSeek</td>
+</tr>
+<tr>
+<td><code>XAI_API_KEY</code></td>
+<td>Ключ xAI (Grok)</td>
+</tr>
+<tr>
+<td><code>GITHUB_PAT</code></td>
+<td>GitHub Personal Access Token</td>
+</tr>
+<tr>
+<td><code>SMTP_PASSWORD</code></td>
+<td>Пароль SMTP сервера</td>
+</tr>
+<tr>
+<td><code>REDIS_PASSWORD</code></td>
+<td>Пароль Redis</td>
+</tr>
+</tbody>
+</table>
+<h3 id="startps1_2">Служебные — выставляются <code>start.ps1</code> автоматически</h3>
+<p>Эти переменные <strong>не нужно задавать вручную</strong> — <code>start.ps1</code> выставляет их сам в процесс после обнаружения сервисов:</p>
+<table>
+<thead>
+<tr>
+<th>Переменная</th>
+<th>Кто выставляет</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FOUNDRY_BASE_URL</code></td>
+<td><code>start.ps1</code></td>
+<td>Полный URL Foundry API</td>
+</tr>
+<tr>
+<td><code>FOUNDRY_DYNAMIC_PORT</code></td>
+<td><code>start.ps1</code></td>
+<td>Порт, найденный автоматически</td>
+</tr>
+<tr>
+<td><code>LLAMA_BASE_URL</code></td>
+<td><code>start.ps1</code></td>
+<td>URL llama.cpp после запуска</td>
+</tr>
+<tr>
+<td><code>LLAMA_SERVER_PATH</code></td>
+<td><code>.env</code> (optional)</td>
+<td>Явный путь к <code>llama-server.exe</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="configjson">Настройки поведения — хранятся в <code>config.json</code></h3>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Секция</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>port</code>, <code>host</code></td>
+<td><code>fastapi_server</code></td>
+<td>Порт и хост FastAPI</td>
+</tr>
+<tr>
+<td><code>mode</code></td>
+<td><code>fastapi_server</code></td>
+<td><code>dev</code> = hot-reload, <code>prod</code> = без reload</td>
+</tr>
+<tr>
+<td><code>auto_find_free_port</code>, <code>workers</code></td>
+<td><code>fastapi_server</code></td>
+<td>Автопоиск порта, количество воркеров</td>
+</tr>
+<tr>
+<td><code>base_url</code>, <code>default_model</code>, <code>auto_load_default</code></td>
+<td><code>foundry_ai</code></td>
+<td>URL, модель по умолчанию, автозагрузка</td>
+</tr>
+<tr>
+<td><code>temperature</code>, <code>max_tokens</code></td>
+<td><code>foundry_ai</code></td>
+<td>Параметры генерации</td>
+</tr>
+<tr>
+<td><code>startup_model_mode</code>, <code>startup_custom_model</code></td>
+<td><code>foundry_ai</code></td>
+<td>Режим загрузки модели при старте</td>
+</tr>
+<tr>
+<td><code>port</code>, <code>host</code>, <code>model_path</code>, <code>auto_start</code></td>
+<td><code>llama_cpp</code></td>
+<td>Основные настройки llama.cpp</td>
+</tr>
+<tr>
+<td><code>models_dir</code>, <code>default_model</code></td>
+<td><code>llama_cpp</code></td>
+<td>Директория GGUF моделей, модель по умолчанию</td>
+</tr>
+<tr>
+<td><code>models</code>, <code>rag</code>, <code>hf_models</code></td>
+<td><code>directories</code></td>
+<td>Директории GGUF, RAG индексов, HuggingFace моделей</td>
+</tr>
+<tr>
+<td><code>enabled</code>, <code>index_dir</code>, <code>chunk_size</code></td>
+<td><code>rag_system</code></td>
+<td>Настройки RAG</td>
+</tr>
+<tr>
+<td><code>level</code>, <code>file</code>, <code>max_bytes_mb</code>, <code>backup_count</code></td>
+<td><code>logging</code></td>
+<td>Уровень, файл, ротация логов</td>
+</tr>
+<tr>
+<td><code>console</code>, <code>structured</code>, <code>errors_file</code></td>
+<td><code>logging</code></td>
+<td>Вывод в консоль, JSONL логи, отдельный файл ошибок</td>
+</tr>
+<tr>
+<td><code>enabled</code>, <code>port</code></td>
+<td><code>docs_server</code></td>
+<td>Запуск MkDocs при старте, порт</td>
+</tr>
+<tr>
+<td><code>max_loaded_models</code>, <code>ttl_seconds</code>, <code>max_ram_percent</code></td>
+<td><code>model_manager</code></td>
+<td>Лимиты памяти и TTL для загруженных моделей</td>
+</tr>
+<tr>
+<td><code>language</code></td>
+<td><code>app</code></td>
+<td>Язык интерфейса: <code>en</code> / <code>ru</code> / <code>he</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="_10">Консоль</h1>
+<h3 id="_11">Детальный разбор вывода консоли при старте системы</h3>
+<p>При запуске <code>start.ps1</code> система проходит через несколько этапов подготовки окружения и запуска вспомогательных сервисов. Ниже приведен детальный разбор каждой строки лога.</p>
+<div class="highlight"><pre><span></span><code>(venv) PS D:\repos\public_repositories\FastApiFoundry-Docker&gt; ./start
+🚀 FastAPI Foundry Smart Launcher - Запуск
+============================================================
+🔄 Проверка обновлений...
+   Текущая версия : v0.6.0
+   Последний тег  : v0.5.0
+✅ Версия актуальна (v0.5.0)
+✅ venv активирован
+⚙️ Loading .env variables...
+  ✓ TELEGRAM_ADMIN_TOKEN = ***
+  ✓ TELEGRAM_ADMIN_IDS =
+  ✓ TELEGRAM_HELPDESK_TOKEN = ***
+  ✓ GITHUB_PAT = ***
+  ✓ API_KEY = ***
+  ✓ SECRET_KEY = ***
+  ✓ OPENAI_API_KEY = ***
+  ✓ ANTHROPIC_API_KEY = ***
+  ✓ HF_TOKEN = ***
+  ✓ GEMINI_API_KEY = ***
+  ✓ FOUNDRY_API_KEY = ***
+  ✓ LLAMA_SERVER_PATH = ***
+✅ Environment variables loaded: 12
+🔍 Local Foundry check...
+✅ API Foundry найден на порту 62376
+✅ Foundry уже запущен на порту 62376
+🔗 FOUNDRY_BASE_URL = http://localhost:62376/v1/
+🔍 Проверка конфигурации сервера документации...
+✅ Предыдущий MkDocs (PID: 32492) остановлен
+📚 Сборка документации MkDocs...
+
+ │  ⚠  Warning from the Material for MkDocs team
+ │
+ │  MkDocs 2.0, the underlying framework of Material for MkDocs,
+ │  will introduce backward-incompatible changes, including:
+ │
+ │  × All plugins will stop working – the plugin system has been removed
+ │  × All theme overrides will break – the theming system has been rewritten
+ │  × No migration path exists – existing projects cannot be upgraded
+ │  × Closed contribution model – community members can&#39;t report bugs
+ │  × Currently unlicensed – unsuitable for production use
+ │
+ │  Our full analysis:
+ │
+ │  https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/
+
+✅ Документация собрана
+🚀 Запуск сервера MkDocs на порту 9697...
+✅ Сервер MkDocs запущен на http://localhost:9697 (PID: 24992)
+📦 Extracting llama-b8802-bin-win-cpu-x64.zip → bin/llama-b8802-bin-win-cpu-x64/ ...
+✅ Extracted: D:\repos\public_repositories\FastApiFoundry-Docker\bin\llama-b8802-bin-win-cpu-x64
+⚠️  Could not update config.json: Exception setting &quot;bin_version&quot;: &quot;The property &#39;bin_version&#39; cannot be found on this object. Verify that the property exists and can be set.&quot;
+💡 llama.cpp: no model_path set in config.json (skipping)
+🐍 FastAPI server launch...
+🔗 FOUNDRY_DYNAMIC_PORT = 62376
+🌐 FastAPI Foundry starting...
+📱 Веб-интерфейс будет доступен по адресу: http://localhost:9696
+============================================================
+💾 PID 8000 сохранён в C:\Users\onela\AppData\Local\Temp\fastapi-foundry.pid
+INFO:     Will watch for changes in these directories: [&#39;D:\\repos\\public_repositories\\FastApiFoundry-Docker&#39;]
+INFO:     Uvicorn running on http://0.0.0.0:9696 (Press CTRL+C to quit)
+INFO:     Started reloader process [21740] using WatchFiles
+INFO:     Started server process [26552]
+INFO:     Waiting for application startup.
+12:18:08 | WARNING | fastapi-foundry | ⚠️ RAG index not found at C:\Users\onela\.rag\faiss.index, skipping load
+⚠️ RAG system not initialized
+INFO:     Application startup complete.
+
+════════════════════════════════════════════════════════════
+
+  ✅  FastAPI Foundry — startup complete
+  🌐  http://localhost:9696
+
+════════════════════════════════════════════════════════════
+
+INFO:     127.0.0.1:51455 - &quot;GET /api/v1/system/stats HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:51455 - &quot;GET /api/v1/hf/models HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:51455 - &quot;GET /api/v1/hf/models HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:51454 - &quot;GET /api/v1/foundry/models/loaded HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:51455 - &quot;GET /api/v1/foundry/models/loaded HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:51460 - &quot;GET /api/v1/health HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:51456 - &quot;GET /api/v1/llama/status HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:51455 - &quot;GET /api/v1/llama/status HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:51455 - &quot;GET /api/v1/system/stats HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:51460 - &quot;GET /api/v1/hf/models HTTP/1.1&quot; 200 OK
+INFO:     127.0.0.1:51455 - &quot;GET /api/v1/foundry/models/loaded HTTP/1.1&quot; 200 OK
+</code></pre></div>
+<h4 id="1">1. Инициализация и проверка обновлений</h4>
+<ul>
+<li><strong><code>(venv) PS D:\repos\public_repositories\FastApiFoundry-Docker&gt; ./start</code></strong>: Это команда, которую вы вводите для запуска системы. <code>(venv)</code> указывает на то, что активировано виртуальное окружение Python, а <code>PS D:\repos\public_repositories\FastApiFoundry-Docker&gt;</code> — это текущий рабочий каталог в PowerShell.</li>
+<li>
+<p><strong><code>🚀 FastAPI Foundry Smart Launcher - Запуск</code></strong>: Приветственное сообщение скрипта-оркестратора <code>start.ps1</code>.</p>
+</li>
+<li>
+<p><strong><code>🔄 Проверка обновлений...</code></strong>: Запуск скрипта <code>Update-Project.ps1</code>. Он проверяет локальную версию в файле <code>VERSION</code> и сравнивает её с последними тегами (tags) в Git-репозитории.</p>
+</li>
+<li><strong><code>Текущая версия : v0.6.0</code> / <code>Последний тег : v0.5.0</code></strong>: Информационные строки, показывающие состояние вашего кода относительно репозитория.</li>
+<li><strong><code>✅ Версия актуальна (v0.5.0)</code></strong>: Подтверждение того, что обновление не требуется.</li>
+</ul>
+<h4 id="2-python">2. Подготовка окружения Python</h4>
+<ul>
+<li><strong><code>✅ venv активирован</code></strong>: Скрипт успешно нашел и активировал виртуальное окружение Python в папке <code>venv</code>.</li>
+<li><strong><code>⚙️ Loading .env variables...</code></strong>: Начало процесса чтения файла <code>.env</code>.</li>
+<li><strong><code>✓ VARIABLE_NAME = ***</code></strong>: Успешная загрузка переменной окружения. Значения чувствительных данных (токены, ключи) маскируются символами <code>***</code> для безопасности.</li>
+<li><strong><code>✅ Environment variables loaded: 12</code></strong>: Резюме — общее количество загруженных настроек из файла <code>.env</code>.</li>
+</ul>
+<h4 id="3-ai-foundry-local">3. Обнаружение AI-бэкенда (Foundry Local)</h4>
+<ul>
+<li><strong><code>🔍 Local Foundry check...</code></strong>: Система ищет запущенный процесс <code>Inference.Service.Agent</code> (Microsoft Foundry Local).</li>
+<li><strong><code>✅ API Foundry найден на порту 62376</code></strong>: Скрипт просканировал открытые порты процесса и нашел тот, который отвечает на запросы к API.</li>
+<li><strong><code>✅ Foundry уже запущен на порту 62376</code></strong>: Подтверждение, что сервис активен и не требует повторного запуска.</li>
+<li><strong><code>🔗 FOUNDRY_BASE_URL = http://localhost:62376/v1/</code></strong>: Динамический URL, который будет использоваться FastAPI сервером для связи с моделями.</li>
+</ul>
+<h4 id="4-mkdocs">4. Сервер документации (MkDocs)</h4>
+<ul>
+<li><strong><code>🔍 Проверка конфигурации сервера документации...</code></strong>: Чтение секции <code>docs_server</code> из <code>config.json</code>.</li>
+<li><strong><code>✅ Предыдущий MkDocs (PID: 32492) остановлен</code></strong>: Если порт документации (9697) был занят, скрипт завершил старый процесс, чтобы избежать конфликтов.</li>
+<li><strong><code>📚 Сборка документации MkDocs...</code></strong>: Запуск генерации статических HTML-страниц из Markdown-файлов папки <code>docs/</code>.</li>
+<li><strong>Баннер предупреждения от Material for MkDocs:</strong>
+    <div class="highlight"><pre><span></span><code> │  ⚠  Warning from the Material for MkDocs team
+ │
+ │  MkDocs 2.0, the underlying framework of Material for MkDocs,
+ │  will introduce backward-incompatible changes, including:
+ │
+ │  × All plugins will stop working – the plugin system has been removed
+ │  × All theme overrides will break – the theming system has been rewritten
+ │  × No migration path exists – existing projects cannot be upgraded
+ │  × Closed contribution model – community members can&#39;t report bugs
+ │  × Currently unlicensed – unsuitable for production use
+ │
+ │  Our full analysis:
+ │
+ │  https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/
+</code></pre></div><ul>
+<li><strong>Пояснение к предупреждению MkDocs:</strong> Это сообщение является сатирическим баннером от разработчика темы Material for MkDocs (squidfunk). Оно не означает, что MkDocs 2.0 с такими радикальными изменениями действительно существует или планируется к выпуску в ближайшее время. Цель этого предупреждения — привлечь внимание к проблемам и медленному развитию основного фреймворка MkDocs, а также выразить обеспокоенность по поводу потенциальных будущих проблем с обратной совместимостью, если эти вопросы не будут решены. Это не влияет на текущую работу вашей документации с Material for MkDocs.</li>
+<li><strong>Как подавить этот баннер:</strong> Чтобы скрыть это предупреждение, вы можете установить переменную окружения <code>NO_MKDOCS_2_WARNING</code> со значением <code>1</code> перед запуском скрипта. Например, в PowerShell:
+    <div class="highlight"><pre><span></span><code><span class="nv">$env:NO_MKDOCS_2_WARNING</span> <span class="p">=</span> <span class="s2">&quot;1&quot;</span>
+<span class="p">./</span><span class="nb">start</span>
+</code></pre></div></li>
+</ul>
+</li>
+<li><strong><code>✅ Документация собрана</code></strong>: Процесс генерации файлов успешно завершен.</li>
+<li><strong><code>🚀 Запуск сервера MkDocs на порту 9697...</code></strong>: Запуск локального веб-сервера для просмотра документации.</li>
+<li><strong><code>✅ Сервер MkDocs запущен на http://localhost:9697 (PID: 24992)</code></strong>: Подтверждение запуска с указанием идентификатора процесса.</li>
+</ul>
+<h4 id="5-llamacpp">5. Локальный инференс (llama.cpp)</h4>
+<ul>
+<li><strong><code>📦 Extracting llama-b8802-bin-win-cpu-x64.zip → bin/llama-b8802-bin-win-cpu-x64/ ...</code></strong>: Скрипт обнаружил новый архив с бинарными файлами llama.cpp и автоматически распаковывает его для актуализации версии.</li>
+<li><strong><code>✅ Extracted: D:\repos\public_repositories\FastApiFoundry-Docker\bin\llama-b8802-bin-win-cpu-x64</code></strong>: Подтверждение успешной распаковки бинарных файлов.</li>
+<li><strong><code>⚠️ Could not update config.json: Exception setting "bin_version": "The property 'bin_version' cannot be found on this object. Verify that the property exists and can be set."</code></strong>: Системное предупреждение о том, что скрипту не удалось автоматически прописать версию бинарника в <code>config.json</code> (обычно из-за отсутствия нужного свойства в объекте конфигурации). Не критично.</li>
+<li><strong><code>💡 llama.cpp: no model_path set in config.json (skipping)</code></strong>: Скрипт не нашел путь к модели GGUF в настройках, поэтому пропустил запуск сервера <code>llama-server</code>.</li>
+</ul>
+<h4 id="6-fastapi">6. Запуск основного сервера FastAPI</h4>
+<ul>
+<li><strong><code>🐍 FastAPI server launch...</code></strong>: Переход к финальному этапу — запуску приложения на Python.</li>
+<li><strong><code>🔗 FOUNDRY_DYNAMIC_PORT = 62376</code></strong>: Передача найденного порта Foundry в процесс Python.</li>
+<li><strong><code>🌐 FastAPI Foundry starting...</code></strong>: Старт приложения <code>run.py</code>.</li>
+<li>
+<p><strong><code>📱 Веб-интерфейс будет доступен по адресу: http://localhost:9696</code></strong>: Информационное сообщение о том, по какому адресу будет доступен веб-интерфейс приложения.</p>
+</li>
+<li>
+<p><strong><code>💾 PID 8000 сохранён в C:\Users\onela\AppData\Local\Temp\fastapi-foundry.pid</code></strong>: Идентификатор процесса FastAPI записан во временный файл. Это нужно, чтобы при следующем запуске скрипт мог корректно остановить сервер.</p>
+</li>
+<li><strong><code>INFO: Will watch for changes in these directories: ['D:\\repos\\public_repositories\\FastApiFoundry-Docker']</code></strong>: Сообщение от Uvicorn (движка сервера). В режиме <code>dev</code> система следит за изменениями в коде и автоматически перезагружается при сохранении файлов.</li>
+<li><strong><code>INFO: Uvicorn running on http://0.0.0.0:9696 (Press CTRL+C to quit)</code></strong>: Основное сообщение от Uvicorn, подтверждающее, что сервер запущен и доступен по указанному адресу.</li>
+<li><strong><code>INFO: Started reloader process [21740] using WatchFiles</code> / <code>INFO: Started server process [26552]</code></strong>: Запуск управляющего процесса и рабочего процесса сервера.</li>
+</ul>
+<h4 id="7-lifespan">7. Инициализация приложения (Lifespan)</h4>
+<ul>
+<li><strong><code>INFO: Waiting for application startup.</code></strong>: Uvicorn ожидает завершения инициализации приложения FastAPI.</li>
+<li><strong><code>12:18:08 | WARNING | fastapi-foundry | ⚠️ RAG index not found at C:\Users\onela\.rag\faiss.index, skipping load</code></strong>: Система RAG (поиск по документам) попыталась загрузить индекс, но не нашла его по стандартному пути.</li>
+<li><strong><code>⚠️ RAG system not initialized</code></strong>: Предупреждение о том, что поиск по знаниям (RAG) пока недоступен (нужно собрать индекс во вкладке RAG).</li>
+<li></li>
+<li><strong><code>INFO: Application startup complete.</code></strong>: Сервер полностью готов к работе.</li>
+<li></li>
+<li><strong><code>════════════════════════════════════════════════════════════</code></strong></li>
+<li>
+<p><strong><code>✅ FastAPI Foundry — startup complete</code></strong></p>
+<p><strong><code>🌐 http://localhost:9696</code></strong></p>
+<p><strong><code>════════════════════════════════════════════════════════════</code></strong></p>
+</li>
+</ul>
+<h4 id="8-runtime">8. Логи запросов (Runtime)</h4>
+<ul>
+<li><strong><code>INFO: 127.0.0.1:51455 - "GET /api/v1/system/stats HTTP/1.1" 200 OK</code></strong>: Это логи в реальном времени. В данном случае мы видим, как фронтенд (веб-интерфейс) после открытия страницы начал опрашивать API для получения статистики системы, списка моделей и статуса сервисов. <code>200 OK</code> означает, что запрос был успешно обработан.</li>
+</ul>
+<hr />
+<h2 id="_12">Что дальше</h2>
+<ul>
+<li><a href="../installation/">Установка</a> — первичная настройка, install.ps1</li>
+<li><a href="../models_guide/">Работа с моделями</a> — Foundry, HuggingFace, llama.cpp</li>
+<li><a href="../web_interface/">Веб-интерфейс</a> — описание всех вкладок</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  К началу
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u043e \u0432 \u0431\u0443\u0444\u0435\u0440", "clipboard.copy": "\u041a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0432 \u0431\u0443\u0444\u0435\u0440", "search.result.more.one": "\u0415\u0449\u0451 1 \u043d\u0430 \u044d\u0442\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435", "search.result.more.other": "\u0415\u0449\u0451 # \u043d\u0430 \u044d\u0442\u043e\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435", "search.result.none": "\u0421\u043e\u0432\u043f\u0430\u0434\u0435\u043d\u0438\u0439 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u043e", "search.result.one": "\u041d\u0430\u0439\u0434\u0435\u043d\u043e 1 \u0441\u043e\u0432\u043f\u0430\u0434\u0435\u043d\u0438\u0435", "search.result.other": "\u041d\u0430\u0439\u0434\u0435\u043d\u043e \u0441\u043e\u0432\u043f\u0430\u0434\u0435\u043d\u0438\u0439: #", "search.result.placeholder": "\u041d\u0430\u0447\u043d\u0438\u0442\u0435 \u043f\u0435\u0447\u0430\u0442\u0430\u0442\u044c \u0434\u043b\u044f \u043f\u043e\u0438\u0441\u043a\u0430", "search.result.term.missing": "\u041e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442", "select.version": "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0435\u0440\u0441\u0438\u044e"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/extra.js"></script>
+      
+    
+  </body>
+</html>

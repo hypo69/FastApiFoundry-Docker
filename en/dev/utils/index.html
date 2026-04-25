@@ -1,0 +1,3461 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="REST API for local AI models with RAG support">
+      
+      
+        <meta name="author" content="hypo69">
+      
+      
+        <link rel="canonical" href="https://davidka.net/ai_assist/docs/en/dev/utils/">
+      
+      
+      
+      
+        
+          <link rel="alternate" href="../../../dev/utils/" hreflang="ru">
+        
+          <link rel="alternate" href="./" hreflang="en">
+        
+      
+      
+      <link rel="icon" href="../../../assets/icons/icon48.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Утилиты - FastAPI Foundry</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="FastAPI Foundry" class="md-header__button md-logo" aria-label="FastAPI Foundry" data-md-component="logo">
+      
+  <img src="../../../assets/icons/icon128.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FastAPI Foundry
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Утилиты
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Select language">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="../../../dev/utils/" hreflang="ru" class="md-select__link">
+              Русский
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../index.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Главная
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user/getting_started/" class="md-tabs__link">
+          
+  
+  
+  Руководство пользователя
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+  Для разработчиков
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="FastAPI Foundry" class="md-nav__button md-logo" aria-label="FastAPI Foundry" data-md-component="logo">
+      
+  <img src="../../../assets/icons/icon128.png" alt="logo">
+
+    </a>
+    FastAPI Foundry
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Главная
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Руководство пользователя
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Руководство пользователя
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Быстрый старт
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Установка
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Конфигурация
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/models_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Работа с моделями
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/web_interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Веб-интерфейс
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/telegram_bots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Telegram Боты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/text_extraction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Извлечение текста
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Логирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/cli_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Для разработчиков
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Архитектура
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rag_system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Система RAG
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../text_extractor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Text Extractor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Агенты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp_agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram_bots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Telegram Боты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Логирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cicd_docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD документации
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../versioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Управление версиями
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Скрипты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_13" id="__nav_3_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Reference (Python)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Code Reference (Python)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/foundry_client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Foundry Client
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/rag_system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RAG System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    App Factory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_14" id="__nav_3_14_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Browser Extension (JS)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Browser Extension (JS)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../js/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_15" id="__nav_3_15_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PowerShell MCP Servers
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    PowerShell MCP Servers
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../powershell/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../powershell/run-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    run-sandbox.ps1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#utils-standalone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        utils/ — Standalone утилиты
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="utils/ — Standalone утилиты">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Использование
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pc_component_processorpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pc_component_processor.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#srcutils" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        src/utils/ — Внутренние модули
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Файлы
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#translator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Translator
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Translator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Провайдеры
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Импорт
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Методы
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Методы">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#translatetext-provider-source_lang-target_lang-api_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        translate(text, *, provider, source_lang, target_lang, api_key)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#translate_for_modeltext-provider-source_lang-api_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        translate_for_model(text, *, provider, source_lang, api_key)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#translate_responsetext-target_lang-provider-api_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        translate_response(text, target_lang, *, provider, api_key)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#detect_languagetext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        detect_language(text)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch_translatetexts-provider-source_lang-target_lang-api_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        batch_translate(texts, *, provider, source_lang, target_lang, api_key)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#close" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        close()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Переменные окружения
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Настройка в config.json
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Типичный сценарий использования
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#env_processor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        env_processor
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="env_processor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Импорт
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Функции
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Функции">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#load_env_variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_env_variables()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#substitute_env_varsvalue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        substitute_env_vars(value)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convert_typevalue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        convert_type(value)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process_configconfig_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        process_config(config_path)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validate_configcfg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        validate_config(cfg)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#save_processed_configcfg-output_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        save_processed_config(cfg, output_path)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configjson_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Синтаксис подстановки в config.json
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#foundry_finder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        foundry_finder
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="foundry_finder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Импорт
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Функции
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Функции">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#find_foundry_port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        find_foundry_port()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#find_foundry_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        find_foundry_url()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_test_foundry_portport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _test_foundry_port(port) (внутренняя)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Переменные окружения
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logging_config
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="logging_config">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Импорт
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Функции
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Функции">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup_logginglog_level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        setup_logging(log_level)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging_system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logging_system
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="logging_system">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Импорт
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_loggername" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_logger(name)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structuredlogger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Класс StructuredLogger
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Класс StructuredLogger">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Методы логирования
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeroperation-kwargs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        timer(operation, **kwargs) (контекстный менеджер)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log_api_requestmethod-path-status_code-duration-kwargs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        log_api_request(method, path, status_code, duration, **kwargs)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log_model_operationmodel_id-operation-status-duration-kwargs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        log_model_operation(model_id, operation, status, duration, **kwargs)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Глобальные алиасы
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#log_analyzer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        log_analyzer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="log_analyzer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Импорт
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Методы
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Методы">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_system_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_system_health()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_error_summaryhours24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_error_summary(hours=24)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_performance_metricshours24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_performance_metrics(hours=24)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Формат структурированных логов
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="_1">Утилиты</h1>
+<p>Проект содержит два уровня утилит:</p>
+<ul>
+<li><strong><code>src/utils/</code></strong> — внутренние модули, используемые компонентами FastAPI Foundry (логирование, перевод, конфигурация)</li>
+<li><strong><code>utils/</code></strong> — standalone-утилиты командной строки для управления, диагностики и обслуживания системы</li>
+</ul>
+<hr />
+<h2 id="utils-standalone"><code>utils/</code> — Standalone утилиты</h2>
+<table>
+<thead>
+<tr>
+<th>Файл</th>
+<th>Назначение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ai_model_scanner.py</code></td>
+<td>Сканирование AI моделей в системе (Foundry, Ollama, HuggingFace)</td>
+</tr>
+<tr>
+<td><code>foundry_model_finder.py</code></td>
+<td>Поиск и анализ доступных Foundry моделей</td>
+</tr>
+<tr>
+<td><code>port_manager.py</code></td>
+<td>Управление портами: поиск свободных, остановка процессов</td>
+</tr>
+<tr>
+<td><code>generate-ssl.py</code></td>
+<td>Генерация самоподписанных SSL сертификатов</td>
+</tr>
+<tr>
+<td><code>pc_component_processor.py</code></td>
+<td>Обработка и фильтрация JSON данных о компонентах ПК</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_2">Использование</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Сканирование AI моделей</span>
+python<span class="w"> </span>utils/ai_model_scanner.py
+
+<span class="c1"># Поиск свободного порта</span>
+python<span class="w"> </span>utils/port_manager.py<span class="w"> </span>--find-free
+
+<span class="c1"># Остановка процесса на порту</span>
+python<span class="w"> </span>utils/port_manager.py<span class="w"> </span>--kill-port<span class="w"> </span><span class="m">8000</span>
+
+<span class="c1"># Генерация SSL сертификата</span>
+python<span class="w"> </span>utils/generate-ssl.py<span class="w"> </span>--domain<span class="w"> </span>localhost<span class="w"> </span>--days<span class="w"> </span><span class="m">365</span>
+</code></pre></div>
+<h3 id="pc_component_processorpy"><code>pc_component_processor.py</code></h3>
+<p>Обрабатывает JSON данные о компонентах ПК: классифицирует типы сборок, фильтрует запрещённые бренды, нормализует структуру.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">utils.pc_component_processor</span><span class="w"> </span><span class="kn">import</span> <span class="n">PCComponentProcessor</span>
+
+<span class="n">processor</span> <span class="o">=</span> <span class="n">PCComponentProcessor</span><span class="p">()</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;path/to/components.json&quot;</span><span class="p">)</span>
+<span class="c1"># {&quot;components&quot;: [{&quot;name&quot;: &quot;...&quot;, ...}, ...]}</span>
+</code></pre></div>
+<p><strong>Класс <code>PCComponentProcessor</code>:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>execute(data_path)</code></td>
+<td>Запускает обработку JSON файла, возвращает нормализованный dict</td>
+</tr>
+<tr>
+<td><code>_process_items(data)</code></td>
+<td>Внутренняя обработка: фильтрация брендов, распаковка сборок</td>
+</tr>
+<tr>
+<td><code>_filter_brands(text)</code></td>
+<td>Удаляет упоминания запрещённых брендов из строки</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="srcutils"><code>src/utils/</code> — Внутренние модули</h2>
+<p>Вспомогательные модули, используемые всеми компонентами FastAPI Foundry.</p>
+<h2 id="_3">Файлы</h2>
+<table>
+<thead>
+<tr>
+<th>Файл</th>
+<th>Назначение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>translator.py</code></td>
+<td>Перевод текста через бесплатные онлайн-сервисы</td>
+</tr>
+<tr>
+<td><code>env_processor.py</code></td>
+<td>Загрузка <code>.env</code>, подстановка переменных, валидация конфигурации</td>
+</tr>
+<tr>
+<td><code>foundry_finder.py</code></td>
+<td>Автообнаружение порта Foundry Local</td>
+</tr>
+<tr>
+<td><code>logging_config.py</code></td>
+<td>Bootstrap-настройка уровня логирования</td>
+</tr>
+<tr>
+<td><code>logging_system.py</code></td>
+<td>Структурированный логгер с JSON-выводом и таймером</td>
+</tr>
+<tr>
+<td><code>log_analyzer.py</code></td>
+<td>Анализ лог-файлов: метрики, ошибки, производительность</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="translator">Translator</h2>
+<p><code>src/utils/translator.py</code> — утилита перевода текста. Переводит <strong>входящие</strong> запросы пользователя на английский перед отправкой в AI модель, и <strong>исходящие</strong> ответы модели обратно на язык пользователя.</p>
+<p>Использует бесплатные онлайн-сервисы — API ключи не нужны по умолчанию.</p>
+<h3 id="_4">Провайдеры</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Сервис</th>
+<th>Ключ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mymemory</code></td>
+<td>MyMemory API</td>
+<td>Нет (500 слов/день; <code>MYMEMORY_EMAIL</code> → 50K)</td>
+</tr>
+<tr>
+<td><code>libretranslate</code></td>
+<td>LibreTranslate публичные инстансы</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td><code>deepl</code></td>
+<td>DeepL free tier</td>
+<td><code>DEEPL_API_KEY</code></td>
+</tr>
+<tr>
+<td><code>google</code></td>
+<td>Google Cloud Translation</td>
+<td><code>GOOGLE_TRANSLATE_API_KEY</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="_5">Импорт</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">src.utils.translator</span><span class="w"> </span><span class="kn">import</span> <span class="n">translator</span>
+<span class="c1"># или через пакет</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">translator</span>
+</code></pre></div>
+<h3 id="_6">Методы</h3>
+<h4 id="translatetext-provider-source_lang-target_lang-api_key"><code>translate(text, *, provider, source_lang, target_lang, api_key)</code></h4>
+<p>Базовый метод перевода.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>По умолчанию</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>text</code></td>
+<td><code>str</code></td>
+<td>—</td>
+<td>Исходный текст</td>
+</tr>
+<tr>
+<td><code>provider</code></td>
+<td><code>str</code></td>
+<td><code>""</code></td>
+<td>Провайдер. Пусто = из <code>config.json</code> → <code>default_provider</code></td>
+</tr>
+<tr>
+<td><code>source_lang</code></td>
+<td><code>str</code></td>
+<td><code>"auto"</code></td>
+<td>ISO 639-1 код или <code>"auto"</code></td>
+</tr>
+<tr>
+<td><code>target_lang</code></td>
+<td><code>str</code></td>
+<td><code>"en"</code></td>
+<td>ISO 639-1 код целевого языка</td>
+</tr>
+<tr>
+<td><code>api_key</code></td>
+<td><code>str</code></td>
+<td><code>""</code></td>
+<td>Ключ API (переопределяет env-переменную)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>dict</code> — <code>success</code>, <code>translated</code>, <code>provider</code>, <code>source_lang</code>, <code>target_lang</code>, <code>elapsed_ms</code>, <code>error</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">translator</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span>
+    <span class="s2">&quot;Привет мир&quot;</span><span class="p">,</span>
+    <span class="n">provider</span><span class="o">=</span><span class="s2">&quot;mymemory&quot;</span><span class="p">,</span>
+    <span class="n">source_lang</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+    <span class="n">target_lang</span><span class="o">=</span><span class="s2">&quot;en&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="c1"># {&quot;success&quot;: True, &quot;translated&quot;: &quot;Hello world&quot;, &quot;elapsed_ms&quot;: 340, ...}</span>
+</code></pre></div>
+<hr />
+<h4 id="translate_for_modeltext-provider-source_lang-api_key"><code>translate_for_model(text, *, provider, source_lang, api_key)</code></h4>
+<p>Переводит текст на английский для AI модели. Если <code>source_lang="en"</code> — возвращает оригинал без запроса к сервису.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>По умолчанию</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>text</code></td>
+<td><code>str</code></td>
+<td>—</td>
+<td>Исходный текст</td>
+</tr>
+<tr>
+<td><code>provider</code></td>
+<td><code>str</code></td>
+<td><code>""</code></td>
+<td>Провайдер</td>
+</tr>
+<tr>
+<td><code>source_lang</code></td>
+<td><code>str</code></td>
+<td><code>"auto"</code></td>
+<td>ISO 639-1 код или <code>"auto"</code></td>
+</tr>
+<tr>
+<td><code>api_key</code></td>
+<td><code>str</code></td>
+<td><code>""</code></td>
+<td>Ключ API</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>dict</code> — <code>success</code>, <code>translated</code>, <code>original</code>, <code>was_translated</code>, <code>provider</code>, <code>source_lang</code>, <code>target_lang</code>, <code>elapsed_ms</code>, <code>error</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">translator</span><span class="o">.</span><span class="n">translate_for_model</span><span class="p">(</span><span class="s2">&quot;Как дела?&quot;</span><span class="p">)</span>
+<span class="c1"># {&quot;was_translated&quot;: True, &quot;translated&quot;: &quot;How are you?&quot;, &quot;original&quot;: &quot;Как дела?&quot;, ...}</span>
+</code></pre></div>
+<hr />
+<h4 id="translate_responsetext-target_lang-provider-api_key"><code>translate_response(text, target_lang, *, provider, api_key)</code></h4>
+<p>Переводит ответ AI модели обратно на язык пользователя. Если <code>target_lang="en"</code> — возвращает оригинал без запроса.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>По умолчанию</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>text</code></td>
+<td><code>str</code></td>
+<td>—</td>
+<td>Английский текст от AI модели</td>
+</tr>
+<tr>
+<td><code>target_lang</code></td>
+<td><code>str</code></td>
+<td>—</td>
+<td>ISO 639-1 код языка пользователя</td>
+</tr>
+<tr>
+<td><code>provider</code></td>
+<td><code>str</code></td>
+<td><code>""</code></td>
+<td>Провайдер</td>
+</tr>
+<tr>
+<td><code>api_key</code></td>
+<td><code>str</code></td>
+<td><code>""</code></td>
+<td>Ключ API</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>dict</code> — та же структура, что и <code>translate()</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">translator</span><span class="o">.</span><span class="n">translate_response</span><span class="p">(</span><span class="s2">&quot;I am fine&quot;</span><span class="p">,</span> <span class="n">target_lang</span><span class="o">=</span><span class="s2">&quot;ru&quot;</span><span class="p">)</span>
+<span class="c1"># {&quot;translated&quot;: &quot;Я в порядке&quot;, ...}</span>
+</code></pre></div>
+<hr />
+<h4 id="detect_languagetext"><code>detect_language(text)</code></h4>
+<p>Определяет язык текста через MyMemory (бесплатно, без ключа).</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>text</code></td>
+<td><code>str</code></td>
+<td>Текст для определения языка (используются первые 200 символов)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>dict</code> — <code>success</code>, <code>language</code> (ISO 639-1), <code>language_name</code>, <code>error</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">translator</span><span class="o">.</span><span class="n">detect_language</span><span class="p">(</span><span class="s2">&quot;Bonjour le monde&quot;</span><span class="p">)</span>
+<span class="c1"># {&quot;language&quot;: &quot;fr&quot;, &quot;language_name&quot;: &quot;French&quot;, &quot;success&quot;: True}</span>
+</code></pre></div>
+<hr />
+<h4 id="batch_translatetexts-provider-source_lang-target_lang-api_key"><code>batch_translate(texts, *, provider, source_lang, target_lang, api_key)</code></h4>
+<p>Переводит список строк последовательно.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>По умолчанию</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>texts</code></td>
+<td><code>list[str]</code></td>
+<td>—</td>
+<td>Список строк для перевода</td>
+</tr>
+<tr>
+<td><code>provider</code></td>
+<td><code>str</code></td>
+<td><code>""</code></td>
+<td>Провайдер</td>
+</tr>
+<tr>
+<td><code>source_lang</code></td>
+<td><code>str</code></td>
+<td><code>"auto"</code></td>
+<td>ISO 639-1 код или <code>"auto"</code></td>
+</tr>
+<tr>
+<td><code>target_lang</code></td>
+<td><code>str</code></td>
+<td><code>"en"</code></td>
+<td>ISO 639-1 код целевого языка</td>
+</tr>
+<tr>
+<td><code>api_key</code></td>
+<td><code>str</code></td>
+<td><code>""</code></td>
+<td>Ключ API</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>dict</code> — <code>success</code>, <code>results</code> (список dict от <code>translate()</code>), <code>total</code>, <code>failed</code>, <code>elapsed_ms</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">translator</span><span class="o">.</span><span class="n">batch_translate</span><span class="p">([</span><span class="s2">&quot;Hello&quot;</span><span class="p">,</span> <span class="s2">&quot;Goodbye&quot;</span><span class="p">],</span> <span class="n">target_lang</span><span class="o">=</span><span class="s2">&quot;ru&quot;</span><span class="p">)</span>
+<span class="c1"># {&quot;total&quot;: 2, &quot;failed&quot;: 0, &quot;results&quot;: [...]}</span>
+</code></pre></div>
+<hr />
+<h4 id="close"><code>close()</code></h4>
+<p>Закрывает HTTP-сессию aiohttp. Вызывается автоматически при завершении lifespan FastAPI.</p>
+<div class="highlight"><pre><span></span><code><span class="k">await</span> <span class="n">translator</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</code></pre></div>
+<hr />
+<h3 id="_7">Переменные окружения</h3>
+<div class="highlight"><pre><span></span><code>MYMEMORY_EMAIL=your@email.com        # Поднимает лимит MyMemory до 50K слов/день
+LIBRETRANSLATE_API_KEY=...           # Для приватных инстансов LibreTranslate
+DEEPL_API_KEY=...                    # Только для провайдера deepl
+GOOGLE_TRANSLATE_API_KEY=...         # Только для провайдера google
+</code></pre></div>
+<h3 id="configjson">Настройка в config.json</h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;translator&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;default_provider&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mymemory&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;request_timeout_sec&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;mymemory_email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;libretranslate_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://libretranslate.com&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;libretranslate_fallback_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://translate.argosopentech.com&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="_8">Типичный сценарий использования</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. Пользователь пишет на русском</span>
+<span class="n">user_input</span> <span class="o">=</span> <span class="s2">&quot;Объясни квантовую запутанность&quot;</span>
+
+<span class="c1"># 2. Переводим на английский для модели</span>
+<span class="n">req</span> <span class="o">=</span> <span class="k">await</span> <span class="n">translator</span><span class="o">.</span><span class="n">translate_for_model</span><span class="p">(</span><span class="n">user_input</span><span class="p">)</span>
+<span class="n">english_prompt</span> <span class="o">=</span> <span class="n">req</span><span class="p">[</span><span class="s2">&quot;translated&quot;</span><span class="p">]</span>   <span class="c1"># &quot;Explain quantum entanglement&quot;</span>
+<span class="n">user_lang</span> <span class="o">=</span> <span class="n">req</span><span class="p">[</span><span class="s2">&quot;source_lang&quot;</span><span class="p">]</span>       <span class="c1"># &quot;ru&quot;</span>
+
+<span class="c1"># 3. Отправляем в AI модель</span>
+<span class="n">ai_response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">foundry_client</span><span class="o">.</span><span class="n">generate_text</span><span class="p">(</span><span class="n">english_prompt</span><span class="p">)</span>
+
+<span class="c1"># 4. Переводим ответ обратно на русский</span>
+<span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="n">translator</span><span class="o">.</span><span class="n">translate_response</span><span class="p">(</span><span class="n">ai_response</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">],</span> <span class="n">target_lang</span><span class="o">=</span><span class="n">user_lang</span><span class="p">)</span>
+<span class="n">final_answer</span> <span class="o">=</span> <span class="n">resp</span><span class="p">[</span><span class="s2">&quot;translated&quot;</span><span class="p">]</span>
+</code></pre></div>
+<hr />
+<h2 id="env_processor">env_processor</h2>
+<p><code>src/utils/env_processor.py</code> — загружает <code>.env</code>, подставляет переменные окружения в <code>config.json</code> и валидирует конфигурацию.</p>
+<h3 id="_9">Импорт</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">src.utils.env_processor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">load_env_variables</span><span class="p">,</span>
+    <span class="n">substitute_env_vars</span><span class="p">,</span>
+    <span class="n">process_config</span><span class="p">,</span>
+    <span class="n">validate_config</span><span class="p">,</span>
+    <span class="n">save_processed_config</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="_10">Функции</h3>
+<h4 id="load_env_variables"><code>load_env_variables()</code></h4>
+<p>Загружает переменные из файла <code>.env</code> в текущее окружение процесса.</p>
+<p><strong>Returns:</strong> <code>bool</code> — <code>True</code> если <code>.env</code> найден и загружен, <code>False</code> если файл отсутствует или произошла ошибка</p>
+<div class="highlight"><pre><span></span><code><span class="n">loaded</span> <span class="o">=</span> <span class="n">load_env_variables</span><span class="p">()</span>
+<span class="c1"># True — .env загружен</span>
+</code></pre></div>
+<hr />
+<h4 id="substitute_env_varsvalue"><code>substitute_env_vars(value)</code></h4>
+<p>Подставляет переменные окружения в строку.</p>
+<p>Поддерживаемые форматы:
+- <code>${VAR_NAME}</code> — обязательная переменная (исключение если не задана)
+- <code>${VAR_NAME:default}</code> — с дефолтным значением</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>value</code></td>
+<td><code>str</code></td>
+<td>Строка с <code>${...}</code> плейсхолдерами</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> Подставленное значение с автоматическим приведением типа (<code>str</code>, <code>int</code>, <code>float</code>, <code>bool</code>, <code>list</code>)</p>
+<p><strong>Raises:</strong> <code>ValueError</code> — если обязательная переменная не задана</p>
+<div class="highlight"><pre><span></span><code><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;PORT&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;9696&quot;</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">substitute_env_vars</span><span class="p">(</span><span class="s2">&quot;$</span><span class="si">{PORT:8000}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># 9696  (int, не строка)</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">substitute_env_vars</span><span class="p">(</span><span class="s2">&quot;${DEBUG:false}&quot;</span><span class="p">)</span>
+<span class="c1"># False  (bool)</span>
+</code></pre></div>
+<hr />
+<h4 id="convert_typevalue"><code>convert_type(value)</code></h4>
+<p>Приводит строку к наиболее подходящему Python-типу.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>value</code></td>
+<td><code>str</code></td>
+<td>Строка для конвертации</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>bool</code> для <code>true/false/yes/no/1/0/on/off</code>, <code>int</code>/<code>float</code> для чисел, <code>list</code> для строк с запятыми, иначе <code>str</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">convert_type</span><span class="p">(</span><span class="s2">&quot;true&quot;</span><span class="p">)</span>    <span class="c1"># True</span>
+<span class="n">convert_type</span><span class="p">(</span><span class="s2">&quot;42&quot;</span><span class="p">)</span>      <span class="c1"># 42</span>
+<span class="n">convert_type</span><span class="p">(</span><span class="s2">&quot;3.14&quot;</span><span class="p">)</span>    <span class="c1"># 3.14</span>
+<span class="n">convert_type</span><span class="p">(</span><span class="s2">&quot;a,b,c&quot;</span><span class="p">)</span>  <span class="c1"># [&quot;a&quot;, &quot;b&quot;, &quot;c&quot;]</span>
+</code></pre></div>
+<hr />
+<h4 id="process_configconfig_path"><code>process_config(config_path)</code></h4>
+<p>Загружает <code>config.json</code> и подставляет все <code>${...}</code> переменные окружения.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config_path</code></td>
+<td><code>str \| Path</code></td>
+<td>Путь к файлу конфигурации</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>dict</code> — обработанная конфигурация</p>
+<p><strong>Raises:</strong>
+- <code>FileNotFoundError</code> — файл не найден
+- <code>json.JSONDecodeError</code> — невалидный JSON
+- <code>ValueError</code> — обязательная env-переменная не задана</p>
+<div class="highlight"><pre><span></span><code><span class="n">cfg</span> <span class="o">=</span> <span class="n">process_config</span><span class="p">(</span><span class="s2">&quot;config.json&quot;</span><span class="p">)</span>
+<span class="c1"># {&quot;fastapi_server&quot;: {&quot;port&quot;: 9696, ...}, ...}</span>
+</code></pre></div>
+<hr />
+<h4 id="validate_configcfg"><code>validate_config(cfg)</code></h4>
+<p>Проверяет наличие обязательных секций в конфигурации.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cfg</code></td>
+<td><code>dict</code></td>
+<td>Обработанная конфигурация</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>bool</code> — <code>True</code> если присутствуют все обязательные секции (<code>fastapi_server</code>, <code>foundry_ai</code>, <code>security</code>)</p>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="ow">not</span> <span class="n">validate_config</span><span class="p">(</span><span class="n">cfg</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Конфигурация неполная&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h4 id="save_processed_configcfg-output_path"><code>save_processed_config(cfg, output_path)</code></h4>
+<p>Сохраняет обработанную конфигурацию в файл.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cfg</code></td>
+<td><code>dict</code></td>
+<td>Конфигурация для сохранения</td>
+</tr>
+<tr>
+<td><code>output_path</code></td>
+<td><code>str \| Path</code></td>
+<td>Путь к выходному файлу</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Raises:</strong> <code>OSError</code> — ошибка записи (диск заполнен, нет прав)</p>
+<div class="highlight"><pre><span></span><code><span class="n">save_processed_config</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;config.processed.json&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h3 id="configjson_1">Синтаксис подстановки в config.json</h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;fastapi_server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${FASTAPI_PORT:9696}&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${FASTAPI_HOST:0.0.0.0}&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;foundry_ai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;base_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${FOUNDRY_BASE_URL:http://localhost:50477/v1/}&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;security&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${API_KEY:}&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<hr />
+<h2 id="foundry_finder">foundry_finder</h2>
+<p><code>src/utils/foundry_finder.py</code> — автоматически обнаруживает порт, на котором запущен Foundry Local.</p>
+<h3 id="_11">Импорт</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">src.utils.foundry_finder</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_foundry_port</span><span class="p">,</span> <span class="n">find_foundry_url</span>
+</code></pre></div>
+<h3 id="_12">Функции</h3>
+<h4 id="find_foundry_port"><code>find_foundry_port()</code></h4>
+<p>Ищет запущенный Foundry Local. Сначала проверяет переменную окружения <code>FOUNDRY_DYNAMIC_PORT</code>, затем сканирует известные порты.</p>
+<p><strong>Returns:</strong> <code>int | None</code> — номер порта если Foundry найден, <code>None</code> если не найден</p>
+<p><strong>Порядок поиска:</strong>
+1. <code>FOUNDRY_DYNAMIC_PORT</code> из окружения
+2. Порт <code>62171</code>
+3. Порт <code>50477</code>
+4. Порт <code>58130</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">port</span> <span class="o">=</span> <span class="n">find_foundry_port</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">port</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Foundry на порту </span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Foundry не запущен&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h4 id="find_foundry_url"><code>find_foundry_url()</code></h4>
+<p>Возвращает полный базовый URL Foundry.</p>
+<p><strong>Returns:</strong> <code>str | None</code> — URL вида <code>http://localhost:50477/v1/</code> или <code>None</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">url</span> <span class="o">=</span> <span class="n">find_foundry_url</span><span class="p">()</span>
+<span class="c1"># &quot;http://localhost:50477/v1/&quot;</span>
+</code></pre></div>
+<hr />
+<h4 id="_test_foundry_portport"><code>_test_foundry_port(port)</code> <em>(внутренняя)</em></h4>
+<p>Проверяет, отвечает ли Foundry на указанном порту.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>port</code></td>
+<td><code>int</code></td>
+<td>TCP-порт для проверки</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>bool</code> — <code>True</code> если <code>/v1/models</code> вернул HTTP 200</p>
+<hr />
+<h3 id="_13">Переменные окружения</h3>
+<div class="highlight"><pre><span></span><code>FOUNDRY_DYNAMIC_PORT=50477   # Принудительно задать порт (пропускает сканирование)
+</code></pre></div>
+<hr />
+<h2 id="logging_config">logging_config</h2>
+<p><code>src/utils/logging_config.py</code> — тонкий bootstrap для настройки уровня логирования. Вся конфигурация обработчиков (файлы, форматы) находится в <code>src/logger/__init__.py</code>.</p>
+<h3 id="_14">Импорт</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">src.utils.logging_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_logging</span>
+</code></pre></div>
+<h3 id="_15">Функции</h3>
+<h4 id="setup_logginglog_level"><code>setup_logging(log_level)</code></h4>
+<p>Устанавливает уровень логирования и подавляет шумные сторонние библиотеки.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>По умолчанию</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>log_level</code></td>
+<td><code>str</code></td>
+<td><code>"INFO"</code></td>
+<td>Уровень: <code>DEBUG</code>, <code>INFO</code>, <code>WARNING</code>, <code>ERROR</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Подавляемые логгеры:</strong> <code>watchfiles</code>, <code>watchfiles.main</code>, <code>uvicorn.access</code> → уровень <code>WARNING</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">setup_logging</span><span class="p">(</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">)</span>   <span class="c1"># Включить подробный вывод</span>
+<span class="n">setup_logging</span><span class="p">(</span><span class="s2">&quot;WARNING&quot;</span><span class="p">)</span> <span class="c1"># Только предупреждения и ошибки</span>
+</code></pre></div>
+<hr />
+<h2 id="logging_system">logging_system</h2>
+<p><code>src/utils/logging_system.py</code> — структурированный логгер-фасад поверх stdlib <code>logging</code>. Добавляет JSON-поля к сообщениям и контекстный таймер.</p>
+<h3 id="_16">Импорт</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">src.utils.logging_system</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">logger</span>
+
+<span class="c1"># Создать именованный логгер</span>
+<span class="n">log</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="s2">&quot;my-module&quot;</span><span class="p">)</span>
+
+<span class="c1"># Использовать глобальный синглтон</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.utils.logging_system</span><span class="w"> </span><span class="kn">import</span> <span class="n">info</span><span class="p">,</span> <span class="n">warning</span><span class="p">,</span> <span class="n">error</span>
+</code></pre></div>
+<h3 id="get_loggername"><code>get_logger(name)</code></h3>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td><code>str</code></td>
+<td>Имя логгера (отображается в выводе)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>StructuredLogger</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">log</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="s2">&quot;rag-system&quot;</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Index loaded&quot;</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">vectors</span><span class="o">=</span><span class="mi">512</span><span class="p">)</span>
+<span class="c1"># [INFO] Index loaded | {&quot;chunks&quot;: 512, &quot;vectors&quot;: 512}</span>
+</code></pre></div>
+<hr />
+<h3 id="structuredlogger">Класс <code>StructuredLogger</code></h3>
+<h4 id="_17">Методы логирования</h4>
+<p>Все методы принимают <code>message: str</code> и произвольные <code>**kwargs</code>, которые сериализуются как JSON и добавляются к сообщению.</p>
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Уровень</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>debug(message, **kwargs)</code></td>
+<td>DEBUG</td>
+</tr>
+<tr>
+<td><code>info(message, **kwargs)</code></td>
+<td>INFO</td>
+</tr>
+<tr>
+<td><code>warning(message, **kwargs)</code></td>
+<td>WARNING</td>
+</tr>
+<tr>
+<td><code>error(message, exc_info=None, **kwargs)</code></td>
+<td>ERROR</td>
+</tr>
+<tr>
+<td><code>critical(message, **kwargs)</code></td>
+<td>CRITICAL</td>
+</tr>
+<tr>
+<td><code>exception(message, **kwargs)</code></td>
+<td>ERROR + traceback</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Request handled&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">0.12</span><span class="p">)</span>
+<span class="c1"># [INFO] Request handled | {&quot;status&quot;: 200, &quot;duration&quot;: 0.12}</span>
+
+<span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Connection failed&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">50477</span><span class="p">)</span>
+<span class="c1"># [ERROR] Connection failed | {&quot;host&quot;: &quot;localhost&quot;, &quot;port&quot;: 50477}</span>
+<span class="c1"># + traceback</span>
+</code></pre></div>
+<hr />
+<h4 id="timeroperation-kwargs"><code>timer(operation, **kwargs)</code> <em>(контекстный менеджер)</em></h4>
+<p>Логирует время выполнения блока кода.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>operation</code></td>
+<td><code>str</code></td>
+<td>Название операции для лога</td>
+</tr>
+<tr>
+<td><code>**kwargs</code></td>
+<td></td>
+<td>Дополнительные поля в JSON</td>
+</tr>
+</tbody>
+</table>
+<p>При успехе пишет <code>INFO</code> с <code>duration</code>. При исключении — <code>ERROR</code> с <code>duration</code> и <code>error</code>, затем пробрасывает исключение.</p>
+<div class="highlight"><pre><span></span><code><span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="s2">&quot;rag-search&quot;</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">&quot;quantum&quot;</span><span class="p">):</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">rag_system</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;quantum&quot;</span><span class="p">)</span>
+<span class="c1"># ✅ rag-search | {&quot;duration&quot;: 0.043, &quot;query&quot;: &quot;quantum&quot;}</span>
+</code></pre></div>
+<hr />
+<h4 id="log_api_requestmethod-path-status_code-duration-kwargs"><code>log_api_request(method, path, status_code, duration, **kwargs)</code></h4>
+<p>Логирует HTTP-запрос к API.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>method</code></td>
+<td><code>str</code></td>
+<td>HTTP-метод (<code>GET</code>, <code>POST</code>, ...)</td>
+</tr>
+<tr>
+<td><code>path</code></td>
+<td><code>str</code></td>
+<td>Путь запроса</td>
+</tr>
+<tr>
+<td><code>status_code</code></td>
+<td><code>int</code></td>
+<td>Код ответа</td>
+</tr>
+<tr>
+<td><code>duration</code></td>
+<td><code>float</code></td>
+<td>Время обработки в секундах</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="n">log</span><span class="o">.</span><span class="n">log_api_request</span><span class="p">(</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="s2">&quot;/api/v1/generate&quot;</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mf">1.23</span><span class="p">)</span>
+<span class="c1"># [INFO] API POST /api/v1/generate → 200 (1.230s) | {...}</span>
+</code></pre></div>
+<hr />
+<h4 id="log_model_operationmodel_id-operation-status-duration-kwargs"><code>log_model_operation(model_id, operation, status, duration, **kwargs)</code></h4>
+<p>Логирует операцию с моделью.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>model_id</code></td>
+<td><code>str</code></td>
+<td>Идентификатор модели</td>
+</tr>
+<tr>
+<td><code>operation</code></td>
+<td><code>str</code></td>
+<td>Название операции: <code>load</code>, <code>unload</code>, <code>generate</code></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td><code>str</code></td>
+<td><code>"success"</code> или <code>"error"</code></td>
+</tr>
+<tr>
+<td><code>duration</code></td>
+<td><code>float \| None</code></td>
+<td>Длительность в секундах</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="n">log</span><span class="o">.</span><span class="n">log_model_operation</span><span class="p">(</span><span class="s2">&quot;qwen3-0.6b&quot;</span><span class="p">,</span> <span class="s2">&quot;load&quot;</span><span class="p">,</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">3.5</span><span class="p">)</span>
+<span class="c1"># [INFO] Model load: qwen3-0.6b → success (3.500s) | {...}</span>
+</code></pre></div>
+<hr />
+<h3 id="_18">Глобальные алиасы</h3>
+<p>Для удобства модуль экспортирует функции-алиасы глобального синглтона:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">src.utils.logging_system</span><span class="w"> </span><span class="kn">import</span> <span class="n">info</span><span class="p">,</span> <span class="n">warning</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">debug</span><span class="p">,</span> <span class="n">critical</span><span class="p">,</span> <span class="n">exception</span>
+
+<span class="n">info</span><span class="p">(</span><span class="s2">&quot;Server started&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">9696</span><span class="p">)</span>
+<span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Foundry not found&quot;</span><span class="p">)</span>
+<span class="n">error</span><span class="p">(</span><span class="s2">&quot;Critical failure&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="log_analyzer">log_analyzer</h2>
+<p><code>src/utils/log_analyzer.py</code> — анализирует лог-файлы из директории <code>logs/</code>. Читает структурированные <code>.jsonl</code> логи и предоставляет метрики производительности, сводки ошибок и состояние системы.</p>
+<h3 id="_19">Импорт</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">src.utils.log_analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_analyzer</span>  <span class="c1"># глобальный синглтон</span>
+<span class="c1"># или</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.utils.log_analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogAnalyzer</span>
+<span class="n">analyzer</span> <span class="o">=</span> <span class="n">LogAnalyzer</span><span class="p">(</span><span class="n">logs_dir</span><span class="o">=</span><span class="s2">&quot;logs&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="_20">Методы</h3>
+<h4 id="get_system_health"><code>get_system_health()</code></h4>
+<p>Анализирует состояние системы за последний час.</p>
+<p><strong>Returns:</strong> <code>dict</code></p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Тип</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>status</code></td>
+<td><code>str</code></td>
+<td><code>"healthy"</code> / <code>"warning"</code> / <code>"critical"</code> / <code>"error"</code></td>
+</tr>
+<tr>
+<td><code>timestamp</code></td>
+<td><code>datetime</code></td>
+<td>Время анализа</td>
+</tr>
+<tr>
+<td><code>period</code></td>
+<td><code>str</code></td>
+<td><code>"1h"</code></td>
+</tr>
+<tr>
+<td><code>metrics.errors_count</code></td>
+<td><code>int</code></td>
+<td>Количество ошибок за час</td>
+</tr>
+<tr>
+<td><code>metrics.warnings_count</code></td>
+<td><code>int</code></td>
+<td>Количество предупреждений за час</td>
+</tr>
+<tr>
+<td><code>metrics.api_requests</code></td>
+<td><code>int</code></td>
+<td>Количество API-запросов</td>
+</tr>
+<tr>
+<td><code>metrics.avg_response_time</code></td>
+<td><code>float</code></td>
+<td>Среднее время ответа (сек)</td>
+</tr>
+<tr>
+<td><code>metrics.active_models</code></td>
+<td><code>int</code></td>
+<td>Количество активных моделей</td>
+</tr>
+<tr>
+<td><code>metrics.failed_model_operations</code></td>
+<td><code>int</code></td>
+<td>Количество неудачных операций с моделями</td>
+</tr>
+<tr>
+<td><code>details</code></td>
+<td><code>dict</code></td>
+<td>Детали: <code>api_performance</code>, <code>model_performance</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Пороги статуса:</strong>
+- <code>critical</code> — ошибок &gt; 10
+- <code>warning</code> — ошибок &gt; 5 или предупреждений &gt; 20
+- <code>healthy</code> — иначе</p>
+<div class="highlight"><pre><span></span><code><span class="n">health</span> <span class="o">=</span> <span class="k">await</span> <span class="n">log_analyzer</span><span class="o">.</span><span class="n">get_system_health</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">health</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">])</span>          <span class="c1"># &quot;healthy&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">health</span><span class="p">[</span><span class="s2">&quot;metrics&quot;</span><span class="p">][</span><span class="s2">&quot;errors_count&quot;</span><span class="p">])</span>  <span class="c1"># 2</span>
+</code></pre></div>
+<hr />
+<h4 id="get_error_summaryhours24"><code>get_error_summary(hours=24)</code></h4>
+<p>Сводка ошибок за указанный период.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>По умолчанию</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hours</code></td>
+<td><code>int</code></td>
+<td><code>24</code></td>
+<td>Глубина анализа в часах</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>dict</code></p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Тип</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>period</code></td>
+<td><code>str</code></td>
+<td>Например <code>"24h"</code></td>
+</tr>
+<tr>
+<td><code>total_errors</code></td>
+<td><code>int</code></td>
+<td>Общее количество ошибок</td>
+</tr>
+<tr>
+<td><code>error_types</code></td>
+<td><code>dict</code></td>
+<td>Топ-10 типов ошибок с количеством</td>
+</tr>
+<tr>
+<td><code>error_modules</code></td>
+<td><code>dict</code></td>
+<td>Топ-10 модулей с ошибками</td>
+</tr>
+<tr>
+<td><code>timeline</code></td>
+<td><code>dict</code></td>
+<td>Ошибки по часам <code>{"2025-12-09 14:00": 3, ...}</code></td>
+</tr>
+<tr>
+<td><code>recent_errors</code></td>
+<td><code>list</code></td>
+<td>Последние 10 ошибок</td>
+</tr>
+<tr>
+<td><code>timestamp</code></td>
+<td><code>datetime</code></td>
+<td>Время анализа</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Типы ошибок</strong> (автоклассификация по тексту сообщения):</p>
+<table>
+<thead>
+<tr>
+<th>Тип</th>
+<th>Ключевые слова</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>connection_error</code></td>
+<td><code>connection</code>, <code>timeout</code></td>
+</tr>
+<tr>
+<td><code>model_error</code></td>
+<td><code>model</code></td>
+</tr>
+<tr>
+<td><code>api_error</code></td>
+<td><code>api</code>, <code>http</code></td>
+</tr>
+<tr>
+<td><code>configuration_error</code></td>
+<td><code>config</code>, <code>setting</code></td>
+</tr>
+<tr>
+<td><code>file_error</code></td>
+<td><code>file</code>, <code>path</code></td>
+</tr>
+<tr>
+<td><code>general_error</code></td>
+<td>всё остальное</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="n">summary</span> <span class="o">=</span> <span class="k">await</span> <span class="n">log_analyzer</span><span class="o">.</span><span class="n">get_error_summary</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_errors&quot;</span><span class="p">])</span>          <span class="c1"># 5</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="s2">&quot;error_types&quot;</span><span class="p">])</span>           <span class="c1"># {&quot;connection_error&quot;: 3, &quot;model_error&quot;: 2}</span>
+</code></pre></div>
+<hr />
+<h4 id="get_performance_metricshours24"><code>get_performance_metrics(hours=24)</code></h4>
+<p>Метрики производительности за период.</p>
+<p><strong>Args:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Тип</th>
+<th>По умолчанию</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hours</code></td>
+<td><code>int</code></td>
+<td><code>24</code></td>
+<td>Глубина анализа в часах</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>dict</code></p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>api_performance</code></td>
+<td>Статистика API-запросов (см. ниже)</td>
+</tr>
+<tr>
+<td><code>model_performance</code></td>
+<td>Статистика операций с моделями (см. ниже)</td>
+</tr>
+<tr>
+<td><code>system_performance</code></td>
+<td>Системные метрики</td>
+</tr>
+<tr>
+<td><code>period</code></td>
+<td>Например <code>"24h"</code></td>
+</tr>
+<tr>
+<td><code>timestamp</code></td>
+<td>Время анализа</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>api_performance</code>:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>total_requests</code></td>
+<td>Общее количество запросов</td>
+</tr>
+<tr>
+<td><code>avg_response_time</code></td>
+<td>Среднее время ответа (сек)</td>
+</tr>
+<tr>
+<td><code>max_response_time</code></td>
+<td>Максимальное время ответа</td>
+</tr>
+<tr>
+<td><code>min_response_time</code></td>
+<td>Минимальное время ответа</td>
+</tr>
+<tr>
+<td><code>endpoints</code></td>
+<td>Топ-10 эндпоинтов по количеству запросов</td>
+</tr>
+<tr>
+<td><code>status_codes</code></td>
+<td>Распределение HTTP-кодов ответа</td>
+</tr>
+<tr>
+<td><code>requests_per_hour</code></td>
+<td>Запросов в час</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>model_performance</code>:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>models</code></td>
+<td>Статистика по каждой модели: <code>operations</code>, <code>successful</code>, <code>failed</code>, <code>avg_duration</code></td>
+</tr>
+<tr>
+<td><code>total_operations</code></td>
+<td>Всего операций</td>
+</tr>
+<tr>
+<td><code>failed_operations</code></td>
+<td>Количество неудачных операций</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>system_performance</code>:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>uptime_hours</code></td>
+<td>Время работы в часах</td>
+</tr>
+<tr>
+<td><code>log_files_count</code></td>
+<td>Количество <code>.log</code> файлов</td>
+</tr>
+<tr>
+<td><code>structured_logs_count</code></td>
+<td>Количество <code>.jsonl</code> файлов</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="n">metrics</span> <span class="o">=</span> <span class="k">await</span> <span class="n">log_analyzer</span><span class="o">.</span><span class="n">get_performance_metrics</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">api</span> <span class="o">=</span> <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;api_performance&quot;</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">api</span><span class="p">[</span><span class="s2">&quot;total_requests&quot;</span><span class="p">])</span>      <span class="c1"># 142</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">api</span><span class="p">[</span><span class="s2">&quot;avg_response_time&quot;</span><span class="p">])</span>   <span class="c1"># 0.234</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">api</span><span class="p">[</span><span class="s2">&quot;endpoints&quot;</span><span class="p">])</span>           <span class="c1"># {&quot;/api/v1/generate&quot;: 89, &quot;/api/v1/health&quot;: 53}</span>
+</code></pre></div>
+<hr />
+<h3 id="_21">Формат структурированных логов</h3>
+<p><code>log_analyzer</code> читает файлы <code>logs/*-structured.jsonl</code>. Каждая строка — JSON-объект:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-12-09T14:32:01.123456&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;logger&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;src.api.endpoints.generate&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;API POST /api/v1/generate → 200 (1.230s)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;api_method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;POST&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;api_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/api/v1/generate&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;status_code&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;duration&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.23</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Для попадания в метрики модели запись должна содержать поля <code>model_id</code> и <code>operation</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-12-09T14:30:00.000000&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Model load: qwen3-0.6b → success (3.500s)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;qwen3-0.6b&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;operation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;load&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;success&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;duration&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.5</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../../javascripts/extra.js"></script>
+      
+    
+  </body>
+</html>

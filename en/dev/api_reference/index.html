@@ -1,0 +1,5393 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="REST API for local AI models with RAG support">
+      
+      
+        <meta name="author" content="hypo69">
+      
+      
+        <link rel="canonical" href="https://davidka.net/ai_assist/docs/en/dev/api_reference/">
+      
+      
+        <link rel="prev" href="../architecture/">
+      
+      
+        <link rel="next" href="../rag_system/">
+      
+      
+        
+          <link rel="alternate" href="../../../dev/api_reference/" hreflang="ru">
+        
+          <link rel="alternate" href="./" hreflang="en">
+        
+      
+      
+      <link rel="icon" href="../../../assets/icons/icon48.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>API Reference - FastAPI Foundry</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api-fastapi-foundry" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="FastAPI Foundry" class="md-header__button md-logo" aria-label="FastAPI Foundry" data-md-component="logo">
+      
+  <img src="../../../assets/icons/icon128.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FastAPI Foundry
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Select language">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="../../../dev/api_reference/" hreflang="ru" class="md-select__link">
+              Русский
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../index.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Главная
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user/getting_started/" class="md-tabs__link">
+          
+  
+  
+  Руководство пользователя
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+  Для разработчиков
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="FastAPI Foundry" class="md-nav__button md-logo" aria-label="FastAPI Foundry" data-md-component="logo">
+      
+  <img src="../../../assets/icons/icon128.png" alt="logo">
+
+    </a>
+    FastAPI Foundry
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Главная
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Руководство пользователя
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Руководство пользователя
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Быстрый старт
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Установка
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Конфигурация
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/models_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Работа с моделями
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/web_interface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Веб-интерфейс
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/telegram_bots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Telegram Боты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/text_extraction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Извлечение текста
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Логирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/cli_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Для разработчиков
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Для разработчиков
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Архитектура
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Health">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /health
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generate
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Generate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-generate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /generate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Chat">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workflow-rag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow диалога: пользователь → перевод → RAG → модель → перевод → пользователь
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-chatstart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /chat/start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-chatmessage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /chat/message
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-chatstream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /chat/stream
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-chathistorysession_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /chat/history/{session_id}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-chatsessionsession_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /chat/session/{session_id}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-chathistorysave" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /chat/history/save
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-chatmodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /chat/models
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Models
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-modelsconnected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /models/connected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-modelsproviders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /models/providers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-modelshealth-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /models/health-check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-batch-generate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /batch-generate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#foundry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Foundry
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Foundry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrystatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrymodelslist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/models/list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrystart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrystop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/stop
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#foundry-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Foundry Models
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Foundry Models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrymodels-get-foundrymodelsavailable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/models / GET /foundry/models/available
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrymodelscached" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/models/cached
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrymodelsloaded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/models/loaded
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrymodelsstatusmodel_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/models/status/{model_id}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-foundrymodelsdownload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /foundry/models/download
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrymodelsdownloadstatuspid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/models/download/status/{pid}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-foundrymodelsload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /foundry/models/load
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-foundrymodelsunload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /foundry/models/unload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-foundrymodelsauto-load-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /foundry/models/auto-load-default
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#huggingface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HuggingFace
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HuggingFace">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-hfstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /hf/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-hfmodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /hf/models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-hfhubmodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /hf/hub/models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-hfmodelsdownload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /hf/models/download
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-hfmodelsload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /hf/models/load
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-hfmodelsunload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /hf/models/unload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-hfgenerate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /hf/generate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#llamacpp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        llama.cpp
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="llama.cpp">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-llamastatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /llama/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-llamamodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /llama/models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-llamastart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /llama/start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-llamastop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /llama/stop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-llamamodelscopy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /llama/models/copy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ollama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ollama
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ollama">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-ollamastatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /ollama/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ollamamodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /ollama/models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ollamamodelspull" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ollama/models/pull
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ollamamodelsdelete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ollama/models/delete
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ollamagenerate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ollama/generate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RAG
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RAG">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-ragstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /rag/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#put-ragconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PUT /rag/config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragsearch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/search
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragrebuild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/rebuild
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragclear" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/clear
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ragdirs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /rag/dirs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ragcwd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /rag/cwd
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ragbrowse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /rag/browse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ragprofiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /rag/profiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragprofilesload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/profiles/load
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-ragprofilesname" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /rag/profiles/{name}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragbuild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/build
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragextractfile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/extract/file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragextracturl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/extract/url
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ragextractformats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /rag/extract/formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Agent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-agentlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /agent/list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-agentagent_nametools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /agent/{agent_name}/tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-agentrun" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /agent/run
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcp-powershell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP PowerShell
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MCP PowerShell">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-mcp-powershellservers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /mcp-powershell/servers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-mcp-powershellserversnamestart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /mcp-powershell/servers/{name}/start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-mcp-powershellserversnamestop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /mcp-powershell/servers/{name}/stop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-mcp-powershellserversnamestatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /mcp-powershell/servers/{name}/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-mcp-powershellsettings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /mcp-powershell/settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-mcp-powershellsettings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /mcp-powershell/settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-models-mcp-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Models MCP Server
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Local Models MCP Server">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Маршрутизация моделей
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generate_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        generate — Генерация текста
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chat_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        chat — Чат с историей
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list_models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        list_models — Список моделей
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rag_search-rag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rag_search — Поиск по RAG
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#health_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        health — Статус сервиса
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Переменные окружения
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Config">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#patch-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PATCH /config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-configraw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /config/raw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-configraw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config/raw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-configenv-raw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /config/env-raw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-configenv-raw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config/env-raw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-configenv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config/env
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-configprovider-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /config/provider-keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-configprovider-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config/provider-keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-configexport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /config/export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-configimport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config/import
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-configextension-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /config/extension-export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-configextension-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config/extension-import
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Logs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-logsfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /logs/files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-logsclear" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /logs/clear
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-logsdownload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /logs/download
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-logsrecent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /logs/recent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-logsweb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /logs/web
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#converter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Converter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Converter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-converterstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /converter/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-converterconvert" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /converter/convert
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AI (расширенные)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AI (расширенные)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-aigenerate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ai/generate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-aigeneratestream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ai/generate/stream
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-aimodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /ai/models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-aimodelsrecommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /ai/models/recommended
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-aimodelsmodel_idload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ai/models/{model_id}/load
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-aimodelsmodel_idunload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ai/models/{model_id}/unload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-aihealth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /ai/health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-aichat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ai/chat
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-aioptimize" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ai/optimize
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-systemstats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /system/stats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helpdesk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HelpDesk
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HelpDesk">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-helpdeskdialogs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /helpdesk/dialogs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-helpdeskrag-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /helpdesk/rag-profiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-helpdeskrag-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /helpdesk/rag-profiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-helpdeskrag-profilesname" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /helpdesk/rag-profiles/{name}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-helpdeskconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /helpdesk/config
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rag_system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Система RAG
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../text_extractor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Text Extractor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Агенты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp_agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram_bots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Telegram Боты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Логирование
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cicd_docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD документации
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../versioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Управление версиями
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Скрипты
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_13" id="__nav_3_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Reference (Python)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Code Reference (Python)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/foundry_client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Foundry Client
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/rag_system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RAG System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code/app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    App Factory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_14" id="__nav_3_14_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Browser Extension (JS)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Browser Extension (JS)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../js/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_15" id="__nav_3_15_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PowerShell MCP Servers
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    PowerShell MCP Servers
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../powershell/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../powershell/run-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    run-sandbox.ps1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Health">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /health
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generate
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Generate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-generate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /generate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Chat">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workflow-rag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow диалога: пользователь → перевод → RAG → модель → перевод → пользователь
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-chatstart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /chat/start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-chatmessage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /chat/message
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-chatstream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /chat/stream
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-chathistorysession_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /chat/history/{session_id}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-chatsessionsession_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /chat/session/{session_id}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-chathistorysave" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /chat/history/save
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-chatmodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /chat/models
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Models
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-modelsconnected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /models/connected
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-modelsproviders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /models/providers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-modelshealth-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /models/health-check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-batch-generate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /batch-generate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#foundry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Foundry
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Foundry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrystatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrymodelslist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/models/list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrystart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrystop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/stop
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#foundry-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Foundry Models
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Foundry Models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrymodels-get-foundrymodelsavailable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/models / GET /foundry/models/available
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrymodelscached" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/models/cached
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrymodelsloaded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/models/loaded
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrymodelsstatusmodel_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/models/status/{model_id}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-foundrymodelsdownload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /foundry/models/download
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-foundrymodelsdownloadstatuspid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /foundry/models/download/status/{pid}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-foundrymodelsload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /foundry/models/load
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-foundrymodelsunload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /foundry/models/unload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-foundrymodelsauto-load-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /foundry/models/auto-load-default
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#huggingface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HuggingFace
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HuggingFace">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-hfstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /hf/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-hfmodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /hf/models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-hfhubmodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /hf/hub/models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-hfmodelsdownload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /hf/models/download
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-hfmodelsload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /hf/models/load
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-hfmodelsunload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /hf/models/unload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-hfgenerate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /hf/generate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#llamacpp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        llama.cpp
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="llama.cpp">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-llamastatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /llama/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-llamamodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /llama/models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-llamastart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /llama/start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-llamastop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /llama/stop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-llamamodelscopy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /llama/models/copy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ollama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ollama
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Ollama">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-ollamastatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /ollama/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ollamamodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /ollama/models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ollamamodelspull" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ollama/models/pull
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ollamamodelsdelete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ollama/models/delete
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ollamagenerate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ollama/generate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RAG
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RAG">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-ragstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /rag/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#put-ragconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PUT /rag/config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragsearch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/search
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragrebuild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/rebuild
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragclear" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/clear
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ragdirs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /rag/dirs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ragcwd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /rag/cwd
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ragbrowse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /rag/browse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ragprofiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /rag/profiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragprofilesload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/profiles/load
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-ragprofilesname" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /rag/profiles/{name}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragbuild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/build
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragextractfile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/extract/file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-ragextracturl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /rag/extract/url
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ragextractformats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /rag/extract/formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Agent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-agentlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /agent/list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-agentagent_nametools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /agent/{agent_name}/tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-agentrun" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /agent/run
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcp-powershell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP PowerShell
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MCP PowerShell">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-mcp-powershellservers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /mcp-powershell/servers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-mcp-powershellserversnamestart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /mcp-powershell/servers/{name}/start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-mcp-powershellserversnamestop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /mcp-powershell/servers/{name}/stop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-mcp-powershellserversnamestatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /mcp-powershell/servers/{name}/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-mcp-powershellsettings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /mcp-powershell/settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-mcp-powershellsettings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /mcp-powershell/settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-models-mcp-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Models MCP Server
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Local Models MCP Server">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Маршрутизация моделей
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generate_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        generate — Генерация текста
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chat_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        chat — Чат с историей
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list_models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        list_models — Список моделей
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rag_search-rag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rag_search — Поиск по RAG
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#health_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        health — Статус сервиса
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Переменные окружения
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Config">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#patch-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PATCH /config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-configraw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /config/raw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-configraw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config/raw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-configenv-raw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /config/env-raw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-configenv-raw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config/env-raw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-configenv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config/env
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-configprovider-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /config/provider-keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-configprovider-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config/provider-keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-configexport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /config/export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-configimport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config/import
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-configextension-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /config/extension-export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-configextension-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /config/extension-import
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Logs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-logsfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /logs/files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-logsclear" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /logs/clear
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-logsdownload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /logs/download
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-logsrecent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /logs/recent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-logsweb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /logs/web
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#converter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Converter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Converter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-converterstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /converter/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-converterconvert" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /converter/convert
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AI (расширенные)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AI (расширенные)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-aigenerate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ai/generate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-aigeneratestream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ai/generate/stream
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-aimodels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /ai/models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-aimodelsrecommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /ai/models/recommended
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-aimodelsmodel_idload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ai/models/{model_id}/load
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-aimodelsmodel_idunload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ai/models/{model_id}/unload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-aihealth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /ai/health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-aichat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ai/chat
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-aioptimize" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /ai/optimize
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-systemstats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /system/stats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helpdesk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HelpDesk
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HelpDesk">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-helpdeskdialogs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /helpdesk/dialogs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-helpdeskrag-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /helpdesk/rag-profiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-helpdeskrag-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /helpdesk/rag-profiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-helpdeskrag-profilesname" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /helpdesk/rag-profiles/{name}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-helpdeskconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /helpdesk/config
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="api-fastapi-foundry">API Справочник FastAPI Foundry</h1>
+<p>Все эндпоинты доступны по базовому префиксу <code>/api/v1/</code>. Интерактивная документация: <code>/docs</code>.</p>
+<p><strong>Базовый URL:</strong> <code>http://localhost:9696/api/v1</code><br />
+<strong>Формат ответа:</strong> JSON<br />
+<strong>Формат ошибки:</strong> <code>{"success": false, "error": "описание"}</code></p>
+<hr />
+<h2 id="health">Health</h2>
+<h3 id="get-health"><code>GET /health</code></h3>
+<p>Проверка состояния сервиса.</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>http://localhost:9696/api/v1/health
+</code></pre></div>
+<p><strong>Ответ:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;healthy&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;foundry_status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;healthy&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;foundry_details&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">50477</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://localhost:50477/v1&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;models_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h2 id="generate">Generate</h2>
+<h3 id="post-generate"><code>POST /generate</code></h3>
+<p>Генерация текста через Foundry, HuggingFace или llama.cpp.</p>
+<p>Маршрутизация по префиксу <code>model</code>:
+- <code>hf::&lt;model_id&gt;</code> → HuggingFace
+- <code>llama::&lt;path&gt;</code> → llama.cpp
+- без префикса → Foundry Local</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:9696/api/v1/generate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;prompt&quot;: &quot;Ваш запрос&quot;, &quot;model&quot;: &quot;qwen2.5-0.5b-instruct-generic-cpu:4&quot;, &quot;temperature&quot;: 0.7}&#39;</span>
+</code></pre></div>
+<p><strong>Тело запроса:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ваш запрос&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;qwen2.5-0.5b-instruct-generic-cpu:4&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;temperature&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;max_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;use_rag&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;top_k&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Ответ:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;success&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ответ модели&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;qwen2.5-0.5b-instruct-generic-cpu:4&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;usage&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;prompt_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;completion_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;total_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h2 id="chat">Chat</h2>
+<h3 id="workflow-rag">Workflow диалога: пользователь → перевод → RAG → модель → перевод → пользователь</h3>
+<div class="highlight"><pre><span></span><code>[1] Пользователь отправляет сообщение (на любом языке)
+        │  POST /api/v1/chat/message
+        │  { message, session_id, source_lang, locale, use_rag, model }
+        ▼
+[2] Перевод входящего сообщения → English
+        │  translator.translate_for_model(message, source_lang)
+        │  Включается если: translator.enabled=true И source_lang != &quot;en&quot;
+        ▼
+[3] RAG поиск (если use_rag=true)
+        │  rag_system.search(message_en, top_k=3)
+        │  Релевантные фрагменты добавляются в начало промпта
+        ▼
+[4] Сборка промпта
+        │  &quot;Context:\n{rag}\n\nSystem: {system_prompt}\n\n{history}\nUser: {message}&quot;
+        ▼
+[5] Генерация ответа
+        │  foundry_client.generate_text(prompt, model, temperature, max_tokens)
+        │  Модель отвечает на English
+        ▼
+[6] Обратный перевод ответа
+        │  translator.translate_response(response_en, locale или source_lang)
+        │  Включается если: translator.enabled=true И reply_lang != &quot;en&quot;
+        ▼
+[7] Ответ пользователю (на его языке)
+        { success, response, session_id }
+</code></pre></div>
+<div class="admonition info">
+<p class="admonition-title">Приоритет <code>locale</code> над <code>source_lang</code></p>
+<p>Если передан <code>locale="ru"</code>, ответ всегда будет на русском — даже если входящее сообщение было на английском.
+Без <code>locale</code> ответ переводится на язык <code>source_lang</code> (определённый автоматически).</p>
+</div>
+<hr />
+<h3 id="post-chatstart"><code>POST /chat/start</code></h3>
+<p>Начать новую сессию чата.</p>
+<p><strong>Тело:</strong> <code>{"model": "qwen2.5-0.5b-instruct-generic-cpu:4"}</code><br />
+<strong>Ответ:</strong> <code>{"success": true, "session_id": "uuid", "model": "...", "message": "..."}</code></p>
+<h3 id="post-chatmessage"><code>POST /chat/message</code></h3>
+<p>Отправить сообщение в сессию.</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:9696/api/v1/chat/message<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;session_id&quot;: &quot;uuid&quot;, &quot;message&quot;: &quot;Привет&quot;, &quot;locale&quot;: &quot;ru&quot;}&#39;</span>
+</code></pre></div>
+<p><strong>Тело:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;session_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uuid&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Текст сообщения&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;temperature&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;max_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2048</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;source_lang&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;locale&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ru&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>По умолчанию</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>session_id</code></td>
+<td>—</td>
+<td>UUID сессии (обязательно)</td>
+</tr>
+<tr>
+<td><code>message</code></td>
+<td>—</td>
+<td>Текст сообщения (обязательно)</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>из config.json</td>
+<td>ID модели</td>
+</tr>
+<tr>
+<td><code>temperature</code></td>
+<td><code>0.7</code></td>
+<td>Температура</td>
+</tr>
+<tr>
+<td><code>max_tokens</code></td>
+<td><code>2048</code></td>
+<td>Максимум токенов</td>
+</tr>
+<tr>
+<td><code>source_lang</code></td>
+<td><code>"auto"</code></td>
+<td>Язык входящего сообщения (<code>"ru"</code>, <code>"he"</code>, <code>"auto"</code>)</td>
+</tr>
+<tr>
+<td><code>locale</code></td>
+<td><code>""</code></td>
+<td>Язык ответа. Переопределяет <code>source_lang</code> для обратного перевода</td>
+</tr>
+</tbody>
+</table>
+<h3 id="post-chatstream"><code>POST /chat/stream</code></h3>
+<p>Стриминговый ответ (SSE). Те же поля что и <code>/chat/message</code>.<br />
+<strong>Ответ:</strong> <code>text/event-stream</code> — чанки <code>{"chunk": "..."}</code>, финал <code>{"done": true}</code>.</p>
+<h3 id="get-chathistorysession_id"><code>GET /chat/history/{session_id}</code></h3>
+<p>История сессии.<br />
+<strong>Ответ:</strong> <code>{"success": true, "session_id": "...", "history": [{"role": "user", "content": "..."}]}</code></p>
+<h3 id="delete-chatsessionsession_id"><code>DELETE /chat/session/{session_id}</code></h3>
+<p>Удалить сессию.</p>
+<h3 id="post-chathistorysave"><code>POST /chat/history/save</code></h3>
+<p>Сохранить историю на диск (<code>~/.ai-assistant-chat-history/</code>).</p>
+<p><strong>Тело:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">}],</span>
+<span class="w">  </span><span class="nt">&quot;session_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uuid&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;aborted&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<h3 id="get-chatmodels"><code>GET /chat/models</code></h3>
+<p>Список моделей доступных для чата (из Foundry).</p>
+<hr />
+<h2 id="models">Models</h2>
+<h3 id="get-models"><code>GET /models</code></h3>
+<p>Все доступные модели (Foundry + llama.cpp).</p>
+<p><strong>Ответ:</strong> <code>{"success": true, "models": [...], "count": 5}</code></p>
+<h3 id="get-modelsconnected"><code>GET /models/connected</code></h3>
+<p>Подключённые модели с деталями (<code>provider</code>, <code>status</code>, <code>max_tokens</code>).</p>
+<h3 id="get-modelsproviders"><code>GET /models/providers</code></h3>
+<p>Список провайдеров (<code>foundry</code>, <code>ollama</code>, <code>openai</code>) и их статус.</p>
+<h3 id="post-modelshealth-check"><code>POST /models/health-check</code></h3>
+<p>Проверка здоровья всех моделей.</p>
+<h3 id="post-batch-generate"><code>POST /batch-generate</code></h3>
+<p>Пакетная генерация текста.</p>
+<p><strong>Тело:</strong> <code>{"prompts": ["запрос 1", "запрос 2"]}</code><br />
+<strong>Ответ:</strong> <code>{"success": true, "results": [{"success": true, "content": "..."}]}</code></p>
+<hr />
+<h2 id="foundry">Foundry</h2>
+<h3 id="get-foundrystatus"><code>GET /foundry/status</code></h3>
+<p>Статус сервиса Foundry Local.</p>
+<p><strong>Ответ:</strong> <code>{"success": true, "running": true, "status": "healthy", "port": 50477, "url": "..."}</code></p>
+<h3 id="get-foundrymodelslist"><code>GET /foundry/models/list</code></h3>
+<p>Список всех моделей через Foundry клиент.</p>
+<h3 id="get-foundrystart"><code>GET /foundry/start</code></h3>
+<p>Запустить сервис Foundry через CLI.</p>
+<h3 id="get-foundrystop"><code>GET /foundry/stop</code></h3>
+<p>Остановить сервис Foundry через CLI.</p>
+<hr />
+<h2 id="foundry-models">Foundry Models</h2>
+<h3 id="get-foundrymodels-get-foundrymodelsavailable"><code>GET /foundry/models</code> / <code>GET /foundry/models/available</code></h3>
+<p>Список моделей из каталога Foundry (<code>foundry model ls</code>). При недоступности CLI — хардкод.</p>
+<p><strong>Ответ:</strong> <code>{"success": true, "models": [...], "count": 4, "source": "foundry-cli"}</code></p>
+<p>Поля модели: <code>id</code>, <code>name</code>, <code>alias</code>, <code>device</code>, <code>type</code>, <code>task</code>, <code>size</code>, <code>license</code>, <code>cached</code>.</p>
+<h3 id="get-foundrymodelscached"><code>GET /foundry/models/cached</code></h3>
+<p>Модели скачанные в локальный кэш (<code>~/.foundry/cache/models/Microsoft</code>).</p>
+<h3 id="get-foundrymodelsloaded"><code>GET /foundry/models/loaded</code></h3>
+<p>Модели загруженные в Foundry сервис (запрос к <code>/v1/models</code>).</p>
+<h3 id="get-foundrymodelsstatusmodel_id"><code>GET /foundry/models/status/{model_id}</code></h3>
+<p>Статус конкретной модели: <code>loaded</code>, <code>cached</code>, <code>not_downloaded</code>.</p>
+<h3 id="post-foundrymodelsdownload"><code>POST /foundry/models/download</code></h3>
+<p>Скачать модель в кэш (фоновый процесс).</p>
+<p><strong>Тело:</strong> <code>{"model_id": "qwen2.5-0.5b-instruct-generic-cpu:4"}</code><br />
+<strong>Ответ:</strong> <code>{"success": true, "model_id": "...", "status": "downloading", "pid": 1234}</code></p>
+<h3 id="get-foundrymodelsdownloadstatuspid"><code>GET /foundry/models/download/status/{pid}</code></h3>
+<p>Статус процесса скачивания по PID.</p>
+<p><strong>Ответ:</strong> <code>{"success": true, "pid": 1234, "model_id": "...", "status": "done", "cached": true}</code></p>
+<h3 id="post-foundrymodelsload"><code>POST /foundry/models/load</code></h3>
+<p>Загрузить модель в Foundry сервис.</p>
+<p><strong>Тело:</strong> <code>{"model_id": "qwen2.5-0.5b-instruct-generic-cpu:4"}</code><br />
+<strong>Ответ:</strong> <code>{"success": true, "model_id": "...", "status": "loading", "pid": 1234}</code></p>
+<h3 id="post-foundrymodelsunload"><code>POST /foundry/models/unload</code></h3>
+<p>Выгрузить модель из Foundry сервиса.</p>
+<p><strong>Тело:</strong> <code>{"model_id": "qwen2.5-0.5b-instruct-generic-cpu:4"}</code></p>
+<h3 id="post-foundrymodelsauto-load-default"><code>POST /foundry/models/auto-load-default</code></h3>
+<p>Загрузить модель по умолчанию из <code>config.json</code> (<code>foundry_ai.default_model</code>).</p>
+<hr />
+<h2 id="huggingface">HuggingFace</h2>
+<h3 id="get-hfstatus"><code>GET /hf/status</code></h3>
+<p>Статус HuggingFace интеграции: версии <code>transformers</code>, <code>torch</code>, <code>huggingface_hub</code>, наличие <code>HF_TOKEN</code>.</p>
+<h3 id="get-hfmodels"><code>GET /hf/models</code></h3>
+<p>Список скачанных и загруженных в память HF моделей.</p>
+<h3 id="get-hfhubmodels"><code>GET /hf/hub/models</code></h3>
+<p>Модели пользователя с HuggingFace Hub + список популярных публичных моделей.<br />
+Требует <code>HF_TOKEN</code> в <code>.env</code>.</p>
+<h3 id="post-hfmodelsdownload"><code>POST /hf/models/download</code></h3>
+<p>Скачать модель с HuggingFace Hub.</p>
+<p><strong>Тело:</strong> <code>{"model_id": "google/gemma-2-2b-it", "token": "hf_..."}</code></p>
+<h3 id="post-hfmodelsload"><code>POST /hf/models/load</code></h3>
+<p>Загрузить скачанную модель в память.</p>
+<p><strong>Тело:</strong> <code>{"model_id": "google/gemma-2-2b-it", "device": "auto"}</code></p>
+<h3 id="post-hfmodelsunload"><code>POST /hf/models/unload</code></h3>
+<p>Выгрузить модель из памяти (освободить RAM/VRAM).</p>
+<p><strong>Тело:</strong> <code>{"model_id": "google/gemma-2-2b-it"}</code></p>
+<h3 id="post-hfgenerate"><code>POST /hf/generate</code></h3>
+<p>Генерация текста через локальную HF модель.</p>
+<p><strong>Тело:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;model_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;google/gemma-2-2b-it&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Привет&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;max_new_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">512</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;temperature&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h2 id="llamacpp">llama.cpp</h2>
+<h3 id="get-llamastatus"><code>GET /llama/status</code></h3>
+<p>Статус llama.cpp сервера: <code>running</code>, <code>pid</code>, <code>url</code>, <code>openai_url</code>, <code>last_error</code>.</p>
+<h3 id="get-llamamodels"><code>GET /llama/models</code></h3>
+<p>Сканировать <code>.gguf</code> файлы в <code>~/.models</code>, <code>~/.lmstudio/models</code> и опциональном <code>extra_dir</code>.</p>
+<p><strong>Query:</strong> <code>?extra_dir=D:\models</code><br />
+<strong>Ответ:</strong> <code>{"success": true, "models": [{"name": "...", "path": "...", "size_gb": 4.2}], "count": 3}</code></p>
+<h3 id="post-llamastart"><code>POST /llama/start</code></h3>
+<p>Запустить llama.cpp сервер.</p>
+<p><strong>Тело:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;model_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;D:/models/gemma-2-2b-it-Q6_K.gguf&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">9780</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;ctx_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4096</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;threads&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;n_gpu_layers&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;copy_to_models&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Ответ:</strong> <code>{"success": true, "pid": 1234, "model": "...", "url": "...", "openai_url": "...", "status": "starting"}</code></p>
+<h3 id="post-llamastop"><code>POST /llama/stop</code></h3>
+<p>Остановить llama.cpp сервер.</p>
+<h3 id="post-llamamodelscopy"><code>POST /llama/models/copy</code></h3>
+<p>Скопировать <code>.gguf</code> файл в <code>~/.models</code>.</p>
+<p><strong>Тело:</strong> <code>{"model_path": "D:/gemma-2-2b-it-Q6_K.gguf"}</code></p>
+<hr />
+<h2 id="ollama">Ollama</h2>
+<h3 id="get-ollamastatus"><code>GET /ollama/status</code></h3>
+<p>Статус Ollama сервера: <code>running</code>, <code>version</code>, <code>url</code>.</p>
+<h3 id="get-ollamamodels"><code>GET /ollama/models</code></h3>
+<p>Список локально доступных Ollama моделей.</p>
+<h3 id="post-ollamamodelspull"><code>POST /ollama/models/pull</code></h3>
+<p>Скачать модель из Ollama Hub.</p>
+<p><strong>Тело:</strong> <code>{"model": "qwen2.5:0.5b"}</code></p>
+<h3 id="post-ollamamodelsdelete"><code>POST /ollama/models/delete</code></h3>
+<p>Удалить локальную Ollama модель.</p>
+<p><strong>Тело:</strong> <code>{"model": "qwen2.5:0.5b"}</code></p>
+<h3 id="post-ollamagenerate"><code>POST /ollama/generate</code></h3>
+<p>Генерация текста через Ollama.</p>
+<p><strong>Тело:</strong> <code>{"model": "qwen2.5:0.5b", "prompt": "Привет", "max_tokens": 512, "temperature": 0.7}</code></p>
+<hr />
+<h2 id="rag">RAG</h2>
+<h3 id="get-ragstatus"><code>GET /rag/status</code></h3>
+<p>Статус RAG системы: <code>enabled</code>, <code>index_dir</code>, <code>model</code>, <code>chunk_size</code>, <code>top_k</code>, <code>total_chunks</code>.</p>
+<h3 id="put-ragconfig"><code>PUT /rag/config</code></h3>
+<p>Обновить конфигурацию RAG в <code>config.json</code>.</p>
+<p><strong>Тело:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;index_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;./rag_index&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sentence-transformers/all-MiniLM-L6-v2&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;chunk_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;top_k&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<h3 id="post-ragsearch"><code>POST /rag/search</code></h3>
+<p>Поиск в RAG индексе.</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:9696/api/v1/rag/search<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;текст запроса&quot;, &quot;top_k&quot;: 5}&#39;</span>
+</code></pre></div>
+<p><strong>Тело:</strong> <code>{"query": "текст запроса", "top_k": 5}</code><br />
+<strong>Ответ:</strong> <code>{"success": true, "results": [{"content": "...", "score": 0.95, "metadata": {...}}], "total": 2}</code></p>
+<h3 id="post-ragrebuild"><code>POST /rag/rebuild</code></h3>
+<p>Перестроить RAG индекс.</p>
+<h3 id="post-ragclear"><code>POST /rag/clear</code></h3>
+<p>Удалить все файлы индекса из <code>index_dir</code>.</p>
+<h3 id="get-ragdirs"><code>GET /rag/dirs</code></h3>
+<p>Список директорий проекта пригодных для индексации (содержат <code>.md</code>, <code>.txt</code>, <code>.html</code>, <code>.rst</code>).</p>
+<h3 id="get-ragcwd"><code>GET /rag/cwd</code></h3>
+<p>Рабочая директория сервера (для разрешения путей).</p>
+<h3 id="get-ragbrowse"><code>GET /rag/browse</code></h3>
+<p>Браузер файловой системы для выбора папки.</p>
+<p><strong>Query:</strong> <code>?path=C:\Users\user</code><br />
+<strong>Ответ:</strong> <code>{"success": true, "current": "...", "parent": "...", "dirs": [{"name": "...", "path": "..."}]}</code></p>
+<h3 id="get-ragprofiles"><code>GET /rag/profiles</code></h3>
+<p>Список всех RAG баз в <code>~/.rag/</code>.</p>
+<h3 id="post-ragprofilesload"><code>POST /rag/profiles/load</code></h3>
+<p>Переключить активную RAG базу (обновляет <code>config.json</code> и перезагружает индекс).</p>
+<p><strong>Тело:</strong> <code>{"name": "docs"}</code></p>
+<h3 id="delete-ragprofilesname"><code>DELETE /rag/profiles/{name}</code></h3>
+<p>Удалить RAG базу из <code>~/.rag/&lt;name&gt;/</code>.</p>
+<h3 id="post-ragbuild"><code>POST /rag/build</code></h3>
+<p>Собрать RAG индекс из директории.</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:9696/api/v1/rag/build<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;docs_dir&quot;: &quot;./docs&quot;, &quot;model&quot;: &quot;sentence-transformers/all-mpnet-base-v2&quot;, &quot;chunk_size&quot;: 1000, &quot;overlap&quot;: 50, &quot;force&quot;: false}&#39;</span>
+</code></pre></div>
+<p><strong>Тело:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;docs_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;./docs&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sentence-transformers/all-mpnet-base-v2&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;chunk_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;overlap&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;force&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Ответ:</strong> <code>{"success": true, "chunks": 142, "index_dir": "~/.rag/docs", "name": "docs"}</code></p>
+<h3 id="post-ragextractfile"><code>POST /rag/extract/file</code></h3>
+<p>Извлечь текст из загруженного файла для индексации.</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:9696/api/v1/rag/extract/file<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-F<span class="w"> </span><span class="s2">&quot;file=@/path/to/document.pdf&quot;</span>
+</code></pre></div>
+<p><strong>Тело:</strong> <code>multipart/form-data</code> с полем <code>file</code>.<br />
+Поддерживаемые форматы: PDF, DOCX, XLSX, PPTX, TXT, HTML, MD, JSON, XML, YAML, изображения (OCR), архивы (ZIP/RAR/7Z/TAR), EML, EPUB, ODT, RTF.</p>
+<p><strong>Ответ:</strong> <code>{"success": true, "filename": "...", "count": 3, "total_chars": 15000, "files": [...]}</code></p>
+<h3 id="post-ragextracturl"><code>POST /rag/extract/url</code></h3>
+<p>Извлечь текст с веб-страницы для индексации.</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:9696/api/v1/rag/extract/url<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;url&quot;: &quot;https://example.com&quot;, &quot;enable_javascript&quot;: false, &quot;process_images&quot;: false, &quot;web_page_timeout&quot;: 30}&#39;</span>
+</code></pre></div>
+<p><strong>Тело:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://example.com&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;enable_javascript&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;process_images&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;web_page_timeout&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<h3 id="get-ragextractformats"><code>GET /rag/extract/formats</code></h3>
+<p>Список поддерживаемых форматов файлов для извлечения текста.</p>
+<hr />
+<h2 id="agent">Agent</h2>
+<h3 id="get-agentlist"><code>GET /agent/list</code></h3>
+<p>Список зарегистрированных агентов.</p>
+<p><strong>Ответ:</strong> <code>{"success": true, "agents": [{"name": "powershell", "description": "..."}]}</code></p>
+<h3 id="get-agentagent_nametools"><code>GET /agent/{agent_name}/tools</code></h3>
+<p>Список инструментов агента.</p>
+<h3 id="post-agentrun"><code>POST /agent/run</code></h3>
+<p>Запустить агента.</p>
+<p><strong>Тело:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Покажи список процессов&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;agent&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;powershell&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;qwen2.5-0.5b-instruct-generic-cpu:4&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;temperature&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;max_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2048</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;max_iterations&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Ответ:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;success&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;answer&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;tool_calls&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;tool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;run_powershell&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;arguments&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">...</span><span class="p">},</span><span class="w"> </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">}],</span>
+<span class="w">  </span><span class="nt">&quot;iterations&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;agent&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;powershell&quot;</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h2 id="mcp-powershell">MCP PowerShell</h2>
+<h3 id="get-mcp-powershellservers"><code>GET /mcp-powershell/servers</code></h3>
+<p>Список всех MCP серверов из <code>mcp/settings.json</code> со статусом.</p>
+<h3 id="post-mcp-powershellserversnamestart"><code>POST /mcp-powershell/servers/{name}/start</code></h3>
+<p>Запустить MCP сервер по имени.</p>
+<h3 id="post-mcp-powershellserversnamestop"><code>POST /mcp-powershell/servers/{name}/stop</code></h3>
+<p>Остановить MCP сервер по имени.</p>
+<h3 id="get-mcp-powershellserversnamestatus"><code>GET /mcp-powershell/servers/{name}/status</code></h3>
+<p>Статус конкретного MCP сервера: <code>running</code> / <code>stopped</code>, <code>pid</code>.</p>
+<h3 id="get-mcp-powershellsettings"><code>GET /mcp-powershell/settings</code></h3>
+<p>Содержимое <code>mcp/settings.json</code>.</p>
+<h3 id="post-mcp-powershellsettings"><code>POST /mcp-powershell/settings</code></h3>
+<p>Сохранить <code>mcp/settings.json</code>.</p>
+<p><strong>Тело:</strong> <code>{"settings": {"mcpServers": {...}}}</code></p>
+<hr />
+<h2 id="local-models-mcp-server">Local Models MCP Server</h2>
+<blockquote>
+<p>Файл: <code>mcp/src/servers/local_models_mcp.py</code><br />
+Транспорт: STDIO (JSON-RPC 2.0)<br />
+Требует: FastAPI Foundry запущен на <code>localhost:9696</code></p>
+</blockquote>
+<p>MCP сервер для подключения Claude Desktop и других MCP клиентов к локальным AI моделям.</p>
+<h3 id="_1">Маршрутизация моделей</h3>
+<p>Выбор бэкенда определяется префиксом в поле <code>model</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Префикс</th>
+<th>Бэкенд</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>без префикса</td>
+<td>Foundry Local (ONNX)</td>
+</tr>
+<tr>
+<td><code>llama::&lt;path&gt;</code></td>
+<td>llama.cpp</td>
+</tr>
+<tr>
+<td><code>ollama::&lt;name&gt;</code></td>
+<td>Ollama</td>
+</tr>
+<tr>
+<td><code>hf::&lt;model_id&gt;</code></td>
+<td>HuggingFace Transformers</td>
+</tr>
+</tbody>
+</table>
+<h3 id="generate_1"><code>generate</code> — Генерация текста</h3>
+<p><strong>Аргументы:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ваш запрос&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;max_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">512</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;temperature&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Ответ:</strong> строка с ответом модели или <code>❌ &lt;описание ошибки&gt;</code>.</p>
+<h3 id="chat_1"><code>chat</code> — Чат с историей</h3>
+<p><strong>Аргументы:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Сообщение пользователя&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;session_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mcp-default&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;max_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">512</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>Поле <code>session_id</code> обеспечивает непрерывность истории между запросами. По умолчанию <code>mcp-default</code>.</p>
+<h3 id="list_models"><code>list_models</code> — Список моделей</h3>
+<p>Аргументы не требуются. Возвращает JSON со всеми доступными моделями изо всех бэкендов.</p>
+<h3 id="rag_search-rag"><code>rag_search</code> — Поиск по RAG</h3>
+<p><strong>Аргументы:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;query&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Текст запроса&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;top_k&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Ответ:</strong> JSON со списком релевантных чанков с полями <code>content</code>, <code>score</code>, <code>metadata</code>.</p>
+<h3 id="health_1"><code>health</code> — Статус сервиса</h3>
+<p>Аргументы не требуются. Возвращает JSON со статусом FastAPI Foundry и Foundry Local.</p>
+<h3 id="_2">Переменные окружения</h3>
+<table>
+<thead>
+<tr>
+<th>Переменная</th>
+<th>По умолчанию</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FASTAPI_BASE_URL</code></td>
+<td><code>http://localhost:9696</code></td>
+<td>Базовый URL FastAPI Foundry</td>
+</tr>
+<tr>
+<td><code>MCP_HTTP_TIMEOUT</code></td>
+<td><code>120</code></td>
+<td>Таймаут HTTP запросов (сек)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="config">Config</h2>
+<h3 id="get-config"><code>GET /config</code></h3>
+<p>Полная конфигурация из <code>config.json</code> + runtime значения Foundry.</p>
+<h3 id="patch-config"><code>PATCH /config</code></h3>
+<p>Частичное обновление конфигурации. Поддерживает dot-notation.</p>
+<p><strong>Тело:</strong> <code>{"foundry_ai.default_model": "qwen2.5-0.5b-instruct-generic-cpu:4"}</code></p>
+<h3 id="post-config"><code>POST /config</code></h3>
+<p>Полная замена <code>config.json</code> (создаёт бэкап).</p>
+<p><strong>Тело:</strong> <code>{"config": {...полный объект конфигурации...}}</code></p>
+<h3 id="get-configraw"><code>GET /config/raw</code></h3>
+<p>Содержимое <code>config.json</code> как сырой текст (для редактора).</p>
+<h3 id="post-configraw"><code>POST /config/raw</code></h3>
+<p>Запись <code>config.json</code> из редактора (валидирует JSON).</p>
+<p><strong>Тело:</strong> <code>{"content": "{...}"}</code></p>
+<h3 id="get-configenv-raw"><code>GET /config/env-raw</code></h3>
+<p>Содержимое <code>.env</code> как сырой текст.</p>
+<h3 id="post-configenv-raw"><code>POST /config/env-raw</code></h3>
+<p>Запись <code>.env</code> из редактора.</p>
+<p><strong>Тело:</strong> <code>{"content": "KEY=value\n..."}</code></p>
+<h3 id="post-configenv"><code>POST /config/env</code></h3>
+<p>Сохранить одну переменную окружения в <code>.env</code>.</p>
+<p><strong>Тело:</strong> <code>{"key": "HF_TOKEN", "value": "hf_..."}</code></p>
+<h3 id="get-configprovider-keys"><code>GET /config/provider-keys</code></h3>
+<p>Ключи API провайдеров из <code>.env</code> (Gemini, OpenAI, Anthropic, Mistral, Groq и др.).</p>
+<h3 id="post-configprovider-keys"><code>POST /config/provider-keys</code></h3>
+<p>Сохранить ключи провайдеров в <code>.env</code>.</p>
+<p><strong>Тело:</strong> <code>{"keys": {"openai": "sk-...", "gemini": "AIza..."}}</code></p>
+<h3 id="get-configexport"><code>GET /config/export</code></h3>
+<p>Экспорт всех настроек в один JSON: <code>config.json</code> + <code>.env</code> + MCP конфиги.<br />
+Возвращает файл для скачивания.</p>
+<h3 id="post-configimport"><code>POST /config/import</code></h3>
+<p>Импорт полного бэкапа настроек.</p>
+<p><strong>Тело:</strong> <code>{"config": {...экспортированный объект...}, "merge": false}</code></p>
+<h3 id="get-configextension-export"><code>GET /config/extension-export</code></h3>
+<p>Экспорт ключей провайдеров в формат браузерного расширения.</p>
+<h3 id="post-configextension-import"><code>POST /config/extension-import</code></h3>
+<p>Импорт ключей из формата браузерного расширения (v1/v2).</p>
+<hr />
+<h2 id="logs">Logs</h2>
+<h3 id="get-logs"><code>GET /logs</code></h3>
+<p>Отфильтрованные строки лога.</p>
+<p><strong>Query параметры:</strong>
+- <code>file</code> — имя файла (default: <code>fastapi-foundry.log</code>)
+- <code>lines</code> — количество строк (default: 200, max: 5000)
+- <code>level</code> — фильтр уровня: <code>DEBUG</code>, <code>INFO</code>, <code>WARNING</code>, <code>ERROR</code>
+- <code>search</code> — текстовый поиск (case-insensitive)
+- <code>offset</code> — пропустить последние N строк (пагинация)</p>
+<p><strong>Ответ:</strong> <code>{"success": true, "lines": [...], "returned": 50, "filtered_total": 200, "total_lines": 1500, "has_more": true}</code></p>
+<h3 id="get-logsfiles"><code>GET /logs/files</code></h3>
+<p>Список доступных лог-файлов с размерами.</p>
+<h3 id="post-logsclear"><code>POST /logs/clear</code></h3>
+<p>Очистить лог-файл.</p>
+<p><strong>Query:</strong> <code>?file=fastapi-foundry.log</code></p>
+<h3 id="get-logsdownload"><code>GET /logs/download</code></h3>
+<p>Скачать лог-файл.</p>
+<p><strong>Query:</strong> <code>?file=fastapi-foundry.log</code></p>
+<h3 id="get-logsrecent"><code>GET /logs/recent</code></h3>
+<p>Последние 100 записей из всех лог-файлов (парсинг формата <code>timestamp | level | logger | message</code>).</p>
+<h3 id="post-logsweb"><code>POST /logs/web</code></h3>
+<p>Записать сообщение с веб-интерфейса в лог.</p>
+<p><strong>Тело:</strong> <code>{"message": "...", "level": "info"}</code></p>
+<hr />
+<h2 id="converter">Converter</h2>
+<h3 id="get-converterstatus"><code>GET /converter/status</code></h3>
+<p>Доступность зависимостей конвертера (<code>optimum</code>, <code>onnxruntime-tools</code>).</p>
+<h3 id="post-converterconvert"><code>POST /converter/convert</code></h3>
+<p>Конвертировать <code>.gguf</code> файл в ONNX.</p>
+<p><strong>Тело:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;gguf_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;D:/models/model.gguf&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;output_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;./artifacts/onnx&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;gpt2&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;opset&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">17</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;optimize&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h2 id="ai">AI (расширенные)</h2>
+<h3 id="post-aigenerate"><code>POST /ai/generate</code></h3>
+<p>Генерация с расширенными параметрами (<code>top_p</code>, <code>top_k</code>, <code>presence_penalty</code>, <code>frequency_penalty</code>, <code>stop</code>, <code>use_rag</code>).</p>
+<h3 id="post-aigeneratestream"><code>POST /ai/generate/stream</code></h3>
+<p>Стриминговая генерация (SSE).</p>
+<h3 id="get-aimodels"><code>GET /ai/models</code></h3>
+<p>Список моделей с детальной информацией.</p>
+<h3 id="get-aimodelsrecommended"><code>GET /ai/models/recommended</code></h3>
+<p>Рекомендуемые модели по категориям: <code>reasoning</code>, <code>coding</code>, <code>general</code>, <code>fast</code>, <code>quality</code>.</p>
+<h3 id="post-aimodelsmodel_idload"><code>POST /ai/models/{model_id}/load</code></h3>
+<p>Загрузить модель в память.</p>
+<h3 id="post-aimodelsmodel_idunload"><code>POST /ai/models/{model_id}/unload</code></h3>
+<p>Выгрузить модель из памяти.</p>
+<h3 id="get-aihealth"><code>GET /ai/health</code></h3>
+<p>Проверка здоровья AI сервиса.</p>
+<h3 id="post-aichat"><code>POST /ai/chat</code></h3>
+<p>Чат с историей сообщений (OpenAI-совместимый формат ответа).</p>
+<p><strong>Тело:</strong> <code>{"messages": [{"role": "user", "content": "..."}], "model": "...", "temperature": 0.7}</code></p>
+<h3 id="post-aioptimize"><code>POST /ai/optimize</code></h3>
+<p>Подбор оптимальной модели и параметров для задачи.</p>
+<p><strong>Тело:</strong> <code>{"task_type": "coding", "model_preference": "balanced"}</code></p>
+<hr />
+<h2 id="system">System</h2>
+<h3 id="get-systemstats"><code>GET /system/stats</code></h3>
+<p>Использование RAM и CPU (требует <code>psutil</code>).</p>
+<p><strong>Ответ:</strong> <code>{"success": true, "ram_used_mb": 4096.0, "ram_total_mb": 16384.0, "cpu_pct": 12.5}</code></p>
+<hr />
+<h2 id="helpdesk">HelpDesk</h2>
+<h3 id="get-helpdeskdialogs"><code>GET /helpdesk/dialogs</code></h3>
+<p>Диалоги HelpDesk бота, сгруппированные по <code>chat_id</code>.</p>
+<p><strong>Ответ:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;success&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;dialogs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;123456789&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Как запустить?&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;ts&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;username&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ivan&quot;</span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;assistant&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Запустите start.ps1...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;ts&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;username&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ivan&quot;</span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<h3 id="get-helpdeskrag-profiles"><code>GET /helpdesk/rag-profiles</code></h3>
+<p>Список RAG профилей из <code>~/.rag/</code>.</p>
+<p><strong>Ответ:</strong> <code>{"success": true, "profiles": [{"name": "support", "path": "...", "has_index": true, "description": "..."}]}</code></p>
+<h3 id="post-helpdeskrag-profiles"><code>POST /helpdesk/rag-profiles</code></h3>
+<p>Создать новый RAG профиль.</p>
+<p><strong>Тело:</strong> <code>{"name": "support", "description": "Project documentation"}</code><br />
+<strong>Ответ:</strong> <code>{"success": true, "path": "C:/Users/user/.rag/support"}</code></p>
+<h3 id="delete-helpdeskrag-profilesname"><code>DELETE /helpdesk/rag-profiles/{name}</code></h3>
+<p>Soft-delete профиля (переименование в <code>&lt;name&gt;~</code>).</p>
+<p><strong>Ответ:</strong> <code>{"success": true, "error": null}</code></p>
+<h3 id="get-helpdeskconfig"><code>GET /helpdesk/config</code></h3>
+<p>Статус HelpDesk бота и активный RAG профиль.</p>
+<p><strong>Ответ:</strong> <code>{"success": true, "enabled": true, "rag_profile": "support"}</code></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../../javascripts/extra.js"></script>
+      
+    
+  </body>
+</html>
