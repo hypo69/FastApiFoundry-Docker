@@ -22,7 +22,7 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 
 ## Что происходит при запуске
 
-`start.ps1` — единая точка входа. Он последовательно проходит 8 этапов,
+`start.ps1` — единая точка входа. Он последовательно проходит 7 этапов,
 затем передаёт управление `run.py`, который запускает FastAPI через Uvicorn.
 
 === "Для пользователя"
@@ -62,8 +62,10 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
       │
       ├─[5] config.json → docs_server.enabled?
       │      └─ true →
-      │          ├─ python -m mkdocs build --quiet  (синхронно, обновляет site/)
-      │          └─ mkdocs serve -a 0.0.0.0:<port>  (фоновое окно, hot-reload)
+      │          ├─ [site/ существует] → python -m http.server <port> (из site/, без пересборки)
+      │          └─ [site/ нет] →
+      │               ├─ python -m mkdocs build --quiet
+      │               └─ mkdocs serve -a 0.0.0.0:<port>  (фоновое окно, hot-reload)
       │
       ├─[6] LLAMA_MODEL_PATH + LLAMA_AUTO_START=true?
       │      └─ true → scripts\llama-start.ps1 -ModelPath ... -Port ...
@@ -142,15 +144,13 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
     Последовательность действий:
 
     1. `Get-NetTCPConnection -LocalPort 9697` — если порт занят, убивает процесс (`Stop-Process`)
-    2. `mkdocs build` — пересобирает `site/` из актуальных `docs/`
-    3. `mkdocs serve` — запускает live-сервер с hot-reload в фоновом окне
+    2. **Если `site/` существует** — запускает `python -m http.server` прямо из папки `site/` (быстро, без пересборки)
+    3. **Если `site/` нет** — сначала `mkdocs build`, затем `mkdocs serve` с hot-reload
 
-    Документация доступна на **http://localhost:9697**
-
-    !!! info "Почему нужна пересборка"
-        `mkdocs serve` отдаёт страницы из `docs/` напрямую (hot-reload),
-        но `site/` — статика для GitHub Pages — обновляется только через `mkdocs build`.
-        `start.ps1` запускает оба шага, поэтому `site/` всегда актуален.
+    !!! info "Почему так"
+        При наличии готовой статики пересборка не нужна — документация отдаётся мгновенно.
+        `mkdocs serve` с hot-reload запускается только при первом запуске, когда `site/` ещё не собран.
+        Чтобы принудительно пересобрать документацию, удалите папку `site/` перед запуском.
 
 ??? note "Этап 5 — llama.cpp (опционально)"
 
@@ -310,7 +310,7 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 | Сервис | Уже запущен? | Действие |
 |---|---|---|
 | **FastAPI** (порт 9696) | да | убивает по `%TEMP%/fastapi-foundry.pid` → запускает новый |
-| **MkDocs** (порт 9697) | да | убивает по порту → `mkdocs build` → `mkdocs serve` |
+| **MkDocs** (порт 9697) | да | убивает по порту → [site/ есть] http.server / [site/ нет] mkdocs build + serve |
 | **llama.cpp** (порт 9780) | да | убивает по порту → запускает новый |
 | **Foundry** | да | не трогает — только читает порт |
 | **Foundry** | нет | запускает `foundry service start`, ждёт 20 сек |

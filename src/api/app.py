@@ -164,6 +164,8 @@ def create_app() -> FastAPI:
     from .endpoints.support import router as support_router
     from .endpoints.helpdesk import router as helpdesk_router
     from .endpoints.mcp_agent_endpoints import router as mcp_agent_router
+    from .endpoints.training import router as training_router
+    from .endpoints.recommender import router as recommender_router
 
     app.include_router(main.router)
     app.include_router(health.router, prefix="/api/v1")
@@ -188,5 +190,7 @@ def create_app() -> FastAPI:
     app.include_router(support_router, prefix="/api/v1")
     app.include_router(helpdesk_router, prefix="/api/v1")
     app.include_router(mcp_agent_router, prefix="/api/v1")
+    app.include_router(training_router, prefix="/api/v1")
+    app.include_router(recommender_router, prefix="/api/v1")
     
     return app

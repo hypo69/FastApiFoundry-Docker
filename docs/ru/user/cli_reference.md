@@ -33,7 +33,7 @@ foundry service status
 foundry service stop
 ```
 
-!!! tip "Порт динамический"
+!!! tip "Динамический порт"
     Foundry каждый раз может запускаться на другом порту.
     FastAPI Foundry находит его автоматически через `tasklist` + `netstat`.
     Чтобы зафиксировать порт — задайте `FOUNDRY_BASE_URL` в `.env`.
@@ -87,10 +87,28 @@ foundry model unload qwen2.5-0.5b-instruct-generic-cpu:4
 ```powershell
 # Запустить чат (скачает и загрузит модель если нужно)
 foundry run qwen2.5-0.5b-instruct-generic-cpu:4
-
-# Выйти из чата
-/exit
 ```
+
+После запуска появляется приглашение ввести текст. Вы пишете запрос, нажимаете Enter, модель отвечает:
+
+```
+You: Привет! Что такое Python?
+Assistant: Python — это высокоуровневый язык программирования,
+известный своей простотой и читаемостью...
+
+You: Спасибо. А чем он отличается от Java?
+Assistant: Основные отличия: Python динамически типизирован,
+не требует компиляции, синтаксис короче...
+
+You: /exit
+```
+
+История диалога сохраняется в рамках одной сессии — модель помнит контекст предыдущих сообщений.
+
+| Команда | Действие |
+|---|---|
+| `/exit` | Выйти из чата |
+| `Ctrl+C` | Прервать и выйти |
 
 ---
 
@@ -124,7 +142,19 @@ ls ~/.foundry/cache/models/
 
 ## llama.cpp
 
-Запуск GGUF моделей через `llama-server.exe`. Бинарники включены в `bin/`.
+Запуск GGUF моделей через `llama-server.exe`. ZIP-архивы с бинарниками сервера llama включены в `bin/`.
+
+Имя архива строится по шаблону `llama-b<номер_сборки>-bin-win-<тип_ЦПУ>-x64.zip`, например `llama-b8802-bin-win-cpu-x64.zip`:
+
+| Часть | Значение |
+|---|---|
+| `b8802` | Номер сборки (build number) — растёт с каждым коммитом в llama.cpp |
+| `win` | Платформа Windows |
+| `cpu` | Тип ЦПУ: `cpu` — без GPU, `cuda` — NVIDIA, `vulkan` — любой GPU |
+| `x64` | Архитектура 64-бит |
+
+При запуске `start.ps1` автоматически выбирает архив с наибольшим номером сборки из всех найденных в `bin/`.
+Чтобы обновить сервер — достаточно положить новый ZIP в `bin/` и перезапустить.
 
 ---
 
@@ -272,17 +302,36 @@ pip install huggingface_hub
 # Авторизация (нужна для Gemma, Llama)
 hf auth login
 
-# Скачать модель (рекомендуется Q4_K_M)
+# Скачать один файл по паттерну (Q4_K_M — рекомендуется)
 hf download bartowski/Qwen2.5-0.5B-Instruct-GGUF `
   --include "*Q4_K_M.gguf" `
   --local-dir ~/.models
 
+# Скачать с указанием конкретного файла (без паттерна)
 hf download bartowski/gemma-2-2b-it-GGUF `
-  --include "*Q6_K.gguf" `
+  gemma-2-2b-it-Q6_K.gguf `
   --local-dir ~/.models
 
+# Скачать все файлы репозитория в локальный кэш HF (без --local-dir)
 hf download bartowski/Llama-3.2-3B-Instruct-GGUF `
+  --include "*Q4_K_M.gguf"
+
+# Скачать с явным токеном (если hf auth login не выполнялся)
+hf download bartowski/Mistral-7B-Instruct-v0.3-GGUF `
   --include "*Q4_K_M.gguf" `
+  --local-dir ~/.models `
+  --token hf_ваш_токен
+
+# Скачать конкретную версию (тег или коммит)
+hf download bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF `
+  --include "*Q4_K_M.gguf" `
+  --local-dir ~/.models `
+  --revision main
+
+# Исключить лишние квантования (скачать всё кроме Q2 и Q3)
+hf download bartowski/Phi-3.5-mini-instruct-GGUF `
+  --include "*.gguf" `
+  --exclude "*Q2*" --exclude "*Q3*" `
   --local-dir ~/.models
 ```
 

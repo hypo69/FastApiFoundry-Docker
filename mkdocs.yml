@@ -73,6 +73,9 @@ nav:
     - Text Extractor: dev/text_extractor.md
     - Агенты: dev/agents.md
     - MCP Agent: dev/mcp_agent.md
+    - Google Agent: dev/google_agent.md
+    - Recommender Agent: dev/recommender_agent.md
+    - Дообучение моделей: dev/fine_tuning.md
     - Telegram Боты: dev/telegram_bots.md
     - SDK: dev/sdk.md
     - Логирование: dev/logging.md
@@ -112,7 +115,7 @@ nav:
       - docs_deploy_mcp.py: dev/powershell/mcp-docs-deploy.md
       - windows_os_mcp.py: dev/powershell/mcp-windows-os.md
       - run-sandbox.ps1: dev/powershell/run-sandbox.md
-  - Контроль качества (QA):
+  - QA:
     - Обзор: qa/index.md
     - Стратегия: qa/strategy.md
     - Запуск тестов: qa/running.md

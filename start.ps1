@@ -304,7 +304,17 @@ if ($docsServerConfig -and $docsServerConfig.enabled) {
 
     $siteDir = Join-Path $Root 'site'
     if (Test-Path $siteDir) {
-        Write-Host "📚 site/ найдена — запуск serve без пересборки" -ForegroundColor Cyan
+        Write-Host "📚 site/ найдена — запуск статического HTTP-сервера (без пересборки)" -ForegroundColor Cyan
+        try {
+            $mkdocsProc = Start-Process powershell.exe -ArgumentList @(
+                '-NonInteractive', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+                '-Command', "cd '$siteDir'; & '$venvPath' -m http.server $docsPort"
+            ) -WindowStyle Minimized -PassThru
+            $script:MkDocsPid = $mkdocsProc.Id
+            Write-Host "✅ Сервер документации запущен на http://localhost:$docsPort (PID: $($mkdocsProc.Id))" -ForegroundColor Green
+        } catch {
+            Write-Host "❌ Сбой при запуске HTTP-сервера документации: $_" -ForegroundColor Red
+        }
     } else {
         Write-Host "📦 site/ не найдена — запуск mkdocs build..." -ForegroundColor Yellow
         try {
@@ -315,38 +325,18 @@ if ($docsServerConfig -and $docsServerConfig.enabled) {
         } catch {
             Write-Host "⚠️ Сборка документации не удалась: $_" -ForegroundColor Yellow
         }
-    } 
 
-    Write-Host "🚀 Запуск сервера MkDocs на порту $docsPort..." -ForegroundColor Yellow
-    try {
-        # Запуск mkdocs serve в отдельном свернутом окне (hot-reload при изменениях docs/)
-        $mkdocsProc = Start-Process powershell.exe -ArgumentList @(
-            '-NonInteractive', '-NoProfile', '-ExecutionPolicy', 'Bypass',
-            '-Command', "cd '$Root'; & '$venvPath' -m mkdocs serve -a 0.0.0.0:$docsPort"
-        ) -WindowStyle Minimized -PassThru
-        $script:MkDocsPid = $mkdocsProc.Id
-        Write-Host "✅ Сервер MkDocs запущен на http://localhost:$docsPort (PID: $($mkdocsProc.Id))" -ForegroundColor Green
-
-        # Wait for MkDocs to become ready, then open browser
-        $docsUrl      = "http://localhost:$docsPort"
-        $docsDeadline = (Get-Date).AddSeconds(20)
-        $docsReady    = $false
-        while ((Get-Date) -lt $docsDeadline) {
-            try {
-                $r = Invoke-WebRequest -Uri $docsUrl -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
-                if ($r.StatusCode -lt 500) { $docsReady = $true; break }
-            } catch { }
-            Start-Sleep -Milliseconds 500
+        Write-Host "🚀 Запуск сервера MkDocs на порту $docsPort..." -ForegroundColor Yellow
+        try {
+            $mkdocsProc = Start-Process powershell.exe -ArgumentList @(
+                '-NonInteractive', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+                '-Command', "cd '$Root'; & '$venvPath' -m mkdocs serve -a 0.0.0.0:$docsPort"
+            ) -WindowStyle Minimized -PassThru
+            $script:MkDocsPid = $mkdocsProc.Id
+            Write-Host "✅ Сервер MkDocs запущен на http://localhost:$docsPort (PID: $($mkdocsProc.Id))" -ForegroundColor Green
+        } catch {
+            Write-Host "❌ Сбой при запуске сервера MkDocs: $_" -ForegroundColor Red
         }
-        if ($docsReady) {
-            Start-Process $docsUrl
-            Write-Host "🌐 Браузер открыт: $docsUrl" -ForegroundColor Green
-        } else {
-            Write-Host "💡 Документация: $docsUrl" -ForegroundColor Cyan
-        }
-    } catch {
-        Write-Host "❌ Сбой при запуске сервера MkDocs: $_" -ForegroundColor Red
-        Write-Host "⚠️ Продолжение работы без сервера документации." -ForegroundColor Yellow
     }
 } else {
     Write-Host "💡 Сервер документации отключен в config.json (пропуск)" -ForegroundColor Gray

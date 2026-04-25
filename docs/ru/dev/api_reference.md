@@ -158,7 +158,7 @@ curl -X POST http://localhost:9696/api/v1/chat/message \
 Удалить сессию.
 
 ### `POST /chat/history/save`
-Сохранить историю на диск (`~/.ai-assistant-chat-history/`).
+Сохранить историю на диск (`config.dir_dialogs`, по умолчанию `~/.ai_assist/dialogs/`).
 
 **Тело:**
 ```json
@@ -170,6 +170,48 @@ curl -X POST http://localhost:9696/api/v1/chat/message \
   "aborted": false
 }
 ```
+
+**Ответ:** `{"success": true, "file": "/abs/path/uuid_ts.json", "session_id": "uuid"}`
+
+### `GET /chat/history/list`
+Список сохранённых диалогов с диска, от новых к старым.
+
+**Query:** `?limit=50&offset=0`
+
+**Ответ:**
+```json
+{
+  "success": true,
+  "total": 12,
+  "dir": "/home/user/.ai_assist/dialogs",
+  "dialogs": [
+    {
+      "filename": "uuid_1234567890.json",
+      "session_id": "uuid",
+      "title": "...",
+      "model": "foundry::qwen3-0.6b",
+      "created_at": 1234567890,
+      "message_count": 6,
+      "aborted": false,
+      "size_bytes": 2048
+    }
+  ]
+}
+```
+
+### `GET /chat/history/file/{filename}`
+Загрузить один сохранённый диалог с диска.
+
+**Ответ:** `{"success": true, "session_id": "...", "messages": [...], ...}`
+
+**Ошибки:** `400` — небезопасное имя файла, `404` — файл не найден.
+
+### `POST /chat/history/cleanup`
+Удалить устаревшие и превышающие лимит диалоги. Применяет `retention_days` и `max_size_mb` из `config.json`.
+
+**Тело (опционально):** `{"retention_days": 30, "max_size_mb": 100}`
+
+**Ответ:** `{"success": true, "deleted": 3, "freed_bytes": 15360, "remaining": 9}`
 
 ### `GET /chat/models`
 Список моделей доступных для чата (из Foundry).

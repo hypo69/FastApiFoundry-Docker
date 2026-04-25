@@ -116,7 +116,7 @@ ai_assist/  (FastApiFoundry-Docker)
 ├── install/               # Скрипты установки
 ├── check_engine/          # Диагностика и тесты
 ├── sdk/                   # Python SDK (fastapi_foundry, microsoft_foundry)
-├── bin/                   # llama.cpp бинарники (Windows x64)
+├── bin/                   # Нативные бинарники (llama.cpp, Windows x64)
 ├── rag_index/             # FAISS индекс
 ├── logs/                  # Логи
 ├── start.ps1              # Точка входа (Windows)
@@ -127,6 +127,23 @@ ai_assist/  (FastApiFoundry-Docker)
 ├── docker-compose.yml     # Docker
 └── requirements.txt       # Python зависимости
 ```
+
+## 🌐 Универсальный доступ: любой клиент, любая сеть
+
+AI Assistant — обычный HTTP-сервер с REST API. К нему подключается любая программа, умеющая делать HTTP-запросы:
+
+| Клиент | Как подключается |
+|---|---|
+| Браузер | Встроенный веб-интерфейс на `http://localhost:9696` |
+| Python / PowerShell скрипт | `requests.post("http://localhost:9696/api/v1/generate", ...)` |
+| Go / Java / C++ / Rust / любой язык | Стандартный HTTP-клиент — `net/http`, `HttpClient`, `libcurl` |
+| Telegram бот | Встроенный HelpDesk бот или свой через API |
+| Браузерное расширение | Встроенное расширение-суммарайзер |
+| Claude Desktop | Через MCP сервер (STDIO) |
+| Любой другой MCP-клиент | Через MCP STDIO или HTTP протокол |
+| Docker-контейнер | `http://host.docker.internal:9696/api/v1/generate` |
+
+Сервер не привязан к языку или платформе клиента — если есть HTTP, есть доступ.
 
 ## 🔧 Технологии
 

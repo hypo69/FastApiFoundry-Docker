@@ -109,15 +109,22 @@ HF_TOKEN=hf_ваш_токен
 
   "app": {
     "language": "en"           // Язык интерфейса: en / ru / he
+  },
+
+  "dialogs": {
+    "dir": "~/.ai_assist/dialogs", // Директория хранения диалогов (все клиенты)
+    "retention_days": 30,         // Срок хранения в днях
+    "max_size_mb": 100            // Максимальный размер директории в MB
   }
 }
 ```
 
 ### Редактирование
 
-Через веб-интерфейс: **Settings** → заполнить поля → **Save All** (доступно по адресу **http://localhost:9696**)
+В веб-интерфейсе доступны два способа:
 
-Или напрямую в редакторе: **Editor** → вкладка `config.json`
+- **Settings** — интуитивный интерфейс с полями и переключателями
+- **Editor** — прямое редактирование сырых файлов `config.json` и `.env`
 
 ---
 
@@ -177,6 +184,9 @@ notepad .env
 | Уровень логов | `logging.level` | INFO по умолчанию |
 | Файл логов | `logging.file` | Пусто = только консоль |
 | MkDocs включён | `docs_server.enabled` | Документация на порту 9697 |
+| Директория диалогов | `dialogs.dir` | `~/.ai_assist/dialogs` — единое место для всех клиентов |
+| Срок хранения диалогов | `dialogs.retention_days` | 30 дней |
+| Лимит директории диалогов | `dialogs.max_size_mb` | 100 MB |
 | Язык интерфейса | `app.language` | en / ru / he |
 | Директория моделей | `directories.models` | ~/.models — GGUF для llama.cpp |
 | Директория HF моделей | `directories.hf_models` | `~/.cache/huggingface/hub` — стандартный кэш HuggingFace |

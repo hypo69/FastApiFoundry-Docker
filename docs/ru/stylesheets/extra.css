@@ -1,3 +1,51 @@
+/* ── Custom admonition: danger (❗) ── */
+:root {
+    --md-admonition-icon--danger: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>');
+}
+
+.md-typeset .admonition.danger,
+.md-typeset details.danger {
+    border-color: #d32f2f;
+    background-color: #fff5f5;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .admonition.danger,
+[data-md-color-scheme="slate"] .md-typeset details.danger {
+    background-color: #2a0a0a;
+}
+
+.md-typeset .danger > .admonition-title,
+.md-typeset .danger > summary {
+    background-color: #ffebee;
+    border-color: #d32f2f;
+    color: #b71c1c;
+    font-weight: 700;
+    font-size: 1.05em;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .danger > .admonition-title,
+[data-md-color-scheme="slate"] .md-typeset .danger > summary {
+    background-color: #3a0a0a;
+    color: #ff6b6b;
+}
+
+.md-typeset .danger > .admonition-title::before,
+.md-typeset .danger > summary::before {
+    content: "\2757";  /* ❗ */
+    background-image: none !important;
+    font-style: normal;
+    margin-right: 0.4em;
+}
+
+/* ── warning admonition: — — */
+.md-typeset .warning > .admonition-title::before,
+.md-typeset .warning > summary::before {
+    content: "\26A0\FE0F";  /* ⚠️ */
+    background-image: none !important;
+    font-style: normal;
+    margin-right: 0.4em;
+}
+
 /* ── mkdocstrings: separators between methods/functions ── */
 .doc-function,
 .doc-method,

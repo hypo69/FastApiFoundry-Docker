@@ -4,23 +4,30 @@
 # =============================================================================
 # Description:
 #   Session-based chat endpoints for interactive AI conversations.
-#   POST /api/v1/chat/start          — create new session (UUID)
-#   POST /api/v1/chat/message        — send message, get response
-#   POST /api/v1/chat/stream         — streaming message (SSE)
-#   GET  /api/v1/chat/history/{id}   — get session history
-#   DELETE /api/v1/chat/session/{id} — delete session
-#   POST /api/v1/chat/history/save   — persist history to disk
-#   GET  /api/v1/chat/models         — list available Foundry models
+#   POST   /api/v1/chat/start              — create new session (UUID)
+#   POST   /api/v1/chat/message            — send message, get response
+#   POST   /api/v1/chat/stream             — streaming message (SSE)
+#   GET    /api/v1/chat/history/{id}       — get in-memory session history
+#   DELETE /api/v1/chat/session/{id}       — delete in-memory session
+#   POST   /api/v1/chat/history/save       — persist history to disk
+#   GET    /api/v1/chat/history/list       — list saved dialogs from disk
+#   GET    /api/v1/chat/history/file/{fn}  — load one saved dialog from disk
+#   POST   /api/v1/chat/history/cleanup    — delete old/oversized dialogs
+#   GET    /api/v1/chat/models             — list available Foundry models
 #
 #   Sessions are stored in-memory (chat_sessions dict).
+#   Persisted dialogs go to config.dir_dialogs (~/.ai_assist/dialogs/).
 #   Auto-translation: enabled via config translator.enabled.
 #
 # File: chat_endpoints.py
-# Project: FastApiFoundry (Docker)
-# Version: 0.6.1
-# Changes in 0.6.1:
-#   - Updated version to match project
-#   - Added source_lang translation support in /chat/message
+# Project: AI Assistant (ai_assist)
+# Version: 0.7.1
+# Changes in 0.7.1:
+#   - save_chat_history: path from config.dir_dialogs (was hardcoded)
+#   - Added GET /chat/history/list
+#   - Added GET /chat/history/file/{filename}
+#   - Added POST /chat/history/cleanup (retention_days + max_size_mb)
+#   - Fixed docstring: actual storage path
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
@@ -28,8 +35,9 @@
 import json
 import uuid
 import time
-import os
-from typing import Dict, List
+import logging
+from datetime import datetime, timezone
+from typing import Dict, List, Optional
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pathlib import Path
@@ -38,72 +46,73 @@ from ...models.foundry_client import foundry_client
 from ...utils.translator import translator
 from ...core.config import config as app_config
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 def _translate_enabled() -> bool:
     return app_config.get_raw_config().get("translator", {}).get("enabled", False)
 
-# Хранение сессий чата в памяти
+
+def _dialogs_dir() -> Path:
+    """Return resolved dialogs directory path, creating it if needed."""
+    p = Path(app_config.dir_dialogs)
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+# In-memory session store
 chat_sessions: Dict[str, List[Dict]] = {}
 
+
 @router.post("/chat/start")
-async def start_chat_session(request: dict):
-    """Начать новую сессию чата.
+async def start_chat_session(request: dict) -> dict:
+    """Start a new chat session.
 
     Args:
-        request: JSON body с полями:
-            model (str): ID модели (default: 'default').
+        request: JSON body with fields:
+            model (str): Model ID (default: 'default').
 
     Returns:
         dict: success, session_id (UUID), model, message.
     """
     session_id = str(uuid.uuid4())
     model = request.get("model", "default")
-    
     chat_sessions[session_id] = []
-    
-    return {
-        "success": True,
-        "session_id": session_id,
-        "model": model,
-        "message": "Сессия чата начата"
-    }
+    return {"success": True, "session_id": session_id, "model": model, "message": "Сессия чата начата"}
+
 
 @router.post("/chat/message")
-async def send_chat_message(request: dict):
-    """Отправить сообщение в чат.
+async def send_chat_message(request: dict) -> dict:
+    """Send a message to an existing chat session.
 
     Args:
-        request: JSON body с полями:
-            session_id (str):    ID сессии (обязательно).
-            message (str):       Текст сообщения (обязательно).
-            model (str):         ID модели (optional).
-            temperature (float): Температура (default: 0.7).
-            max_tokens (int):    Максимум токенов (default: 2048).
-            source_lang (str):   Язык входящего сообщения (default: "auto").
-            locale (str):        Язык ответа — "ru", "he", "fr" и т.д.
-                                 Переопределяет source_lang для обратного перевода.
-                                 Пусто = отвечать на языке source_lang.
+        request: JSON body with fields:
+            session_id (str):    Session ID (required).
+            message (str):       Message text (required).
+            model (str):         Model ID (optional).
+            temperature (float): Sampling temperature (default: 0.7).
+            max_tokens (int):    Max tokens (default: 2048).
+            source_lang (str):   Input language (default: 'auto').
+            locale (str):        Reply language override ('ru', 'he', etc.).
 
     Returns:
         dict: success, response, session_id.
+
+    Raises:
+        HTTPException 400: Invalid session_id or empty message.
+        HTTPException 500: Generation error.
     """
     session_id = request.get("session_id")
     message = request.get("message", "")
     source_lang = request.get("source_lang", "auto")
-    # locale: explicit reply language (e.g. "ru", "he", "fr").
-    # If set, overrides source_lang for the back-translation step.
-    # "auto" means: translate response back to the detected source language.
-    locale = request.get("locale", "")  # e.g. "ru", "he", "fr", "auto", or ""
+    locale = request.get("locale", "")
 
     if not session_id or session_id not in chat_sessions:
         raise HTTPException(status_code=400, detail="Неверный ID сессии")
-
     if not message:
         raise HTTPException(status_code=400, detail="Сообщение не может быть пустым")
 
-    # Translate user message to English before sending to model
     translate_on = _translate_enabled()
     model_message = message
     if translate_on:
@@ -128,8 +137,6 @@ async def send_chat_message(request: dict):
         ai_response = response.get("content", "")
         chat_sessions[session_id].append({"role": "assistant", "content": ai_response})
 
-        # Translate response back to user language.
-        # locale overrides detected source_lang if explicitly set.
         reply_lang = locale if locale and locale != "auto" else source_lang
         if translate_on and reply_lang and reply_lang not in ("en", "auto"):
             tr_back = await translator.translate_response(ai_response, reply_lang)
@@ -141,130 +148,119 @@ async def send_chat_message(request: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка генерации: {str(e)}")
 
+
 @router.post("/chat/stream")
 async def send_chat_message_stream(request: dict):
-    """Отправить сообщение в чат с стримингом.
+    """Send a message with SSE streaming response.
 
     Args:
-        request: JSON body с полями:
-            session_id (str):    ID сессии (обязательно).
-            message (str):       Текст сообщения (обязательно).
-            model (str):         ID модели (optional).
-            temperature (float): Температура (default: 0.7).
-            max_tokens (int):    Максимум токенов (default: 2048).
+        request: JSON body with fields:
+            session_id (str):    Session ID (required).
+            message (str):       Message text (required).
+            model (str):         Model ID (optional).
+            temperature (float): Sampling temperature (default: 0.7).
+            max_tokens (int):    Max tokens (default: 2048).
 
     Returns:
-        StreamingResponse: SSE-поток с чанками {chunk} и финальным {done: True}.
+        StreamingResponse: SSE stream with {chunk} events and final {done: True}.
 
     Raises:
-        HTTPException 400: Неверный session_id или пустое сообщение.
+        HTTPException 400: Invalid session_id or empty message.
     """
     session_id = request.get("session_id")
     message = request.get("message", "")
-    
+
     if not session_id or session_id not in chat_sessions:
         raise HTTPException(status_code=400, detail="Неверный ID сессии")
-    
     if not message:
         raise HTTPException(status_code=400, detail="Сообщение не может быть пустым")
-    
-    # Добавить сообщение пользователя
+
     chat_sessions[session_id].append({"role": "user", "content": message})
-    
-    # Подготовить промпт
-    conversation_history = chat_sessions[session_id]
-    prompt = "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_history])
-    
+    prompt = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_sessions[session_id]])
+
     async def generate_stream():
         try:
-            accumulated_response = ""
+            accumulated = ""
             async for chunk in foundry_client.generate_stream(
                 prompt=prompt,
                 model=request.get("model"),
                 temperature=request.get("temperature", 0.7),
-                max_tokens=request.get("max_tokens", 2048)
+                max_tokens=request.get("max_tokens", 2048),
             ):
                 if chunk["success"] and not chunk.get("finished", False):
                     content = chunk.get("content", "")
-                    accumulated_response += content
+                    accumulated += content
                     yield f"data: {json.dumps({'chunk': content})}\n\n"
                 elif chunk.get("finished", False):
                     break
-            
-            # Добавить полный ответ в историю
-            chat_sessions[session_id].append({"role": "assistant", "content": accumulated_response})
+            chat_sessions[session_id].append({"role": "assistant", "content": accumulated})
             yield f"data: {json.dumps({'done': True})}\n\n"
-            
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
-    
+
     return StreamingResponse(
         generate_stream(),
         media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
     )
 
+
 @router.get("/chat/history/{session_id}")
-async def get_chat_history(session_id: str):
-    """Получить историю разговора.
+async def get_chat_history(session_id: str) -> dict:
+    """Get in-memory session history.
 
     Args:
-        session_id: UUID сессии чата.
+        session_id: Chat session UUID.
 
     Returns:
         dict: success, session_id, history (list of {role, content}).
 
     Raises:
-        HTTPException 404: Сессия не найдена.
+        HTTPException 404: Session not found.
     """
     if session_id not in chat_sessions:
         raise HTTPException(status_code=404, detail="Сессия не найдена")
-    
-    return {
-        "success": True,
-        "session_id": session_id,
-        "history": chat_sessions[session_id]
-    }
+    return {"success": True, "session_id": session_id, "history": chat_sessions[session_id]}
+
 
 @router.delete("/chat/session/{session_id}")
-async def delete_chat_session(session_id: str):
-    """Удалить сессию чата.
+async def delete_chat_session(session_id: str) -> dict:
+    """Delete an in-memory chat session.
 
     Args:
-        session_id: UUID сессии чата.
+        session_id: Chat session UUID.
 
     Returns:
         dict: success, message.
 
     Raises:
-        HTTPException 404: Сессия не найдена.
+        HTTPException 404: Session not found.
     """
-    if session_id in chat_sessions:
-        del chat_sessions[session_id]
-        return {"success": True, "message": "Сессия удалена"}
-    else:
+    if session_id not in chat_sessions:
         raise HTTPException(status_code=404, detail="Сессия не найдена")
+    del chat_sessions[session_id]
+    return {"success": True, "message": "Сессия удалена"}
 
 
 @router.post("/chat/history/save")
 async def save_chat_history(request: dict) -> dict:
-    """! Сохраняет историю чата на диск.
+    """Persist chat history to disk.
 
-    Содержимое сохраняется в: ~/.ai-assistant-chat-history/
+    Saves to config.dir_dialogs (~/.ai_assist/dialogs/ by default).
 
     Args:
-        request: JSON body с полями:
-            messages (list):    Список сообщений {role, content} (обязательно).
-            session_id (str):   UUID сессии (optional, генерируется если пусто).
-            model (str):        ID модели (optional).
-            title (str):        Заголовок чата (optional).
-            aborted (bool):     Был ли чат прерван (default: False).
+        request: JSON body with fields:
+            messages (list):  List of {role, content} (required).
+            session_id (str): Session UUID (generated if empty).
+            model (str):      Model ID (optional).
+            title (str):      Dialog title (optional).
+            aborted (bool):   Whether chat was aborted (default: False).
 
     Returns:
-        dict: success, file (path to saved JSON), session_id.
+        dict: success, file (absolute path), session_id.
 
     Raises:
-        HTTPException 400: messages отсутствуют или пусты.
+        HTTPException 400: messages missing or empty.
     """
     messages: List[Dict] = request.get("messages") or []
     if not messages:
@@ -275,9 +271,7 @@ async def save_chat_history(request: dict) -> dict:
     title: str = request.get("title") or ""
     aborted: bool = bool(request.get("aborted", False))
 
-    history_dir = Path.home() / ".ai-assistant-chat-history"
-    history_dir.mkdir(parents=True, exist_ok=True)
-
+    history_dir = _dialogs_dir()
     ts = int(time.time())
     file_path = history_dir / f"{session_id}_{ts}.json"
 
@@ -290,51 +284,142 @@ async def save_chat_history(request: dict) -> dict:
         "messages": messages,
     }
     file_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {"success": True, "file": str(file_path), "session_id": session_id}
 
-    return {
-        "success": True,
-        "file": str(file_path),
-        "session_id": session_id
-    }
+
+@router.get("/chat/history/list")
+async def list_saved_dialogs(limit: int = 50, offset: int = 0) -> dict:
+    """List saved dialog files from disk, newest first.
+
+    Args:
+        limit (int):  Max number of entries to return (default: 50).
+        offset (int): Pagination offset (default: 0).
+
+    Returns:
+        dict: success, dialogs (list of metadata), total, dir.
+    """
+    history_dir = _dialogs_dir()
+    files = sorted(history_dir.glob("*.json"), key=lambda f: f.stat().st_mtime, reverse=True)
+    total = len(files)
+    page = files[offset: offset + limit]
+
+    dialogs = []
+    for f in page:
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+            dialogs.append({
+                "filename": f.name,
+                "session_id": data.get("session_id", ""),
+                "title": data.get("title", ""),
+                "model": data.get("model", ""),
+                "created_at": data.get("created_at", 0),
+                "message_count": len(data.get("messages", [])),
+                "aborted": data.get("aborted", False),
+                "size_bytes": f.stat().st_size,
+            })
+        except Exception:
+            dialogs.append({"filename": f.name, "error": "parse error"})
+
+    return {"success": True, "dialogs": dialogs, "total": total, "dir": str(history_dir)}
+
+
+@router.get("/chat/history/file/{filename}")
+async def load_saved_dialog(filename: str) -> dict:
+    """Load a single saved dialog from disk.
+
+    Args:
+        filename: JSON filename (e.g. 'uuid_1234567890.json').
+
+    Returns:
+        dict: success + full dialog payload.
+
+    Raises:
+        HTTPException 400: Unsafe filename.
+        HTTPException 404: File not found.
+    """
+    # Sanitize: no path traversal
+    if "/" in filename or "\\" in filename or ".." in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    file_path = _dialogs_dir() / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Файл не найден")
+
+    try:
+        data = json.loads(file_path.read_text(encoding="utf-8"))
+        return {"success": True, **data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка чтения: {e}")
+
+
+@router.post("/chat/history/cleanup")
+async def cleanup_dialogs(request: Optional[dict] = None) -> dict:
+    """Delete old and oversized dialog files.
+
+    Applies retention_days and max_size_mb from config.dialogs.
+    Can be overridden per-request.
+
+    Args:
+        request: Optional JSON body with fields:
+            retention_days (int): Override retention period.
+            max_size_mb (int):    Override size limit.
+
+    Returns:
+        dict: success, deleted (count), freed_bytes, remaining.
+    """
+    req = request or {}
+    retention_days: int = req.get("retention_days") or app_config.dialogs_retention_days
+    max_size_mb: int = req.get("max_size_mb") or app_config.dialogs_max_size_mb
+
+    history_dir = _dialogs_dir()
+    now = time.time()
+    cutoff = now - retention_days * 86400
+    max_bytes = max_size_mb * 1024 * 1024
+
+    files = sorted(history_dir.glob("*.json"), key=lambda f: f.stat().st_mtime)
+    deleted = 0
+    freed = 0
+
+    # Delete files older than retention_days
+    for f in files:
+        if f.stat().st_mtime < cutoff:
+            freed += f.stat().st_size
+            f.unlink()
+            deleted += 1
+            logger.info(f"🗑️ cleanup: removed old dialog {f.name}")
+
+    # If total size still exceeds limit, remove oldest first
+    files = sorted(history_dir.glob("*.json"), key=lambda f: f.stat().st_mtime)
+    total_size = sum(f.stat().st_size for f in files)
+    for f in files:
+        if total_size <= max_bytes:
+            break
+        freed += f.stat().st_size
+        total_size -= f.stat().st_size
+        f.unlink()
+        deleted += 1
+        logger.info(f"🗑️ cleanup: removed oversized dialog {f.name}")
+
+    remaining = len(list(history_dir.glob("*.json")))
+    return {"success": True, "deleted": deleted, "freed_bytes": freed, "remaining": remaining}
+
 
 @router.get("/chat/models")
-async def get_available_models():
-    """Получить список доступных моделей.
+async def get_available_models() -> dict:
+    """List available Foundry models for chat.
 
     Returns:
         dict: success, models (list of {id, name, type, size}), count.
     """
     try:
         models_response = await foundry_client.list_available_models()
-        
         if models_response.get("success", False):
-            foundry_models = models_response.get("models", [])
-            
-            chat_models = []
-            for model in foundry_models:
-                model_id = model.get('id', '')
-                if model_id:
-                    chat_models.append({
-                        'id': model_id,
-                        'name': model_id,
-                        'type': 'AI Model',
-                        'size': 'Unknown'
-                    })
-            
-            return {
-                "success": True,
-                "models": chat_models,
-                "count": len(chat_models)
-            }
-        else:
-            return {
-                "success": False,
-                "error": models_response.get("error", "Не удалось получить список моделей"),
-                "models": []
-            }
+            chat_models = [
+                {"id": m.get("id", ""), "name": m.get("id", ""), "type": "AI Model", "size": "Unknown"}
+                for m in models_response.get("models", [])
+                if m.get("id")
+            ]
+            return {"success": True, "models": chat_models, "count": len(chat_models)}
+        return {"success": False, "error": models_response.get("error", "Не удалось получить список моделей"), "models": []}
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "models": []
-        }
+        return {"success": False, "error": str(e), "models": []}

@@ -28,6 +28,8 @@ from ...agents.rag_agent import RagAgent
 from ...agents.keystroke_agent import KeystrokeAgent
 from ...agents.mcp_agent import McpAgent
 from ...agents.windows_os_agent import WindowsOsAgent
+from ...agents.recommender_agent import RecommenderAgent
+from ...agents.google_agent import GoogleAgent
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -43,6 +45,8 @@ def _build_registry():
         "keystroke": KeystrokeAgent(foundry_client),
         "mcp": McpAgent(foundry_client),
         "windows_os": WindowsOsAgent(foundry_client),
+        "recommender": RecommenderAgent(foundry_client),
+        "google": GoogleAgent(foundry_client),
     }
 
 _registry = None

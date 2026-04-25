@@ -20,19 +20,26 @@ from pathlib import Path
 from typing import Dict, List
 
 from fastapi import APIRouter
+from ...core.config import config as app_config
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["helpdesk"])
 
-_DIALOGS_FILE = Path("logs/helpdesk_dialogs.jsonl")
+
+def _dialogs_file() -> Path:
+    """Return path to helpdesk JSONL log inside config.dir_dialogs."""
+    d = Path(app_config.dir_dialogs)
+    d.mkdir(parents=True, exist_ok=True)
+    return d / "helpdesk_dialogs.jsonl"
 
 
 def _load_dialogs() -> List[Dict]:
     """Load all dialog entries from the JSONL log file."""
-    if not _DIALOGS_FILE.exists():
+    dialogs_file = _dialogs_file()
+    if not dialogs_file.exists():
         return []
     entries: List[Dict] = []
-    with open(_DIALOGS_FILE, "r", encoding="utf-8") as f:
+    with open(dialogs_file, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:

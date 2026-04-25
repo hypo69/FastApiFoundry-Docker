@@ -331,6 +331,34 @@ class Config:
         raw = self._config_data.get('directories', {}).get('hf_models') or '~/.cache/huggingface/hub'
         return str(Path(raw).expanduser())
 
+    @property
+    def dir_dialogs(self) -> str:
+        """Directory for storing all dialog history files.
+
+        Returns:
+            str: Absolute path to dialogs directory (expanded ~).
+        """
+        raw = self._config_data.get('dialogs', {}).get('dir') or '~/.ai_assist/dialogs'
+        return str(Path(raw).expanduser())
+
+    @property
+    def dialogs_retention_days(self) -> int:
+        """Number of days to keep dialog files before cleanup.
+
+        Returns:
+            int: Retention period in days.
+        """
+        return self._config_data.get('dialogs', {}).get('retention_days') or 30
+
+    @property
+    def dialogs_max_size_mb(self) -> int:
+        """Maximum total size of dialogs directory in MB.
+
+        Returns:
+            int: Size limit in megabytes.
+        """
+        return self._config_data.get('dialogs', {}).get('max_size_mb') or 100
+
     # ── Помощники ─────────────────────────────────────────────────────────
 
     def get_section(self, section: str) -> Dict[str, Any]:

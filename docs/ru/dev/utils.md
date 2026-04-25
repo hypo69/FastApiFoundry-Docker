@@ -69,6 +69,9 @@ result = processor.execute("path/to/components.json")
 | `logging_config.py` | Bootstrap-настройка уровня логирования |
 | `logging_system.py` | Структурированный логгер с JSON-выводом и таймером |
 | `log_analyzer.py` | Анализ лог-файлов: метрики, ошибки, производительность |
+| `command_agent.py` | Асинхронный запуск CLI-команд через PowerShell, Circuit Breaker |
+| `process_utils.py` | Стандартный запуск subprocess с проектными настройками |
+| `text_utils.py` | Подсчёт токенов, санитизация имён файлов |
 
 ---
 
@@ -838,3 +841,112 @@ print(api["endpoints"])           # {"/api/v1/generate": 89, "/api/v1/health": 5
   "duration": 3.5
 }
 ```
+
+---
+
+## command_agent
+
+`src/utils/command_agent.py` — асинхронный оркестратор запуска CLI-команд через PowerShell wrapper. Реализует паттерн **Circuit Breaker** для защиты от циклических сбоев.
+
+Синглтон: `CommandAgent()` — состояние Circuit Breaker сохраняется между вызовами API.
+
+### Импорт
+
+```python
+from src.utils.command_agent import CommandAgent
+agent = CommandAgent()
+```
+
+### Circuit Breaker
+
+При 3 последовательных ошибках одной команды агент блокирует её на 60 секунд. При изменении системного `PATH` все счётчики сбрасываются автоматически.
+
+| Параметр | Значение |
+|---|---|
+| `FAILURE_THRESHOLD` | 3 ошибки |
+| `COOLDOWN_SECONDS` | 60 секунд |
+
+### Методы
+
+#### `run(command, args, timeout) -> dict`
+
+Запускает команду через PowerShell wrapper с Circuit Breaker.
+
+```python
+result = await agent.run("foundry", ["service", "status"], timeout=30)
+# {"exit_code": 0, "stdout": "...", "stderr": "..."}
+```
+
+#### `test_command_available(command) -> bool`
+
+Проверяет наличие команды в `PATH` через `Get-Command`.
+
+```python
+if await agent.test_command_available("foundry"):
+    ...
+```
+
+#### `parse_foundry_status() -> dict`
+
+Парсит вывод `foundry service status`.
+
+**Returns:** `{"status": "running", "pid": 1234, "port": 50477, "health_check": "ok"}`
+
+#### `reset_circuit_breaker(command=None)`
+
+Сбрасывает счётчик ошибок. Без аргумента — сбрасывает все.
+
+---
+
+## process_utils
+
+`src/utils/process_utils.py` — тонкая обёртка над `subprocess.run` с проектными настройками по умолчанию.
+
+### Импорт
+
+```python
+from src.utils.process_utils import run_command
+```
+
+### `run_command(args, timeout, shell, capture_output) -> CompletedProcess`
+
+Запускает команду с `encoding="utf-8"`, `errors="replace"`, логирует ошибки.
+
+```python
+result = run_command(["foundry", "model", "list"], timeout=10)
+print(result.stdout)
+```
+
+**Raises:** `subprocess.TimeoutExpired`, `Exception` — логирует и пробрасывает.
+
+---
+
+## text_utils
+
+`src/utils/text_utils.py` — минимальные утилиты для работы с текстом.
+
+### Импорт
+
+```python
+from src.utils.text_utils import count_tokens_approx, sanitize_for_filesystem
+```
+
+### `count_tokens_approx(text) -> int`
+
+Приблизительный подсчёт токенов: ~4 символа на токен. Минимум 1.
+
+```python
+count_tokens_approx("Hello world")  # 2
+count_tokens_approx("")             # 1
+```
+
+### `sanitize_for_filesystem(name) -> str`
+
+Преобразует произвольную строку в безопасное имя файла/директории. Оставляет только `[a-zA-Z0-9_-]`, остальное заменяет на `_`.
+
+```python
+sanitize_for_filesystem("my model v2.0!")  # "my_model_v2_0_"
+sanitize_for_filesystem("qwen::3-0.6b")    # "qwen__3-0_6b"
+```
+
+Используется при создании RAG профилей и именовании файлов диалогов.

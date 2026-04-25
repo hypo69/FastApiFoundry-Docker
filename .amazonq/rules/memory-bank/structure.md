@@ -19,7 +19,7 @@ FastApiFoundry-Docker/
 ├── mcp-powershell-servers/ # MCP servers (PowerShell STDIO)
 ├── sdk/                    # Python SDKs (fastapi_foundry, microsoft_foundry)
 ├── extensions/             # Browser extensions
-├── bin/                    # llama.cpp Windows x64 binaries
+├── bin/                    # Native binaries (llama.cpp, Windows x64)
 ├── rag_index/              # FAISS index storage
 ├── logs/                   # Application logs
 ├── SANDBOX/                # Experimental SDK examples

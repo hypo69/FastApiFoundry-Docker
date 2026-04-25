@@ -275,6 +275,85 @@ user: "Дай информацию по процессам"
 
 ---
 
+---
+
+### `GoogleAgent`
+
+*   **Файл**: `src/agents/google_agent.py`
+*   **Имя**: `google`
+*   **Описание**: Агент для работы с Google Workspace — Gmail, Google Calendar, Google Sheets, Google Docs. Авторизация через OAuth2, данные не покидают машину.
+*   **Инструменты**:
+
+    | Инструмент | Сервис | Описание |
+    |---|---|---|
+    | `gmail_list` | Gmail | Список писем с поддержкой поиска (`is:unread`, `from:...`) |
+    | `gmail_read` | Gmail | Прочитать письмо по ID |
+    | `gmail_send` | Gmail | Отправить письмо |
+    | `calendar_list` | Calendar | Предстоящие события |
+    | `calendar_create` | Calendar | Создать событие (с участниками) |
+    | `sheets_read` | Sheets | Прочитать диапазон ячеек |
+    | `sheets_write` | Sheets | Записать данные в таблицу |
+    | `docs_read` | Docs | Прочитать текст документа |
+    | `docs_append` | Docs | Добавить текст в конец документа |
+
+    **Примеры использования (в промпте к агенту):**
+    *   `"Покажи мои непрочитанные письма."`
+    *   `"Создай встречу 'Планёрка' завтра с 10:00 до 11:00."`
+    *   `"Прочитай данные из таблицы <spreadsheet_id> диапазон Sheet1!A1:D10."`
+    *   `"Добавь в документ <document_id> текст с итогами встречи."`
+
+    > ⚠️ Требует настройки OAuth2. Подробная инструкция: [Google Agent](google_agent.md).
+    > Зависимости: `pip install -r requirements-google.txt`
+
+---
+
+### `QAAgent`
+
+*   **Файл**: `src/agents/qa_agent.py`
+*   **Имя**: `qa`
+*   **Описание**: Агент запуска тестов, анализа результатов и формирования отчёта о качестве кода.
+*   **Сценарий**: `prompt → run_tests → parse output → summary → answer`
+*   **Инструменты**:
+
+    | Инструмент | Описание |
+    |---|---|
+    | `run_tests` | Запустить pytest для указанного пути или фильтра, вернуть сводку |
+    | `list_test_files` | Список всех тестовых файлов в `tests/` |
+    | `get_coverage` | Запустить pytest с `--cov` и вернуть отчёт покрытия |
+
+    **Примеры использования:**
+    *   `"Запусти все тесты и покажи результат."`
+    *   `"Запусти только тесты для chat_endpoints."`
+    *   `"Покажи покрытие кода для src/."`
+
+---
+
+## ⏱️ Вотчер тестов (`scripts/watch_tests.ps1`)
+
+Автоматически запускает связанные тесты при изменении любого `*.py` файла в `src/`.
+
+```powershell
+# Следить за src/ (по умолчанию)
+powershell -ExecutionPolicy Bypass -File .\scripts\watch_tests.ps1
+
+# Следить за конкретной папкой
+powershell -ExecutionPolicy Bypass -File .\scripts\watch_tests.ps1 -WatchPath src/api/endpoints
+
+# Запускать все тесты при любом изменении
+powershell -ExecutionPolicy Bypass -File .\scripts\watch_tests.ps1 -All
+```
+
+| Параметр | По умолчанию | Описание |
+|---|---|---|
+| `-WatchPath` | `src` | Директория для наблюдения |
+| `-All` | `false` | Запускать все `tests/` при любом изменении |
+| `-DebounceMs` | `1500` | Задержка между срабатываниями (ms) |
+
+При изменении `chat_endpoints.py` вотчер автоматически ищет и запускает `tests/unit/test_chat_endpoints.py`.
+Если связанный тест не найден — запускается весь `tests/`.
+
+---
+
 ## ⚠️ Требования
 
 *   **PowerShell 7+**: Требуется для корректной работы `PowerShellAgent`.

@@ -8,6 +8,25 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [0.7.1] - 2025
 
+### Added
+- `config.json` — секция `dialogs`: единое место хранения диалогов для всех клиентов (`dir`, `retention_days`, `max_size_mb`)
+- `config_manager.py` — свойства `dir_dialogs`, `dialogs_retention_days`, `dialogs_max_size_mb`
+- `src/api/endpoints/chat_endpoints.py` — `GET /chat/history/list`: список сохранённых диалогов с диска (пагинация, метаданные)
+- `src/api/endpoints/chat_endpoints.py` — `GET /chat/history/file/{filename}`: загрузка одного диалога с диска (с защитой от path traversal)
+- `src/api/endpoints/chat_endpoints.py` — `POST /chat/history/cleanup`: удаление устаревших/превышающих лимит диалогов (по `retention_days` и `max_size_mb`)
+- `src/agents/qa_agent.py` — новый `QAAgent`: запуск тестов, покрытие, список тестовых файлов
+- `scripts/watch_tests.ps1` — вотчер: автозапуск связанных тестов при изменении `*.py` в `src/`, debounce 1500ms
+- `docs/ru/dev/api_reference.md` — добавлены `GET /chat/history/list`, `GET /chat/history/file/{fn}`, `POST /chat/history/cleanup`
+- `docs/ru/dev/agents.md` — добавлены `QAAgent` и раздел про `watch_tests.ps1`
+- `docs/ru/dev/rag_system.md` — добавлены: полный цикл индексации/поиска (ASCII-диаграмма), таблица моделей эмбеддингов, ключевые детали реализации
+- `docs/ru/dev/utils.md` — добавлены `command_agent`, `process_utils`, `text_utils`: описание, методы, примеры
+- `docs/ru/user/configuration.md` — добавлена секция `dialogs` в пример `config.json` и таблицу параметров
+- `docs/ru/dev/architecture.md` — раздел «Хранилище диалогов»: структура, формат файла, пример кода, таблица клиентов
+
+### Changed
+- `src/api/endpoints/chat_endpoints.py` — `save_chat_history()`: путь читается из `config.dir_dialogs` (был хардкод `~/.ai-assistant-chat-history`)
+- `src/api/endpoints/helpdesk.py` — `_DIALOGS_FILE` заменён на `_dialogs_file()` — пишет в `config.dir_dialogs/helpdesk_dialogs.jsonl`
+
 ### Fixed
 - `src/models/foundry_client.py` — добавлены аннотации типов ко всем методам; удалён дублирующий старый класс без аннотаций; устранены griffe warnings
 - `config_manager.py` — `reload_config()`: заменено `Raises: Same as _load_config()` на явные типы исключений; устранён griffe warning
