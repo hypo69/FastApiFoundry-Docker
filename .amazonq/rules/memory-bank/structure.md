@@ -1,6 +1,7 @@
 # FastAPI Foundry — Project Structure
 
-**Version:** 0.6.1
+**Version:** 0.7.0
+**Project:** AI Assistant (ai_assist)
 
 ---
 

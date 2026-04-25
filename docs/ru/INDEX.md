@@ -1,32 +1,49 @@
-# Документация FastAPI Foundry
+# AI Assistant (ai_assist)
+
+**Оркестратор локальных AI моделей с единым REST API**
+
+![Version](https://img.shields.io/badge/version-0.7.1-blue)
+![Python](https://img.shields.io/badge/python-3.11+-green)
+![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Docker-informational)
+
+---
+
+[Смысл — зачем это нужно и кому полезно](about.md){ .md-button }
+
+---
 
 ## 👤 Руководство пользователя
-*Для тех, кто хочет запустить и использовать систему.*
 
 - [Быстрый старт](user/getting_started.md)
 - [Установка и настройка](user/installation.md)
+- [Конфигурация](user/configuration.md)
 - [Работа с моделями](user/models_guide.md)
 - [Веб-интерфейс](user/web_interface.md)
+- [Извлечение текста](user/text_extraction.md)
+- [CLI Reference](user/cli_reference.md)
 
 ## 💻 Руководство разработчика
-*Техническая информация для расширения и модификации системы.*
 
-- [Общая архитектура](dev/architecture.md)
+- [Архитектура](dev/architecture.md)
 - [API Reference](dev/api_reference.md)
 - [Система RAG](dev/rag_system.md)
 - [Агенты ИИ](dev/agents.md)
-- [CI/CD документации](dev/cicd_docs.md)
+- [MCP Agent](dev/mcp_agent.md)
+- [SDK](dev/sdk.md)
 
-## 📖 Code Reference (Python)
-*Автогенерируемая документация из docstrings.*
+## 🛡️ Контроль качества (QA)
+
+- [Обзор](qa/index.md)
+- [Стратегия тестирования](qa/strategy.md)
+- [Запуск тестов](qa/running.md)
+- [Юнит-тесты](qa/unit.md)
+- [Интеграционные тесты](qa/integration.md)
+- [Тесты агентов](qa/agents.md)
+
+## 📖 Code Reference
 
 - [Foundry Client](dev/code/foundry_client.md)
 - [Config](dev/code/config.md)
 - [RAG System](dev/code/rag_system.md)
 - [App Factory](dev/code/app.md)
-
-## 🌐 Browser Extension (JS)
-- [Обзор](dev/js/index.md)
-
-## ⚙️ PowerShell MCP Servers
-- [Обзор](dev/powershell/index.md)

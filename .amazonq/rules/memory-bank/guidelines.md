@@ -1,6 +1,7 @@
 # FastAPI Foundry — Development Guidelines
 
-**Version:** 0.6.1
+**Version:** 0.7.0
+**Project:** AI Assistant (ai_assist)
 
 ---
 
@@ -425,7 +426,78 @@ See `POWERSHELL_CODE_RULES.md` for full details. Key rules:
 
 ---
 
-## 9. Documentation Sync Rule
+## 11. Documentation — Workflow Diagrams
+
+Whenever documentation describes a **sequence of actions** (scripts, startup chains, pipelines, install steps, request flows), render it as an ASCII workflow diagram instead of prose or a plain list.
+
+### When to use
+
+- Script calls another script calls another process
+- Install step sequence with branching (if/else)
+- Request lifecycle through multiple components
+- Startup/shutdown order of services
+- Any multi-step process where order and branching matter
+
+### Format rules
+
+```
+Entry point
+  │
+  ├─ [condition] → branch A
+  │     └─ sub-step
+  │
+  └─ [condition] → branch B
+        ├─ step 1
+        ├─ step 2  (inline note)
+        └─ step 3
+             └─ result / output
+```
+
+- Use `│` for vertical flow, `├─` for branches, `└─` for last branch
+- Add inline notes in `(parentheses)` on the same line
+- Add conditions in `[square brackets]`
+- Show output/result at the bottom leaf
+- Wrap in a fenced ` ```  ``` ` block (no language tag — plain text)
+- Place the diagram **before** the prose explanation, not after
+
+### Example — install.ps1 workflow
+
+```
+install.ps1
+  ├─ [PS < 7] → error, exit
+  ├─ [python not found] → unpack bin\Python-3.11.9.zip
+  ├─ [venv exists + -Force] → remove venv
+  ├─ pip install -r requirements.txt
+  ├─ [-SkipRag?] → skip sentence-transformers / faiss
+  ├─ [-SkipTesseract?] → skip OCR install
+  ├─ [no .env] → copy .env.example
+  ├─ [no logs/] → mkdir logs/
+  ├─ [llama zip found] → extract to bin/
+  ├─ [foundry not installed] → winget install (interactive)
+  ├─ [first install] → download default models (interactive)
+  └─ create desktop shortcuts
+```
+
+### Example — request lifecycle
+
+```
+POST /api/v1/generate
+  │
+  ├─ @api_response_handler  (error wrapper)
+  ├─ model prefix check
+  │     ├─ hf::     → hf_client.generate()
+  │     ├─ llama::  → llama HTTP API
+  │     ├─ ollama:: → ollama_client.generate()
+  │     └─ (none)   → foundry_client.generate()
+  └─ return {success, content, model, usage}
+```
+
+### When NOT to use
+
+- Simple 2-step sequences — use a numbered list instead
+- Pure data structures — use a table
+- File trees — use the standard tree format with `├──`
+
 
 After every code change:
 1. Update docstring of changed function/class

@@ -8,8 +8,10 @@
 #   .foundry/cache/models is disk storage only — RAM is used per-request.
 #
 # File: foundry_client.py
-# Project: FastApiFoundry (Docker)
-# Version: 0.6.1
+# Project: AI Assistant (ai_assist)
+# Version: 0.7.1
+# Changes in 0.7.1:
+#   - Added full type annotations to all methods (fixes griffe warnings)
 # Changes in 0.6.1:
 #   - Removed inline subprocess model-load retry from generate_text (wrong layer)
 #   - generate_text now returns clear error on HTTP 400 (model not loaded)
@@ -26,32 +28,31 @@ import requests
 import logging
 import os
 from datetime import datetime
+from typing import AsyncIterator
 
 from ..utils.foundry_finder import find_foundry_port, find_foundry_url
 
-# Настройка логирования
 logger = logging.getLogger(__name__)
 
 class FoundryClient:
-    """Клиент для работы с Foundry API"""
+    """Async HTTP client for Foundry Local API."""
     
-    def __init__(self, base_url=None):
-        # Проверяем переменную окружения FOUNDRY_DYNAMIC_PORT
+    def __init__(self, base_url: str | None = None) -> None:
         foundry_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
         if foundry_port and not base_url:
             base_url = f"http://localhost:{foundry_port}/v1/"
             logger.info(f"Foundry client: using port from environment {foundry_port}")
         
-        self.base_url = base_url
+        self.base_url: str | None = base_url
         self.timeout = aiohttp.ClientTimeout(total=30)
-        self.session = None
+        self.session: aiohttp.ClientSession | None = None
         if self.base_url:
             logger.info(f"Foundry client: {self.base_url}")
         else:
             logger.info("Foundry client: waiting for URL...")
     
-    async def _get_session(self):
-        """Получить HTTP сессию.
+    async def _get_session(self) -> aiohttp.ClientSession:
+        """Get or create HTTP session.
 
         Returns:
             aiohttp.ClientSession: Active HTTP session.
@@ -60,12 +61,8 @@ class FoundryClient:
             self.session = aiohttp.ClientSession(timeout=self.timeout)
         return self.session
     
-    async def close(self):
-        """Закрыть HTTP сессию.
-
-        Returns:
-            None
-        """
+    async def close(self) -> None:
+        """Close HTTP session."""
         if self.session and not self.session.closed:
             await self.session.close()
     
@@ -97,7 +94,6 @@ class FoundryClient:
         except Exception as e:
             logger.debug(f'foundry service status failed: {e}')
 
-        # Fallback: scan known ports
         known = [52632, 62171, 50477, 58130]
         session = await self._get_session()
         for port in known:
@@ -111,15 +107,11 @@ class FoundryClient:
                 continue
         return None
     
-    async def _update_base_url(self):
-        """Обновить base_url из переменной окружения или Config.
+    async def _update_base_url(self) -> None:
+        """Update base_url from env var, Config, or port scan.
 
         Priority: FOUNDRY_DYNAMIC_PORT env var → config.foundry_base_url → port scan.
-
-        Returns:
-            None
         """
-        # Сначала проверяем переменную окружения
         foundry_port = os.getenv('FOUNDRY_DYNAMIC_PORT')
         if foundry_port:
             self.base_url = f"http://localhost:{foundry_port}/v1/"
@@ -130,25 +122,22 @@ class FoundryClient:
         
         logger.debug("🔄 Обновление base_url...")
         
-        # Затем проверяем Config
         if config.foundry_base_url:
             self.base_url = config.foundry_base_url
             logger.info(f"✅ Используется URL из Config: {self.base_url}")
             return
         
-        # Если нет в Config - ищем сами
         logger.info("🔍 URL не найден в Config, ищем Foundry...")
-        foundry_port = await self._find_foundry_port()
-        if foundry_port:
-            self.base_url = f'http://localhost:{foundry_port}/v1/'
-            # Устанавливаем в Config для других компонентов
+        foundry_port_int = await self._find_foundry_port()
+        if foundry_port_int:
+            self.base_url = f'http://localhost:{foundry_port_int}/v1/'
             config.foundry_base_url = self.base_url
             logger.info(f"✅ Foundry найден и сохранен в Config: {self.base_url}")
         else:
             logger.error("❌ Не удалось найти Foundry")
     
-    async def health_check(self):
-        """Проверка состояния Foundry.
+    async def health_check(self) -> dict:
+        """Check Foundry service health.
 
         Returns:
             dict: status (healthy/unhealthy/disconnected), url, port, timestamp,
@@ -157,7 +146,6 @@ class FoundryClient:
         logger.debug("🏥 Проверка состояния Foundry...")
         
         try:
-            # Обновляем URL перед каждым запросом
             await self._update_base_url()
             
             if not self.base_url:
@@ -217,7 +205,9 @@ class FoundryClient:
                 "timestamp": datetime.now().isoformat()
             }
     
-    async def generate_text(self, prompt: str, **kwargs):
+    async def generate_text(self, prompt: str, model: str | None = None,
+                            temperature: float = 0.7, max_tokens: int = 2048,
+                            **kwargs: object) -> dict:
         """Generate text via Foundry chat/completions endpoint.
 
         Foundry loads models on-demand: the model must already be loaded
@@ -226,15 +216,16 @@ class FoundryClient:
 
         Args:
             prompt: User input text.
-            **kwargs: model (str), temperature (float), max_tokens (int).
+            model: Foundry model ID, e.g. 'qwen3-0.6b-generic-cpu:4'. Uses first loaded if None.
+            temperature: Sampling temperature (default 0.7).
+            max_tokens: Maximum tokens to generate (default 2048).
+            **kwargs: Additional parameters (ignored).
 
         Returns:
             dict: success, content, model, usage on success;
-                  success=False, error on failure.
-                  error='model_not_loaded' when HTTP 400 received.
+                  success=False, error on failure;
+                  error_code='model_not_loaded' when HTTP 400 received.
         """
-        model = kwargs.get('model') or None
-
         try:
             health = await self.health_check()
             if health["status"] != "healthy":
@@ -243,7 +234,6 @@ class FoundryClient:
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/chat/completions"
 
-            # Use first loaded model when none specified
             if not model:
                 models_resp = await self.list_available_models()
                 loaded = models_resp.get('models', [])
@@ -256,8 +246,8 @@ class FoundryClient:
             payload = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": kwargs.get('temperature', 0.7),
-                "max_tokens": kwargs.get('max_tokens', 2048),
+                "temperature": temperature,
+                "max_tokens": max_tokens,
                 "stream": False
             }
 
@@ -271,9 +261,6 @@ class FoundryClient:
                         return {"success": True, "content": content, "model": model, "usage": usage}
                     return {"success": False, "error": "Некорректный ответ от Foundry"}
                 elif response.status == 400:
-                    # Model is not loaded in Foundry service.
-                    # Foundry does NOT auto-load from cache on inference request.
-                    # The caller must explicitly load the model first.
                     logger.warning(f"⚠️ HTTP 400: модель {model} не загружена в Foundry сервис")
                     return {
                         "success": False,
@@ -289,20 +276,24 @@ class FoundryClient:
             logger.error(f"❌ Исключение при генерации: {e}")
             return {"success": False, "error": f"Ошибка: {str(e)}"}
 
-    async def generate_stream(self, prompt: str, **kwargs):
-        """Генерация текста с потоковой передачей.
+    async def generate_stream(self, prompt: str, model: str | None = None,
+                              temperature: float = 0.7, max_tokens: int = 2048,
+                              **kwargs: object) -> AsyncIterator[dict]:
+        """Generate text with streaming (SSE).
 
         Args:
             prompt: User input text.
-            **kwargs: model (str), temperature (float), max_tokens (int).
+            model: Foundry model ID. Uses first loaded if None.
+            temperature: Sampling temperature (default 0.7).
+            max_tokens: Maximum tokens to generate (default 2048).
+            **kwargs: Additional parameters (ignored).
 
         Yields:
-            dict: success, content, finished on each token chunk;
-                  success=False, error on failure.
+            dict: success=True, content (str), finished=False per token chunk;
+                  success=True, finished=True on completion;
+                  success=False, error (str) on failure.
         """
         try:
-            # Переменные решения о модели
-            model = kwargs.get('model') or ""
             health = await self.health_check()
             if health["status"] != "healthy":
                 yield {
@@ -312,7 +303,6 @@ class FoundryClient:
                 }
                 return
             
-            # Выбор модели при отсутствии значения model (model=None, model="")
             if not model:
                 models_resp = await self.list_available_models()
                 loaded = models_resp.get('models', [])
@@ -327,11 +317,10 @@ class FoundryClient:
             url = f"{self.base_url.rstrip('/')}/chat/completions"
             
             payload = {
-                # Модель фиксируется после fallback-выбора
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": kwargs.get('temperature', 0.7),
-                "max_tokens": kwargs.get('max_tokens', 2048),
+                "temperature": temperature,
+                "max_tokens": max_tokens,
                 "stream": True
             }
             
@@ -356,22 +345,16 @@ class FoundryClient:
                                     continue
                 else:
                     error_text = await response.text()
-                    yield {
-                        "success": False,
-                        "error": f"HTTP {response.status}: {error_text}"
-                    }
+                    yield {"success": False, "error": f"HTTP {response.status}: {error_text}"}
         except Exception as e:
-            yield {
-                "success": False,
-                "error": f"Ошибка подключения к Foundry: {str(e)}"
-            }
+            yield {"success": False, "error": f"Ошибка подключения к Foundry: {str(e)}"}
 
-    async def list_available_models(self):
-        """Получить список доступных моделей.
+    async def list_available_models(self) -> dict:
+        """Get list of models loaded in Foundry service.
 
         Returns:
-            dict: success, models (list of model dicts), count on success;
-                  success=False, error, models=[] on failure.
+            dict: success=True, models (list), count (int) on success;
+                  success=False, error (str), models=[] on failure.
         """
         logger.debug("📋 Получение списка моделей...")
         
@@ -380,11 +363,7 @@ class FoundryClient:
             
             if not self.base_url:
                 logger.error("❌ Foundry не найден")
-                return {
-                    "success": False,
-                    "error": "Foundry недоступен",
-                    "models": []
-                }
+                return {"success": False, "error": "Foundry недоступен", "models": []}
             
             session = await self._get_session()
             url = f"{self.base_url.rstrip('/')}/models"
@@ -395,34 +374,22 @@ class FoundryClient:
                     data = await response.json()
                     models = data.get('data', [])
                     logger.debug(f"✅ Получено {len(models)} моделей")
-                    return {
-                        "success": True,
-                        "models": models,
-                        "count": len(models)
-                    }
+                    return {"success": True, "models": models, "count": len(models)}
                 else:
                     logger.warning(f"⚠️ Ошибка получения моделей: HTTP {response.status}")
-                    return {
-                        "success": False,
-                        "error": f"HTTP {response.status}",
-                        "models": []
-                    }
+                    return {"success": False, "error": f"HTTP {response.status}", "models": []}
         except Exception as e:
             logger.error(f"❌ Исключение при получении моделей: {e}")
-            return {
-                "success": False,
-                "error": "Foundry недоступен",
-                "models": []
-            }
+            return {"success": False, "error": "Foundry недоступен", "models": []}
 
-    async def load_model(self, model_id: str):
-        """Загрузить модель.
+    async def load_model(self, model_id: str) -> dict:
+        """Load a model into Foundry service.
 
         Args:
             model_id: Foundry model identifier, e.g. 'qwen3-0.6b-generic-cpu:4'.
 
         Returns:
-            dict: success, message on success; success=False, error on failure.
+            dict: success=True, message on success; success=False, error on failure.
         """
         logger.info(f"📥 Загрузка модели: {model_id}")
         
@@ -443,14 +410,14 @@ class FoundryClient:
             logger.error(f"❌ Исключение при загрузке модели {model_id}: {e}")
             return {"success": False, "error": f"Ошибка загрузки модели: {str(e)}"}
 
-    async def unload_model(self, model_id: str):
-        """Выгрузить модель.
+    async def unload_model(self, model_id: str) -> dict:
+        """Unload a model from Foundry service.
 
         Args:
             model_id: Foundry model identifier.
 
         Returns:
-            dict: success, message on success; success=False, error on failure.
+            dict: success=True, message on success; success=False, error on failure.
         """
         logger.info(f"📤 Выгрузка модели: {model_id}")
         
@@ -471,13 +438,13 @@ class FoundryClient:
             logger.error(f"❌ Исключение при выгрузке модели {model_id}: {e}")
             return {"success": False, "error": f"Ошибка выгрузки модели: {str(e)}"}
 
-    async def list_models(self):
-        """Получить список моделей (alias for list_available_models).
+    async def list_models(self) -> dict:
+        """Alias for list_available_models.
 
         Returns:
             dict: Same as list_available_models().
         """
         return await self.list_available_models()
 
-# Глобальный экземпляр клиента
+
 foundry_client = FoundryClient()

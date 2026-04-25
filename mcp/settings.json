@@ -79,6 +79,13 @@
       },
       "description": "Deploy MkDocs documentation (site/ru, site/en) to FTP server"
     },
+    "windows-os": {
+      "command": "python",
+      "args": [
+        "./mcp/src/servers/windows_os_mcp.py"
+      ],
+      "description": "Windows OS диагностика: процессы, службы, диск, сеть, автозагрузка"
+    },
     "ftp": {
       "command": "python",
       "args": [

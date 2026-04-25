@@ -1,41 +1,67 @@
-# 🚀 FastAPI Foundry
+# 🤖 AI Assistant
 
-**REST API для локальных AI моделей с поддержкой RAG**
+![Coverage](docs/ru/assets/coverage.svg)
 
-FastAPI Foundry — современный REST API сервер для работы с локальными AI моделями
-через Microsoft Foundry Local, HuggingFace Transformers и llama.cpp,
-с интегрированной системой поиска и извлечения контекста (RAG).
+**Оркестратор локальных AI моделей с богатым REST API**
+
+`ai_assist` — универсальный оркестратор для локальных AI моделей.
+Единая точка доступа к Microsoft Foundry Local, HuggingFace Transformers, llama.cpp и Ollama
+через стандартизированный REST API с интегрированной RAG-системой, веб-интерфейсом и MCP-серверами.
 
 ## ✨ Возможности
 
-- 🤖 **Генерация текста** через локальные AI модели (DeepSeek, Qwen, Mistral, Llama)
-- 💬 **Интерактивный чат** с поддержкой истории сессии. Испытательный полигон для проверки и настройки моделей.
+- 🎛️ **Оркестрация моделей** — единый API для Foundry, HuggingFace, llama.cpp, Ollama
+- 🤖 **Генерация текста** через локальные AI модели (DeepSeek, Qwen, Mistral, Llama, Gemma)
+- 💬 **Интерактивный чат** с поддержкой истории сессии и потоковой передачи (SSE)
 - ⚙️ **Управление Foundry** — запуск, остановка и мониторинг через веб-интерфейс
-- 🤗 **HuggingFace** — Работа с моделями и inference  Hub
-- 🦙 **llama.cpp** — запуск GGUF моделей на CPU/GPU (Файлы *.GGUF)
-- 🔍 **RAG система** — векторный поиск по документации (FAISS)
+- 🤗 **HuggingFace** — работа с моделями и inference Hub
+- 🦙 **llama.cpp** — запуск GGUF моделей на CPU/GPU
+- 🐋 **Ollama** — интеграция с локальным Ollama-сервисом
+- 🔍 **RAG система** — векторный поиск по документации (FAISS + SentenceTransformers)
+- 📄 **Извлечение текста** из 40+ форматов (PDF, DOCX, XLSX, изображения OCR, HTML, архивы)
 - 📦 **Пакетная обработка** множественных запросов
 - 🔐 **Безопасность** через API ключи и CORS защиту
 - 📊 **Мониторинг** здоровья сервиса и моделей
 - 🐳 **Docker** поддержка
-- 🌐 **Веб-интерфейс** для управления моделями
-- 🔌 **MCP сервера** для STDIO (PowerShell), HTTP, FTP,...
+- 🌐 **Веб-интерфейс** (SPA) для управления всеми компонентами
+- 🔌 **MCP серверы** для STDIO (PowerShell), HTTP и других протоколов
+- 🌍 **i18n** — интерфейс на русском, английском, иврите
 
-
-## 🏗️ Архитектура
+## 🏗️ Архитектура оркестратора
 
 ```
-Browser / API Client
-        │ HTTP
-        ▼
-FastAPI (port 9696)
-        │
-   ┌────┴────┬──────────────┬──────────┐
-   ▼         ▼              ▼          ▼
-Foundry   HuggingFace   llama.cpp   Ollama
-Local     Transformers  (GGUF)
+Browser / API Client / MCP Client
+              │ HTTP / SSE / WebSocket
+              ▼
+    AI Assistant (ai_assist)
+       FastAPI — port 9696
+              │
+   ┌──────────┼──────────────┬──────────────┐
+   ▼          ▼              ▼              ▼
+Foundry   HuggingFace   llama.cpp       Ollama
+Local     Transformers  (GGUF / CPU)    (local)
 (ONNX)    (PyTorch)
+              │
+         ┌────┴────┐
+         ▼         ▼
+       FAISS     Text
+       (RAG)   Extractor
+              (40+ formats)
 ```
+
+### Маршрутизация моделей
+
+Оркестратор выбирает бэкенд по префиксу в поле `model`:
+
+| Префикс | Бэкенд |
+|---|---|
+| `foundry::model-id` | Microsoft Foundry Local |
+| `hf::model-id` | HuggingFace Transformers |
+| `llama::path/to/model.gguf` | llama.cpp |
+| `ollama::model-name` | Ollama |
+
+Все бэкенды возвращают одинаковый формат ответа.
+Без префикса — ошибка (устаревшие bare ID пробрасываются в Foundry с предупреждением).
 
 ## 🚀 Быстрый старт
 
@@ -54,12 +80,12 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 2. Загружает переменные из `.env`
 3. Ищет запущенный Foundry → если не найден, запускает `foundry service start`
 4. Опционально запускает MkDocs (`docs_server.enabled` в `config.json`)
-5. Опционально запускает llama.cpp (`LLAMA_AUTO_START=true` в `.env`)
+5. Опционально запускает llama.cpp (если задан `llama_cpp.model_path`)
 6. Запускает `venv\Scripts\python.exe run.py`
 
 Подробный workflow: [Быстрый старт](docs/ru/user/getting_started.md)
 
-### Запуск через python  (если Foundry уже запущен)
+### Запуск через Python (если Foundry уже запущен)
 
 ```powershell
 venv\Scripts\python.exe run.py
@@ -74,24 +100,22 @@ docker-compose up
 ## 📁 Структура проекта
 
 ```
-FastApiFoundry-Docker/
+ai_assist/  (FastApiFoundry-Docker)
 ├── src/                    # Исходный код Python
 │   ├── api/               # FastAPI: app.py, endpoints/
-│   ├── models/            # AI клиенты: foundry, hf, llama
-│   ├── rag/               # RAG система (FAISS)
+│   ├── models/            # AI клиенты: foundry, hf, llama, ollama
+│   ├── rag/               # RAG система (FAISS + text extractor)
 │   ├── agents/            # AI агенты
 │   ├── converter/         # GGUF → ONNX конвертер
-│   ├── translator/        # Модуль перевода
-│   └── utils/             # Утилиты
+│   └── utils/             # Утилиты (translator, logging, etc.)
 ├── static/                # Веб-интерфейс (SPA)
 ├── docs/                  # MkDocs документация
-├── extensions/            # Браузерное расширение
-├── mcp-powershell-servers/ # MCP серверы (PowerShell)
+├── extensions/            # Браузерные расширения
+├── mcp-powershell-servers/ # MCP серверы (PowerShell STDIO)
 ├── scripts/               # Операционные скрипты
 ├── install/               # Скрипты установки
 ├── check_engine/          # Диагностика и тесты
-├── SANDBOX/               # SDK и эксперименты
-├── utils/                 # Standalone утилиты
+├── sdk/                   # Python SDK (fastapi_foundry, microsoft_foundry)
 ├── bin/                   # llama.cpp бинарники (Windows x64)
 ├── rag_index/             # FAISS индекс
 ├── logs/                  # Логи
@@ -109,13 +133,14 @@ FastApiFoundry-Docker/
 | Компонент | Технология |
 |---|---|
 | Web framework | FastAPI + Uvicorn |
-| AI: Foundry | Microsoft Foundry Local CLI |
-| AI: HuggingFace | transformers + huggingface_hub |
-| AI: GGUF | llama.cpp |
+| AI: Foundry | Microsoft Foundry Local CLI (ONNX) |
+| AI: HuggingFace | transformers + huggingface_hub (PyTorch) |
+| AI: GGUF | llama.cpp (CPU/GPU) |
+| AI: Ollama | Ollama HTTP API |
 | RAG | FAISS + sentence-transformers |
 | OCR | Tesseract + pytesseract + Pillow |
 | PDF | pdfplumber + PyPDF2 |
-| Office документы | python-docx + python-pptx + openpyxl + pandas |
+| Office документы | python-docx + python-pptx + openpyxl |
 | HTML/XML | BeautifulSoup4 + lxml |
 | Контейнеризация | Docker |
 | Язык | Python 3.11+ |
@@ -133,9 +158,7 @@ FastApiFoundry-Docker/
 ### Настройка .env
 
 ```powershell
-# Скопировать пример
 Copy-Item .env.example .env
-# Отредактировать
 notepad .env
 ```
 
@@ -151,7 +174,6 @@ HF_MODELS_DIR=D:\models
 
 # llama.cpp (опционально)
 LLAMA_MODEL_PATH=D:\models\qwen2.5-0.5b-q4_k_m.gguf
-LLAMA_AUTO_START=false
 ```
 
 ### Автозагрузка модели при старте
@@ -165,30 +187,12 @@ LLAMA_AUTO_START=false
 }
 ```
 
-### Локальный сервер документации
-
-```json
-{
-  "docs_server": {
-    "enabled": true,
-    "port": 9697
-  }
-}
-```
-
 ## 🗂️ Скачивание GGUF моделей
 
 ```powershell
-# Установить HuggingFace CLI
 pip install huggingface_hub
-
-# Авторизоваться (нужно для Gemma, Llama)
 hf auth login
-
-# Скачать квантованную модель (рекомендуется Q4_K_M)
-hf download bartowski/gemma-7b-it-GGUF `
-  --include "*Q4_K_M.gguf" `
-  --local-dir D:\models
+hf download bartowski/gemma-7b-it-GGUF --include "*Q4_K_M.gguf" --local-dir D:\models
 ```
 
 | Квантование | Размер | Рекомендация |
@@ -197,36 +201,29 @@ hf download bartowski/gemma-7b-it-GGUF `
 | Q5_K_M | ~5–6 GB | Лучше качество при достаточной RAM |
 | Q8_0 | ~8–9 GB | Максимальное качество |
 
-Проверенные кураторы: **bartowski**, **unsloth**, **TheBloke**
-
 ## 🔍 Диагностика
 
 ```powershell
-# Проверить конфигурацию
 venv\Scripts\python.exe check_env.py
-
-# Диагностика системы
 venv\Scripts\python.exe diagnose.py
-
-# Запустить все тесты
 venv\Scripts\python.exe check_engine\smoke_all_endpoints.py
 ```
 
 ## 📚 Документация
 
+**Онлайн документация:** **https://davidka.net/ai_assist/site/**
+
 | Раздел | Описание |
 |---|---|
 | [Быстрый старт](docs/ru/user/getting_started.md) | Запуск и startup workflow |
 | [Установка](docs/ru/user/installation.md) | install.ps1, зависимости |
-| [Работа с моделями](docs/ru/user/models_guide.md) | Foundry, HuggingFace, llama.cpp |
+| [Работа с моделями](docs/ru/user/models_guide.md) | Foundry, HuggingFace, llama.cpp, Ollama |
 | [Веб-интерфейс](docs/ru/user/web_interface.md) | Описание всех вкладок |
 | [Архитектура](docs/ru/dev/architecture.md) | Структура кода, паттерны |
 | [API Reference](docs/ru/dev/api_reference.md) | Все REST endpoints |
 | [RAG система](docs/ru/dev/rag_system.md) | FAISS, индексация, поиск |
 | [Агенты](docs/ru/dev/agents.md) | Создание AI агентов |
 | [CI/CD](docs/ru/dev/cicd_docs.md) | GitHub Actions, MkDocs |
-
-Онлайн документация: **https://hypo69.github.io/FastApiFoundry-Docker/**
 
 ## 📞 Поддержка
 
@@ -240,4 +237,4 @@ MIT License — https://opensource.org/licenses/MIT
 
 ---
 
-**FastAPI Foundry v0.6.0** | Python 3.11+ | Windows
+**AI Assistant (ai_assist) v0.7.0** | Python 3.11+ | Windows

@@ -1,11 +1,80 @@
 # Установка FastAPI Foundry
 
+## Шаг 0 — Получить код проекта
+
+Перед установкой нужно скачать или склонировать код проекта в нужную папку.
+
+### Вариант A — через Git (рекомендуется)
+
+**1. Откройте терминал в нужной папке**
+
+Перейдите в проводнике в папку, где будет установлен проект, например `C:\Projects`.
+
+!!! tip "Если установлен Windows Terminal или VS Code"
+    ПКМ по папке в проводнике → **Открыть в терминале** (или **Open in Terminal**).
+    Терминал откроется сразу в этой папке.
+
+!!! tip "Если терминала нет — через строку адреса в проводнике"
+    Откройте папку в проводнике. Щёлкните по строке адреса (где написано
+    `C:\Projects`) — она станет редактируемой. Напечатайте `powershell` и нажмите Enter.
+    Откроется окно PowerShell уже в этой папке.
+
+!!! tip "Если нет ничего — через поиск Windows"
+    Нажмите `Win+R`, введите `powershell`, нажмите Enter.
+    Затем в открывшемся окне перейдите в нужную папку:
+    ```powershell
+    cd C:\Projects
+    ```
+
+**2. Склонируйте репозиторий**
+
+```powershell
+git clone https://github.com/hypo69/FastApiFoundry-Docker.git
+cd FastApiFoundry-Docker
+```
+
+!!! note "Если git не установлен"
+    Проверьте: введите `git --version` в терминале. Если ошибка — установите:
+    ```powershell
+    winget install Git.Git
+    ```
+    После установки закройте и снова откройте терминал.
+
+### Вариант B — скачать ZIP-архивом
+
+Если git нет или нет доступа к GitHub:
+
+1. Скачайте архив: **[https://davidka.net/ai_assist/aiassist.zip](https://davidka.net/ai_assist/aiassist.zip)**
+2. Распакуйте в нужную папку (ПКМ по архиву → **Извлечь всё...**)
+3. Откройте терминал в распакованной папке (любым способом из описанных выше)
+
+!!! warning "Путь без кириллицы"
+    Выбирайте папку без кириллицы в пути, например `C:\Projects\ai_assist`.
+    Кириллица в пути может вызвать проблемы с `powershell.exe` и некоторыми зависимостями.
+
+---
+
 ## Системные требования
 
 - Windows 10/11
 - Python 3.11+
 - PowerShell 7+
 - Интернет-соединение
+
+!!! warning "Права администратора"
+    Для полноценной установки и запуска рекомендуется запускать сессию PowerShell
+    **от имени администратора**. Это необходимо для:
+
+    - установки Foundry Local через `winget`
+    - установки Tesseract OCR
+    - регистрации задачи в Планировщике задач Windows
+    - создания ярлыков на рабочем столе
+
+    Без прав администратора установка завершится частично: venv и зависимости
+    установятся, но Foundry, Tesseract и автозапуск — нет.
+
+    Чтобы открыть PowerShell от администратора: `Win+X` → **Windows PowerShell (администратор)**
+    или найдите `PowerShell` в поиске → ПКМ → **Запускать от имени администратора**.
 
 ---
 
@@ -51,18 +120,23 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 
 ```
 install.ps1
-  ├─ 0. Проверка PowerShell 7+
-  ├─ 1. Поиск Python 3.11+ (или распаковка из bin\Python-3.11.9.zip)
-  ├─ 2. Создание venv\
-  ├─ 3. pip install -r requirements.txt
-  ├─ 4. pip install sentence-transformers faiss-cpu  (если не -SkipRag)
-  ├─ 5. install\install-tesseract.ps1               (если не -SkipTesseract)
-  ├─ 6. Создание .env из .env.example               (если нет)
-  ├─ 7. Создание logs\
-  ├─ 8. Распаковка llama.cpp из bin\llama-*.zip     (если есть)
-  ├─ 9. Установка Foundry Local через winget        (интерактивно)
-  ├─ 10. Загрузка моделей по умолчанию              (интерактивно)
-  └─ 11. Создание ярлыков на рабочем столе
+  ├─ [PS < 7] → ошибка, выход
+  ├─ [python не найден]
+  │     ├─ [bin\Python-3.11.9.zip есть] → распаковать
+  │     └─ [нет] → ошибка, выход
+  ├─ [venv есть + -Force] → архивировать requirements.txt, удалить venv
+  ├─ [venv нет] → создать venv
+  ├─ pip install -r requirements.txt
+  ├─ [-SkipRag?] → пропустить sentence-transformers / faiss-cpu
+  ├─ [-SkipTesseract?] → пропустить install-tesseract.ps1
+  ├─ [.env нет] → скопировать .env.example
+  ├─ [logs/ нет] → создать logs/
+  ├─ [llama zip найден] → распаковать в bin/, записать LLAMA_SERVER_PATH в .env
+  ├─ [foundry не установлен]
+  │     ├─ [winget есть] → интерактивно: winget install Microsoft.FoundryLocal
+  │     └─ [winget нет] → сообщение с ручной ссылкой
+  ├─ [первая установка] → интерактивно: загрузить модели по умолчанию
+  └─ создать ярлыки на рабочем столе
 ```
 
 ---
@@ -148,6 +222,66 @@ TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
 
 ---
 
+## Директории, создаваемые при установке
+
+После выполнения `install.ps1` в корне проекта появятся:
+
+```
+FastApiFoundry-Docker/
+├── venv/                        # Python виртуальное окружение
+│   ├── Scripts/
+│   │   ├── python.exe           # Интерпретатор
+│   │   ├── pip.exe
+│   │   └── Activate.ps1
+│   └── .first_install_done      # Маркер первой установки
+│
+├── logs/                        # Логи приложения (шаг 7)
+│   ├── fastapi-foundry.log      # Основной лог FastAPI
+│   ├── autostart.log            # Лог автозапуска (при использовании планировщика)
+│   └── helpdesk_dialogs.jsonl   # Диалоги Telegram HelpDesk бота
+│
+├── rag_index/                   # FAISS индекс (создаётся при первой индексации)
+│   ├── faiss.index
+│   └── chunks.json
+│
+├── archive/                     # Архив ротированных логов (создаётся автоматически)
+│
+└── bin/
+    └── Python-3.11.9/           # Локальный Python (если распакован из bin\Python-3.11.9.zip)
+        └── python.exe
+```
+
+Директории, создаваемые **вне** проекта:
+
+```
+~/.rag/                          # RAG профили (создаётся при создании первого профиля)
+│   ├── support/
+│   │   ├── faiss.index
+│   │   ├── chunks.json
+│   │   ├── meta.json
+│   │   └── description.txt
+│   └── <имя_профиля>/
+│
+~/.cache/huggingface/hub/        # Кэш HuggingFace моделей (стандартный путь)
+│
+%TEMP%\fastapi-foundry.pid       # PID-файл запущенного сервера
+%TEMP%\mcp-stdio-server.log      # Лог MCP STDIO сервера
+```
+
+!!! note "Директории создаются лениво"
+    `rag_index/`, `archive/` и `~/.rag/` создаются не при установке, а при
+    первом использовании соответствующей функции. Если RAG не используется — эти директории
+    не появятся.
+
+!!! tip "Изменить расположение моделей HuggingFace"
+    По умолчанию модели кэшируются в `~/.cache/huggingface/hub/` и могут занять
+    десятки гигабайт. Чтобы перенести на другой диск, задайте в `.env`:
+    ```env
+    HF_MODELS_DIR=D:\models
+    ```
+
+---
+
 ## Автозапуск при входе в Windows
 
 ### Как это работает
@@ -188,6 +322,68 @@ powershell -ExecutionPolicy Bypass -File .\install\install-autostart.ps1 -Uninst
 | Перезапуски | 3 попытки с интервалом 1 минута |
 | Лимит времени | Без ограничений |
 | Лог | `logs/autostart.log` |
+
+### Ручная регистрация через Task Scheduler GUI
+
+Если скрипт недоступен или нужна ручная настройка:
+
+!!! tip "Шаг 1 — Открыть Планировщик задач"
+    `Win+R` → `taskschd.msc` → Enter
+
+!!! tip "Шаг 2 — Создать задачу"
+    В правой панели: **Создать задачу** (не «Создать простую задачу»)
+
+    На вкладке **Общие**:
+
+    - Имя: `FastApiFoundry-Autostart`
+    - Установить флаг **Выполнять с наивысшими правами**
+    - Настроить для: `Windows 10`
+
+!!! tip "Шаг 3 — Триггер"
+    Вкладка **Триггеры** → **Создать**:
+
+    - Начать задачу: **При входе в систему**
+    - Любой пользователь (или конкретный)
+    - Нажать **ОК**
+
+!!! tip "Шаг 4 — Действие"
+    Вкладка **Действия** → **Создать**:
+
+    - Действие: **Запуск программы**
+    - Программа: `powershell.exe`
+    - Аргументы:
+
+    ```
+    -NonInteractive -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\path\to\FastApiFoundry-Docker\autostart.ps1"
+    ```
+
+    - Рабочая папка: `C:\path\to\FastApiFoundry-Docker`
+
+    !!! warning "Укажите полный путь"
+        Замените `C:\path\to\FastApiFoundry-Docker` на реальный путь к папке проекта.
+        Путь не должен содержать кириллицу — это ограничение `powershell.exe`.
+
+!!! tip "Шаг 5 — Параметры"
+    Вкладка **Параметры**:
+
+    - Установить флаг **Если задача завершилась с ошибкой, перезапустить через**: 1 минута, до 3 раз
+    - Снять флаг **Останавливать задачу, выполняющуюся дольше**
+    - Нажать **ОК**
+
+!!! success "Проверка"
+    ```powershell
+    # Просмотреть зарегистрированную задачу
+    Get-ScheduledTask -TaskName 'FastApiFoundry-Autostart'
+
+    # Запустить вручную для теста (без перезагрузки)
+    Start-ScheduledTask -TaskName 'FastApiFoundry-Autostart'
+
+    # Проверить лог запуска
+    Get-Content logs\autostart.log -Tail 30
+
+    # Убедиться что сервер поднялся
+    curl http://localhost:9696/api/v1/health
+    ```
 
 ### Ярлыки на рабочем столе
 

@@ -1,21 +1,22 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Process Name: FastAPI Application Factory
+# Process Name: AI Assistant — Application Factory
 # =============================================================================
 # Description:
+#   Orchestrator for local AI models (Foundry, HuggingFace, llama.cpp, Ollama).
 #   Creates and configures the FastAPI application instance.
 #   Manages lifespan (RAG init, Foundry auto-load, session cleanup).
 #   Registers all API routers under /api/v1 prefix.
 #   Mounts static files and configures CORS + request-logging middleware.
+#   Model routing by prefix: hf:: / llama:: / ollama:: / (none=Foundry).
 #
 # File: app.py
-# Project: FastApiFoundry (Docker)
-# Version: 0.6.1
-# Changes in 0.6.1:
-#   - Updated version to match project
-#   - Removed duplicate ai_router import (already imported via ai_endpoints)
-#   - Added support_router and helpdesk_router registration
-#   - Lifespan: skip auto-load for hf::/llama::/ollama:: prefixed models
+# Project: AI Assistant (ai_assist)
+# Version: 0.7.0
+# Changes in 0.7.0:
+#   - Project renamed to AI Assistant (ai_assist)
+#   - Updated title, description, version to 0.7.0
+#   - Concept: orchestrator for multiple local AI backends
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
@@ -96,9 +97,9 @@ def create_app() -> FastAPI:
     """
     
     app = FastAPI(
-        title="FastAPI Foundry",
-        description="REST API for local AI models (Foundry, HuggingFace, llama.cpp, Ollama) with RAG",
-        version="0.6.1",
+        title="AI Assistant",
+        description="Local AI model orchestrator (Foundry, HuggingFace, llama.cpp, Ollama) with RAG",
+        version="0.7.0",
         lifespan=lifespan
     )
     

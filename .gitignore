@@ -327,3 +327,7 @@ Python-3.11.9
 config.json
 Математика
 .docs4rag
+
+# Тестовые отчеты
+tests/reports/*
+!tests/reports/README.md

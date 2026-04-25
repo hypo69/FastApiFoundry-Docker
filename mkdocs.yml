@@ -1,11 +1,13 @@
-site_name: FastAPI Foundry
-site_description: REST API for local AI models with RAG support
+site_name: AI Assistant
+site_description: Оркестратор локальных AI моделей с единым REST API
 site_author: hypo69
-site_url: https://davidka.net/ai_assist/docs/
+site_url: https://davidka.net/ai_assist/site/
+site_dir: site
+docs_dir: docs/ru
 
 theme:
   name: material
-  language: en
+  language: ru
   logo: assets/icons/icon128.png
   favicon: assets/icons/icon48.png
   palette:
@@ -44,20 +46,15 @@ plugins:
             show_category_heading: true
             members_order: source
             docstring_section_style: table
-  - i18n:
-      docs_structure: folder
-      languages:
-        - locale: ru
-          name: Русский
-          build: true
-          default: true
-        - locale: en
-          name: English
-          build: true
-      fallback_to_default: true
+            show_if_no_docstring: false
+            warn_unknown_params: false
+          import:
+            - https://docs.python.org/3/objects.inv
 
 nav:
-  - Главная: index.md
+  - Главная:
+    - Обзор: index.md
+    - Смысл: about.md
   - Руководство пользователя:
     - Быстрый старт: user/getting_started.md
     - Установка: user/installation.md
@@ -68,6 +65,7 @@ nav:
     - Извлечение текста: user/text_extraction.md
     - Логирование: user/logging.md
     - CLI Reference: user/cli_reference.md
+    - CI/CD документации: user/cicd_docs.md
   - Для разработчиков:
     - Архитектура: dev/architecture.md
     - API Reference: dev/api_reference.md
@@ -79,6 +77,7 @@ nav:
     - SDK: dev/sdk.md
     - Логирование: dev/logging.md
     - CI/CD документации: dev/cicd_docs.md
+    - Деплой на FTP: dev/ftp_deploy.md
     - Управление версиями: dev/versioning.md
     - Скрипты: dev/scripts.md
     - Code Reference (Python):
@@ -86,15 +85,49 @@ nav:
       - Config: dev/code/config.md
       - RAG System: dev/code/rag_system.md
       - App Factory: dev/code/app.md
+    - Утилиты (src/utils): dev/utils.md
     - Browser Extension (JS):
       - Overview: dev/js/index.md
-    - PowerShell MCP Servers:
+    - Browser Extension Summarizer:
+      - Обзор: dev/extensions/browser-extension-summarizer/index.md
+      - Архитектура: dev/extensions/browser-extension-summarizer/architecture.md
+      - Установка: dev/extensions/browser-extension-summarizer/installation.md
+      - Провайдеры: dev/extensions/browser-extension-summarizer/providers.md
+      - Суммаризация: dev/extensions/browser-extension-summarizer/summarization.md
+      - Чат: dev/extensions/browser-extension-summarizer/chat.md
+      - Отладка: dev/extensions/browser-extension-summarizer/debug.md
+      - Многоязычность: dev/extensions/browser-extension-summarizer/i18n.md
+      - Стили и UI: dev/extensions/browser-extension-summarizer/styles.md
+      - Хранилище: dev/extensions/browser-extension-summarizer/storage.md
+      - API Reference: dev/extensions/browser-extension-summarizer/api_reference.md
+    - MCP Servers:
       - Overview: dev/powershell/index.md
+      - McpSTDIOServer.ps1: dev/powershell/mcp-stdio.md
+      - McpHttpsServer.ps1: dev/powershell/mcp-https.md
+      - McpWPCLIServer.ps1: dev/powershell/mcp-wpcli.md
+      - McpHuggingFaceServer.ps1: dev/powershell/mcp-huggingface-ps.md
+      - local_models_mcp.py: dev/powershell/mcp-local-models.md
+      - ftp_mcp.py: dev/powershell/mcp-ftp.md
+      - huggingface_mcp.py: dev/powershell/mcp-huggingface-py.md
+      - docs_deploy_mcp.py: dev/powershell/mcp-docs-deploy.md
+      - windows_os_mcp.py: dev/powershell/mcp-windows-os.md
       - run-sandbox.ps1: dev/powershell/run-sandbox.md
+  - Контроль качества (QA):
+    - Обзор: qa/index.md
+    - Стратегия: qa/strategy.md
+    - Запуск тестов: qa/running.md
+    - Юнит-тесты: qa/unit.md
+    - Интеграционные тесты: qa/integration.md
+    - Тесты агентов: qa/agents.md
 
 markdown_extensions:
   - admonition
   - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
@@ -107,3 +140,9 @@ extra_javascript:
 
 extra_css:
   - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/hypo69/FastApiFoundry-Docker
+  ai_assist_version: "0.7.1"

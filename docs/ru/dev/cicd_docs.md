@@ -1,160 +1,381 @@
-# CI/CD: Автоматическая сборка документации
+# Сборка документации
 
-Документация FastAPI Foundry собирается и публикуется автоматически при каждом пуше в ветки `main` или `master` через GitHub Actions.
-
-## Обзор
-
-Система состоит из трёх параллельных job'ов, которые генерируют документацию из исходного кода на разных языках, и одного финального job'а, который публикует всё на GitHub Pages.
-
-```
-push → [docs-js]          ──┐
-     → [docs-powershell]  ──┼──→ [deploy] → GitHub Pages
-     → (Python inline)    ──┘
-```
-
-| Job | Runner | Инструмент | Покрывает |
-|---|---|---|---|
-| `docs-js` | ubuntu-latest | TypeDoc + typedoc-plugin-markdown | JSDoc в `.js` файлах расширения |
-| `docs-powershell` | windows-latest | PlatyPS (PowerShell) | Comment-based help в `.ps1` файлах |
-| `deploy` | ubuntu-latest | MkDocs Material + mkdocstrings | Python docstrings + все `.md` файлы |
-
-Workflow файл: `.github/workflows/deploy-docs.yml`
+> 👉 Исходный код: **https://github.com/hypo69/FastApiFoundry-Docker**
+> 📚 Онлайн: **https://davidka.net/ai_assist/site/**
 
 ---
 
-## Триггеры
+## Как устроена документация
 
-Сборка запускается при изменении файлов в следующих путях:
+Документация проекта — это MkDocs-сайт, который собирается из трёх источников одновременно:
+
+```
+src/**/*.py          → mkdocstrings   → Python API Reference
+extensions/**/*.js   → TypeDoc        → JS Browser Extension docs
+mcp/src/servers/*.ps1 → PlatyPS       → PowerShell MCP docs
+docs/ru/**/*.md      → MkDocs         → основной контент
+          │
+          ▼
+      mkdocs build
+          │
+          ▼
+       site/         ← статический HTML
+```
+
+Конфигурация сборки: `mkdocs.yml` в корне проекта.
+Зависимости: `docs/requirements.txt`.
+
+---
+
+## Мультиязычность
+
+Документация существует на двух языках. Структура директорий:
+
+```
+docs/
+├── ru/              ← русская документация (основная, docs_dir в mkdocs.yml)
+│   ├── index.md
+│   ├── about.md
+│   ├── user/
+│   └── dev/
+└── en/              ← английская документация
+    ├── index.md
+    ├── user/
+    └── dev/
+```
+
+### Как собирается мультиязычный сайт
+
+`mkdocs.yml` настроен на `docs_dir: docs/ru` — это основной язык сборки.
+Плагин `mkdocs-static-i18n` подхватывает `docs/en/` и генерирует языковой переключатель.
+
+```
+mkdocs build
+  ├─ docs/ru/ → site/          (русский, корень)
+  └─ docs/en/ → site/en/       (английский, подпапка)
+```
+
+Итоговая структура `site/`:
+
+```
+site/
+├── index.html               ← русская главная
+├── about/
+├── user/
+├── dev/
+└── en/
+    ├── index.html           ← английская главная
+    ├── user/
+    └── dev/
+```
+
+!!! note "Синхронизация языков"
+    Файлы в `docs/ru/` и `docs/en/` должны иметь одинаковую структуру путей.
+    Если страница есть в `ru/`, но отсутствует в `en/` — плагин использует русскую версию как fallback.
+
+---
+
+## Локальный сервер документации
+
+### Быстрый запуск (рекомендуется)
+
+`doc.ps1` — скрипт в корне проекта. Делает всё сам:
+
+```
+doc.ps1
+  ├─ читает порт из config.json → docs_server.port (default: 9697)
+  ├─ [порт занят] → убивает процесс на порту
+  ├─ удаляет site/ (пересборка с нуля)
+  ├─ mkdocs build  (генерирует site/)
+  ├─ mkdocs serve  (запускает сервер в новом окне)
+  ├─ ждёт готовности сервера (до 20 сек)
+  └─ открывает браузер на http://localhost:9697
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\doc.ps1
+```
+
+Или через скрипт-обёртку:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\restart-mkdocs.ps1
+```
+
+### Только сервер (без пересборки)
+
+Если нужен только live-preview с hot reload при редактировании `.md` файлов:
+
+```powershell
+venv\Scripts\python.exe -m mkdocs serve --dev-addr 0.0.0.0:9697
+```
+
+Сервер доступен на `http://localhost:9697`. При сохранении любого `.md` файла
+страница автоматически перезагружается в браузере.
+
+### Только сборка (без сервера)
+
+Генерирует статический `site/` без запуска сервера:
+
+```powershell
+venv\Scripts\python.exe -m mkdocs build
+```
+
+Результат в `site/` — готов к деплою на любой веб-сервер или FTP.
+
+### Порт сервера документации
+
+Порт задаётся в `config.json`:
+
+```json
+{
+  "docs_server": {
+    "enabled": false,
+    "port": 9697
+  }
+}
+```
+
+При `enabled: true` сервер документации запускается автоматически вместе с `start.ps1`.
+
+---
+
+## Устройство файла mkdocs.yml
+
+`mkdocs.yml` — центральный файл конфигурации в корне проекта. Содержит восемь главных разделов:
+
+```
+mkdocs.yml
+  ├─ метаданные сайта   ← site_name, site_url, docs_dir, site_dir
+  ├─ theme              ← внешний вид, палитра, навигация
+  ├─ plugins            ← расширения MkDocs
+  ├─ nav                ← дерево страниц
+  ├─ markdown_extensions ← синтаксис Markdown
+  ├─ extra_javascript    ← подключение JS
+  ├─ extra_css           ← подключение CSS
+  └─ extra              ← переменные и соцсети
+```
+
+### Метаданные сайта
+
+```yaml
+site_name: AI Assistant
+site_description: Оркестратор локальных AI моделей с единым REST API
+site_author: hypo69
+site_url: https://davidka.net/ai_assist/site/
+site_dir: site
+docs_dir: docs/ru
+```
+
+| Параметр | Назначение |
+|---|---|
+| `site_name` | Заголовок в браузере и шапке сайта |
+| `site_url` | Канонический URL — используется в `sitemap.xml` и абсолютных ссылках |
+| `docs_dir` | Откуда читаются `.md` файлы. `docs/ru` — выбор основного языка |
+| `site_dir` | Куда складывается собранный HTML (`site/`) |
+
+### theme
+
+```yaml
+theme:
+  name: material
+  language: ru
+  logo: assets/icons/icon128.png
+  favicon: assets/icons/icon48.png
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+```
+
+`palette` — два объекта с `media` — браузер выбирает тему по системным настройкам, `toggle` даёт переключатель.
+
+`features` — включаемые возможности темы:
+
+| Feature | Что даёт |
+|---|---|
+| `navigation.tabs` | Верхняя панель вкладок (Главная / Пользователь / Разработчик) |
+| `navigation.sections` | Группировка пунктов в боковом меню |
+| `navigation.top` | Кнопка «наверх» при прокрутке |
+| `search.suggest` | Автодополнение в поиске |
+| `search.highlight` | Подсветка найденного текста на странице |
+| `content.code.copy` | Кнопка копирования у каждого блока кода |
+
+### plugins
+
+```yaml
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            members_order: source
+            show_if_no_docstring: false
+```
+
+- `search` — встроенный полнотекстовый поиск, обязателен
+- `mkdocstrings` — читает Python docstrings и вставляет их в страницы через директиву `:::`
+  - `paths: [.]` — Python-модули ищутся от корня проекта
+  - `docstring_style: google` — формат docstring (Args / Returns / Raises / Example)
+  - `show_source: true` — показывать исходный код под документацией
+
+### nav
+
+```yaml
+nav:
+  - Главная:
+    - Обзор: index.md
+    - Смысл: about.md
+  - Руководство пользователя:
+    - Быстрый старт: user/getting_started.md
+  - Для разработчиков:
+    - Архитектура: dev/architecture.md
+    - Code Reference (Python):
+      - Foundry Client: dev/code/foundry_client.md
+```
+
+Дерево навигации сайта. Правила:
+
+- Верхний уровень (`Главная`, `Руководство`) — вкладки в шапке (из-за `navigation.tabs`)
+- Вложенные пункты — боковое меню
+- Значение — путь к `.md` файлу **относительно `docs_dir`**
+- Если `nav` не указан — MkDocs строит навигацию автоматически по структуре папок, но порядок непредсказуем
+
+### markdown_extensions
+
+```yaml
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+```
+
+Расширения синтаксиса Markdown. Все `pymdownx.*` — пакет PyMdown Extensions:
+
+| Расширение | Что даёт | Пример в `.md` |
+|---|---|---|
+| `admonition` | Блоки предупреждений | `!!! note "..."` |
+| `pymdownx.highlight` | Подсветка кода (PowerShell, JS, Python...) | ` ```powershell ` |
+| `pymdownx.inlinehilite` | Подсветка инлайн-кода | `` `#!python x = 1` `` |
+| `pymdownx.superfences` | Вложенные блоки, диаграммы Mermaid | ` ```mermaid ` |
+| `pymdownx.tabbed` | Вкладки внутри страницы | `=== "Tab 1"` |
+| `pymdownx.details` | Сворачиваемые блоки | `??? note "..."` |
+| `pymdownx.emoji` | Эмодзи через имя | `:material-home:` |
+
+### extra_javascript / extra_css
+
+```yaml
+extra_javascript:
+  - javascripts/extra.js
+
+extra_css:
+  - stylesheets/extra.css
+```
+
+Подключение своих JS и CSS файлов. Пути относительно `docs_dir`.
+Файлы лежат в `docs/ru/javascripts/` и `docs/ru/stylesheets/`.
+
+### extra
+
+```yaml
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/hypo69/FastApiFoundry-Docker
+  ai_assist_version: "0.7.1"
+```
+
+- `social` — иконки соцсетей в футере (Material рендерит автоматически)
+- Любые ключи доступны в `.md` через `{{ config.extra.ai_assist_version }}`
+
+---
+
+
+
+При каждом пуше в `main` / `master` запускается GitHub Actions workflow
+`.github/workflows/deploy-docs.yml`.
+
+```
+push → [docs-js]           ──┐
+     → [docs-powershell]   ──┼──→ [deploy] → GitHub Pages / FTP
+     → (Python inline)     ──┘
+```
+
+| Job | Runner | Инструмент | Что генерирует |
+|---|---|---|---|
+| `docs-js` | ubuntu-latest | TypeDoc + typedoc-plugin-markdown | `docs/ru/dev/js/` из JSDoc |
+| `docs-powershell` | windows-latest | PlatyPS | `docs/ru/dev/powershell/` из `.ps1` |
+| `deploy` | ubuntu-latest | MkDocs Material + mkdocstrings | весь `site/` |
+
+### Триггеры
+
+Сборка запускается при изменении:
 
 ```yaml
 paths:
-  - 'src/**'                        # Python исходники
-  - 'docs/**'                       # Markdown документация
-  - 'mkdocs.yml'                    # Конфиг MkDocs
-  - 'extensions/**'                 # JS браузерное расширение
-  - 'mcp-powershell-servers/**'     # PowerShell MCP серверы
-  - 'scripts/**'                    # PowerShell операционные скрипты
-  - 'install/**'                    # Скрипты установки
-  - 'utils/**'                      # Вспомогательные утилиты
-  - 'static/**'                     # Веб-интерфейс
-  - 'check_engine/**'               # Диагностические тесты
-  - 'SANDBOX/**'                    # SDK и эксперименты
-  - 'config.json'                   # Основная конфигурация
-  - 'config_manager.py'             # Класс Config
-  - 'run.py'                        # Точка входа
-  - '.github/workflows/deploy-docs.yml'
+  - 'src/**'
+  - 'docs/**'
+  - 'mkdocs.yml'
+  - 'extensions/**'
+  - 'mcp/**'
+  - 'scripts/**'
+  - 'config.json'
+  - 'config_manager.py'
+  - 'run.py'
 ```
 
 ---
 
-## Job 1: docs-js (TypeDoc)
+## Источники документации
 
-Генерирует документацию из JSDoc аннотаций в JavaScript файлах браузерного расширения.
+### Python — mkdocstrings
 
-**Исходники:** `extensions/browser-extension-summarizer/`
+Вставка в `.md` файл:
 
-**Инструменты:**
-- [TypeDoc](https://typedoc.org/) — парсит JSDoc и генерирует документацию
-- [typedoc-plugin-markdown](https://typedoc-plugin-markdown.org/) — выводит в формате Markdown вместо HTML
-
-**Конфигурация:** `extensions/browser-extension-summarizer/typedoc.json`
-
-**Вывод:** `docs/ru/dev/js/` — передаётся в job `deploy` через GitHub Actions artifact
-
-**Покрываемые файлы:**
-
-| Файл | Описание |
-|---|---|
-| `summarizer.js` | Логика суммаризации страниц, маршрутизация к провайдерам |
-| `connectors/gemini.js` | Коннектор к Google Gemini |
-| `connectors/openai-compat.js` | OpenAI-совместимый коннектор |
-| `connectors/openrouter.js` | Коннектор к OpenRouter |
-| `logger.js` | Логирование в расширении |
-| `ui-manager.js` | Управление UI компонентами |
-
-**Формат JSDoc** (используется в проекте):
-
-```javascript
-/**
- * Суммаризация текста одной страницы.
- *
- * @param {string} pageText - Текст страницы для суммаризации
- * @param {string} provider - ID провайдера ('gemini', 'foundry', ...)
- * @param {string} apiKey   - API ключ провайдера
- * @param {string} model    - Название модели
- * @param {string} [customUrl] - Кастомный URL (опционально)
- * @param {string} [lang]   - Код языка, по умолчанию 'auto'
- * @returns {Promise<string>} Текст суммаризации
- */
-export async function summarizePage(pageText, provider, apiKey, model, customUrl = '', lang = 'auto') {
+```markdown
+::: src.models.foundry_client.FoundryClient
+::: src.rag.rag_system
+::: config_manager.Config
 ```
 
----
-
-## Job 2: docs-powershell (PlatyPS)
-
-Генерирует документацию из comment-based help в PowerShell скриптах MCP серверов.
-
-**Исходники:** `mcp-powershell-servers/src/servers/*.ps1`
-
-**Инструменты:**
-- [PlatyPS](https://github.com/PowerShell/platyPS) — стандартный инструмент Microsoft для генерации `.md` из PowerShell help
-
-**Вывод:** `docs/ru/dev/powershell/` — передаётся в job `deploy` через GitHub Actions artifact
-
-**Покрываемые файлы:**
-
-| Файл | Описание |
-|---|---|
-| `McpSTDIOServer.ps1` | MCP сервер через STDIO (JSON-RPC 2.0) |
-| `McpHttpsServer.ps1` | MCP сервер через HTTPS |
-| `McpWPCLIServer.ps1` | MCP сервер для WordPress CLI |
-| `McpWpServer.ps1` | MCP сервер для WordPress |
-| `McpHuggingFaceServer.ps1` | MCP сервер для HuggingFace |
-
-**Формат comment-based help** (используется в проекте):
-
-```powershell
-<#
-.SYNOPSIS
-    MCP PowerShell Server (STDIO версия)
-.DESCRIPTION
-    Сервер MCP для выполнения PowerShell скриптов через протокол JSON-RPC
-    с использованием стандартных потоков ввода-вывода.
-.NOTES
-    Version: 1.1.5
-    Author: hypo69
-#>
-```
-
----
-
-## Job 3: deploy (MkDocs + mkdocstrings)
-
-Финальный job. Скачивает артефакты из `docs-js` и `docs-powershell`, затем собирает и публикует весь сайт.
-
-**Инструменты:**
-
-| Пакет | Назначение |
-|---|---|
-| `mkdocs-material` | Тема и движок MkDocs |
-| `mkdocs-static-i18n` | Поддержка русского и английского языков |
-| `mkdocstrings[python]` | Авто-генерация из Python docstrings |
-| `griffe` | Парсер Python AST для mkdocstrings |
-
-**Зависимости:** `docs/requirements.txt`
-
-**Конфигурация:** `mkdocs.yml`
-
-**Python docstrings** — используется Google style, который mkdocstrings понимает нативно:
+Используется Google-style docstring:
 
 ```python
-async def health_check(self):
+async def health_check(self) -> dict:
     """Проверка состояния Foundry.
 
     Returns:
         dict: Словарь со статусом, URL и timestamp.
-            Ключ ``status`` может быть ``healthy``, ``unhealthy`` или ``disconnected``.
 
     Example:
         >>> result = await client.health_check()
@@ -163,105 +384,81 @@ async def health_check(self):
     """
 ```
 
-**Синтаксис вставки в `.md` файлы:**
+### JavaScript — TypeDoc
 
-```markdown
-::: src.models.foundry_client.FoundryClient
-::: src.rag.rag_system
-::: config_manager.Config
+Конфигурация: `extensions/browser-extension-summarizer/typedoc.json`
+
+Используется JSDoc:
+
+```javascript
+/**
+ * Суммаризация текста страницы.
+ *
+ * @param {string} pageText - Текст страницы
+ * @param {string} provider - ID провайдера ('gemini', 'foundry', ...)
+ * @param {string} apiKey   - API ключ
+ * @param {string} model    - Название модели
+ * @returns {Promise<string>} Текст суммаризации
+ */
+export async function summarizePage(pageText, provider, apiKey, model) {
+```
+
+Локальная генерация JS docs:
+
+```powershell
+cd extensions\browser-extension-summarizer
+npx typedoc --plugin typedoc-plugin-markdown
+```
+
+### PowerShell — PlatyPS
+
+Используется comment-based help:
+
+```powershell
+function Invoke-PowerShellScript {
+    <#
+    .SYNOPSIS
+        Выполняет PowerShell скрипт в изолированном runspace.
+    .PARAMETER Script
+        PowerShell код для выполнения.
+    .PARAMETER TimeoutSeconds
+        Таймаут в секундах (default: 300).
+    .OUTPUTS
+        hashtable — success, output, errors, executionTime
+    #>
 ```
 
 ---
 
-## Структура вывода
+## Добавление новых страниц
 
-После успешного деплоя документация доступна по адресу:
-`https://hypo69.github.io/FastApiFoundry-Docker/`
+### Новый Python модуль
 
-Структура разделов:
-
-```
-/                           ← Главная (docs/ru/index.md)
-/user/getting_started/      ← Быстрый старт
-/user/installation/         ← Установка
-/dev/architecture/          ← Архитектура
-/dev/api_reference/         ← REST API справочник
-/dev/code/foundry_client/   ← Python: FoundryClient (mkdocstrings)
-/dev/code/config/           ← Python: Config (mkdocstrings)
-/dev/code/rag_system/       ← Python: RAG System (mkdocstrings)
-/dev/code/app/              ← Python: App Factory (mkdocstrings)
-/dev/js/                    ← JS: Browser Extension (TypeDoc)
-/dev/powershell/            ← PowerShell: MCP Servers (PlatyPS)
-```
-
----
-
-## Первоначальная настройка
-
-Для активации публикации на GitHub Pages выполните один раз:
-
-1. Перейдите в **Settings → Pages** репозитория
-2. В поле **Source** выберите ветку `gh-pages`
-3. Сохраните
-
-После первого успешного запуска workflow ветка `gh-pages` создаётся автоматически командой `mkdocs gh-deploy --force`.
-
----
-
-## Локальная сборка
-
-Для предпросмотра документации локально:
-
-```bash
-# Установить зависимости
-pip install -r docs/requirements.txt
-
-# Запустить dev-сервер с hot reload
-mkdocs serve
-
-# Или собрать статику в папку site/
-mkdocs build
-```
-
-Сервер будет доступен по адресу `http://127.0.0.1:8000`.
-
-!!! note "JS и PowerShell docs локально"
-    При локальной сборке разделы `/dev/js/` и `/dev/powershell/` показывают заглушки.
-    Полная документация генерируется только в CI. Для локальной генерации JS docs:
-    ```bash
-    cd extentions/browser-extention-summarizer
-    npx typedoc --plugin typedoc-plugin-markdown
-    ```
-
----
-
-## Добавление новых модулей в документацию
-
-### Python модуль
-
-1. Создайте файл `docs/ru/dev/code/my_module.md`:
+1. Создать `docs/ru/dev/code/my_module.md`:
     ```markdown
     # My Module
     ::: src.my_package.my_module
     ```
-2. Добавьте в `mkdocs.yml` в секцию `nav`:
+2. Добавить в `mkdocs.yml` → `nav`:
     ```yaml
     - My Module: dev/code/my_module.md
     ```
 
-### JavaScript файл
+### Новый раздел документации
 
-Добавьте путь к файлу в `extensions/browser-extension-summarizer/typedoc.json`:
+1. Создать `.md` файл в `docs/ru/`
+2. Добавить в `mkdocs.yml` → `nav`
+3. Создать зеркальный файл в `docs/en/` (или оставить — будет fallback на русский)
 
-```json
-{
-  "entryPoints": [
-    "summarizer.js",
-    "my-new-module.js"
-  ]
-}
+---
+
+## Деплой на собственный сервер
+
+Подробнее: [Деплой документации на FTP](ftp_deploy.md)
+
+Краткий вариант через MCP сервер:
+
+```powershell
+# Собрать и задеплоить оба языка
+venv\Scripts\python.exe mcp/src/servers/docs_deploy_mcp.py
 ```
-
-### PowerShell скрипт
-
-Добавьте `.ps1` файл в `mcp-powershell-servers/src/servers/` с comment-based help блоком (`.SYNOPSIS`, `.DESCRIPTION`). Job `docs-powershell` подхватит его автоматически через `Get-ChildItem -Filter "*.ps1"`.

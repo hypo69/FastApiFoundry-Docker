@@ -85,6 +85,81 @@
 
 ---
 
+## ☁️ Построение индекса в Google Colab
+
+Построение RAG-индекса — вычислительно затратная операция: модель `all-mpnet-base-v2` кодирует тысячи текстовых фрагментов в векторы. На слабом CPU это может занять десятки минут. Google Colab предоставляет **бесплатный GPU (T4)**, который ускоряет процесс в 10–30 раз.
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hypo69/FastApiFoundry-Docker/blob/master/notebooks%5Crag_colab.ipynb)
+
+### Зачем использовать Colab
+
+| Ситуация | Локально | Colab (T4 GPU) |
+|---|---|---|
+| 1 000 чанков | ~2–5 мин | ~10–20 сек |
+| 10 000 чанков | ~20–50 мин | ~2–5 мин |
+| Большая документация (50+ файлов) | медленно | быстро |
+| Нет GPU на машине | единственный вариант | ✅ |
+
+### Как пользоваться
+
+```
+Colab notebook (rag_colab.ipynb)
+  │
+  ├─ [1] Установка зависимостей
+  │     └─ pip install faiss-cpu sentence-transformers
+  │
+  ├─ [2] Загрузка документов (выбрать один вариант)
+  │     ├─ A: Upload files вручную
+  │     ├─ B: Mount Google Drive
+  │     └─ C: git clone репозитория
+  │
+  ├─ [3] Конфигурация
+  │     ├─ MODEL_NAME — модель эмбеддингов
+  │     ├─ CHUNK_SIZE — размер фрагмента (default: 1000)
+  │     └─ OVERLAP — перекрытие (default: 50)
+  │
+  ├─ [4] Построение индекса
+  │     └─ RAGIndexer → FAISS index + chunks.json
+  │
+  ├─ [5] Тест поиска
+  │     └─ проверить качество до скачивания
+  │
+  └─ [6] Скачать rag_index.zip
+        └─ распаковать в ~/.rag/<profile>/
+```
+
+### Настройка на максимальную производительность
+
+**1. Включить GPU:**
+> Runtime → Change runtime type → Hardware accelerator → **GPU (T4)**
+
+**2. Выбрать модель под задачу:**
+
+| Модель | Размерность | Скорость | Качество | Рекомендация |
+|---|---|---|---|---|
+| `all-mpnet-base-v2` | 768 | средняя | ⭐⭐⭐ лучшее | по умолчанию |
+| `all-MiniLM-L6-v2` | 384 | быстрая | ⭐⭐ хорошее | большие корпусы |
+| `paraphrase-multilingual-MiniLM-L12-v2` | 384 | средняя | ⭐⭐ | мультиязычные тексты |
+
+**3. Увеличить `batch_size`** в ячейке `create_embeddings` (по умолчанию 64):
+- T4 GPU: `batch_size=128` или `256`
+- Если `CUDA out of memory` — уменьшить до `32`
+
+**4. Использовать Google Drive** для хранения документов — быстрее, чем загружать каждый раз вручную.
+
+### Использование готового индекса
+
+После скачивания `rag_index.zip`:
+
+```powershell
+# Распаковать в профиль RAG
+Expand-Archive rag_index.zip -DestinationPath "$env:USERPROFILE\.rag\my_docs"
+```
+
+Затем в веб-интерфейсе: вкладка **RAG** → **RAG Bases** → выбрать профиль `my_docs` → **Load**.
+
+---
+
 ## 🔌 RAG API Endpoints
 
 **Файл:** `src/api/endpoints/rag.py`  

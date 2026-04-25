@@ -92,7 +92,9 @@ class Config:
         """Перезагрузка конфигурации с диска.
 
         Raises:
-            Same as _load_config().
+            FileNotFoundError: If config.json does not exist.
+            json.JSONDecodeError: If config.json contains invalid JSON.
+            OSError: If config.json cannot be read.
         """
         self._load_config()
 

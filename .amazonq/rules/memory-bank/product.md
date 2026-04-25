@@ -1,12 +1,12 @@
 # FastAPI Foundry — Product Overview
 
-**Version:** 0.6.1 | **Platform:** Windows | **Language:** Python 3.11+
+**Version:** 0.7.0 | **Internal name:** ai_assist | **Platform:** Windows | **Language:** Python 3.11+
 
 ---
 
 ## Purpose
 
-FastAPI Foundry is a REST API server that provides a unified interface for running and interacting with local AI models. It bridges multiple AI backends (Microsoft Foundry Local, HuggingFace Transformers, llama.cpp, Ollama) through a single FastAPI service with an integrated web UI, RAG system, and MCP server support.
+AI Assistant (`ai_assist`) is a local AI model **orchestrator** that provides a unified REST API for running and interacting with multiple AI backends. It routes requests to Microsoft Foundry Local, HuggingFace Transformers, llama.cpp, or Ollama based on a model prefix convention, with an integrated web UI, RAG system, and MCP server support.
 
 ---
 

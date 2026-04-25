@@ -302,14 +302,19 @@ if ($docsServerConfig -and $docsServerConfig.enabled) {
         }
     }
 
-    Write-Host "📚 Сборка документации MkDocs..." -ForegroundColor Yellow
-    try {
-        Push-Location $Root
-        & $venvPath -m mkdocs build --quiet
-        Pop-Location
-        Write-Host "✅ Документация собрана" -ForegroundColor Green
-    } catch {
-        Write-Host "⚠️ Сборка документации не удалась: $_" -ForegroundColor Yellow
+    $siteDir = Join-Path $Root 'site'
+    if (Test-Path $siteDir) {
+        Write-Host "📚 site/ найдена — запуск serve без пересборки" -ForegroundColor Cyan
+    } else {
+        Write-Host "📦 site/ не найдена — запуск mkdocs build..." -ForegroundColor Yellow
+        try {
+            Push-Location $Root
+            & $venvPath -m mkdocs build --quiet
+            Pop-Location
+            Write-Host "✅ Документация собрана" -ForegroundColor Green
+        } catch {
+            Write-Host "⚠️ Сборка документации не удалась: $_" -ForegroundColor Yellow
+        }
     } 
 
     Write-Host "🚀 Запуск сервера MkDocs на порту $docsPort..." -ForegroundColor Yellow

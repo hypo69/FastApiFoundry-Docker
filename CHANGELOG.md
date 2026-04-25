@@ -1,8 +1,75 @@
 # Changelog
 
-All notable changes to FastAPI Foundry are documented here.
+All notable changes to AI Assistant (ai_assist) are documented here.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+
+---
+
+## [0.7.1] - 2025
+
+### Fixed
+- `src/models/foundry_client.py` — добавлены аннотации типов ко всем методам; удалён дублирующий старый класс без аннотаций; устранены griffe warnings
+- `config_manager.py` — `reload_config()`: заменено `Raises: Same as _load_config()` на явные типы исключений; устранён griffe warning
+
+### Changed
+- `src/models/router.py` — добавлены workflow-диаграммы, примеры всех вариантов вызова, аннотации приватных функций
+- `src/utils/api_utils.py` — добавлены workflow, примеры всех сценариев декоратора, аннотация возврата
+
+### Removed
+- `src/api/endpoints/chat_endpoints_new.py` — мёртвый код (mock-заглушка, не подключен в app.py); помечен `~`
+- `src/api/endpoints/logging_endpoints.py` — мёртвый код (дублирует `logs.py`); помечен `~`
+- `src/api/endpoints/models_extra.py` — мёртвый код (mock-заглушки); помечен `~`
+- `src/api/endpoints/examples_endpoints.py` — мёртвый код (не подключен в app.py); помечен `~`
+
+### Added
+- `.amazonq/rules/CODE_REVISION.md` — чеклист и правила периодической ревизии кода
+
+### Added
+- `src/agents/windows_os_agent.py` — новый агент `windows_os`: специалист по Windows OS; сценарий `prompt → RAG → model → MCP tools → ответ`; инструменты: `rag_search`, `get_processes`, `get_services`, `get_disk_info`, `get_network_stats`, `get_system_info`, `get_startup_items`, `kill_process`
+- `mcp/src/servers/windows_os_mcp.py` — MCP STDIO сервер с типизированными инструментами для Windows OS диагностики (без сырого PS кода)
+- `mcp/settings.json` — зарегистрирован сервер `windows-os`
+- `src/api/endpoints/agent.py` — `WindowsOsAgent` добавлен в реестр агентов
+- `docs/ru/dev/agents.md` — документация `WindowsOsAgent`: инструменты, сценарий выполнения, пример запроса
+
+- `mkdocs.yml` — добавлены все страницы в `nav`: `dev/utils.md`, `user/cicd_docs.md`, все страницы `dev/extensions/browser-extension-summarizer/`
+- `mkdocs.yml` — добавлены `site_dir: site` и `docs_dir: docs`; гарантированная сборка в `site/` внутри проекта
+- `docs/assets/icons/` — создана директория, скопированы `icon16.png`, `icon48.png`, `icon128.png` из `static/assets/icons/`; устранены 404 на логотип и favicon MkDocs
+- `doc.ps1` — добавлен шаг `Build-MkDocs` (вызов `mkdocs build`) перед `mkdocs serve`; теперь `site/` всегда создаётся при запуске документации
+- `doc.ps1` — перед сборкой всегда удаляется `site/` (полная пересборка)
+- `start.ps1` — этап 5: если `site/` есть — сразу `serve`; если `site/` нет — сначала `build`, затем `serve`
+
+### Added
+- `docs/ru/dev/extensions/browser-extension-summarizer/i18n.md` — документация механизма переводов UI расширения
+- `docs/ru/dev/extensions/browser-extension-summarizer/styles.md` — документация стилей и UI страниц расширения
+- `docs/ru/dev/extensions/browser-extension-summarizer/storage.md` — схема данных `chrome.storage` расширения
+- `docs/ru/dev/extensions/browser-extension-summarizer/api_reference.md` — справочник JS модулей расширения
+- `docs/ru/index.md` — бейджи version/python/license/platform
+- `docs/en/index.md` — создана главная страница английской документации с бейджами
+- `mkdocs.yml` — `extra.ai_assist_version: "0.7.1"`, `extra.social` (GitHub); `en` стал языком по умолчанию (site/ корень), `ru` в site/ru/
+- `mkdocs.yml` — отключён плагин `i18n`; `docs_dir: docs/ru`; `theme.language: ru`; чистая сборка без warnings о ненайденных файлах
+- `docs/ru/assets/icons/` — скопированы иконки для правильного разрешения при `docs_dir: docs/ru`
+- `docs/ru/stylesheets/extra.css`, `docs/ru/javascripts/extra.js` — скопированы из `docs/`; устранены 404
+- `mkdocs.yml` — удалён `extra.version.provider: mike`; устранён 404 на `versions.json`
+- `VERSION` — обновлён до `v0.7.1`
+- `.amazonq/rules/VERSION.md` — текущая версия 0.7.1, формат бейджа и CHANGELOG
+
+---
+
+## [0.7.0] - 2025 (orchestrator)
+
+### Changed
+- Project renamed: **FastAPI Foundry** → **AI Assistant** (`ai_assist`)
+- Concept shift: from "FastAPI server for Foundry" to **local AI model orchestrator**
+- `src/models/router.py` — создан: центральный модуль маршрутизации оркестратора; `detect_backend()` + `route_generate()`
+- `src/api/endpoints/generate.py` — заменён ручной if/elif диспатч на `router.route_generate()`
+- `src/api/endpoints/ai_endpoints.py` — `/ai/generate` и `/ai/chat` теперь используют `route_generate()` вместо прямого вызова `foundry_client`
+- `README.md` — таблица маршрутизации: `foundry::` теперь явный префикс; bare ID — legacy с предупреждением
+- `VERSION` — обновлена до `v0.7.0`
+- `src/api/app.py` — обновлены `title`, `description`, `version` до 0.7.0
+- `.amazonq/rules/VERSION.md` — текущая версия обновлена до 0.7.0
+- `.amazonq/rules/memory-bank/product.md` — обновлено название и версия
+- `.amazonq/rules/memory-bank/guidelines.md` — обновлена версия до 0.7.0
 
 ---
 

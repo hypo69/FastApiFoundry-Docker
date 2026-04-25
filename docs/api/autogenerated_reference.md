@@ -5,22 +5,22 @@
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `GET, HEAD /openapi.json`
+**Путь:** `HEAD, GET /openapi.json`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `GET, HEAD /docs`
+**Путь:** `HEAD, GET /docs`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `GET, HEAD /docs/oauth2-redirect`
+**Путь:** `HEAD, GET /docs/oauth2-redirect`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `GET, HEAD /redoc`
+**Путь:** `HEAD, GET /redoc`
 
 ## None
 FastAPI Foundry Control Panel
@@ -300,25 +300,24 @@ Returns:
 **Путь:** `GET /api/v1/foundry/models/status/{model_id:path}`
 
 ## None
-Generate text via Foundry, HuggingFace or llama.cpp.
+Generate text via the AI Assistant orchestrator.
+
+Routes to the correct backend based on model prefix:
+foundry:: / hf:: / llama:: / ollama::
 
 Args:
     request: JSON body with fields:
         prompt (str):                 Input text (required).
-        model (str):                  Model ID. Prefix 'hf::' → HF, 'llama::' → llama.cpp,
-                                      no prefix → Foundry.
+        model (str):                  Model ID with prefix, e.g. 'foundry::qwen3-0.6b'.
         temperature (float):          Generation temperature (default: 0.7).
         max_tokens (int):             Max tokens (default: 1000).
         use_rag (bool):               Inject RAG context (default: False).
         top_k (int):                  RAG results count (default: from config).
         translate_model_dialog (bool): Translate prompt→EN and response→user lang.
-                                      Default: True. Pass false to disable.
-        user_language (str|null):     User language ISO 639-1 (e.g. 'ru', 'he').
-                                      null = auto-detect from prompt text.
+        user_language (str|null):     User language ISO 639-1. null = auto-detect.
 
 Returns:
     dict: success, content, model, usage, user_language, translated (bool)
-          on success; success=False, error on failure.
 
 **Путь:** `POST /api/v1/generate`
 
@@ -331,7 +330,10 @@ curl -X POST http://localhost:9696/api/v1/generate \
 ```
 
 ## None
-Генерация текста с расширенными параметрами
+Generate text via AI Assistant orchestrator (all backends).
+
+Model prefix determines backend:
+foundry:: / hf:: / llama:: / ollama::
 
 **Путь:** `POST /api/v1/ai/generate`
 
@@ -398,7 +400,7 @@ curl -X POST http://localhost:9696/api/v1/ai/models/{model_id}/unload \
 **Путь:** `GET /api/v1/ai/health`
 
 ## None
-Чат с поддержкой истории сообщений
+Chat with message history via AI Assistant orchestrator (all backends).
 
 **Путь:** `POST /api/v1/ai/chat`
 

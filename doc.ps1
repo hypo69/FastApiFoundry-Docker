@@ -59,6 +59,27 @@ function Test-PortInUse {
     return [bool]$result
 }
 
+function Build-MkDocs {
+    <#
+    .SYNOPSIS
+        Runs mkdocs build to generate static site/ directory.
+    .OUTPUTS
+        bool — True if build succeeded.
+    #>
+    if (-not (Test-Path $PYTHON)) { return $false }
+    if (-not (Test-Path $MKDOCS_FILE)) { return $false }
+
+    Write-Host '📦 Building documentation to site/ ...'
+    try {
+        $result = & $PYTHON -m mkdocs build -f $MKDOCS_FILE 2>&1
+        Write-Host $result
+        return $true
+    } catch {
+        Write-Host "⚠️  mkdocs build failed: $_"
+        return $false
+    }
+}
+
 function Start-MkDocs {
     <#
     .SYNOPSIS
@@ -142,14 +163,22 @@ function Stop-PortProcess {
 
 # --- main ---
 
-$port = Get-DocsPort
-$url  = "http://localhost:$port"
+$port    = Get-DocsPort
+$url     = "http://localhost:$port"
+$siteDir = Join-Path $SCRIPT_DIR 'site'
 
 if (Test-PortInUse -Port $port) {
     Write-Host "🛑 Stopping existing MkDocs on port $port..."
     Stop-PortProcess -Port $port
     Start-Sleep -Milliseconds 800
 }
+
+# Always remove site/ and rebuild from scratch
+if (Test-Path $siteDir) {
+    Write-Host '🗑️  Removing site/ ...'
+    Remove-Item $siteDir -Recurse -Force
+}
+Build-MkDocs | Out-Null
 
 Write-Host "🚀 Starting MkDocs on port $port..."
 Start-MkDocs -Port $port

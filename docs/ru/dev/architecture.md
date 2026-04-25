@@ -1,5 +1,8 @@
 # Архитектура FastAPI Foundry
 
+> 👉 Исходный код: **https://github.com/hypo69/FastApiFoundry-Docker**
+> 📚 Документация: **https://davidka.net/ai_assist/site/**
+
 ## Обзор системы
 
 ```

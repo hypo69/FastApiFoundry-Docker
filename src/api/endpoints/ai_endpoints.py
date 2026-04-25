@@ -3,9 +3,10 @@
 # Process Name: Enhanced AI Endpoints
 # =============================================================================
 # Description:
-#   Extended AI endpoints: generate, stream, chat, chat/stream, model management.
+#   Extended AI endpoints for AI Assistant orchestrator.
+#   All generation routes use router.route_generate() — no direct backend calls.
 #   POST /api/v1/ai/generate        — text generation with optional RAG context
-#   POST /api/v1/ai/generate/stream — streaming text generation (SSE)
+#   POST /api/v1/ai/generate/stream — streaming text generation (SSE, Foundry only)
 #   POST /api/v1/ai/chat            — stateful chat (messages array, RAG, system_prompt)
 #   POST /api/v1/ai/chat/stream     — streaming chat with session history persistence
 #   GET  /api/v1/ai/models          — list Foundry models
@@ -16,12 +17,14 @@
 #   POST /api/v1/ai/optimize        — suggest optimal model for task type
 #
 # File: ai_endpoints.py
-# Project: FastApiFoundry (Docker)
-# Version: 0.6.1
-# Changes in 0.6.1:
-#   - Fixed docstring for _save_session_history (removed duplicate Args block)
-#   - DummyRAGSystem: added filter_by_score and format_context stubs
-#   - chat/stream: fixed SSE escape sequences (\\n -> \n)
+# Project: AI Assistant (ai_assist)
+# Version: 0.7.0
+# Changes in 0.7.0:
+#   - /ai/generate and /ai/chat now use router.route_generate() instead of
+#     calling foundry_client directly — all backends supported uniformly
+#   - /ai/generate/stream and /ai/chat/stream remain Foundry-only (streaming
+#     not yet implemented for hf/llama/ollama backends)
+#   - Updated header and project name
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
@@ -34,6 +37,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from src.logger import logger
 from ...models.foundry_client import foundry_client
+from ...models.router import route_generate
 from ...utils.text_utils import count_tokens_approx
 try:
     from ...rag.rag_system import rag_system
@@ -107,54 +111,37 @@ def _save_session_history(history: list, session_id: str = "default", chat_type:
 
 @router.post("/ai/generate")
 async def generate_text(request: dict):
-    """Генерация текста с расширенными параметрами"""
-    prompt = request.get("prompt", "")
+    """Generate text via AI Assistant orchestrator (all backends).
 
-    # Получение порога схожести для RAG (по умолчанию 0.0)
-    # Retrieval of the similarity threshold for RAG (default 0.0)
+    Model prefix determines backend:
+    foundry:: / hf:: / llama:: / ollama::
+    """
+    prompt = request.get("prompt", "")
     min_score = float(request.get("min_score", 0.0))
 
     if not prompt:
         return {"success": False, "error": "Prompt is required"}
-    
-    # Параметры генерации
+
     params = {
-        "model": request.get("model"),
+        "model":       request.get("model"),
         "temperature": request.get("temperature", 0.7),
-        "max_tokens": request.get("max_tokens", 2048),
-        "top_p": request.get("top_p", 0.9),
-        "top_k": request.get("top_k", 40),
-        "presence_penalty": request.get("presence_penalty", 0.0),
-        "frequency_penalty": request.get("frequency_penalty", 0.0),
-        "stop": request.get("stop", [])
+        "max_tokens":  request.get("max_tokens", 2048),
     }
-    
+
     # RAG enhancement
     if request.get("use_rag", False):
         try:
             rag_results = await rag_system.search(prompt, top_k=3)
-
-            # Фильтрация результатов по порогу схожести
-            # Filtration of results by the similarity threshold
             if rag_results and min_score > 0 and hasattr(rag_system, "filter_by_score"):
-                # ПОЧЕМУ ВЫБРАН ЭТОТ МЕТОД:
-                #   Использование централизованной логики фильтрации из ядра RAGSystem 
-                #   гарантирует одинаковое поведение API и внутренних модулей генерации.
                 rag_results = rag_system.filter_by_score(rag_results, min_score)
-
             if rag_results:
-                # Почему: единый формат контекста через `format_context()` при наличии, иначе простой join.
-                if hasattr(rag_system, "format_context"):
-                    context = rag_system.format_context(rag_results)
-                else:
-                    context = "\\n".join([r.get("text", "") for r in rag_results])
-                prompt = f"Context:\n{context}\n\nQuestion: {prompt}"
-        except Exception as e:
-            # Продолжаем без RAG если ошибка
+                context = rag_system.format_context(rag_results) if hasattr(rag_system, "format_context") else ""
+                if context:
+                    prompt = f"Context:\n{context}\n\nQuestion: {prompt}"
+        except Exception:
             pass
-    
-    result = await foundry_client.generate_text(prompt, **params)
-    return result
+
+    return await route_generate(prompt=prompt, **params)
 
 @router.post("/ai/generate/stream")
 async def generate_text_stream(request: dict):
@@ -246,18 +233,15 @@ async def health_check():
 
 @router.post("/ai/chat")
 async def chat_completion(request: dict):
-    """Чат с поддержкой истории сообщений"""
+    """Chat with message history via AI Assistant orchestrator (all backends)."""
     messages = request.get("messages", [])
-
-    # Получение параметров RAG и системных инструкций
     use_rag = request.get("use_rag", False)
     system_prompt = request.get("system_prompt")
     min_score = float(request.get("min_score", 0.0))
 
     if not messages:
         return {"success": False, "error": "Messages are required"}
-    
-    # Преобразование истории в единый промпт
+
     prompt_parts = []
     for msg in messages:
         role = msg.get("role", "user")
@@ -268,80 +252,44 @@ async def chat_completion(request: dict):
             prompt_parts.append(f"Assistant: {content}")
         elif role == "system":
             prompt_parts.append(f"System: {content}")
-    
-    # Интеграция RAG в контекст чата
+
     if use_rag:
-        # Определение запроса: использование последнего сообщения пользователя
-        # Search query definition: using the last user message
         last_user_content = next((m.get("content", "") for m in reversed(messages) if m.get("role") == "user"), "")
         if last_user_content:
             try:
-                # Поиск релевантных данных в векторной базе
                 rag_results = await rag_system.search(last_user_content, top_k=3)
-
-                # Фильтрация результатов по порогу схожести
                 if rag_results and min_score > 0 and hasattr(rag_system, "filter_by_score"):
-                    # ПОЧЕМУ ВЫБРАН ЭТОТ МЕТОД:
-                    #   Гарантия консистентности логики отбора контекста во всей системе.
                     rag_results = rag_system.filter_by_score(rag_results, min_score)
-
                 if rag_results:
-                    # Форматирование найденных фрагментов и вставка в начало промпта
                     context = rag_system.format_context(rag_results) if hasattr(rag_system, "format_context") else ""
                     if context:
                         prompt_parts.insert(0, f"Context:\n{context}")
             except Exception:
-                # Игнорирование ошибок RAG для сохранения работоспособности базового чата
                 pass
 
-    # Вставка явной системной инструкции в начало контекста
     if system_prompt:
-        # Обоснование: системный промпт из параметров запроса должен иметь 
-        # приоритет над историей и контекстом RAG для управления поведением модели.
-        # System prompt from request params takes precedence for behavior control.
         prompt_parts.insert(0, f"System: {system_prompt}")
 
-    prompt = "\\n".join(prompt_parts)
-    
-    params = {
-        "model": request.get("model"),
-        "temperature": request.get("temperature", 0.7),
-        "max_tokens": request.get("max_tokens", 2048)
-    }
-    
-    await foundry_client._update_base_url()
-    result = await foundry_client.generate_text(prompt, **params)
-    
-    if result["success"]:
-        # Синхронизация истории: добавление ответа модели
-        # History synchronization: addition of the model response
-        messages.append({
-            "role": "assistant",
-            "content": result["content"]
-        })
+    prompt = "\n".join(prompt_parts)
 
-        # Автоматическое сохранение при каждом успешном ответе
-        # Automatic saving on every successful response
+    result = await route_generate(
+        prompt=prompt,
+        model=request.get("model"),
+        temperature=request.get("temperature", 0.7),
+        max_tokens=request.get("max_tokens", 2048),
+    )
+
+    if result.get("success"):
+        messages.append({"role": "assistant", "content": result["content"]})
         _save_session_history(messages)
-
-        # Форматируем ответ в стиле OpenAI
         return {
             "id": f"chatcmpl-{int(asyncio.get_event_loop().time())}",
             "object": "chat.completion",
             "model": result["model"],
-            "choices": [{
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": result["content"]
-                },
-                "finish_reason": "stop"
-            }],
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": result["content"]}, "finish_reason": "stop"}],
             "usage": result.get("usage", {}),
-            "performance": result.get("performance", {})
         }
-    else:
-        return result
+    return result
 
 
 @router.post("/ai/chat/stream")

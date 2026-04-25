@@ -27,6 +27,7 @@ from ...agents.powershell_agent import PowerShellAgent
 from ...agents.rag_agent import RagAgent
 from ...agents.keystroke_agent import KeystrokeAgent
 from ...agents.mcp_agent import McpAgent
+from ...agents.windows_os_agent import WindowsOsAgent
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -41,6 +42,7 @@ def _build_registry():
         "rag": RagAgent(foundry_client),
         "keystroke": KeystrokeAgent(foundry_client),
         "mcp": McpAgent(foundry_client),
+        "windows_os": WindowsOsAgent(foundry_client),
     }
 
 _registry = None
