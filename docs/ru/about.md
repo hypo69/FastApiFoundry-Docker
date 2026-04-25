@@ -6,7 +6,10 @@
 
 Одна программа, которая запускает AI модель прямо на вашем компьютере и даёт к ней
 доступ через единый REST API. Никакого облака. Никаких серверов третьих сторон.
-Ваши данные не покидают вашу машину — никогда.
+Ваши данные не покидают вашу машину — <span class="red-bold">никогда.</span>
+
+Даже автор кода не имеет доступа к вашим данным. В коде нет закладок.
+Он полностью открыт и доступен для проверки: [GitHub](https://github.com/hypo69/FastApiFoundry-Docker).
 
 При правильно настроенной политике администрирования ваши данные никогда не покинут
 пределы учреждения. Правда, есть накладные расходы: железо должно быть достаточно
@@ -77,6 +80,150 @@ Foundry  HuggingFace  llama.cpp  Ollama
 | Браузерное расширение | Встроенное расширение-суммарайзер |
 | Claude Desktop | Через MCP сервер |
 | Любой другой MCP-клиент | Через MCP STDIO или HTTP протокол |
+
+Пример запроса к `POST /api/v1/generate` из любого языка:
+
+=== "Python"
+
+    ```python
+    import requests
+
+    response = requests.post(
+        "http://localhost:9696/api/v1/generate",
+        json={"prompt": "Привет!", "model": "foundry::qwen3-0.6b"}
+    )
+    print(response.json()["content"])
+    ```
+
+=== "PowerShell"
+
+    ```powershell
+    $body = @{ prompt = "Привет!"; model = "foundry::qwen3-0.6b" } | ConvertTo-Json
+    $r = Invoke-RestMethod -Uri "http://localhost:9696/api/v1/generate" `
+        -Method POST -Body $body -ContentType "application/json"
+    Write-Host $r.content
+    ```
+
+=== "curl"
+
+    ```bash
+    curl -X POST http://localhost:9696/api/v1/generate \
+      -H "Content-Type: application/json" \
+      -d '{"prompt": "Привет!", "model": "foundry::qwen3-0.6b"}'
+    ```
+
+=== "Bash / Shell"
+
+    ```bash
+    curl -s -X POST http://localhost:9696/api/v1/generate \
+      -H "Content-Type: application/json" \
+      -d '{"prompt": "Привет!", "model": "foundry::qwen3-0.6b"}' \
+      | python3 -c "import sys,json; print(json.load(sys.stdin)['content'])"
+    ```
+
+=== "Go"
+
+    ```go
+    package main
+
+    import (
+        "bytes"; "encoding/json"; "fmt"; "net/http"
+    )
+
+    func main() {
+        body, _ := json.Marshal(map[string]string{
+            "prompt": "Привет!",
+            "model":  "foundry::qwen3-0.6b",
+        })
+        resp, _ := http.Post(
+            "http://localhost:9696/api/v1/generate",
+            "application/json",
+            bytes.NewBuffer(body),
+        )
+        var result map[string]any
+        json.NewDecoder(resp.Body).Decode(&result)
+        fmt.Println(result["content"])
+    }
+    ```
+
+=== "Java"
+
+    ```java
+    import java.net.http.*;
+    import java.net.URI;
+
+    var client = HttpClient.newHttpClient();
+    var request = HttpRequest.newBuilder()
+        .uri(URI.create("http://localhost:9696/api/v1/generate"))
+        .header("Content-Type", "application/json")
+        .POST(HttpRequest.BodyPublishers.ofString(
+            "{\"prompt\":\"Привет!\",\"model\":\"foundry::qwen3-0.6b\"}"
+        )).build();
+    var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+    System.out.println(response.body());
+    ```
+
+=== "C#"
+
+    ```csharp
+    using var client = new HttpClient();
+    var json = "{\"prompt\":\"Привет!\",\"model\":\"foundry::qwen3-0.6b\"}";
+    var content = new StringContent(json, Encoding.UTF8, "application/json");
+    var response = await client.PostAsync(
+        "http://localhost:9696/api/v1/generate", content);
+    Console.WriteLine(await response.Content.ReadAsStringAsync());
+    ```
+
+=== "PHP"
+
+    ```php
+    $ch = curl_init("http://localhost:9696/api/v1/generate");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+        "prompt" => "Привет!",
+        "model"  => "foundry::qwen3-0.6b",
+    ]));
+    $result = json_decode(curl_exec($ch), true);
+    echo $result["content"];
+    ```
+
+=== "Swift"
+
+    ```swift
+    import Foundation
+
+    var request = URLRequest(url: URL(string: "http://localhost:9696/api/v1/generate")!)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.httpBody = try! JSONSerialization.data(withJSONObject: [
+        "prompt": "Привет!",
+        "model":  "foundry::qwen3-0.6b"
+    ])
+    let (data, _) = try! await URLSession.shared.data(for: request)
+    let json = try! JSONSerialization.jsonObject(with: data) as! [String: Any]
+    print(json["content"] as! String)
+    ```
+
+=== "C++"
+
+    ```cpp
+    #include <curl/curl.h>
+    #include <string>
+
+    int main() {
+        CURL* curl = curl_easy_init();
+        std::string body = R"({"prompt":"Привет!","model":"foundry::qwen3-0.6b"})";
+        struct curl_slist* headers = nullptr;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:9696/api/v1/generate");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
+        curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+    }
+    ```
 
 ### Корпоративное развёртывание
 

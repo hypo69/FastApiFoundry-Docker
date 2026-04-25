@@ -122,10 +122,12 @@ nav:
     - Юнит-тесты: qa/unit.md
     - Интеграционные тесты: qa/integration.md
     - Тесты агентов: qa/agents.md
+  - 🌐 Онлайн документация: https://davidka.net/ai_assist/docs
 
 markdown_extensions:
   - admonition
   - pymdownx.details
+  - md_in_html
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span

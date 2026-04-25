@@ -40,11 +40,94 @@ curl http://localhost:9696/api/v1/health
 - `llama::<path>` → llama.cpp
 - без префикса → Foundry Local
 
-```bash
-curl -X POST http://localhost:9696/api/v1/generate \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Ваш запрос", "model": "qwen2.5-0.5b-instruct-generic-cpu:4", "temperature": 0.7}'
-```
+=== "curl"
+
+    ```bash
+    curl -X POST http://localhost:9696/api/v1/generate \
+      -H "Content-Type: application/json" \
+      -d '{"prompt": "Ваш запрос", "model": "foundry::qwen3-0.6b", "temperature": 0.7}'
+    ```
+
+=== "Python"
+
+    ```python
+    import requests
+
+    r = requests.post(
+        "http://localhost:9696/api/v1/generate",
+        json={"prompt": "Ваш запрос", "model": "foundry::qwen3-0.6b", "temperature": 0.7}
+    )
+    print(r.json()["content"])
+    ```
+
+=== "PowerShell"
+
+    ```powershell
+    $r = Invoke-RestMethod -Uri "http://localhost:9696/api/v1/generate" `
+        -Method POST -ContentType "application/json" `
+        -Body (@{prompt="Ваш запрос"; model="foundry::qwen3-0.6b"; temperature=0.7} | ConvertTo-Json)
+    Write-Host $r.content
+    ```
+
+=== "Go"
+
+    ```go
+    resp, _ := http.Post(
+        "http://localhost:9696/api/v1/generate",
+        "application/json",
+        strings.NewReader(`{"prompt":"Ваш запрос","model":"foundry::qwen3-0.6b"}`),
+    )
+    ```
+
+=== "Java"
+
+    ```java
+    HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create("http://localhost:9696/api/v1/generate"))
+        .header("Content-Type", "application/json")
+        .POST(HttpRequest.BodyPublishers.ofString(
+            "{\"prompt\":\"Ваш запрос\",\"model\":\"foundry::qwen3-0.6b\"}"
+        )).build();
+    HttpResponse<String> response = HttpClient.newHttpClient()
+        .send(request, HttpResponse.BodyHandlers.ofString());
+    ```
+
+=== "C#"
+
+    ```csharp
+    using var client = new HttpClient();
+    var response = await client.PostAsync(
+        "http://localhost:9696/api/v1/generate",
+        new StringContent(
+            "{\"prompt\":\"Ваш запрос\",\"model\":\"foundry::qwen3-0.6b\"}",
+            Encoding.UTF8, "application/json"));
+    ```
+
+=== "PHP"
+
+    ```php
+    $ch = curl_init("http://localhost:9696/api/v1/generate");
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
+        CURLOPT_POSTFIELDS => json_encode(["prompt" => "Ваш запрос", "model" => "foundry::qwen3-0.6b"]),
+    ]);
+    $result = json_decode(curl_exec($ch), true);
+    echo $result["content"];
+    ```
+
+=== "C++"
+
+    ```cpp
+    CURL* curl = curl_easy_init();
+    std::string body = R"({"prompt":"Ваш запрос","model":"foundry::qwen3-0.6b"})"
+    struct curl_slist* h = curl_slist_append(nullptr, "Content-Type: application/json");
+    curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:9696/api/v1/generate");
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, h);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
+    curl_easy_perform(curl);
+    ```
 
 **Тело запроса:**
 ```json

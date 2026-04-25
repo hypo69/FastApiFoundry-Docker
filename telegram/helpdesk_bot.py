@@ -39,7 +39,7 @@ from config_manager import config
 
 logger = logging.getLogger(__name__)
 
-_DIALOGS_FILE = Path("logs/helpdesk_dialogs.jsonl")
+_DIALOGS_FILE = Path(config.dir_dialogs) / "helpdesk_dialogs.jsonl"
 
 # Per-user conversation history (in-memory, keyed by chat_id)
 # Stores last N turns for multi-turn context

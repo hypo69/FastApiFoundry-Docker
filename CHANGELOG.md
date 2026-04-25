@@ -22,10 +22,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - `docs/ru/dev/utils.md` — добавлены `command_agent`, `process_utils`, `text_utils`: описание, методы, примеры
 - `docs/ru/user/configuration.md` — добавлена секция `dialogs` в пример `config.json` и таблицу параметров
 - `docs/ru/dev/architecture.md` — раздел «Хранилище диалогов»: структура, формат файла, пример кода, таблица клиентов
+- `docs/ru/dev/architecture.md` — добавлены таблицы модулей `src/training/`, `telegram/`; `requirements-google.txt` в таблицу зависимостей
+- `mkdocs.yml` — добавлено расширение `md_in_html` (рендеринг inline HTML в Markdown)
 
 ### Changed
 - `src/api/endpoints/chat_endpoints.py` — `save_chat_history()`: путь читается из `config.dir_dialogs` (был хардкод `~/.ai-assistant-chat-history`)
 - `src/api/endpoints/helpdesk.py` — `_DIALOGS_FILE` заменён на `_dialogs_file()` — пишет в `config.dir_dialogs/helpdesk_dialogs.jsonl`
+- `telegram/helpdesk_bot.py` — `_DIALOGS_FILE` исправлен: хардкод `logs/helpdesk_dialogs.jsonl` заменён на `config.dir_dialogs`
 
 ### Fixed
 - `src/models/foundry_client.py` — добавлены аннотации типов ко всем методам; удалён дублирующий старый класс без аннотаций; устранены griffe warnings
