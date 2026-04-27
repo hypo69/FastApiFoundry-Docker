@@ -4,6 +4,8 @@ All notable changes to AI Assistant (ai_assist) are documented here.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+
+
 ---
 
 ## [0.7.1] - 2025
