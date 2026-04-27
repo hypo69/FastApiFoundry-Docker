@@ -10,6 +10,50 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [0.7.1] - 2025
 
+### Changed
+- `install/install-autostart.ps1` → `install/Install-Autostart.ps1` — переименован в CamelCase
+- `install/install-foundry.ps1` → `install/Install-Foundry.ps1` — переименован в CamelCase
+- `install/install-huggingface-cli.ps1` → `install/Install-HuggingFaceCli.ps1` — переименован в CamelCase
+- `install/install-llama.ps1` → `install/Install-Llama.ps1` — переименован в CamelCase
+- `install/install-models.ps1` → `install/Install-Models.ps1` — переименован в CamelCase
+- `install/install-shortcuts.ps1` → `install/Install-Shortcuts.ps1` — переименован в CamelCase
+- `install/install-tesseract.ps1` → `install/Install-Tesseract.ps1` — переименован в CamelCase
+- `install/make-ico.ps1` → `install/Make-Ico.ps1` — переименован в CamelCase
+- `install/setup-env.ps1` → `install/Setup-Env.ps1` — переименован в CamelCase
+- `scripts/build_exes.ps1` → `scripts/Build-Exes.ps1` — переименован в CamelCase
+- `scripts/clear-reports.ps1` → `scripts/Clear-Reports.ps1` — переименован в CamelCase
+- `scripts/create_requirements.ps1` → `scripts/Create-Requirements.ps1` — переименован в CamelCase
+- `scripts/download-model.ps1` → `scripts/Download-Model.ps1` — переименован в CamelCase
+- `scripts/generate-ps-docs.ps1` → `scripts/Generate-PsDocs.ps1` — переименован в CamelCase
+- `scripts/hf-download-model.ps1` → `scripts/Hf-DownloadModel.ps1` — переименован в CamelCase
+- `scripts/hf-models.ps1` → `scripts/Hf-Models.ps1` — переименован в CamelCase
+- `scripts/list-models.ps1` → `scripts/List-Models.ps1` — переименован в CamelCase
+- `scripts/llama-start.ps1` → `scripts/Start-Llama.ps1` — переименован в CamelCase (Verb-Noun)
+- `scripts/load-model.ps1` → `scripts/Load-Model.ps1` — переименован в CamelCase
+- `scripts/restart-mkdocs.ps1` → `scripts/Restart-MkDocs.ps1` — переименован в CamelCase
+- `scripts/run-qa.ps1` → `scripts/Run-Qa.ps1` — переименован в CamelCase
+- `scripts/service-status.ps1` → `scripts/Get-ServiceStatus.ps1` — переименован в CamelCase (Verb-Noun)
+- `scripts/unload-model.ps1` → `scripts/Unload-Model.ps1` — переименован в CamelCase
+- `scripts/watch_tests.ps1` → `scripts/Watch-Tests.ps1` — переименован в CamelCase
+- `check_engine/check_port.ps1` → `check_engine/Check-Port.ps1` — переименован в CamelCase
+- `src/utils/invoke-command-logged-lite.ps1` → `src/utils/Invoke-CommandLoggedLite.ps1` — переименован в CamelCase
+- `tests/qa-install.ps1` → `tests/Invoke-QaInstall.ps1` — переименован в CamelCase (Verb-Noun)
+- `tests/qa-start.ps1` → `tests/Invoke-QaStart.ps1` — переименован в CamelCase (Verb-Noun)
+- `mcp/src/clients/powershell.ps1` → `mcp/src/clients/Invoke-PowerShell.ps1` — переименован в CamelCase
+- `mcp/src/clients/wpcli.ps1` → `mcp/src/clients/Invoke-WpCli.ps1` — переименован в CamelCase
+- `install/ReinstallFoundry.ps1` — создан: полная переустановка Foundry Local (CI/QA); восстановлены потерянные блоки кода
+- `scripts/README.md` — создан: таблица всех скриптов с новыми CamelCase именами
+- `SECURITY.md` — переписан под версию 0.7.1: таблица поддерживаемых версий, инструкция по репортингу уязвимостей, security considerations
+- Все ссылки на переименованные скрипты обновлены в: `install.ps1`, `start.ps1`, `autostart.ps1`, `install/README.md`, `INSTALL.md`, `.github/workflows/`, `docs/ru/`
+
+### Added
+- `docs/ru/user/installation.md` — раздел «Скрипты директории install/»: таблица всех скриптов, примеры запуска, таблицы параметров
+- `docs/ru/dev/scripts.md` — раздел «Разбор кода install/»: структура скриптов, стандарт docstring, примеры функций, диаграмма связей
+
+---
+
+## [0.7.1] - 2025
+
 ### Added
 - `config.json` — секция `dialogs`: единое место хранения диалогов для всех клиентов (`dir`, `retention_days`, `max_size_mb`)
 - `config_manager.py` — свойства `dir_dialogs`, `dialogs_retention_days`, `dialogs_max_size_mb`

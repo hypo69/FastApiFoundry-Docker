@@ -42,7 +42,7 @@
 {
   "success": false,
   "error_code": "model_not_loaded",
-  "model_id": "qwen2.5-0.5b-instruct-generic-cpu:4",
+  "model_id": "qwen3-0.6b-generic-cpu:4:4",
   "error": "Модель не загружена. Загрузите её через вкладку Foundry → Downloaded Models → Load & Use."
 }
 ```

@@ -2,20 +2,42 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Only the current release branch receives security updates.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| 0.7.x   | :white_check_mark: |
+| < 0.7   | :x:                |
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+If you discover a security vulnerability, please **do not open a public GitHub issue**.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Report it privately:
+
+- **GitHub**: use [Security Advisories](https://github.com/hypo69/FastApiFoundry-Docker/security/advisories/new)
+- **Email**: contact the maintainer via the GitHub profile
+
+### What to include
+
+- Description of the vulnerability
+- Steps to reproduce
+- Affected version
+- Potential impact
+
+### Response timeline
+
+- Acknowledgement within **3 business days**
+- Fix or mitigation within **14 days** for critical issues
+- Public disclosure after the fix is released
+
+## Security Considerations
+
+This project runs **locally** and is not designed for public internet exposure by default.
+
+Key points:
+
+- Set `API_KEY` in `.env` to restrict access to the REST API
+- Do not expose port `9696` to the internet without a reverse proxy and authentication
+- Keep `.env` out of version control — it is listed in `.gitignore`
+- Tokens (`HF_TOKEN`, `TELEGRAM_*`, `FTP_*`) are secrets — never commit them

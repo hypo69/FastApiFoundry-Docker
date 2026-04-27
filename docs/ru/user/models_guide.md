@@ -27,13 +27,13 @@ foundry service start
 
 ```powershell
 # Скачать модель
-foundry model download qwen2.5-0.5b-instruct-generic-cpu
+foundry model download qwen3-0.6b-generic-cpu:4
 
 # Список доступных моделей
 foundry model list-available
 
 # Загрузить в память
-foundry model load qwen2.5-0.5b-instruct-generic-cpu
+foundry model load qwen3-0.6b-generic-cpu:4
 ```
 
 ### Автоопределение порта
@@ -53,7 +53,7 @@ FOUNDRY_BASE_URL=http://localhost:50477/v1/
 {
   "foundry_ai": {
     "auto_load_default": true,
-    "default_model": "qwen2.5-0.5b-instruct-generic-cpu"
+    "default_model": "qwen3-0.6b-generic-cpu:4"
   }
 }
 ```
@@ -66,11 +66,11 @@ GET /api/v1/foundry/models/loaded
 
 # Загрузить модель
 POST /api/v1/foundry/models/load
-{"model_id": "qwen2.5-0.5b-instruct-generic-cpu"}
+{"model_id": "qwen3-0.6b-generic-cpu:4"}
 
 # Выгрузить модель
 POST /api/v1/foundry/models/unload
-{"model_id": "qwen2.5-0.5b-instruct-generic-cpu"}
+{"model_id": "qwen3-0.6b-generic-cpu:4"}
 ```
 
 ---
@@ -287,7 +287,7 @@ FOUNDRY_BASE_URL=http://127.0.0.1:11434/v1/
 // config.json
 {
   "foundry_ai": {
-    "default_model": "qwen2.5-0.5b-instruct-generic-cpu",
+    "default_model": "qwen3-0.6b-generic-cpu:4",
     "auto_load_default": false,
     "temperature": 0.7,
     "max_tokens": 2048

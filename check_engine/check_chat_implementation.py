@@ -41,7 +41,7 @@ async def test_chat_session():
 
         # Имитируем запрос
         request_data = {
-            "model": "qwen2.5-0.5b-instruct-generic-cpu:4",
+            "model": "qwen3-0.6b-generic-cpu:4:4",
             "use_rag": False
         }
 

@@ -147,14 +147,14 @@ python install_rag_deps.py
 # Или вручную через winget
 winget install Microsoft.FoundryLocal
 foundry service start
-foundry model download qwen2.5-0.5b-instruct-generic-cpu
+foundry model download qwen3-0.6b-generic-cpu:4
 ```
 
 Доступные модели:
 
 | Модель | Размер | Описание |
 |--------|--------|----------|
-| `qwen2.5-0.5b-instruct-generic-cpu` | ~300 MB | Самая лёгкая |
+| `qwen3-0.6b-generic-cpu:4` | ~300 MB | Самая лёгкая |
 | `qwen2.5-7b-instruct-generic-cpu` | ~4 GB | Средняя |
 | `deepseek-r1-distill-qwen-7b-generic-cpu` | ~4 GB | Рассуждения |
 

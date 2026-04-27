@@ -7,30 +7,39 @@
 
 | Скрипт | Описание |
 |---|---|
-| `install-foundry.ps1` | Установка Microsoft Foundry Local CLI через `winget` |
-| `install-models.ps1` | Загрузка базовых моделей для Foundry и RAG |
-| `install-huggingface-cli.ps1` | Установка `huggingface-hub` и авторизация `hf auth login` |
-| `install-shortcuts.ps1` | Создание ярлыков на рабочем столе для быстрого запуска |
-| `install-autostart.ps1` | Настройка автозапуска сервера при входе в систему |
-| `setup-env.ps1` | Интерактивная настройка файла `.env` |
+| `Install-Foundry.ps1` | Установка Microsoft Foundry Local CLI через `winget` |
+| `Install-Models.ps1` | Загрузка базовых моделей для Foundry и RAG |
+| `Install-HuggingFaceCli.ps1` | Установка `huggingface-hub` и авторизация `hf auth login` |
+| `Install-Tesseract.ps1` | Загрузка и тихая установка Tesseract OCR 5.x |
+| `Install-Shortcuts.ps1` | Создание ярлыков на рабочем столе для быстрого запуска |
+| `Install-Autostart.ps1` | Настройка автозапуска сервера при входе в систему |
+| `Setup-Env.ps1` | Интерактивная настройка файла `.env` |
+| `Make-Ico.ps1` | Конвертация PNG-иконок в `icon.ico` |
+| `ReinstallFoundry.ps1` | Полная переустановка Foundry Local (CI/QA) |
 
 ## Использование
 
 ```powershell
 # Установить Foundry Local
-.\install\install-foundry.ps1
+.\install\Install-Foundry.ps1
 
 # Скачать модели по умолчанию
-.\install\install-models.ps1
+.\install\Install-Models.ps1
 
 # Установить HuggingFace CLI и авторизоваться
-.\install\install-huggingface-cli.ps1
+.\install\Install-HuggingFaceCli.ps1
+
+# Установить Tesseract OCR
+.\install\Install-Tesseract.ps1
 
 # Настроить .env интерактивно
-.\install\setup-env.ps1
+.\install\Setup-Env.ps1
 
 # Создать ярлыки на рабочем столе
-.\install\install-shortcuts.ps1
+.\install\Install-Shortcuts.ps1
+
+# Зарегистрировать автозапуск
+.\install\Install-Autostart.ps1
 ```
 
 ## Примечание

@@ -7,7 +7,7 @@
 #   The model ID must match a name from 'foundry model list'.
 #
 # Examples:
-#   .\download-model.ps1 -ModelId "qwen2.5-0.5b-instruct-generic-cpu"
+#   .\download-model.ps1 -ModelId "qwen3-0.6b-generic-cpu:4"
 #   .\download-model.ps1 -ModelId "deepseek-r1-distill-qwen-7b-generic-cpu:3"
 #
 # File: scripts/download-model.ps1
@@ -18,7 +18,7 @@
 # =============================================================================
 
 param(
-    # Foundry model identifier, e.g. "qwen2.5-0.5b-instruct-generic-cpu"
+    # Foundry model identifier, e.g. "qwen3-0.6b-generic-cpu:4"
     [Parameter(Mandatory=$true)]
     [string]$ModelId
 )

@@ -113,7 +113,7 @@ def find_foundry_url() -> Optional[str]:
 def model_id_to_cache_dir(model_id: str) -> str:
     """Convert a Foundry model ID to its filesystem directory name.
     
-    Example: qwen2.5-0.5b-instruct-generic-cpu:4 -> qwen2.5-0.5b-instruct-generic-cpu-4
+    Example: qwen3-0.6b-generic-cpu:4:4 -> qwen3-0.6b-generic-cpu:4-4
     """
     if ":" in model_id:
         name, version = model_id.rsplit(":", 1)

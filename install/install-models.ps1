@@ -49,7 +49,7 @@ if (-not $SkipFoundry) {
     if (-not (Get-Command foundry -ErrorAction SilentlyContinue)) {
         Write-Host '  Foundry is not installed, skipping' -ForegroundColor Gray
     } else {
-        $foundryModel = 'qwen2.5-0.5b-instruct-generic-cpu'
+        $foundryModel = 'qwen3-0.6b-generic-cpu:4'
         $answer = Read-Host "  Download '$foundryModel' (~300 MB)? (y/N)"
         if ($answer -match '^[Yy]$') {
             Write-Host '  Starting Foundry service...' -ForegroundColor Gray

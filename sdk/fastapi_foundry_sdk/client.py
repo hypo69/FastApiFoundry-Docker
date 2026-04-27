@@ -91,7 +91,7 @@ class FastAPIFoundryClient:
         """POST /api/v1/foundry/load — load a Foundry model.
 
         Args:
-            model_id: Model alias, e.g. 'phi-4' or 'qwen2.5-0.5b-instruct-generic-cpu:4'.
+            model_id: Model alias, e.g. 'phi-4' or 'qwen3-0.6b-generic-cpu:4:4'.
         """
         return await self._post("/api/v1/foundry/load", {"model_id": model_id})
 

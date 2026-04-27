@@ -55,7 +55,7 @@ HF_TOKEN=hf_ваш_токен
 
   "foundry_ai": {
     "base_url": "",            // URL Foundry (пусто = автоопределение)
-    "default_model": "qwen2.5-0.5b-instruct-generic-cpu:4",
+    "default_model": "qwen3-0.6b-generic-cpu:4:4",
     "temperature": 0.7,
     "max_tokens": 2048,
     "auto_load_default": true  // Загружать модель при старте сервера

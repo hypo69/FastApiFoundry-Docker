@@ -6,6 +6,13 @@
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Docker-informational)
+![Docker](https://img.shields.io/badge/Docker-supported-2496ED?logo=docker&logoColor=white)
+![HuggingFace](https://img.shields.io/badge/HuggingFace-Transformers-FFD21E?logo=huggingface&logoColor=black)
+![llama.cpp](https://img.shields.io/badge/llama.cpp-GGUF-8B5CF6)
+![Ollama](https://img.shields.io/badge/Ollama-local-black?logo=ollama&logoColor=white)
+![Microsoft Foundry](https://img.shields.io/badge/Microsoft_Foundry-Local-0078D4?logo=microsoft&logoColor=white)
+![AI](https://img.shields.io/badge/AI-Orchestrator-FF6B35?logo=openai&logoColor=white)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/11ibP2Ys2eIbjb51t6ZXNyL0BKqy8sGQ_)
 
 ---
 

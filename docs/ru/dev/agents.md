@@ -218,7 +218,7 @@ class MyAgent(BaseAgent):
     {
       "message": "покажи содержимое текущей директории",
       "agent": "powershell",
-      "model": "qwen2.5-0.5b-instruct-generic-cpu:4",
+      "model": "qwen3-0.6b-generic-cpu:4:4",
       "temperature": 0.3,
       "max_tokens": 2048,
       "max_iterations": 5
@@ -257,7 +257,7 @@ POST /api/v1/agent/run
 {
   "message": "Дай информацию по процессам",
   "agent": "windows_os",
-  "model": "qwen2.5-0.5b-instruct-generic-cpu:4"
+  "model": "qwen3-0.6b-generic-cpu:4:4"
 }
 ```
 

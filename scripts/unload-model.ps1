@@ -7,7 +7,7 @@
 #   The model remains in the local cache and can be reloaded later.
 #
 # Examples:
-#   .\unload-model.ps1 -ModelId "qwen2.5-0.5b-instruct-generic-cpu"
+#   .\unload-model.ps1 -ModelId "qwen3-0.6b-generic-cpu:4"
 #
 # File: scripts/unload-model.ps1
 # Project: FastApiFoundry (Docker)

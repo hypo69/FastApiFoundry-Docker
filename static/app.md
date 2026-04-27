@@ -1305,7 +1305,7 @@ function showModelInfo() {
     }
     
     const modelInfo = {
-        'qwen2.5-0.5b-instruct-generic-cpu:4': 'Самая легкая CPU модель (0.8 GB). Быстрая и эффективная.',
+        'qwen3-0.6b-generic-cpu:4:4': 'Самая легкая CPU модель (0.8 GB). Быстрая и эффективная.',
         'qwen2.5-1.5b-instruct-generic-cpu:4': 'Средняя CPU модель (1.78 GB). Хороший баланс скорости и качества.',
         'deepseek-r1-distill-qwen-7b-generic-cpu:3': 'Продвинутая CPU модель (6.43 GB). Высокое качество ответов. (Недоступна)',
         'phi-3-mini-4k-instruct-openvino-gpu:1': 'GPU модель (2.4 GB). Требует совместимую видеокарту.'

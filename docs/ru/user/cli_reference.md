@@ -60,19 +60,19 @@ foundry service stop
 foundry model list-available
 
 # Скачать и загрузить
-foundry model download qwen2.5-0.5b-instruct-generic-cpu:4
-foundry model load qwen2.5-0.5b-instruct-generic-cpu:4
+foundry model download qwen3-0.6b-generic-cpu:4:4
+foundry model load qwen3-0.6b-generic-cpu:4:4
 
 # Проверить что загружено
 foundry model list
 
 # Выгрузить (освободить RAM)
-foundry model unload qwen2.5-0.5b-instruct-generic-cpu:4
+foundry model unload qwen3-0.6b-generic-cpu:4:4
 ```
 
 !!! info "Формат ID модели"
     ID модели в Foundry имеет формат `<name>:<variant>`, например:
-    `qwen2.5-0.5b-instruct-generic-cpu:4`
+    `qwen3-0.6b-generic-cpu:4:4`
 
     - `generic-cpu` — оптимизирована для CPU (ONNX)
     - `openvino-gpu` — оптимизирована для Intel GPU
@@ -86,7 +86,7 @@ foundry model unload qwen2.5-0.5b-instruct-generic-cpu:4
 
 ```powershell
 # Запустить чат (скачает и загрузит модель если нужно)
-foundry run qwen2.5-0.5b-instruct-generic-cpu:4
+foundry run qwen3-0.6b-generic-cpu:4:4
 ```
 
 После запуска появляется приглашение ввести текст. Вы пишете запрос, нажимаете Enter, модель отвечает:
@@ -116,7 +116,7 @@ You: /exit
 
 | Модель | Размер | Тип | Описание |
 |---|---|---|---|
-| `qwen2.5-0.5b-instruct-generic-cpu:4` | 0.8 GB | CPU | Самая лёгкая, быстрая |
+| `qwen3-0.6b-generic-cpu:4:4` | 0.8 GB | CPU | Самая лёгкая, быстрая |
 | `qwen2.5-1.5b-instruct-generic-cpu:4` | 1.78 GB | CPU | Хороший баланс |
 | `qwen2.5-3b-instruct-generic-cpu:4` | 2.8 GB | CPU | Средняя |
 | `qwen3-0.6b-generic-cpu:4` | 0.9 GB | CPU | Новейшая архитектура |

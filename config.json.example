@@ -8,7 +8,7 @@
   },
   "foundry_ai": {
     "base_url": "",
-    "default_model": "hf::TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    "default_model": "hf::qwen3-0.6b-generic-cpu:4",
     "temperature": null,
     "max_tokens": null,
     "auto_load_default": false

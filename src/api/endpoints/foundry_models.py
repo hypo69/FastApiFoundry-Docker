@@ -42,7 +42,7 @@ router = APIRouter(prefix="/foundry/models", tags=["foundry-models"])
 
 AVAILABLE_MODELS: list = [
     {
-        "id": "qwen2.5-0.5b-instruct-generic-cpu:4",
+        "id": "qwen3-0.6b-generic-cpu:4:4",
         "name": "Qwen 2.5 0.5B (CPU)",
         "size": "0.8 GB",
         "type": "cpu",

@@ -100,8 +100,8 @@ LLAMA_SERVER_PATH=.\bin\llama-b8802-bin-win-cpu-x64\llama-server.exe
 Загрузка и выгрузка модели в Microsoft Foundry Local через CLI.
 
 ```powershell
-.\scripts\load-model.ps1 -ModelId "qwen2.5-0.5b-instruct-generic-cpu:4"
-.\scripts\unload-model.ps1 -ModelId "qwen2.5-0.5b-instruct-generic-cpu:4"
+.\scripts\load-model.ps1 -ModelId "qwen3-0.6b-generic-cpu:4:4"
+.\scripts\unload-model.ps1 -ModelId "qwen3-0.6b-generic-cpu:4:4"
 ```
 
 ---

@@ -8,7 +8,7 @@
 #
 # Examples:
 #   .\Install-Foundry.ps1
-#   .\Install-Foundry.ps1 -Model "qwen2.5-0.5b-instruct-generic-cpu"
+#   .\Install-Foundry.ps1 -Model "qwen3-0.6b-generic-cpu:4"
 #
 # File: install\Install-Foundry.ps1
 # Project: FastApiFoundry (Docker)
@@ -20,7 +20,7 @@
 # =============================================================================
 
 param(
-    [string]$Model = "qwen2.5-0.5b-instruct-generic-cpu"
+    [string]$Model = "qwen3-0.6b-generic-cpu:4"
 )
 
 $ErrorActionPreference = "Stop"

@@ -133,7 +133,7 @@ curl http://localhost:9696/api/v1/health
 ```json
 {
   "prompt": "Ваш запрос",
-  "model": "qwen2.5-0.5b-instruct-generic-cpu:4",
+  "model": "qwen3-0.6b-generic-cpu:4:4",
   "temperature": 0.7,
   "max_tokens": 1000,
   "use_rag": false,
@@ -146,7 +146,7 @@ curl http://localhost:9696/api/v1/health
 {
   "success": true,
   "content": "Ответ модели",
-  "model": "qwen2.5-0.5b-instruct-generic-cpu:4",
+  "model": "qwen3-0.6b-generic-cpu:4:4",
   "usage": {"prompt_tokens": 10, "completion_tokens": 50, "total_tokens": 60}
 }
 ```
@@ -194,7 +194,7 @@ curl http://localhost:9696/api/v1/health
 ### `POST /chat/start`
 Начать новую сессию чата.
 
-**Тело:** `{"model": "qwen2.5-0.5b-instruct-generic-cpu:4"}`  
+**Тело:** `{"model": "qwen3-0.6b-generic-cpu:4:4"}`  
 **Ответ:** `{"success": true, "session_id": "uuid", "model": "...", "message": "..."}`
 
 ### `POST /chat/message`
@@ -364,7 +364,7 @@ curl -X POST http://localhost:9696/api/v1/chat/message \
 ### `POST /foundry/models/download`
 Скачать модель в кэш (фоновый процесс).
 
-**Тело:** `{"model_id": "qwen2.5-0.5b-instruct-generic-cpu:4"}`  
+**Тело:** `{"model_id": "qwen3-0.6b-generic-cpu:4:4"}`  
 **Ответ:** `{"success": true, "model_id": "...", "status": "downloading", "pid": 1234}`
 
 ### `GET /foundry/models/download/status/{pid}`
@@ -375,13 +375,13 @@ curl -X POST http://localhost:9696/api/v1/chat/message \
 ### `POST /foundry/models/load`
 Загрузить модель в Foundry сервис.
 
-**Тело:** `{"model_id": "qwen2.5-0.5b-instruct-generic-cpu:4"}`  
+**Тело:** `{"model_id": "qwen3-0.6b-generic-cpu:4:4"}`  
 **Ответ:** `{"success": true, "model_id": "...", "status": "loading", "pid": 1234}`
 
 ### `POST /foundry/models/unload`
 Выгрузить модель из Foundry сервиса.
 
-**Тело:** `{"model_id": "qwen2.5-0.5b-instruct-generic-cpu:4"}`
+**Тело:** `{"model_id": "qwen3-0.6b-generic-cpu:4:4"}`
 
 ### `POST /foundry/models/auto-load-default`
 Загрузить модель по умолчанию из `config.json` (`foundry_ai.default_model`).
@@ -631,7 +631,7 @@ curl -X POST http://localhost:9696/api/v1/rag/extract/url \
 {
   "message": "Покажи список процессов",
   "agent": "powershell",
-  "model": "qwen2.5-0.5b-instruct-generic-cpu:4",
+  "model": "qwen3-0.6b-generic-cpu:4:4",
   "temperature": 0.7,
   "max_tokens": 2048,
   "max_iterations": 5
@@ -759,7 +759,7 @@ MCP сервер для подключения Claude Desktop и других MC
 ### `PATCH /config`
 Частичное обновление конфигурации. Поддерживает dot-notation.
 
-**Тело:** `{"foundry_ai.default_model": "qwen2.5-0.5b-instruct-generic-cpu:4"}`
+**Тело:** `{"foundry_ai.default_model": "qwen3-0.6b-generic-cpu:4:4"}`
 
 ### `POST /config`
 Полная замена `config.json` (создаёт бэкап).

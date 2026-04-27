@@ -338,7 +338,7 @@ winget install UB-Mannheim.TesseractOCR
 
 | Параметр | По умолчанию | Описание |
 |---|---|---|
-| `-Model` | `qwen2.5-0.5b-instruct-generic-cpu` | Модель для загрузки после установки |
+| `-Model` | `qwen3-0.6b-generic-cpu:4` | Модель для загрузки после установки |
 
 **install-models.ps1**
 

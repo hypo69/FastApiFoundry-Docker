@@ -204,7 +204,7 @@
       "current": false
     },
     {
-      "id": "qwen2.5-0.5b-instruct-generic-cpu:4",
+      "id": "qwen3-0.6b-generic-cpu:4:4",
       "name": "CPU (chat,)",
       "size": "0.80 GB",
       "description": "CPU - tools модель",
