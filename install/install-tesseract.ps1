@@ -23,9 +23,18 @@
 param(
     # Path to project config.json (default: config.json in parent directory)
     [string]$ConfigFile = "",
+
+    [switch]$Force,
     # Skip download if tesseract.exe already exists at install path
-    [switch]$SkipIfExists
+    [switch]$SkipIfExists, 
+    
+    [switch]$SkipRag,
+    [switch]$SkipTesseract,
+    [ValidateSet('prod', 'qa', 'debug')]
+    [string]$Mode = 'prod'
 )
+
+
 
 $ErrorActionPreference = 'Stop'
 
@@ -36,6 +45,15 @@ $TESSERACT_INSTALLER = "tesseract-ocr-w64-setup-$TESSERACT_VERSION.exe"
 $TESSERACT_URL      = "https://github.com/UB-Mannheim/tesseract/releases/download/v5.5.0/$TESSERACT_INSTALLER"
 $TESSERACT_DIR      = 'C:\Program Files\Tesseract-OCR'
 $TESSERACT_EXE      = Join-Path $TESSERACT_DIR 'tesseract.exe'
+
+param(
+    [switch]$Force,
+    [switch]$SkipRag,
+    [switch]$SkipTesseract,
+
+    [ValidateSet('prod', 'qa', 'debug')]
+    [string]$Mode = 'prod'
+)
 
 # Resolve config.json path
 if (-not $ConfigFile) {

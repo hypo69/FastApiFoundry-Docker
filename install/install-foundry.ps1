@@ -6,11 +6,11 @@
 #   Installs Microsoft Foundry Local CLI via winget.
 #   After installation, starts the service and suggests downloading a model.
 #
-# Usage:
-#   .\install-foundry.ps1
-#   .\install-foundry.ps1 -Model "qwen2.5-0.5b-instruct-generic-cpu"
+# Examples:
+#   .\Install-Foundry.ps1
+#   .\Install-Foundry.ps1 -Model "qwen2.5-0.5b-instruct-generic-cpu"
 #
-# File: install-foundry.ps1
+# File: install\Install-Foundry.ps1
 # Project: FastApiFoundry (Docker)
 # Version: 0.3.4
 # Author: hypo69

@@ -117,8 +117,9 @@ class HFClient:
         HF_MODELS_DIR: Directory to save downloaded models (default: ``~/.cache/huggingface/hub``).
     """
 
-    def download_model(self, model_id: str, token: Optional[str] = None) -> dict:
-        """! Download model via huggingface_hub.snapshot_download.
+    def download_model(self, model_id: str, token: Optional[str] = None,
+                        progress_callback=None) -> dict:
+        """Download model via huggingface_hub.snapshot_download.
 
         Token is taken from HF_TOKEN in .env.
         Model is saved in HF_MODELS_DIR/<author>--<name>.
@@ -126,6 +127,7 @@ class HFClient:
         Args:
             model_id: e.g., 'mistralai/Mistral-7B-Instruct-v0.3'.
             token:    Optional overriding token.
+            progress_callback: Optional callable(filename, downloaded_bytes, total_bytes).
 
         Returns:
             dict: {"success": bool, "path": str, "error": str}
@@ -142,12 +144,57 @@ class HFClient:
         logger.info(f"📥 Downloading {model_id} → {save_dir}")
 
         try:
-            path = snapshot_download(
-                repo_id=model_id,
-                local_dir=str(save_dir),
-                token=hf_token or None,
-                ignore_patterns=["*.msgpack", "*.h5", "flax_model*", "tf_model*"],
-            )
+            if progress_callback:
+                # Use huggingface_hub file_download with progress tracking
+                from huggingface_hub import list_repo_files, hf_hub_download
+                import threading
+
+                try:
+                    files = list(
+                        list_repo_files(model_id, token=hf_token or None)
+                    )
+                    # Filter out heavy non-essential formats
+                    skip = {".msgpack", ".h5"}
+                    skip_prefix = ("flax_model", "tf_model")
+                    files = [
+                        f for f in files
+                        if not any(f.endswith(s) for s in skip)
+                        and not any(f.startswith(p) for p in skip_prefix)
+                    ]
+                except Exception:
+                    files = []
+
+                total_files = len(files)
+                for idx, filename in enumerate(files, 1):
+                    progress_callback({
+                        "type": "file_start",
+                        "filename": filename,
+                        "file_index": idx,
+                        "total_files": total_files,
+                    })
+                    try:
+                        hf_hub_download(
+                            repo_id=model_id,
+                            filename=filename,
+                            local_dir=str(save_dir),
+                            token=hf_token or None,
+                        )
+                    except Exception as fe:
+                        logger.warning(f"Skip {filename}: {fe}")
+                    progress_callback({
+                        "type": "file_done",
+                        "filename": filename,
+                        "file_index": idx,
+                        "total_files": total_files,
+                    })
+                path = str(save_dir)
+            else:
+                path = snapshot_download(
+                    repo_id=model_id,
+                    local_dir=str(save_dir),
+                    token=hf_token or None,
+                    ignore_patterns=["*.msgpack", "*.h5", "flax_model*", "tf_model*"],
+                )
             logger.info(f"✅ {model_id} downloaded: {path}")
             return {"success": True, "model_id": model_id, "path": path}
         except Exception as e:

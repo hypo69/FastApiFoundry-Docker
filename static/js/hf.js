@@ -275,26 +275,59 @@ export async function hfDownload() {
     }
     if (statusEl) {
         statusEl.style.display = '';
-        statusEl.innerHTML = '<div class="alert alert-info p-2"><div class="spinner-border spinner-border-sm me-2"></div>Downloading... This may take several minutes.</div>';
+        statusEl.innerHTML = `
+            <div class="alert alert-info p-2">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="spinner-border spinner-border-sm"></div>
+                    <strong>Downloading ${modelId}...</strong>
+                </div>
+                <div class="progress mb-1" style="height:6px">
+                    <div id="hf-dl-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+                         style="width:0%"></div>
+                </div>
+                <small id="hf-dl-label" class="text-muted">Connecting...</small>
+            </div>`;
     }
     try {
-        const d = await fetch(`${HF_API}/models/download`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ model_id: modelId })
-        }).then(r => r.json());
-        if (statusEl) {
-            statusEl.innerHTML = d.success
-                ? `<div class="alert alert-success p-2">✅ Downloaded to: <code>${d.path}</code></div>`
-                : `<div class="alert alert-danger p-2">❌ ${d.error}
-                    ${d.error?.includes('license') || d.error?.includes('401') || d.error?.includes('403')
-                        ? `<br><small>→ <a href="https://huggingface.co/${modelId}" target="_blank">Примите лицензию на huggingface.co</a></small>`
-                        : ''}
-                   </div>`;
-        }
-        if (d.success) hfRefreshModels();
-    } catch(e) { 
-        if (statusEl) statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${e.message}</div>`; 
+        const params = new URLSearchParams({ model_id: modelId });
+        const es = new EventSource(`${HF_API}/models/download/stream?${params}`);
+        await new Promise((resolve, reject) => {
+            es.onmessage = (e) => {
+                const ev = JSON.parse(e.data);
+                if (ev.type === 'file_start' || ev.type === 'file_done') {
+                    const pct = Math.round((ev.file_index / ev.total_files) * 100);
+                    const bar = document.getElementById('hf-dl-bar');
+                    const lbl = document.getElementById('hf-dl-label');
+                    if (bar) bar.style.width = pct + '%';
+                    if (lbl) lbl.textContent =
+                        `[${ev.file_index}/${ev.total_files}] ${ev.filename}`;
+                } else if (ev.type === 'done') {
+                    es.close();
+                    if (statusEl) {
+                        statusEl.innerHTML = ev.success
+                            ? `<div class="alert alert-success p-2">✅ Downloaded to: <code>${ev.path}</code></div>`
+                            : `<div class="alert alert-danger p-2">❌ ${ev.error}
+                                ${ev.error?.includes('license') || ev.error?.includes('401') || ev.error?.includes('403')
+                                    ? `<br><small>→ <a href="https://huggingface.co/${modelId}" target="_blank">Accept license on huggingface.co</a></small>`
+                                    : ''}
+                               </div>`;
+                    }
+                    if (ev.success) hfRefreshModels();
+                    resolve();
+                } else if (ev.type === 'error') {
+                    es.close();
+                    if (statusEl) statusEl.innerHTML =
+                        `<div class="alert alert-danger p-2">❌ ${ev.error}</div>`;
+                    reject(new Error(ev.error));
+                }
+            };
+            es.onerror = () => {
+                es.close();
+                reject(new Error('SSE connection error'));
+            };
+        });
+    } catch(e) {
+        if (statusEl) statusEl.innerHTML = `<div class="alert alert-danger p-2">❌ ${e.message}</div>`;
         console.error('HuggingFace download failed:', e);
     }
 }

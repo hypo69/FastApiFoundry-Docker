@@ -310,9 +310,35 @@ Copyright: © 2026 hypo69
 
 ## ⚙️ 3. Формат функций и классов (`hypo69 docblock`)
 
-Документация функций и классов оформляется в едином стиле для каждого языка.
+### 🔴 УНИВЕРСАЛЬНЫЙ ШАБЛОН DOCSTRING (все языки)
 
-Описание начинается с  **назначения** , затем аргументы, возвращаемое значение, исключения и пример.
+Это **единственный** допустимый порядок секций. Применяется к Python, JavaScript, TypeScript, PowerShell, PHP.
+
+```
+Short Description        ← одна строка, суть функции
+Long Description         ← опционально, многострочное пояснение
+
+Args:
+    param (type) — описание, ограничения, значение по умолчанию
+
+Returns:
+    type — что возвращается и при каком условии
+
+Exceptions:
+    ErrorType — когда выбрасывается
+
+Examples:
+    вызов функции
+    # ожидаемый результат или побочный эффект
+```
+
+**Правила:**
+- Секции `Args:`, `Returns:`, `Exceptions:`, `Examples:` — **обязательны** для каждой публичной функции
+- Если секция неприменима (нет параметров, нет исключений) — **опускается**, не пишется пустой
+- Минимум **один пример** в `Examples:` для каждой публичной функции
+- Порядок секций **не менять**
+- Слово `Params:` — **запрещено**, только `Args:`
+- Слово `Raises:` (Python) — **запрещено**, только `Exceptions:`
 
 ---
 
@@ -322,19 +348,22 @@ Copyright: © 2026 hypo69
 from typing import Optional
 
 def function_name(param: str, param1: Optional[int | dict] = None) -> dict | None:
-    """! Описание назначения функции
+    """Short description of what the function does.
+
+    Long description if needed — explains why this approach was chosen,
+    not just what it does.
 
     Args:
-        param (str): Основной параметр.
-        param1 (Optional[int | dict], optional): Дополнительный параметр. По умолчанию `None`.
+        param (str): Primary input parameter.
+        param1 (Optional[int | dict]): Optional config dict or int flag. Default: None.
 
     Returns:
-        dict | None: Результат выполнения функции или `None` при ошибке/пустых данных.
+        dict | None: Result dict on success, None on empty input or error.
 
-    Raises:
-        SomeError: Если входные данные некорректны.
+    Exceptions:
+        ValueError: If param is empty.
 
-    Example:
+    Examples:
         >>> result = function_name("data", {"opt": 1})
         >>> print(result)
         {'status': 'ok'}
@@ -354,20 +383,27 @@ def function_name(param: str, param1: Optional[int | dict] = None) -> dict | Non
 
 ```javascript
 /**
- * Выполняет основное действие с переданными данными.
+ * Short description of what the function does.
  *
- * @param {string} param1 - Основной параметр.
- * @param {number|Object|null} [param2=null] - Дополнительный параметр.
- * @returns {Object|null} Результат выполнения функции.
- * @throws {Error} Если входные данные некорректны.
+ * Long description if needed.
  *
- * @example
- * const data = processData("text", 42);
- * console.log(data);
+ * Args:
+ *   param1 (string) — primary input.
+ *   param2 (number|Object|null) — optional config. Default: null.
+ *
+ * Returns:
+ *   Object|null — result on success, null on invalid input.
+ *
+ * Exceptions:
+ *   Error — thrown when param1 is falsy.
+ *
+ * Examples:
+ *   const data = processData("text", 42);
+ *   console.log(data); // { status: 'ok' }
  */
 function processData(param1, param2 = null) {
     if (!param1) {
-        throw new Error("Некорректный параметр");
+        throw new Error("Invalid param1");
     }
 
     const result = {};

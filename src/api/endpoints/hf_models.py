@@ -22,8 +22,12 @@
 # =============================================================================
 
 import asyncio
+import json
 import logging
+import queue
+import threading
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 from ...models.hf_client import hf_client
 
@@ -133,22 +137,16 @@ async def list_hf_models() -> dict:
 
 @router.post("/models/download")
 async def download_hf_model(request: dict) -> dict:
-    """! Скачать модель с HuggingFace Hub.
-
-    Для закрытых моделей (Gemma, Llama) нужно:
-    1. Принять лицензию на huggingface.co/<model_id>
-    2. Передать HF токен или установить HF_TOKEN в .env
+    """Download model from HuggingFace Hub (blocking, no progress).
 
     Args:
-        request: JSON body с полями:
-            model_id (str): HuggingFace model ID (обязательно).
-            token (str):    HF токен (optional, переопределяет HF_TOKEN).
+        request: {model_id (str), token (str, optional)}
 
     Returns:
         dict: success, model_id, path on success; success=False, error on failure.
 
     Raises:
-        HTTPException 400: model_id не передан.
+        HTTPException 400: model_id not provided.
     """
     model_id: str = request.get("model_id", "")
     token: str = request.get("token", "")
@@ -156,13 +154,58 @@ async def download_hf_model(request: dict) -> dict:
     if not model_id:
         raise HTTPException(status_code=400, detail="model_id is required")
 
-    logger.info(f"Запрос скачивания HF модели: {model_id}")
-
-    # Запускаем в executor — snapshot_download блокирующий
+    logger.info(f"Downloading HF model: {model_id}")
     result = await asyncio.get_event_loop().run_in_executor(
         None, lambda: hf_client.download_model(model_id, token or None)
     )
     return result
+
+
+@router.get("/models/download/stream")
+async def download_hf_model_stream(model_id: str, token: str = "") -> StreamingResponse:
+    """Download HuggingFace model with SSE progress stream.
+
+    Streams file-by-file progress events as Server-Sent Events.
+    Each event is a JSON object with fields:
+        type: 'file_start' | 'file_done' | 'done' | 'error'
+        filename, file_index, total_files (for file events)
+        path (for 'done'), error (for 'error')
+
+    Args:
+        model_id: HuggingFace model ID, e.g. 'Qwen/Qwen2.5-0.5B-Instruct'.
+        token:    Optional HF token (overrides HF_TOKEN env var).
+
+    Returns:
+        StreamingResponse: text/event-stream
+    """
+    if not model_id:
+        raise HTTPException(status_code=400, detail="model_id is required")
+
+    progress_queue: queue.Queue = queue.Queue()
+
+    def _run_download() -> None:
+        def _cb(event: dict) -> None:
+            progress_queue.put(event)
+
+        result = hf_client.download_model(model_id, token or None, progress_callback=_cb)
+        progress_queue.put({"type": "done", **result})
+
+    thread = threading.Thread(target=_run_download, daemon=True)
+    thread.start()
+
+    async def _event_stream():
+        loop = asyncio.get_event_loop()
+        while True:
+            try:
+                event = await loop.run_in_executor(None, lambda: progress_queue.get(timeout=120))
+                yield f"data: {json.dumps(event)}\n\n"
+                if event.get("type") in ("done", "error"):
+                    break
+            except Exception:
+                yield f"data: {json.dumps({'type': 'error', 'error': 'timeout'})}\n\n"
+                break
+
+    return StreamingResponse(_event_stream(), media_type="text/event-stream")
 
 
 @router.post("/models/load")

@@ -197,3 +197,211 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_exes.ps1
 
 !!! warning
     Требует .NET Framework 4 (есть на любом Windows 7+). Не требует Visual Studio или MSBuild.
+
+---
+
+## Разбор кода install/
+
+Все скрипты в `install/` следуют единому стандарту оформления.
+
+### Структура каждого скрипта
+
+```
+install/<script>.ps1
+  ├─ Заголовок файла (hypo69 header)
+  ├─ param() — параметры
+  ├─ $ErrorActionPreference = 'Stop'
+  ├─ Константы ($UPPER_SNAKE_CASE)
+  ├─ Функции (Verb-Noun + docstring)
+  └─ # --- main --- (точка входа)
+```
+
+### Стандарт docstring для функций
+
+Все публичные функции документируются по единому шаблону.
+Порядок секций фиксирован и не меняется:
+
+```powershell
+function Verb-Noun {
+    <#
+    .SYNOPSIS
+        Short description — одна строка, суть функции.
+    .DESCRIPTION
+        Long description — опционально, многострочное пояснение.
+
+        Args:
+            $ParamName (type) — описание, ограничения, значение по умолчанию.
+
+        Returns:
+            type — что возвращается и при каком условии.
+
+        Exceptions:
+            ErrorType — когда выбрасывается.
+    .EXAMPLE
+        Verb-Noun -Param value
+        # ожидаемый результат или побочный эффект
+    #>
+    param([string]$ParamName)
+    ...
+}
+```
+
+**Правила:**
+
+- `.SYNOPSIS` — обязательна, одна строка без точки в конце
+- `Args:` / `Returns:` / `Exceptions:` — внутри `.DESCRIPTION`, опускаются если неприменимы
+- `.EXAMPLE` — минимум один на каждую публичную функцию
+- Запрещены: `.PARAMETER`, `.OUTPUTS`, `.NOTES`
+
+### Примеры из install/
+
+**install-tesseract.ps1** — три функции с разными сигнатурами:
+
+```powershell
+function Test-TesseractInstalled {
+    <#
+    .SYNOPSIS
+        Checks whether tesseract.exe is reachable via PATH or at the default install path.
+    .DESCRIPTION
+        Returns:
+            bool — True if found.
+    .EXAMPLE
+        Test-TesseractInstalled
+        # Returns $true on a machine with Tesseract in PATH
+    #>
+    if (Get-Command tesseract -ErrorAction SilentlyContinue) { return $true }
+    return Test-Path $TESSERACT_EXE
+}
+
+function Write-TesseractToConfig {
+    <#
+    .SYNOPSIS
+        Writes or updates text_extractor.tesseract_cmd in config.json.
+    .DESCRIPTION
+        Args:
+            $ExePath (string) — full path to tesseract.exe.
+    .EXAMPLE
+        Write-TesseractToConfig -ExePath 'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        # Updates config.json: text_extractor.tesseract_cmd
+    #>
+    param([string]$ExePath)
+    ...
+}
+
+function Install-Tesseract {
+    <#
+    .SYNOPSIS
+        Downloads the Tesseract installer and runs it silently.
+    .DESCRIPTION
+        Returns:
+            bool — True if installation succeeded.
+    .EXAMPLE
+        $ok = Install-Tesseract
+        if ($ok) { Add-TesseractToPath }
+    #>
+    ...
+}
+```
+
+**install-shortcuts.ps1** — функция с несколькими параметрами:
+
+```powershell
+function New-AppShortcut {
+    <#
+    .SYNOPSIS
+        Creates a .lnk shortcut on the Desktop.
+    .DESCRIPTION
+        Args:
+            $Name (string) — shortcut filename without .lnk.
+            $Arguments (string) — PowerShell arguments string.
+            $WindowStyle (int) — 1 = normal, 7 = minimized/hidden.
+            $Description (string) — tooltip text shown on hover.
+    .EXAMPLE
+        New-AppShortcut -Name 'AI Assistant' -Arguments "-File start.ps1" -WindowStyle 1 -Description 'Launch'
+        # Creates AI Assistant.lnk on the Desktop
+    #>
+    param (
+        [string]$Name,
+        [string]$Arguments,
+        [int]$WindowStyle,
+        [string]$Description
+    )
+    ...
+}
+```
+
+**setup-env.ps1** — функция без параметров, только Returns:
+
+```powershell
+function Generate-SecureKey {
+    <#
+    .SYNOPSIS
+        Generates a cryptographically secure random string.
+    .DESCRIPTION
+        Args:
+            $Length (int) — number of random bytes. Default: 32.
+
+        Returns:
+            string — URL-safe Base64 string with '+', '/' and '=' removed.
+    .EXAMPLE
+        $key = Generate-SecureKey 32
+        # Returns a 40+ character random string
+    #>
+    param([int]$Length = 32)
+    ...
+}
+```
+
+### Паттерн guard clause
+
+Все скрипты используют ранний выход вместо глубокой вложенности:
+
+```powershell
+# install-autostart.ps1
+if (-not ([Security.Principal.WindowsPrincipal]...).IsInRole(...Administrator)) {
+    Write-Host '❌ Administrator rights required.' -ForegroundColor Red
+    exit 1
+}
+
+if (-not (Test-Path $Script)) {
+    Write-Host "❌ autostart.ps1 not found: $Script" -ForegroundColor Red
+    exit 1
+}
+```
+
+### Вспомогательный Python-скрипт
+
+`_setup_env.py` — минимальный хелпер без классов и функций:
+
+```python
+# Создаёт .env из .env.example если файл отсутствует.
+# Вызывается из install.ps1 как fallback перед setup-env.ps1.
+root = Path(__file__).parent.parent
+env = root / ".env"
+example = root / ".env.example"
+
+if env.exists():
+    print(".env already exists — skipping")
+elif example.exists():
+    shutil.copy(example, env)
+else:
+    env.write_text("# FastAPI Foundry\nFOUNDRY_BASE_URL=...\n")
+```
+
+### Связи между скриптами
+
+```
+install.ps1 (корень)
+  ├─ install\install-tesseract.ps1   (если не -SkipTesseract)
+  ├─ install\install-foundry.ps1     (если foundry не найден)
+  ├─ install\install-models.ps1      (при первой установке)
+  ├─ install\install-shortcuts.ps1   (всегда)
+  └─ install\_setup_env.py           (если .env отсутствует)
+
+install\install-shortcuts.ps1
+  └─ install\make-ico.ps1            (если icon.ico отсутствует)
+
+install\install-autostart.ps1       (запускается отдельно, требует Admin)
+install\install-huggingface-cli.ps1 (запускается отдельно)
+install\setup-env.ps1               (запускается отдельно)
+```

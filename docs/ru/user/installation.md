@@ -270,13 +270,106 @@ LLAMA_AUTO_START=false
 winget install UB-Mannheim.TesseractOCR
 ```
 
-После установки `install-tesseract.ps1` добавляет в `.env`:
+После установки `install-tesseract.ps1` добавляет в `config.json`:
 
-```env
-TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
+```json
+{
+  "text_extractor": {
+    "tesseract_cmd": "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+  }
+}
 ```
 
 Без Tesseract: изображения пропускаются при индексации, всё остальное работает нормально.
+
+---
+
+## Скрипты директории install/
+
+Директория `install/` содержит вспомогательные скрипты для первичной настройки.
+`install.ps1` вызывает их автоматически, но каждый можно запустить отдельно.
+
+| Скрипт | Назначение |
+|---|---|
+| `install-foundry.ps1` | Установка Microsoft Foundry Local через `winget`, запуск сервиса, загрузка модели по умолчанию |
+| `install-models.ps1` | Загрузка моделей: Foundry (qwen2.5-0.5b), HuggingFace (all-MiniLM-L6-v2), выбор GGUF для llama.cpp |
+| `install-huggingface-cli.ps1` | Установка `huggingface_hub`, `transformers`, `accelerate`; авторизация через `HF_TOKEN` |
+| `install-tesseract.ps1` | Загрузка и тихая установка Tesseract OCR 5.x, добавление в PATH, запись пути в `config.json` |
+| `install-shortcuts.ps1` | Создание ярлыков на рабочем столе: «AI Assistant» и «AI Assistant (Silent)» |
+| `install-autostart.ps1` | Регистрация задачи в Планировщике Windows (`AtLogOn`), удаление через `-Uninstall` |
+| `setup-env.ps1` | Интерактивный мастер создания `.env`: GitHub, API-ключи, Foundry URL, среда |
+| `_setup_env.py` | Python-хелпер: создаёт `.env` из `.env.example` если файл отсутствует |
+| `make-ico.ps1` | Конвертация PNG-иконок из `assets/icons/` в `icon.ico` для ярлыков |
+
+### Примеры запуска
+
+```powershell
+# Установить только Foundry (если пропустили при первой установке)
+.\install\install-foundry.ps1
+
+# Скачать модели интерактивно
+.\install\install-models.ps1
+
+# Установить HuggingFace CLI и авторизоваться
+.\install\install-huggingface-cli.ps1
+
+# Установить Tesseract OCR
+.\install\install-tesseract.ps1
+
+# Создать ярлыки на рабочем столе
+.\install\install-shortcuts.ps1
+
+# Настроить .env интерактивно
+.\install\setup-env.ps1
+
+# Настроить .env с автогенерацией ключей
+.\install\setup-env.ps1 -GenerateKeys
+
+# Зарегистрировать автозапуск
+.\install\install-autostart.ps1
+
+# Удалить автозапуск
+.\install\install-autostart.ps1 -Uninstall
+```
+
+### Параметры скриптов
+
+**install-foundry.ps1**
+
+| Параметр | По умолчанию | Описание |
+|---|---|---|
+| `-Model` | `qwen2.5-0.5b-instruct-generic-cpu` | Модель для загрузки после установки |
+
+**install-models.ps1**
+
+| Параметр | Описание |
+|---|---|
+| `-SkipFoundry` | Пропустить загрузку модели Foundry |
+| `-SkipHuggingFace` | Пропустить загрузку модели HuggingFace |
+| `-SkipLlama` | Пропустить выбор GGUF модели для llama.cpp |
+
+**install-huggingface-cli.ps1**
+
+| Параметр | Описание |
+|---|---|
+| `-Token` | HuggingFace токен (иначе читается из `.env`) |
+| `-SkipAuth` | Только установка пакетов, без авторизации |
+| `-SkipInstall` | Только авторизация, без установки пакетов |
+
+**install-tesseract.ps1**
+
+| Параметр | Описание |
+|---|---|
+| `-ConfigFile` | Путь к `config.json` (по умолчанию — в корне проекта) |
+| `-Force` | Переустановить даже если Tesseract уже установлен |
+| `-SkipIfExists` | Пропустить загрузку если `tesseract.exe` уже найден |
+
+**setup-env.ps1**
+
+| Параметр | Описание |
+|---|---|
+| `-Force` | Перезаписать существующий `.env` без подтверждения |
+| `-GenerateKeys` | Автоматически сгенерировать `API_KEY` и `SECRET_KEY` |
 
 ---
 
