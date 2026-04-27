@@ -296,7 +296,7 @@ bin/<bin_version>/llama-server.exe ← приоритет 3 (из config.json)
 | `mcp-servers/.../claude-desktop-config.json` | Конфиг Claude Desktop |
 | `.foundry_url`, `.llama_url` | Сохранённые URL сервисов |
 
-!!! danger "Файл бэкапа содержит секреты"
+!!! danger "Файл бэкапа содержит секреты <span class='badge-red'>ОПАСНО</span>"
     Экспортированный файл содержит **полное содержимое `.env`**, включая все токены и ключи API.
     Перед экспортом браузер покажет предупреждение.
 

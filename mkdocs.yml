@@ -59,6 +59,7 @@ nav:
     - Быстрый старт: user/getting_started.md
     - Установка: user/installation.md
     - Конфигурация: user/configuration.md
+    - Локальный workflow: user/local_workflow.md
     - Работа с моделями: user/models_guide.md
     - Веб-интерфейс: user/web_interface.md
     - Telegram Боты: user/telegram_bots.md
@@ -126,6 +127,7 @@ nav:
 
 markdown_extensions:
   - admonition
+  - attr_list
   - pymdownx.details
   - md_in_html
   - pymdownx.highlight:

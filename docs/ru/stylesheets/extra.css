@@ -8,6 +8,64 @@
     color: #ff6b6b;
 }
 
+/* ── Utility: .badge-red — red pill badge ── */
+.badge-red {
+    display: inline-block;
+    background-color: #d32f2f;
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 0.82em;
+    padding: 0.15em 0.55em;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+[data-md-color-scheme="slate"] .badge-red {
+    background-color: #b71c1c;
+    color: #fff !important;
+}
+
+/* ── Utility: .badge-light-green — light green pill badge ── */
+.badge-light-green {
+    display: inline-block;
+    background-color: #e8f5e9;
+    color: #2e7d32 !important;
+    font-weight: 700;
+    font-size: 0.82em;
+    padding: 0.15em 0.55em;
+    border-radius: 999px;
+    border: 1px solid #a5d6a7;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+[data-md-color-scheme="slate"] .badge-light-green {
+    background-color: #1b5e20;
+    color: #a5d6a7 !important;
+    border-color: #2e7d32;
+}
+
+/* ── Utility: .badge-green — green pill badge ── */
+.badge-green {
+    display: inline-block;
+    background-color: #2e7d32;
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 0.82em;
+    padding: 0.15em 0.55em;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+[data-md-color-scheme="slate"] .badge-green {
+    background-color: #1b5e20;
+}
+
 /* ── Custom admonition: danger (❗) ── */
 :root {
     --md-admonition-icon--danger: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>');
