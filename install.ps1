@@ -120,6 +120,45 @@ function Get-ModeFromFile {
     return ($line -split '=', 2)[1].Trim()
 }
 
+function Stop-VenvProcesses {
+    <#
+    .SYNOPSIS
+        Stops processes that hold locks on venv files.
+    .DESCRIPTION
+        Kills processes listening on the FastAPI port (9696) and MkDocs port (9697),
+        then kills any remaining Python processes whose executable lives inside the venv.
+        Waits briefly for OS to release file handles.
+
+        Returns:
+            void
+
+    .EXAMPLE
+        Stop-VenvProcesses
+        # Stops uvicorn on 9696, mkdocs on 9697, and venv-bound python processes
+    #>
+    Write-Host '  Stopping services on ports 9696 / 9697...' -ForegroundColor Gray
+
+    foreach ($port in @(9696, 9697)) {
+        $conn = netstat -ano 2>$null |
+                Select-String ":$port\s" |
+                Select-Object -First 1
+        if ($conn) {
+            $pid_ = ($conn -split '\s+')[-1]
+            if ($pid_ -match '^\d+$') {
+                Stop-Process -Id ([int]$pid_) -Force -ErrorAction SilentlyContinue
+                Write-Host "  Killed PID $pid_ (port $port)" -ForegroundColor Gray
+            }
+        }
+    }
+
+    # Also kill any python process running from inside the venv
+    Get-Process -Name python, python3, python311 -ErrorAction SilentlyContinue |
+        Where-Object { $_.Path -like "$venvPath*" } |
+        Stop-Process -Force -ErrorAction SilentlyContinue
+
+    Start-Sleep -Milliseconds 700
+}
+
 # Normalise mode — command-line wins, then MODE file, then default 'prod'
 if (-not $Mode) { $Mode = Get-ModeFromFile -ProjectRoot $Root }
 $Mode = Resolve-Mode $Mode
@@ -176,14 +215,28 @@ Write-Host "`nVirtual environment..." -ForegroundColor Yellow
 $venvPath = Join-Path $Root 'venv'
 
 if ((Test-Path $venvPath) -and $Force) {
-    Remove-Item $venvPath -Recurse -Force
-    Write-Host '  Old venv removed' -ForegroundColor Gray
+    Stop-VenvProcesses
+    try {
+        Remove-Item $venvPath -Recurse -Force
+        Write-Host '  Old venv removed' -ForegroundColor Gray
+    } catch {
+        Write-Host "  Could not remove venv: $_" -ForegroundColor Red
+        Write-Host '  Close all terminals/apps using the venv and retry.' -ForegroundColor Cyan
+        exit 1
+    }
 } elseif (Test-Path $venvPath) {
     Write-Host '  venv already exists.' -ForegroundColor Yellow
     $answer = Read-Host '  Recreate? (y/N)'
     if ($answer -eq 'y' -or $answer -eq 'Y') {
-        Remove-Item $venvPath -Recurse -Force
-        Write-Host '  venv removed' -ForegroundColor Gray
+        Stop-VenvProcesses
+        try {
+            Remove-Item $venvPath -Recurse -Force
+            Write-Host '  venv removed' -ForegroundColor Gray
+        } catch {
+            Write-Host "  Could not remove venv: $_" -ForegroundColor Red
+            Write-Host '  Close all terminals/apps using the venv and retry.' -ForegroundColor Cyan
+            exit 1
+        }
     }
 }
 
