@@ -33,6 +33,7 @@ param(
     [switch]$Force,
     [switch]$SkipRag,
     [switch]$SkipTesseract,
+    [switch]$NoGui,
     # prod | debug | qa | qa+debug  (empty = read from MODE file, default prod)
     [string]$Mode = ''
 )
@@ -257,6 +258,52 @@ Write-Host "`nInstalling requirements.txt..." -ForegroundColor Yellow
 & $python -m pip install -r (Join-Path $Root 'requirements.txt')
 Write-Host '  Core dependencies installed' -ForegroundColor Green
 
+# --- 4. GUI installer (unless -NoGui) ---
+if (-not $NoGui) {
+    Write-Host "`nLaunching GUI installer..." -ForegroundColor Cyan
+
+    $appPort = 9696
+    try {
+        $cfg = Get-Content (Join-Path $Root 'config.json') -Raw | ConvertFrom-Json
+        if ($cfg.fastapi_server.port) { $appPort = [int]$cfg.fastapi_server.port }
+    } catch { }
+
+    # Start FastAPI in background (minimized window, keep running)
+    $fastApiProc = Start-Process -FilePath $python `
+                                 -ArgumentList 'run.py' `
+                                 -WorkingDirectory $Root `
+                                 -PassThru `
+                                 -WindowStyle Minimized
+
+    # Save PID so stop.ps1 can clean it up later
+    $fastApiProc.Id | Out-File (Join-Path $env:TEMP 'fastapi-foundry-installer.pid') -Encoding UTF8
+
+    # Wait for FastAPI to be ready (max 30s)
+    Write-Host '  Waiting for FastAPI on port $appPort...' -ForegroundColor Gray
+    $deadline = (Get-Date).AddSeconds(30)
+    $ready    = $false
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $r = Invoke-WebRequest -Uri "http://localhost:$appPort/api/v1/health" `
+                                   -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+            if ($r.StatusCode -lt 500) { $ready = $true; break }
+        } catch { }
+        Start-Sleep -Milliseconds 600
+    }
+
+    if ($ready) {
+        Write-Host "  Opening http://localhost:$appPort/install" -ForegroundColor Green
+        Start-Process "http://localhost:$appPort/install"
+        Write-Host '  Complete the remaining steps in the browser.' -ForegroundColor Cyan
+        Write-Host '  The server will keep running after this script exits.' -ForegroundColor Gray
+    } else {
+        Write-Host '  FastAPI did not start in time — falling back to CLI install.' -ForegroundColor Yellow
+        $fastApiProc | Stop-Process -Force -ErrorAction SilentlyContinue
+    }
+
+    # Do NOT block — fall through to CLI steps so they run regardless
+}
+
 # --- 4. RAG ---
 if (-not $SkipRag) {
     Write-Host "`nRAG components (sentence-transformers, faiss-cpu)..." -ForegroundColor Yellow
@@ -301,6 +348,22 @@ if (-not (Test-Path $envFile)) {
     }
 } else {
     Write-Host '  .env already exists' -ForegroundColor Gray
+}
+
+# --- 6.1. config.json ---
+Write-Host "`nconfig.json..." -ForegroundColor Yellow
+$configFile    = Join-Path $Root 'config.json'
+$configExample = Join-Path $Root 'config.json.example'
+
+if (-not (Test-Path $configFile)) {
+    if (Test-Path $configExample) {
+        Copy-Item $configExample $configFile
+        Write-Host '  config.json created from config.json.example' -ForegroundColor Green
+    } else {
+        Write-Host '  config.json.example not found — skipping' -ForegroundColor Yellow
+    }
+} else {
+    Write-Host '  config.json already exists' -ForegroundColor Gray
 }
 
 # --- 7. logs/ ---

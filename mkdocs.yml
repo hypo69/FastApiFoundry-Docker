@@ -71,6 +71,7 @@ nav:
     - Архитектура: dev/architecture.md
     - API Reference: dev/api_reference.md
     - Система RAG: dev/rag_system.md
+    - Инкрементальный RAG: dev/rag_incremental.md
     - Text Extractor: dev/text_extractor.md
     - Агенты: dev/agents.md
     - MCP Agent: dev/mcp_agent.md

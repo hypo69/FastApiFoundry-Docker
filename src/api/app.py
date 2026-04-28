@@ -104,6 +104,8 @@ def create_app() -> FastAPI:
     )
     
     # Static files
+    app.mount("/static/interface",  StaticFiles(directory="static/interface"),  name="static-interface")
+    app.mount("/static/gui-install", StaticFiles(directory="static/gui-install"), name="static-install")
     app.mount("/static", StaticFiles(directory="static"), name="static")
     
     # CORS middleware
@@ -149,6 +151,7 @@ def create_app() -> FastAPI:
     
     # Connect all routers
     from .endpoints import main, models, health, generate, foundry, config, logs, rag
+    from .endpoints.install import router as install_router
     from .endpoints.ai_endpoints import router as ai_router
     from .endpoints.chat_endpoints import router as chat_router
     from .endpoints.translator import router as translator_router
@@ -168,6 +171,8 @@ def create_app() -> FastAPI:
     from .endpoints.recommender import router as recommender_router
 
     app.include_router(main.router)
+    app.include_router(install_router.page_router)          # GET /install  (no prefix)
+    app.include_router(install_router.api_router, prefix="/api/v1")  # /api/v1/install/*
     app.include_router(health.router, prefix="/api/v1")
     app.include_router(models.router, prefix="/api/v1")
     app.include_router(foundry.router, prefix="/api/v1")

@@ -444,4 +444,190 @@ export function copyExtractedText() {
 document.addEventListener('DOMContentLoaded', () => {
     refreshRAGStatus();
     ragLoadProfiles();
+    ragLoadDocuments();
 });
+
+// ── Document Manager ──────────────────────────────────────────────────────────
+
+/**
+ * Load and render the document list from /api/v1/rag/documents.
+ */
+export async function ragLoadDocuments() {
+    const listEl  = document.getElementById('rag-documents-list');
+    const countEl = document.getElementById('rag-doc-count');
+    const statsEl = document.getElementById('rag-doc-stats');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm"></div></div>';
+
+    try {
+        const [docsData, statsData] = await Promise.all([
+            fetch(`${RAG_API}/documents`).then(r => r.json()),
+            fetch(`${RAG_API}/documents/stats`).then(r => r.json()).catch(() => null),
+        ]);
+
+        if (!docsData.success) {
+            listEl.innerHTML = `<div class="text-danger p-3 small">${docsData.error}</div>`;
+            return;
+        }
+
+        if (countEl) countEl.textContent = docsData.total;
+
+        if (statsEl && statsData?.success) {
+            const s = statsData;
+            const compactBtn = document.getElementById('rag-compact-btn');
+            if (compactBtn) compactBtn.style.display = s.compact_recommended ? '' : 'none';
+            statsEl.innerHTML =
+                `Документов: <strong>${s.documents}</strong> &nbsp;| ` +
+                `Активных чанков: <strong>${s.active_chunks}</strong> &nbsp;| ` +
+                `Векторов FAISS: <strong>${s.faiss_vectors}</strong>` +
+                (s.compact_recommended ? ' &nbsp;<span class="badge bg-warning text-dark">Рекомендуется Compact</span>' : '');
+        }
+
+        if (!docsData.documents.length) {
+            listEl.innerHTML = '<div class="text-muted text-center p-3"><small>Нет документов. Добавьте первый →</small></div>';
+            return;
+        }
+
+        listEl.innerHTML = docsData.documents.map(d => `
+            <div class="d-flex align-items-center gap-2 px-3 py-2 border-bottom">
+                <div class="flex-grow-1 overflow-hidden">
+                    <strong style="font-size:.85rem">${_esc(d.title)}</strong>
+                    <small class="text-muted d-block text-truncate">${d.source_path || ''}</small>
+                    <small class="text-muted">${d.chunk_count ?? 0} chunks &middot; ${_fmtDate(d.updated_at)}</small>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" onclick="ragEditDocument(${d.id})" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-info" onclick="ragReindexDocument(${d.id})" title="Force reindex">
+                    <i class="bi bi-arrow-repeat"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="ragDeleteDocument(${d.id})" title="Delete">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>`).join('');
+    } catch (e) {
+        listEl.innerHTML = `<div class="text-danger p-3 small">${e.message}</div>`;
+    }
+}
+
+/** Open the Add Document modal. */
+export function ragShowAddModal() {
+    document.getElementById('rag-doc-edit-id').value = '';
+    document.getElementById('rag-doc-title').value = '';
+    document.getElementById('rag-doc-content').value = '';
+    document.getElementById('rag-doc-source').value = '';
+    document.getElementById('rag-doc-char-count').textContent = '0 chars';
+    document.getElementById('ragDocModalTitle').textContent = 'Add Document';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('ragDocModal')).show();
+}
+
+/** Load document data into the modal for editing. */
+export async function ragEditDocument(id) {
+    try {
+        const data = await fetch(`${RAG_API}/documents/${id}`).then(r => r.json());
+        if (!data.success) { showAlert(`❌ ${data.error}`, 'danger'); return; }
+        const d = data.document;
+        document.getElementById('rag-doc-edit-id').value = d.id;
+        document.getElementById('rag-doc-title').value = d.title;
+        document.getElementById('rag-doc-content').value = d.content;
+        document.getElementById('rag-doc-source').value = d.source_path || '';
+        document.getElementById('rag-doc-char-count').textContent = d.content.length + ' chars';
+        document.getElementById('ragDocModalTitle').textContent = 'Edit Document';
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('ragDocModal')).show();
+    } catch (e) {
+        showAlert(`❌ ${e.message}`, 'danger');
+    }
+}
+
+/** Save (add or update) document from modal. */
+export async function ragSaveDocument() {
+    const id      = document.getElementById('rag-doc-edit-id').value;
+    const title   = document.getElementById('rag-doc-title').value.trim();
+    const content = document.getElementById('rag-doc-content').value.trim();
+    const source  = document.getElementById('rag-doc-source').value.trim();
+    const btn     = document.getElementById('rag-doc-save-btn');
+
+    if (!title || !content) { showAlert('Заполните title и content', 'warning'); return; }
+
+    if (btn) btn.disabled = true;
+    try {
+        const isEdit = Boolean(id);
+        const url    = isEdit ? `${RAG_API}/documents/${id}` : `${RAG_API}/documents`;
+        const method = isEdit ? 'PUT' : 'POST';
+        const body   = isEdit ? { title, content } : { title, content, source_path: source };
+
+        const data = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        }).then(r => r.json());
+
+        if (data.success) {
+            const msg = isEdit
+                ? (data.changed ? `✅ Обновлено, ${data.chunks_added} чанков` : '✅ Без изменений (контент не изменился)')
+                : `✅ Добавлено (id=${data.doc_id}), ${data.chunks_added} чанков`;
+            showAlert(msg, 'success');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('ragDocModal')).hide();
+            ragLoadDocuments();
+            refreshRAGStatus();
+        } else {
+            showAlert(`❌ ${data.error}`, 'danger');
+        }
+    } catch (e) {
+        showAlert(`❌ ${e.message}`, 'danger');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+/** Force reindex a single document. */
+export async function ragReindexDocument(id) {
+    try {
+        const data = await fetch(`${RAG_API}/documents/${id}/reindex`, { method: 'POST' }).then(r => r.json());
+        showAlert(data.success ? `✅ Переиндексировано, ${data.chunks_added} чанков` : `❌ ${data.error}`, data.success ? 'success' : 'danger');
+        if (data.success) { ragLoadDocuments(); refreshRAGStatus(); }
+    } catch (e) {
+        showAlert(`❌ ${e.message}`, 'danger');
+    }
+}
+
+/** Delete a document after confirmation. */
+export async function ragDeleteDocument(id) {
+    if (!confirm('Удалить документ и его чанки?')) return;
+    try {
+        const data = await fetch(`${RAG_API}/documents/${id}`, { method: 'DELETE' }).then(r => r.json());
+        showAlert(data.success ? '✅ Удалён' : `❌ ${data.error}`, data.success ? 'success' : 'danger');
+        if (data.success) { ragLoadDocuments(); refreshRAGStatus(); }
+    } catch (e) {
+        showAlert(`❌ ${e.message}`, 'danger');
+    }
+}
+
+/** Compact FAISS index (remove dead vectors). */
+export async function ragCompactIndex() {
+    if (!confirm('Перестроить FAISS индекс? Может занять несколько секунд.')) return;
+    try {
+        const data = await fetch(`${RAG_API}/compact`, { method: 'POST' }).then(r => r.json());
+        showAlert(
+            data.success
+                ? `✅ Compact: ${data.vectors_before} → ${data.vectors_after} векторов`
+                : `❌ ${data.error}`,
+            data.success ? 'success' : 'danger'
+        );
+        if (data.success) { ragLoadDocuments(); refreshRAGStatus(); }
+    } catch (e) {
+        showAlert(`❌ ${e.message}`, 'danger');
+    }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function _esc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _fmtDate(iso) {
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleString(); } catch { return iso; }
+}

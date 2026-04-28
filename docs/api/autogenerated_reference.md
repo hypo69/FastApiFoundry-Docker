@@ -5,32 +5,168 @@
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `HEAD, GET /openapi.json`
+**Путь:** `GET, HEAD /openapi.json`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `HEAD, GET /docs`
+**Путь:** `GET, HEAD /docs`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `HEAD, GET /docs/oauth2-redirect`
+**Путь:** `GET, HEAD /docs/oauth2-redirect`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `HEAD, GET /redoc`
+**Путь:** `GET, HEAD /redoc`
 
 ## None
-FastAPI Foundry Control Panel
+Serve main interface SPA.
 
 **Путь:** `GET /`
+
+## None
+Serve GUI installer SPA.
+
+**Путь:** `GET /install`
 
 ## None
 API Information
 
 **Путь:** `GET /api`
+
+## None
+Serve the GUI installer SPA.
+
+**Путь:** `GET /api/v1/install/`
+
+## None
+Return basic environment status for the welcome step.
+
+Returns:
+    dict — python version, pip availability, venv presence, requirements flag.
+
+**Путь:** `GET /api/v1/install/status`
+
+## None
+Read current .env values for the env step.
+
+Returns:
+    dict — exists flag and current key values (tokens masked).
+
+**Путь:** `GET /api/v1/install/env`
+
+## None
+Write .env with provided values.
+
+Args:
+    body (dict): foundry_url, hf_token, hf_models_dir.
+
+Returns:
+    dict — success flag.
+
+**Путь:** `POST /api/v1/install/env`
+
+### Пример вызова:
+
+```bash
+curl -X POST http://localhost:9696/api/v1/install/env \
+     -H "Content-Type: application/json" \
+     -d '{"param": "value"}'
+```
+
+## None
+Check Tesseract OCR installation status.
+
+Returns:
+    dict — installed flag, version string, executable path.
+
+**Путь:** `GET /api/v1/install/tesseract`
+
+## None
+Trigger Tesseract installation via install script.
+
+Returns:
+    dict — success flag or error message.
+
+**Путь:** `POST /api/v1/install/tesseract/install`
+
+### Пример вызова:
+
+```bash
+curl -X POST http://localhost:9696/api/v1/install/tesseract/install \
+     -H "Content-Type: application/json" \
+     -d '{"param": "value"}'
+```
+
+## None
+Check Foundry Local installation and service status.
+
+Returns:
+    dict — installed flag, version, running flag.
+
+**Путь:** `GET /api/v1/install/foundry`
+
+## None
+Install Foundry Local via winget.
+
+Returns:
+    dict — success flag or error message.
+
+**Путь:** `POST /api/v1/install/foundry/install`
+
+### Пример вызова:
+
+```bash
+curl -X POST http://localhost:9696/api/v1/install/foundry/install \
+     -H "Content-Type: application/json" \
+     -d '{"param": "value"}'
+```
+
+## None
+Start the Foundry Local service.
+
+Returns:
+    dict — success flag or error message.
+
+**Путь:** `POST /api/v1/install/foundry/start`
+
+### Пример вызова:
+
+```bash
+curl -X POST http://localhost:9696/api/v1/install/foundry/start \
+     -H "Content-Type: application/json" \
+     -d '{"param": "value"}'
+```
+
+## None
+Return list of available default models to download.
+
+Returns:
+    dict — available models list.
+
+**Путь:** `GET /api/v1/install/models`
+
+## None
+Trigger foundry model load for the selected model.
+
+Args:
+    body (dict): model_id — Foundry model identifier.
+
+Returns:
+    dict — success flag or error message.
+
+**Путь:** `POST /api/v1/install/models/download`
+
+### Пример вызова:
+
+```bash
+curl -X POST http://localhost:9696/api/v1/install/models/download \
+     -H "Content-Type: application/json" \
+     -d '{"param": "value"}'
+```
 
 ## None
 Restart a background service.
@@ -439,11 +575,11 @@ curl -X POST http://localhost:9696/api/v1/ai/optimize \
 ```
 
 ## None
-Начать новую сессию чата.
+Start a new chat session.
 
 Args:
-    request: JSON body с полями:
-        model (str): ID модели (default: 'default').
+    request: JSON body with fields:
+        model (str): Model ID (default: 'default').
 
 Returns:
     dict: success, session_id (UUID), model, message.
@@ -459,22 +595,24 @@ curl -X POST http://localhost:9696/api/v1/chat/start \
 ```
 
 ## None
-Отправить сообщение в чат.
+Send a message to an existing chat session.
 
 Args:
-    request: JSON body с полями:
-        session_id (str):    ID сессии (обязательно).
-        message (str):       Текст сообщения (обязательно).
-        model (str):         ID модели (optional).
-        temperature (float): Температура (default: 0.7).
-        max_tokens (int):    Максимум токенов (default: 2048).
-        source_lang (str):   Язык входящего сообщения (default: "auto").
-        locale (str):        Язык ответа — "ru", "he", "fr" и т.д.
-                             Переопределяет source_lang для обратного перевода.
-                             Пусто = отвечать на языке source_lang.
+    request: JSON body with fields:
+        session_id (str):    Session ID (required).
+        message (str):       Message text (required).
+        model (str):         Model ID (optional).
+        temperature (float): Sampling temperature (default: 0.7).
+        max_tokens (int):    Max tokens (default: 2048).
+        source_lang (str):   Input language (default: 'auto').
+        locale (str):        Reply language override ('ru', 'he', etc.).
 
 Returns:
     dict: success, response, session_id.
+
+Raises:
+    HTTPException 400: Invalid session_id or empty message.
+    HTTPException 500: Generation error.
 
 **Путь:** `POST /api/v1/chat/message`
 
@@ -487,21 +625,21 @@ curl -X POST http://localhost:9696/api/v1/chat/message \
 ```
 
 ## None
-Отправить сообщение в чат с стримингом.
+Send a message with SSE streaming response.
 
 Args:
-    request: JSON body с полями:
-        session_id (str):    ID сессии (обязательно).
-        message (str):       Текст сообщения (обязательно).
-        model (str):         ID модели (optional).
-        temperature (float): Температура (default: 0.7).
-        max_tokens (int):    Максимум токенов (default: 2048).
+    request: JSON body with fields:
+        session_id (str):    Session ID (required).
+        message (str):       Message text (required).
+        model (str):         Model ID (optional).
+        temperature (float): Sampling temperature (default: 0.7).
+        max_tokens (int):    Max tokens (default: 2048).
 
 Returns:
-    StreamingResponse: SSE-поток с чанками {chunk} и финальным {done: True}.
+    StreamingResponse: SSE stream with {chunk} events and final {done: True}.
 
 Raises:
-    HTTPException 400: Неверный session_id или пустое сообщение.
+    HTTPException 400: Invalid session_id or empty message.
 
 **Путь:** `POST /api/v1/chat/stream`
 
@@ -514,51 +652,51 @@ curl -X POST http://localhost:9696/api/v1/chat/stream \
 ```
 
 ## None
-Получить историю разговора.
+Get in-memory session history.
 
 Args:
-    session_id: UUID сессии чата.
+    session_id: Chat session UUID.
 
 Returns:
     dict: success, session_id, history (list of {role, content}).
 
 Raises:
-    HTTPException 404: Сессия не найдена.
+    HTTPException 404: Session not found.
 
 **Путь:** `GET /api/v1/chat/history/{session_id}`
 
 ## None
-Удалить сессию чата.
+Delete an in-memory chat session.
 
 Args:
-    session_id: UUID сессии чата.
+    session_id: Chat session UUID.
 
 Returns:
     dict: success, message.
 
 Raises:
-    HTTPException 404: Сессия не найдена.
+    HTTPException 404: Session not found.
 
 **Путь:** `DELETE /api/v1/chat/session/{session_id}`
 
 ## None
-! Сохраняет историю чата на диск.
+Persist chat history to disk.
 
-Содержимое сохраняется в: ~/.ai-assistant-chat-history/
+Saves to config.dir_dialogs (~/.ai_assist/dialogs/ by default).
 
 Args:
-    request: JSON body с полями:
-        messages (list):    Список сообщений {role, content} (обязательно).
-        session_id (str):   UUID сессии (optional, генерируется если пусто).
-        model (str):        ID модели (optional).
-        title (str):        Заголовок чата (optional).
-        aborted (bool):     Был ли чат прерван (default: False).
+    request: JSON body with fields:
+        messages (list):  List of {role, content} (required).
+        session_id (str): Session UUID (generated if empty).
+        model (str):      Model ID (optional).
+        title (str):      Dialog title (optional).
+        aborted (bool):   Whether chat was aborted (default: False).
 
 Returns:
-    dict: success, file (path to saved JSON), session_id.
+    dict: success, file (absolute path), session_id.
 
 Raises:
-    HTTPException 400: messages отсутствуют или пусты.
+    HTTPException 400: messages missing or empty.
 
 **Путь:** `POST /api/v1/chat/history/save`
 
@@ -571,7 +709,58 @@ curl -X POST http://localhost:9696/api/v1/chat/history/save \
 ```
 
 ## None
-Получить список доступных моделей.
+List saved dialog files from disk, newest first.
+
+Args:
+    limit (int):  Max number of entries to return (default: 50).
+    offset (int): Pagination offset (default: 0).
+
+Returns:
+    dict: success, dialogs (list of metadata), total, dir.
+
+**Путь:** `GET /api/v1/chat/history/list`
+
+## None
+Load a single saved dialog from disk.
+
+Args:
+    filename: JSON filename (e.g. 'uuid_1234567890.json').
+
+Returns:
+    dict: success + full dialog payload.
+
+Raises:
+    HTTPException 400: Unsafe filename.
+    HTTPException 404: File not found.
+
+**Путь:** `GET /api/v1/chat/history/file/{filename}`
+
+## None
+Delete old and oversized dialog files.
+
+Applies retention_days and max_size_mb from config.dialogs.
+Can be overridden per-request.
+
+Args:
+    request: Optional JSON body with fields:
+        retention_days (int): Override retention period.
+        max_size_mb (int):    Override size limit.
+
+Returns:
+    dict: success, deleted (count), freed_bytes, remaining.
+
+**Путь:** `POST /api/v1/chat/history/cleanup`
+
+### Пример вызова:
+
+```bash
+curl -X POST http://localhost:9696/api/v1/chat/history/cleanup \
+     -H "Content-Type: application/json" \
+     -d '{"param": "value"}'
+```
+
+## None
+List available Foundry models for chat.
 
 Returns:
     dict: success, models (list of {id, name, type, size}), count.
@@ -1027,22 +1216,16 @@ Returns:
 **Путь:** `GET /api/v1/hf/models`
 
 ## None
-! Скачать модель с HuggingFace Hub.
-
-Для закрытых моделей (Gemma, Llama) нужно:
-1. Принять лицензию на huggingface.co/<model_id>
-2. Передать HF токен или установить HF_TOKEN в .env
+Download model from HuggingFace Hub (blocking, no progress).
 
 Args:
-    request: JSON body с полями:
-        model_id (str): HuggingFace model ID (обязательно).
-        token (str):    HF токен (optional, переопределяет HF_TOKEN).
+    request: {model_id (str), token (str, optional)}
 
 Returns:
     dict: success, model_id, path on success; success=False, error on failure.
 
 Raises:
-    HTTPException 400: model_id не передан.
+    HTTPException 400: model_id not provided.
 
 **Путь:** `POST /api/v1/hf/models/download`
 
@@ -1053,6 +1236,24 @@ curl -X POST http://localhost:9696/api/v1/hf/models/download \
      -H "Content-Type: application/json" \
      -d '{"param": "value"}'
 ```
+
+## None
+Download HuggingFace model with SSE progress stream.
+
+Streams file-by-file progress events as Server-Sent Events.
+Each event is a JSON object with fields:
+    type: 'file_start' | 'file_done' | 'done' | 'error'
+    filename, file_index, total_files (for file events)
+    path (for 'done'), error (for 'error')
+
+Args:
+    model_id: HuggingFace model ID, e.g. 'Qwen/Qwen2.5-0.5B-Instruct'.
+    token:    Optional HF token (overrides HF_TOKEN env var).
+
+Returns:
+    StreamingResponse: text/event-stream
+
+**Путь:** `GET /api/v1/hf/models/download/stream`
 
 ## None
 ! Загрузить скачанную модель в память для inference.
@@ -1700,3 +1901,53 @@ curl -X POST http://localhost:9696/api/v1/training/run \
      -H "Content-Type: application/json" \
      -d '{"param": "value"}'
 ```
+
+## None
+Record a page view event from the browser extension.
+
+Args:
+    event: PageViewEvent with user_id, url, title, time_spent, timestamp.
+
+Returns:
+    dict: success status and total views count for the user.
+
+**Путь:** `POST /api/v1/recommender/track`
+
+### Пример вызова:
+
+```bash
+curl -X POST http://localhost:9696/api/v1/recommender/track \
+     -H "Content-Type: application/json" \
+     -d '{"param": "value"}'
+```
+
+## None
+Generate AI-powered recommendations based on browsing history.
+
+Args:
+    request: RecommendRequest with user_id, optional model, top_k.
+
+Returns:
+    dict: success, answer (recommendations text), tool_calls log.
+
+**Путь:** `POST /api/v1/recommender/recommendations`
+
+### Пример вызова:
+
+```bash
+curl -X POST http://localhost:9696/api/v1/recommender/recommendations \
+     -H "Content-Type: application/json" \
+     -d '{"param": "value"}'
+```
+
+## None
+Return filtered browsing history for a user.
+
+Args:
+    user_id: User identifier.
+    min_time: Minimum seconds on page to include (default 10).
+
+Returns:
+    dict: success, user_id, views list, count.
+
+**Путь:** `GET /api/v1/recommender/history`

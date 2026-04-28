@@ -533,3 +533,172 @@ async def get_supported_formats() -> dict:
         return {"success": True, "formats": ext_settings.SUPPORTED_FORMATS}
     except ImportError:
         return {"success": False, "error": "TextExtractor not available"}
+
+
+# ── Incremental Document Management ──────────────────────────────────────────
+
+class DocumentAddRequest(BaseModel):
+    title: str
+    content: str
+    source_path: str = ""
+
+
+class DocumentUpdateRequest(BaseModel):
+    title: str
+    content: str
+
+
+def _get_indexer():
+    """Return the IncrementalIndexer singleton."""
+    from ...rag.incremental_indexer import get_indexer
+    return get_indexer(str(Path(app_config.rag_index_dir).expanduser()))
+
+
+@router.get("/documents")
+@api_response_handler
+async def list_documents() -> dict:
+    """! Список всех документов в хранилище.
+
+    Returns:
+        dict: success, documents — список с id, title, chunk_count, updated_at.
+    """
+    loop = asyncio.get_event_loop()
+    docs = await loop.run_in_executor(None, lambda: _get_indexer().store.list_documents())
+    return {"success": True, "documents": docs, "total": len(docs)}
+
+
+@router.post("/documents")
+@api_response_handler
+async def add_document(request: DocumentAddRequest) -> dict:
+    """! Добавить документ и проиндексировать его инкрементально.
+
+    Args:
+        request (DocumentAddRequest): title, content, source_path.
+
+    Returns:
+        dict: success, doc_id, chunks_added.
+
+    Example:
+        POST /api/v1/rag/documents
+        {"title": "Manual", "content": "..."}
+    """
+    if not request.title.strip() or not request.content.strip():
+        return {"success": False, "error": "title and content are required"}
+
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None,
+        lambda: _get_indexer().add_document(request.title, request.content, request.source_path),
+    )
+    if result["success"]:
+        rag_system._search_cache = {}
+    return result
+
+
+@router.get("/documents/{doc_id}")
+@api_response_handler
+async def get_document(doc_id: int) -> dict:
+    """! Получить документ по id.
+
+    Args:
+        doc_id (int): Document id.
+
+    Returns:
+        dict: success, document.
+    """
+    doc = _get_indexer().store.get_document(doc_id)
+    if not doc:
+        return {"success": False, "error": f"Document {doc_id} not found"}
+    return {"success": True, "document": doc}
+
+
+@router.put("/documents/{doc_id}")
+@api_response_handler
+async def update_document(doc_id: int, request: DocumentUpdateRequest) -> dict:
+    """! Обновить документ и переиндексировать если контент изменился.
+
+    Args:
+        doc_id (int): Document id.
+        request (DocumentUpdateRequest): title, content.
+
+    Returns:
+        dict: success, chunks_added, changed.
+    """
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None,
+        lambda: _get_indexer().update_document(doc_id, request.title, request.content),
+    )
+    if result.get("success") and result.get("changed"):
+        rag_system._search_cache = {}
+    return result
+
+
+@router.delete("/documents/{doc_id}")
+@api_response_handler
+async def delete_document(doc_id: int) -> dict:
+    """! Удалить документ и деактивировать его чанки.
+
+    Args:
+        doc_id (int): Document id.
+
+    Returns:
+        dict: success.
+    """
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, lambda: _get_indexer().delete_document(doc_id))
+    if result.get("success"):
+        rag_system._search_cache = {}
+    return result
+
+
+@router.post("/documents/{doc_id}/reindex")
+@api_response_handler
+async def reindex_document(doc_id: int) -> dict:
+    """! Принудительно переиндексировать один документ.
+
+    Args:
+        doc_id (int): Document id.
+
+    Returns:
+        dict: success, chunks_added.
+    """
+    indexer = _get_indexer()
+    doc = indexer.store.get_document(doc_id)
+    if not doc:
+        return {"success": False, "error": f"Document {doc_id} not found"}
+
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None,
+        lambda: indexer.update_document(doc_id, doc["title"], doc["content"]),
+    )
+    rag_system._search_cache = {}
+    return result
+
+
+@router.post("/compact")
+@api_response_handler
+async def compact_index() -> dict:
+    """! Перестроить FAISS индекс из активных чанков (удалить мёртвые векторы).
+
+    Returns:
+        dict: success, vectors_before, vectors_after.
+    """
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, lambda: _get_indexer().compact())
+    rag_system._search_cache = {}
+    return result
+
+
+@router.get("/documents/stats")
+@api_response_handler
+async def get_document_stats() -> dict:
+    """! Статистика хранилища документов и FAISS индекса.
+
+    Returns:
+        dict: documents, active_chunks, inactive_chunks, faiss_vectors, compact_recommended.
+    """
+    loop = asyncio.get_event_loop()
+    stats = await loop.run_in_executor(None, lambda: _get_indexer().get_stats())
+    return {"success": True, **stats}

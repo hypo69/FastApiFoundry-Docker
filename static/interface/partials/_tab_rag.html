@@ -138,6 +138,85 @@
                     </div>
                 </div>
 
+                <!-- ── Document Manager ──────────────────────────────────────── -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-journal-text"></i>
+                                    <span data-i18n="rag.doc_manager">Document Manager</span>
+                                    <span class="badge bg-info ms-2" id="rag-doc-count">0</span>
+                                </h6>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="ragLoadDocuments()" title="Refresh">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" onclick="ragCompactIndex()" id="rag-compact-btn" title="Compact index (remove dead vectors)" style="display:none">
+                                        <i class="bi bi-scissors"></i> <span data-i18n="rag.compact">Compact</span>
+                                    </button>
+                                    <button class="btn btn-sm btn-success" onclick="ragShowAddModal()">
+                                        <i class="bi bi-plus-lg"></i> <span data-i18n="rag.add_doc">Add Document</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Info block -->
+                            <div class="alert alert-info m-3 mb-0 py-2" style="font-size:.82rem">
+                                <i class="bi bi-info-circle me-1"></i>
+                                <strong data-i18n="rag.doc_manager_info_title">Incremental indexing:</strong>
+                                <span data-i18n="rag.doc_manager_info">Add or edit documents here — only changed content is re-embedded. Deleted documents are soft-removed; run <strong>Compact</strong> to reclaim FAISS space.</span>
+                            </div>
+
+                            <div class="card-body p-0">
+                                <div id="rag-doc-stats" class="px-3 pt-2 pb-1 text-muted" style="font-size:.8rem"></div>
+                                <div id="rag-documents-list" style="max-height:320px;overflow-y:auto">
+                                    <div class="text-muted text-center p-3"><small data-i18n="rag.no_docs">No documents yet. Add one →</small></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add / Edit Document Modal -->
+                <div class="modal fade" id="ragDocModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="ragDocModalTitle" data-i18n="rag.add_doc">Add Document</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" id="rag-doc-edit-id" value="">
+                                <div class="mb-3">
+                                    <label class="form-label" data-i18n="rag.doc_title">Title</label>
+                                    <input type="text" id="rag-doc-title" class="form-control" placeholder="Document title">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label d-flex justify-content-between">
+                                        <span data-i18n="rag.doc_content">Content</span>
+                                        <small class="text-muted" id="rag-doc-char-count">0 chars</small>
+                                    </label>
+                                    <textarea id="rag-doc-content" class="form-control font-monospace"
+                                              rows="12" style="font-size:.82rem;resize:vertical"
+                                              placeholder="Paste document text here..."
+                                              oninput="document.getElementById('rag-doc-char-count').textContent = this.value.length + ' chars'"></textarea>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label" data-i18n="rag.doc_source">Source path (optional)</label>
+                                    <input type="text" id="rag-doc-source" class="form-control" placeholder="/path/to/file.md">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="ragSaveDocument()" id="rag-doc-save-btn">
+                                    <i class="bi bi-floppy"></i> <span data-i18n="common.save">Save &amp; Index</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Text Extractor section -->
                 <div class="row mt-3">
                     <div class="col-12">

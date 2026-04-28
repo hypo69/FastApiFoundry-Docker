@@ -1,5 +1,8 @@
 # 📚 RAG Система (Retrieval-Augmented Generation)
 
+!!! info "См. также"
+    Краткий технический справочник по всем классам и файлам модуля: [`src/rag/README.md`](https://github.com/hypo69/FastApiFoundry-Docker/blob/master/src/rag/README.md)
+
 Модуль `src/rag/rag_system.py` является ядром системы RAG, отвечающим за управление векторными индексами FAISS, поиск релевантных фрагментов текста и их подготовку для передачи в LLM.
 
 ---

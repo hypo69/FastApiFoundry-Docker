@@ -21,8 +21,8 @@ router = APIRouter()
 
 @router.get("/")
 async def root():
-    """FastAPI Foundry Control Panel"""
-    return FileResponse('static/index.html')
+    """Serve main interface SPA."""
+    return FileResponse('static/interface/index.html')
 
 @router.get("/api")
 async def api_info():
