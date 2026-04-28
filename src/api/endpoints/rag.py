@@ -37,7 +37,7 @@ from ...rag.rag_system import rag_system
 from src.core.config import config as app_config
 from src.logger import logger
 from ...utils.api_utils import api_response_handler
-from ...rag.text_extractor_4_rag.utils import sanitize_filename as sanitize_for_filesystem
+from ...rag.text_extractors.text_extractor_4_rag.utils import sanitize_filename as sanitize_for_filesystem
 
 router = APIRouter(prefix="/rag", tags=["RAG"])
 
@@ -461,7 +461,7 @@ async def extract_text_from_file(file: UploadFile = File(...)) -> dict:
     try:
         extractor: Any = None
         results: list = []
-        from ...rag.text_extractor_4_rag import TextExtractor
+        from ...rag.text_extractors.text_extractor_4_rag import TextExtractor
     except ImportError as e:
         return {"success": False, "error": f"TextExtractor not available: {e}"}
 
@@ -498,8 +498,8 @@ async def extract_text_from_url(request: ExtractURLRequest) -> dict:
     try:
         extractor: Any = None
         results: list = []
-        from ...rag.text_extractor_4_rag import TextExtractor
-        from ...rag.text_extractor_4_rag.main import ExtractionOptions
+        from ...rag.text_extractors.text_extractor_4_rag import TextExtractor
+        from ...rag.text_extractors.text_extractor_4_rag.main import ExtractionOptions
     except ImportError as e:
         return {"success": False, "error": f"TextExtractor not available: {e}"}
 
@@ -529,7 +529,7 @@ async def get_supported_formats() -> dict:
         dict: Список расширений.
     """
     try:
-        from ...rag.text_extractor_4_rag.config import settings as ext_settings
+        from ...rag.text_extractors.text_extractor_4_rag.config import settings as ext_settings
         return {"success": True, "formats": ext_settings.SUPPORTED_FORMATS}
     except ImportError:
         return {"success": False, "error": "TextExtractor not available"}
