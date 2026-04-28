@@ -124,7 +124,8 @@ ai_assist/  (FastApiFoundry-Docker)
 ├── static/                # Веб-интерфейс (SPA)
 ├── docs/                  # MkDocs документация
 ├── extensions/            # Браузерные расширения
-├── mcp-powershell-servers/ # MCP серверы (PowerShell STDIO)
+├── mcp/                   # MCP серверы
+│   └── src/servers/       #   local_models_mcp.py, huggingface_mcp.py, ftp_mcp.py, McpSTDIOServer.ps1
 ├── scripts/               # Операционные скрипты
 ├── install/               # Скрипты установки
 ├── check_engine/          # Диагностика и тесты
