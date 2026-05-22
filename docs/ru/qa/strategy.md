@@ -1,6 +1,6 @@
 # Стратегия тестирования
 
-**Версия:** 0.7.1 | **Проект:** AI Assistant (ai_assist)
+**Версия:** 0.8.0 | **Проект:** AI Assistant (ai_assist)
 
 ---
 
@@ -15,6 +15,8 @@
 - Парсинг JSON (`src/utils/`) — корректные данные, пустые объекты, битый JSON, Unicode
 - Обработка конфигурации (`config_manager.py`) — чтение секций, значения по умолчанию
 - Утилиты (`src/utils/text_utils.py`, `src/utils/env_processor.py`)
+- **TextExtractor**: Проверка маппинга (XLSX -> MarkItDown, IMG -> OCR), корректность фолбэков при отсутствии библиотек.
+- **RAG Core**: Проверка формулы `inactive_chunks` и валидация ID-синхронизации между FAISS и SQLite.
 
 **Правила:**
 
@@ -33,6 +35,8 @@
 - PowerShell MCP сервер — выполнение команд через `subprocess`, передача JSON через stdin
 - FastAPI эндпоинты — через `httpx.AsyncClient` с моком внешних сервисов (`respx`)
 - Foundry AI — имитация ответов через `respx.mock`
+- **RAG Compact Lifecycle**: Тестирование цепочки: Индексация -> Soft-delete -> Валидация Stats -> Вызов Compact -> Физическая проверка FAISS.
+- **Foundry Warm-up**: Проверка, что статус `loaded` устанавливается только после успешного `max_tokens=1` запроса.
 
 **Правила:**
 

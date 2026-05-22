@@ -4,12 +4,13 @@
 // =============================================================================
 // Description:
 //   Renders the Models tab:
-//     - "Active Models" — models currently loaded in memory (ready for API calls)
+//     - "Active Models" — models currently loaded/running (ready for API calls)
 //     - "Available Models" — all known models grouped by provider, with
 //       Load / Unload / Download actions per model
 //
 //   Data sources (polled in parallel):
 //     GET /api/v1/foundry/models/cached   — Foundry models on disk (no service probe)
+//     GET /api/v1/foundry/models/loaded   — Foundry models running in service
 //     GET /api/v1/hf/models               — HuggingFace downloaded + loaded
 //     GET /api/v1/llama/status            — llama.cpp running model
 //     GET /api/v1/llama/models            — llama.cpp GGUF files on disk
@@ -122,8 +123,9 @@ async function _post(url, body = {}) {
  * Returns { active: [], byProvider: { foundry: [], huggingface: [], llama: [], ollama: [] } }
  */
 async function _collectAllModels() {
-    const [foundryCached, hfData, llamaStatus, llamaDisk, llamaLoaded, ollamaData] = await Promise.allSettled([
+    const [foundryCached, foundryLoaded, hfData, llamaStatus, llamaDisk, llamaLoaded, ollamaData] = await Promise.allSettled([
         _get(`${window.API_BASE}/foundry/models/cached`),
+        _get(`${window.API_BASE}/foundry/models/loaded`),
         _get(`${window.API_BASE}/hf/models`),
         _get(`${window.API_BASE}/llama/status`),
         _get(`${window.API_BASE}/llama/models`),
@@ -135,14 +137,42 @@ async function _collectAllModels() {
     const byProvider = { foundry: [], huggingface: [], llama: [], ollama: [] };
 
     // ── Foundry ──────────────────────────────────────────────────────────────
+    const loadedFoundryIds = new Set(
+        (foundryLoaded.success ? (foundryLoaded.models || []) : []).map(m => m.id)
+    );
+
+    for (const m of (foundryLoaded.success ? (foundryLoaded.models || []) : [])) {
+        const id = m.id;
+        if (!id) continue;
+        active.push({
+            provider: 'foundry',
+            id,
+            label: m.alias || m.name || id,
+            prefix: `foundry::${id}`,
+        });
+    }
+
     for (const m of (foundryCached.success ? (foundryCached.items || []) : [])) {
         byProvider.foundry.push({
             id:     m.id,
             label:  m.name || m.alias || m.id,
             size:   m.size || '',
             device: m.device || m.type || '',
-            loaded: false,
+            loaded: loadedFoundryIds.has(m.id),
             cached: true,
+            prefix: `foundry::${m.id}`,
+        });
+    }
+
+    for (const m of (foundryLoaded.success ? (foundryLoaded.models || []) : [])) {
+        if (!m.id || byProvider.foundry.some(cached => cached.id === m.id)) continue;
+        byProvider.foundry.push({
+            id:     m.id,
+            label:  m.alias || m.name || m.id,
+            size:   '',
+            device: '',
+            loaded: true,
+            cached: false,
             prefix: `foundry::${m.id}`,
         });
     }
@@ -295,6 +325,9 @@ function _renderAvailable(byProvider) {
                 : m.loading
                     ? '<span class="badge bg-warning text-dark me-1"><span class="spinner-border spinner-border-sm" style="width:.6em;height:.6em"></span> Loading</span>'
                     : '';
+            const cachedBadge = m.cached === false
+                ? '<span class="badge bg-info text-dark me-1">Running</span>'
+                : '';
             const sizeBadge = m.size
                 ? `<span class="badge bg-light text-dark me-1">${_escapeHtml(m.size)}</span>`
                 : '';
@@ -315,7 +348,7 @@ function _renderAvailable(byProvider) {
                 style="font-size:.85rem;gap:.5rem">
                 <div class="flex-grow-1 overflow-hidden">
                     <span class="fw-semibold text-truncate d-block" title="${_escapeHtml(m.id)}">${_escapeHtml(m.label)}</span>
-                    <div class="mt-1">${loadedBadge}${sizeBadge}${deviceBadge}
+                    <div class="mt-1">${loadedBadge}${cachedBadge}${sizeBadge}${deviceBadge}
                         <code style="font-size:.7rem;color:#adb5bd">${_escapeHtml(m.prefix)}</code>
                     </div>
                 </div>
@@ -470,7 +503,7 @@ window.refreshModels   = refreshModels;
  * Called on boot and whenever a model is loaded/unloaded.
  *
  * Groups:
- *   - Foundry loaded models  → value "foundry::id"
+ *   - Foundry cached models  → value "foundry::id"
  *   - HuggingFace downloaded → value "hf::id"
  *   - llama.cpp GGUF files   → value "llama::path"
  *   - Ollama models          → value "ollama::name"

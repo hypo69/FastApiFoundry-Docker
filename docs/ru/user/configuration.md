@@ -175,6 +175,8 @@ notepad .env
 | RAG включён | `rag_system.enabled` | true / false |
 | Активный индекс RAG | `rag_system.index_dir` | `~/.aiassistant/rag/default_index` |
 | Размер чанка | `rag_system.chunk_size` | 1000 символов |
+| Порог очистки (Compact) | `rag_system.compact_threshold_percent` | 20 (%) — доля неактивных данных |
+| Интервал Compact | `rag_system.compact_check_interval_hours` | 24 (часа) — частота проверки |
 | Уровень логов | `logging.level` | INFO по умолчанию |
 | Файл логов | `logging.file` | Пусто = только консоль |
 | MkDocs включён | `docs_server.enabled` | Документация на порту 9697 |

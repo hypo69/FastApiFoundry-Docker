@@ -267,19 +267,19 @@ async def get_all_models() -> dict:
 async def get_connected_models() -> dict:
     """Get models currently ready/connected across providers.
 
-    For Foundry, this reports models available from the running service, not a
-    guaranteed loaded-in-RAM state.
+    For Foundry, this uses `foundry service list` through
+    /foundry/models/loaded so the result is the runtime loaded set.
 
     Returns:
         dict: success, models (list), count.
     """
     import asyncio
-    from ...models.foundry_client import foundry_client
     from ...models.hf_client import hf_client
+    from .foundry_models import list_loaded_models as _foundry_loaded
     from .llama_cpp import llama_status as _llama_status
 
     results = await asyncio.gather(
-        _safe_get(foundry_client.list_available_models()),
+        _safe_get(_foundry_loaded()),
         _safe_get(_llama_status()),
         return_exceptions=True,
     )
@@ -289,8 +289,7 @@ async def get_connected_models() -> dict:
 
     models: list[dict] = []
 
-    # Foundry available/registered. Foundry Local does not expose a reliable
-    # separate loaded-in-RAM list through GET /v1/models.
+    # Foundry running models from `foundry service list`.
     for m in foundry_data.get("models", []):
         mid = m.get("id", "")
         if mid:
@@ -299,7 +298,7 @@ async def get_connected_models() -> dict:
                 "name":     m.get("name") or mid,
                 "provider": "foundry",
                 "prefix":   f"foundry::{mid}",
-                "status":   "available",
+                "status":   "loaded",
             })
 
     # HuggingFace loaded

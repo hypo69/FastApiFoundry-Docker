@@ -25,7 +25,9 @@
     ],
     "model": "sentence-transformers/all-MiniLM-L6-v2",
     "chunk_size": 1000,
-    "top_k": 5
+    "top_k": 5,
+    "compact_threshold_percent": 20,
+    "compact_check_interval_hours": 24
   },
   "security": {
     "api_key": "",

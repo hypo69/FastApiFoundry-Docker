@@ -11,6 +11,10 @@
 #
 #   Foundry Local API endpoints used:
 #     GET    /v1/models              — list available/registered models
+#     GET    /openai/models          — list cached models (native)
+#     GET    /openai/loadedmodels    — list loaded models (native)
+#     GET    /openai/load/{name}     — load model into memory (native)
+#     GET    /openai/unload/{name}   — unload model from memory (native)
 #     POST   /v1/chat/completions    — inference (via foundry_client)
 #     POST   /v1/completions         — text completion (via foundry_client)
 #     POST   /v1/embeddings          — embeddings (via foundry_client)
@@ -37,6 +41,11 @@
 #   - Added /completions proxy (Foundry /v1/completions)
 #   - Added /embeddings proxy (Foundry /v1/embeddings)
 #   - Replaced CLI subprocess calls with Foundry HTTP API (load, list_available)
+# Changes in 0.7.2:
+#   - Removed hardcoded AVAILABLE_MODELS fallback
+#   - Added catalog cache mechanism
+#   - Simplified load/unload to use native /openai/load and /openai/unload
+#   - Removed SDK dependency from foundry_client
 # Author: hypo69
 # Copyright: © 2026 hypo69
 # =============================================================================
@@ -44,6 +53,7 @@
 import subprocess
 import logging
 import os
+import json
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from ...utils.foundry_utils import is_foundry_model_cached, _get_foundry_cache_dir
@@ -53,45 +63,8 @@ from ...utils.api_utils import api_response_handler
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/foundry/models", tags=["foundry-models"])
 
-# Hardcoded fallback catalog — shown when Foundry service is unreachable.
-# Used by list_available_models() as last resort so the UI always has something.
-AVAILABLE_MODELS: list = [
-    {
-        "id": "qwen3-0.6b-generic-cpu:4",
-        "name": "Qwen3 0.6B (CPU)",
-        "size": "0.8 GB",
-        "type": "cpu",
-        "description": "Самая лёгкая CPU модель",
-    },
-    {
-        "id": "qwen2.5-0.5b-instruct-generic-cpu:4",
-        "name": "Qwen 2.5 0.5B (CPU)",
-        "size": "0.8 GB",
-        "type": "cpu",
-        "description": "Лёгкая CPU модель",
-    },
-    {
-        "id": "qwen2.5-1.5b-instruct-generic-cpu:4",
-        "name": "Qwen 2.5 1.5B (CPU)",
-        "size": "1.78 GB",
-        "type": "cpu",
-        "description": "Средняя CPU модель",
-    },
-    {
-        "id": "deepseek-r1-distill-qwen-7b-generic-cpu:3",
-        "name": "DeepSeek R1 Distill 7B (CPU)",
-        "size": "6.43 GB",
-        "type": "cpu",
-        "description": "Продвинутая CPU модель с рассуждениями",
-    },
-    {
-        "id": "phi-3-mini-4k-instruct-openvino-gpu:1",
-        "name": "Phi-3 Mini 4K (GPU)",
-        "size": "2.4 GB",
-        "type": "gpu",
-        "description": "GPU модель",
-    },
-]
+# Catalog cache file path
+_CATALOG_CACHE_FILE = Path("config/foundry_catalog.json")
 
 # Background download processes: {pid: {"model_id": str, "process": Popen}}
 _download_processes: dict = {}
@@ -100,6 +73,97 @@ _download_processes: dict = {}
 def _get_foundry_base_url() -> str:
     """Return Foundry service base URL from environment or config."""
     return os.getenv("FOUNDRY_BASE_URL", "http://localhost:63995/v1/")
+
+
+def _load_catalog_cache() -> list:
+    """Load cached catalog from file if it exists and is valid.
+    
+    Returns:
+        list: Cached catalog models or empty list if cache is invalid/missing.
+    """
+    if not _CATALOG_CACHE_FILE.exists():
+        return []
+    
+    try:
+        with open(_CATALOG_CACHE_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            if isinstance(data, list):
+                return data
+    except (json.JSONDecodeError, OSError) as e:
+        logger.warning(f"Failed to load catalog cache: {e}")
+    
+    return []
+
+
+def _save_catalog_cache(models: list) -> None:
+    """Save catalog to cache file.
+    
+    Args:
+        models: List of model dictionaries to cache.
+    """
+    try:
+        # Ensure directory exists
+        _CATALOG_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(_CATALOG_CACHE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(models, f, indent=2, ensure_ascii=False)
+        logger.info(f"Catalog cache saved: {_CATALOG_CACHE_FILE}")
+    except OSError as e:
+        logger.error(f"Failed to save catalog cache: {e}")
+
+
+def _refresh_catalog_cache() -> dict:
+    """Refresh catalog cache by fetching from Foundry CLI.
+    
+    Returns:
+        dict: Result with success status and models.
+    """
+    try:
+        result = run_command(["foundry", "model", "list"], timeout=15)
+    except FileNotFoundError:
+        logger.warning("foundry CLI not found — cannot refresh catalog cache")
+        return {"success": False, "error": "foundry CLI not found", "models": []}
+    except Exception as e:
+        logger.warning(f"foundry model list failed: {e} — cannot refresh catalog cache")
+        return {"success": False, "error": str(e), "models": []}
+    
+    output = (result.stdout or "").strip()
+    if result.returncode != 0 or not output:
+        logger.warning("foundry model list returned no output — cannot refresh catalog cache")
+        return {"success": False, "error": "CLI returned no output", "models": []}
+    
+    # Parse CLI table output
+    import re
+    parsed: list[dict] = []
+    current_alias = ""
+    for line in output.splitlines():
+        line = line.strip()
+        if not line or line.startswith("-") or line.lower().startswith("alias"):
+            continue
+        parts = [p.strip() for p in line.split("|")]
+        if len(parts) < 6:
+            continue
+        alias, device, task, size, license_, model_id = parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]
+        if alias:
+            current_alias = alias
+        parsed.append({
+            "id":      model_id,
+            "alias":   current_alias,
+            "name":    current_alias or model_id,
+            "device":  device,
+            "task":    task,
+            "size":    size,
+            "license": license_,
+            "cached":  is_foundry_model_cached(model_id),
+            "loaded":  False,
+        })
+    
+    if parsed:
+        _save_catalog_cache(parsed)
+        logger.info(f"Catalog cache refreshed: {len(parsed)} models")
+        return {"success": True, "models": parsed, "count": len(parsed)}
+    
+    logger.warning("Failed to parse foundry model list output")
+    return {"success": False, "error": "Failed to parse CLI output", "models": []}
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -148,28 +212,29 @@ async def list_catalog_models() -> dict:
     This is the catalog of ALL models available for download from Foundry,
     not just the ones already cached or loaded.
     Uses CLI because Foundry has no HTTP API for the catalog.
+    Falls back to cached catalog if CLI is unavailable.
 
     Returns:
         dict: success, models (list with id, alias, device, task, size, license, cached),
-              count, source.
+              count, source ('foundry-cli', 'cached', or 'empty').
     """
     import re
     try:
         result = run_command(["foundry", "model", "list"], timeout=15)
     except FileNotFoundError:
-        logger.warning("foundry CLI not found — returning hardcoded catalog")
-        models = [{**m, "cached": is_foundry_model_cached(m["id"]), "loaded": False} for m in AVAILABLE_MODELS]
-        return {"success": True, "models": models, "count": len(models), "source": "hardcoded"}
+        logger.warning("foundry CLI not found — returning cached catalog")
+        cached = _load_catalog_cache()
+        return {"success": True, "models": cached, "count": len(cached), "source": "cached"}
     except Exception as e:
-        logger.warning("foundry model list failed: %s — returning hardcoded catalog", e)
-        models = [{**m, "cached": is_foundry_model_cached(m["id"]), "loaded": False} for m in AVAILABLE_MODELS]
-        return {"success": True, "models": models, "count": len(models), "source": "hardcoded"}
+        logger.warning(f"foundry model list failed: {e} — returning cached catalog")
+        cached = _load_catalog_cache()
+        return {"success": True, "models": cached, "count": len(cached), "source": "cached"}
 
     output = (result.stdout or "").strip()
     if result.returncode != 0 or not output:
-        logger.warning("foundry model list returned no output — returning hardcoded catalog")
-        models = [{**m, "cached": is_foundry_model_cached(m["id"]), "loaded": False} for m in AVAILABLE_MODELS]
-        return {"success": True, "models": models, "count": len(models), "source": "hardcoded"}
+        logger.warning("foundry model list returned no output — returning cached catalog")
+        cached = _load_catalog_cache()
+        return {"success": True, "models": cached, "count": len(cached), "source": "cached"}
 
     # Parse CLI table output:
     # Alias          | Device | Task | File Size | License | Model ID
@@ -199,10 +264,12 @@ async def list_catalog_models() -> dict:
         })
 
     if not parsed:
-        # CLI ran but output unparseable — return hardcoded
-        models = [{**m, "cached": is_foundry_model_cached(m["id"]), "loaded": False} for m in AVAILABLE_MODELS]
-        return {"success": True, "models": models, "count": len(models), "source": "hardcoded"}
+        logger.warning("Failed to parse foundry model list output — returning cached catalog")
+        cached = _load_catalog_cache()
+        return {"success": True, "models": cached, "count": len(cached), "source": "cached"}
 
+    # Save to cache
+    _save_catalog_cache(parsed)
     logger.info("Foundry catalog: %d models from CLI", len(parsed))
     return {"success": True, "models": parsed, "count": len(parsed), "source": "foundry-cli"}
 
@@ -213,13 +280,13 @@ async def list_available_models() -> dict:
     """List models reported by the running Foundry service.
 
     Uses Foundry HTTP API (GET /v1/models).
-    Falls back to hardcoded AVAILABLE_MODELS when Foundry is unreachable.
+    Returns empty list when Foundry is unreachable (no hardcoded fallback).
 
     NOTE: Foundry Local does not expose a reliable separate "loaded in RAM"
     list here. Treat these as available/registered models.
 
     Returns:
-        dict: success, models, count, source ('foundry-api' or 'hardcoded').
+        dict: success, models, count, source ('foundry-api', 'cached', or 'empty').
     """
     from ...models.foundry_client import foundry_client
 
@@ -243,10 +310,9 @@ async def list_available_models() -> dict:
         logger.info("Foundry API returned %d models", len(normalized))
         return {"success": True, "models": normalized, "count": len(normalized), "source": "foundry-api"}
 
-    # Fallback: hardcoded catalog with cache status from filesystem
-    logger.warning("Foundry API unavailable, falling back to hardcoded model list")
-    models = [{**m, "cached": is_foundry_model_cached(m["id"]), "loaded": False} for m in AVAILABLE_MODELS]
-    return {"success": True, "models": models, "count": len(models), "source": "hardcoded"}
+    # No hardcoded fallback - return empty list with warning
+    logger.warning("Foundry API unavailable, returning empty model list")
+    return {"success": True, "models": [], "count": 0, "source": "empty"}
 
 
 @router.get("/cached")
@@ -325,24 +391,27 @@ async def list_cached_models() -> dict:
 @router.get("/loaded")
 @api_response_handler
 async def list_loaded_models() -> dict:
-    """Compatibility alias for models reported by Foundry.
+    """List models actually running in the Foundry service.
 
-    Foundry Local does not reliably separate available from loaded in this API.
+    Uses `foundry service list`, because Foundry's OpenAI-compatible
+    `GET /v1/models` reports available/registered models, not the runtime
+    loaded set.
 
     Returns:
         dict: success, models (list of {id, name, status}), count.
     """
     from ...models.foundry_client import foundry_client
 
-    result = await foundry_client.list_available_models()
+    result = await foundry_client.list_running_models()
     if not result.get("success"):
-        return {"success": False, "models": [], "count": 0, "error": result.get("error", "Foundry unavailable")}
+        return {"success": False, "models": [], "count": 0, "error": result.get("error", "Foundry runtime list unavailable")}
 
-    models = [
-        {"id": m.get("id", ""), "name": m.get("id", ""), "status": "available"}
-        for m in result.get("models", [])
-    ]
-    return {"success": True, "models": models, "count": len(models)}
+    return {
+        "success": True,
+        "models": result.get("models", []),
+        "count": result.get("count", 0),
+        "source": result.get("source", "foundry-service-list"),
+    }
 
 
 @router.post("/download")
@@ -471,27 +540,38 @@ async def unload_model(request: dict) -> dict:
 @router.get("/status/{model_id:path}")
 @api_response_handler
 async def get_model_status(model_id: str) -> dict:
-    """Get model status: available in service and/or cached on disk.
+    """Get model status: running in service and/or cached on disk.
 
     Args:
         model_id: Model identifier (path parameter).
 
     Returns:
-        dict: success, model_id, available (bool), cached (bool), status.
+        dict: success, model_id, loaded (bool), cached (bool), status.
     """
-    available_result = await list_loaded_models()
-    is_available = available_result.get("success") and any(
-        m["id"] == model_id for m in available_result.get("models", [])
+    loaded_result = await list_loaded_models()
+    is_loaded = loaded_result.get("success") and any(
+        m["id"] == model_id for m in loaded_result.get("models", [])
     )
     is_cached = is_foundry_model_cached(model_id)
     return {
         "success":  True,
         "model_id": model_id,
-        "available": is_available,
-        "loaded":   False,
+        "available": is_cached,
+        "loaded":   is_loaded,
         "cached":   is_cached,
-        "status":   "available" if is_available else ("cached" if is_cached else "not_downloaded"),
+        "status":   "loaded" if is_loaded else ("cached" if is_cached else "not_downloaded"),
     }
+
+
+@router.post("/catalog/refresh")
+@api_response_handler
+async def refresh_catalog() -> dict:
+    """Force refresh the model catalog cache from Foundry CLI.
+
+    Returns:
+        dict: success, models, count, source ('foundry-cli' or error reason).
+    """
+    return _refresh_catalog_cache()
 
 
 # ── Foundry API proxy: completions + embeddings ────────────────────────────────

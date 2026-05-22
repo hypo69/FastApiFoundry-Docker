@@ -5,22 +5,22 @@
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `GET, HEAD /openapi.json`
+**Путь:** `HEAD, GET /openapi.json`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `GET, HEAD /docs`
+**Путь:** `HEAD, GET /docs`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `GET, HEAD /docs/oauth2-redirect`
+**Путь:** `HEAD, GET /docs/oauth2-redirect`
 
 ## Заголовок отсутствует
 Описание отсутствует
 
-**Путь:** `GET, HEAD /redoc`
+**Путь:** `HEAD, GET /redoc`
 
 ## None
 Serve main interface SPA.
@@ -302,8 +302,8 @@ Returns:
 ## None
 Get models currently ready/connected across providers.
 
-For Foundry, this reports models available from the running service, not a
-guaranteed loaded-in-RAM state.
+For Foundry, this uses `foundry service list` through
+/foundry/models/loaded so the result is the runtime loaded set.
 
 Returns:
     dict: success, models (list), count.
@@ -443,10 +443,11 @@ List the full Foundry model catalog via CLI (foundry model list).
 This is the catalog of ALL models available for download from Foundry,
 not just the ones already cached or loaded.
 Uses CLI because Foundry has no HTTP API for the catalog.
+Falls back to cached catalog if CLI is unavailable.
 
 Returns:
     dict: success, models (list with id, alias, device, task, size, license, cached),
-          count, source.
+          count, source ('foundry-cli', 'cached', or 'empty').
 
 **Путь:** `GET /api/v1/foundry/models/catalog`
 
@@ -454,13 +455,13 @@ Returns:
 List models reported by the running Foundry service.
 
 Uses Foundry HTTP API (GET /v1/models).
-Falls back to hardcoded AVAILABLE_MODELS when Foundry is unreachable.
+Returns empty list when Foundry is unreachable (no hardcoded fallback).
 
 NOTE: Foundry Local does not expose a reliable separate "loaded in RAM"
 list here. Treat these as available/registered models.
 
 Returns:
-    dict: success, models, count, source ('foundry-api' or 'hardcoded').
+    dict: success, models, count, source ('foundry-api', 'cached', or 'empty').
 
 **Путь:** `GET /api/v1/foundry/models/available`
 
@@ -479,9 +480,11 @@ Returns:
 **Путь:** `GET /api/v1/foundry/models/cached`
 
 ## None
-Compatibility alias for models reported by Foundry.
+List models actually running in the Foundry service.
 
-Foundry Local does not reliably separate available from loaded in this API.
+Uses `foundry service list`, because Foundry's OpenAI-compatible
+`GET /v1/models` reports available/registered models, not the runtime
+loaded set.
 
 Returns:
     dict: success, models (list of {id, name, status}), count.
@@ -563,15 +566,31 @@ curl -X POST http://localhost:9696/api/v1/foundry/models/unload \
 ```
 
 ## None
-Get model status: available in service and/or cached on disk.
+Get model status: running in service and/or cached on disk.
 
 Args:
     model_id: Model identifier (path parameter).
 
 Returns:
-    dict: success, model_id, available (bool), cached (bool), status.
+    dict: success, model_id, loaded (bool), cached (bool), status.
 
 **Путь:** `GET /api/v1/foundry/models/status/{model_id:path}`
+
+## None
+Force refresh the model catalog cache from Foundry CLI.
+
+Returns:
+    dict: success, models, count, source ('foundry-cli' or error reason).
+
+**Путь:** `POST /api/v1/foundry/models/catalog/refresh`
+
+### Пример вызова:
+
+```bash
+curl -X POST http://localhost:9696/api/v1/foundry/models/catalog/refresh \
+     -H "Content-Type: application/json" \
+     -d '{"param": "value"}'
+```
 
 ## None
 Text completion через Foundry /v1/completions.

@@ -3,14 +3,15 @@
 # Process Name: Foundry Client
 # =============================================================================
 # Description:
-#   Thin async adapter for Microsoft Foundry Local.
+#   Thin async adapter for Microsoft Foundry Local using native REST API.
 #
-#   Keep this deliberately small:
-#   - discover a live Foundry OpenAI-compatible URL
-#   - list models via GET /models
-#   - generate via POST /chat/completions
-#   - "load" means warm up with a tiny chat request
-#   - "unload" is best-effort via foundry-local-sdk, with CLI fallback
+#   Uses Foundry Local REST API endpoints:
+#     GET  /openai/status          - server status
+#     GET  /openai/models          - cached models list
+#     GET  /openai/loadedmodels    - loaded models list
+#     GET  /openai/load/{name}     - load model into memory
+#     GET  /openai/unload/{name}   - unload model from memory
+#     POST /v1/chat/completions    - inference (OpenAI-compatible)
 #
 # File: foundry_client.py
 # Project: AI Assistant (ai_assist)
@@ -145,21 +146,69 @@ class FoundryClient:
         }
 
     async def list_available_models(self) -> dict:
-        """Return models reported by Foundry GET /models.
+        """Return cached models from Foundry /openai/models.
 
-        Foundry Local does not expose a reliable separate "loaded models" list
-        here, so callers should treat this as available/registered models.
+        Returns list of models that are already downloaded/cached locally.
+        For full catalog, use /foundry/list endpoint.
         """
-        status, data = await self._request_json("GET", "/models")
-        if status != 200 or not isinstance(data, dict):
+        status, data = await self._request_json("GET", "/openai/models")
+        if status != 200 or not isinstance(data, list):
             error = data.get("error") if isinstance(data, dict) else str(data)
             return {"success": False, "error": f"HTTP {status}: {error}", "models": []}
 
-        models = data.get("data", [])
+        # Convert string list to model objects with id
+        models = [{"id": m, "name": m} for m in data]
         return {"success": True, "models": models, "count": len(models)}
 
     async def list_models(self) -> dict:
         return await self.list_available_models()
+
+    async def list_running_models(self) -> dict:
+        """Return models actually loaded in memory using /openai/loadedmodels.
+
+        This is the native Foundry endpoint for getting loaded models list.
+        """
+        status, data = await self._request_json("GET", "/openai/loadedmodels")
+        if status != 200 or not isinstance(data, list):
+            error = data.get("error") if isinstance(data, dict) else str(data)
+            return {"success": False, "error": f"HTTP {status}: {error}", "models": []}
+
+        # Convert string list to model objects
+        models = [{"id": m, "name": m, "status": "loaded"} for m in data]
+        return {"success": True, "models": models, "count": len(models), "source": "foundry-openai-loadedmodels"}
+
+    async def load_model(self, model_id: str) -> dict:
+        """Load model into memory using native /openai/load/{name} endpoint.
+
+        Uses Foundry's native load endpoint instead of inference warm-up.
+        Supports TTL and execution provider parameters.
+        """
+        logger.info("Loading Foundry model via native API: %s", model_id)
+        
+        # GET /openai/load/{name}?ttl=3600
+        status, data = await self._request_json("GET", f"/openai/load/{model_id}?ttl=3600")
+        
+        if status == 200:
+            return {"success": True, "message": f"Model {model_id} loaded", "model_id": model_id}
+        
+        error = data.get("error") if isinstance(data, dict) else str(data)
+        return {"success": False, "error": f"HTTP {status}: {error}"}
+
+    async def unload_model(self, model_id: str) -> dict:
+        """Unload model from memory using native /openai/unload/{name} endpoint.
+
+        Uses Foundry's native unload endpoint instead of SDK.
+        """
+        logger.info("Unloading Foundry model via native API: %s", model_id)
+        
+        # GET /openai/unload/{name}
+        status, data = await self._request_json("GET", f"/openai/unload/{model_id}")
+        
+        if status == 200:
+            return {"success": True, "message": f"Model {model_id} unloaded", "model_id": model_id}
+        
+        error = data.get("error") if isinstance(data, dict) else str(data)
+        return {"success": False, "error": f"HTTP {status}: {error}"}
 
     async def _chat_completion(
         self,
@@ -184,85 +233,6 @@ class FoundryClient:
         if not models:
             return None
         return models[0].get("id")
-
-    async def load_model(self, model_id: str) -> dict:
-        """Warm up a model with a tiny inference request."""
-        logger.info("📥 Warm-up Foundry model: %s", model_id)
-        status, data = await self._chat_completion(
-            [{"role": "user", "content": "ping"}],
-            model=model_id,
-            temperature=0,
-            max_tokens=1,
-        )
-        if status == 200:
-            return {"success": True, "message": f"Модель {model_id} готова"}
-
-        error = data.get("error") if isinstance(data, dict) else str(data)
-        return {"success": False, "error": f"HTTP {status}: {error}"}
-
-    def _sdk_unload(self, model_id: str) -> dict:
-        try:
-            from foundry_local_sdk import Configuration, FoundryLocalManager
-
-            if getattr(FoundryLocalManager, "instance", None) is None:
-                FoundryLocalManager.initialize(Configuration(app_name="fastapi_foundry"))
-
-            selected = None
-            for model in FoundryLocalManager.instance.catalog.list_models():
-                for candidate in [model, *getattr(model, "variants", [])]:
-                    if model_id in (getattr(candidate, "id", None), getattr(candidate, "alias", None)):
-                        selected = candidate
-                        break
-                if selected:
-                    break
-
-            if not selected:
-                return {"success": False, "error": f"Model not found in Foundry catalog: {model_id}"}
-
-            selected.unload()
-            return {"success": True}
-        except Exception as exc:
-            return {"success": False, "error": f"{type(exc).__name__}: {exc}"}
-
-    async def unload_model(self, model_id: str) -> dict:
-        """Best-effort unload.
-
-        Foundry's OpenAI HTTP API does not provide a reliable unload endpoint.
-        SDK is the primary path; CLI is a fallback for environments where SDK
-        cannot initialize.
-        """
-        logger.info("📤 Unload Foundry model: %s", model_id)
-
-        sdk_result = await asyncio.get_running_loop().run_in_executor(None, self._sdk_unload, model_id)
-        if sdk_result.get("success"):
-            return {"success": True, "message": f"Модель {model_id} выгружена"}
-
-        proc = None
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                "foundry",
-                "model",
-                "unload",
-                model_id,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
-            output = (stdout or b"").decode("utf-8", errors="replace").strip()
-            error = (stderr or b"").decode("utf-8", errors="replace").strip()
-            if proc.returncode == 0:
-                return {"success": True, "message": f"Модель {model_id} выгружена"}
-            return {"success": False, "error": error or output or "foundry model unload failed"}
-        except asyncio.TimeoutError:
-            if proc:
-                proc.kill()
-                await proc.communicate()
-            return {"success": False, "error": "foundry model unload timed out after 30 seconds"}
-        except Exception as exc:
-            return {
-                "success": False,
-                "error": sdk_result.get("error") or f"{type(exc).__name__}: {exc}",
-            }
 
     async def generate_text(
         self,
